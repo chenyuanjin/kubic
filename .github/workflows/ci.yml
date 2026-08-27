@@ -1,0 +1,192 @@
+# 闸 1 · 机器闸(docs/14 §三)
+#
+# 四道闸里,这是【唯一自动改状态的地方】。它的判决就是测试结果本身 ——
+# 所以最后那个 report job 无论如何都不许把这条流水线染红:回写只是投递方式,
+# 投递失败不等于判决变成「不通过」(理由写在 scripts/ci/multica-report.sh 头部)。
+name: 闸1 · 机器闸
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+
+# 同一分支上后一次推送取消前一次。PR 与 push 走不同的 group,
+# 否则同仓库 PR 的两次触发会互相取消,留下一条看起来「被跳过」的假绿。
+concurrency:
+  group: gate1-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  # ══════════════ 后端 ══════════════
+  backend:
+    name: 后端 · server/build.sh -q test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          # 刻意不写 cache: maven —— 那个 action 缓存的是 ~/.m2/repository,
+          # 而 build.sh 强制用独立本地仓库 ~/.m2/repo-side。缓存错目录不会报错,
+          # 只会每次全量重下,静默地白缓存。下面自己 cache 那个目录。
+
+      - name: 缓存 ~/.m2/repo-side
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repo-side
+          key: m2-side-${{ runner.os }}-${{ hashFiles('server/pom.xml') }}
+          restore-keys: m2-side-${{ runner.os }}-
+
+      # ── 隔离配置:CI 上没有 ~/.m2/settings-side.xml,必须现生成一份 ──
+      #
+      # 为什么不是「CI 上跳过隔离、直接 ./mvnw」:
+      #   直接 mvnw 会读 runner 上的默认 settings。今天那里是空的,所以看起来没差别 ——
+      #   这正是危险的地方:哪天有人往 workflow 里塞一行私服配置,没有任何东西会拦。
+      #   build.sh 的白名单校验是那条红线的唯一执行装置,CI 上必须让它真的跑起来
+      #   (docs/14 §5.1 第 1 条:不搬过来,隔离红线就只在笔记本上成立)。
+      #
+      # 为什么这里的镜像 host 和本机那份不同:
+      #   本机用 maven.aliyun.com,是因为人在国内;runner 不在。
+      #   不变量不是「必须是阿里云」,是「必须在 build.sh 的公共镜像白名单里、
+      #   https、且不带任何凭据」—— 两份文件在这一点上完全等价,校验也是同一段代码。
+      - name: 生成 ~/.m2/settings-side.xml(公共镜像,无凭据)
+        run: |
+          mkdir -p ~/.m2
+          cat > ~/.m2/settings-side.xml <<'XML'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!--
+            CI 专用副业配置 —— 由 .github/workflows/ci.yml 生成,不进版本库。
+            只允许出现 Maven Central 官方地址。任何内网地址或 <servers> 凭据
+            都会被 server/build.sh 的隔离校验拒绝,这份文件不是例外。
+          -->
+          <settings xmlns="http://maven.apache.org/SETTINGS/1.0.0">
+            <localRepository>${user.home}/.m2/repo-side</localRepository>
+            <mirrors>
+              <mirror>
+                <id>central-official</id>
+                <name>Maven Central (official)</name>
+                <url>https://repo1.maven.org/maven2</url>
+                <mirrorOf>central</mirrorOf>
+              </mirror>
+            </mirrors>
+            <proxies/>
+            <servers/>
+            <profiles>
+              <profile>
+                <id>side-public-only</id>
+                <repositories>
+                  <repository>
+                    <id>central</id>
+                    <url>https://repo1.maven.org/maven2</url>
+                    <releases><enabled>true</enabled></releases>
+                    <snapshots><enabled>false</enabled></snapshots>
+                  </repository>
+                </repositories>
+                <pluginRepositories>
+                  <pluginRepository>
+                    <id>central</id>
+                    <url>https://repo1.maven.org/maven2</url>
+                    <releases><enabled>true</enabled></releases>
+                    <snapshots><enabled>false</enabled></snapshots>
+                  </pluginRepository>
+                </pluginRepositories>
+              </profile>
+            </profiles>
+            <activeProfiles><activeProfile>side-public-only</activeProfile></activeProfiles>
+          </settings>
+          XML
+
+      # 上一步只证明「我们写的这份是干净的」,不证明「校验还活着」。
+      # 一段从没拒绝过任何东西的守卫,和一段被注释掉的守卫,外观完全一样。
+      # 所以这里喂两份必然要被拒的配置,断言它确实拒了 —— 断言的是【拒绝理由】,
+      # 不是退出码:私服地址下不动依赖,mvnw 自己也会失败,只看退出码会假过。
+      - name: 反证 · 隔离校验在 CI 上确实活着
+        run: |
+          set -uo pipefail
+          probe() {
+            bad_home="$(mktemp -d)"; mkdir -p "$bad_home/.m2"
+            cat > "$bad_home/.m2/settings-side.xml"
+            out="$(HOME="$bad_home" ./server/build.sh -q -version 2>&1)" || true
+            if printf '%s' "$out" | grep -q '拒绝构建'; then
+              echo "  ✓ $1 已被拒"
+            else
+              echo "::error::隔离校验没有拦住「$1」—— CI 上的白名单是空的"
+              printf '%s\n' "$out"
+              exit 1
+            fi
+          }
+          probe '内网私服地址' <<'XML'
+          <settings><mirrors><mirror><id>corp</id>
+            <url>https://maven.corp.example.com/repository/public</url>
+            <mirrorOf>central</mirrorOf></mirror></mirrors></settings>
+          XML
+          probe '<servers> 里的凭据' <<'XML'
+          <settings>
+            <mirrors><mirror><id>c</id>
+              <url>https://repo1.maven.org/maven2</url>
+              <mirrorOf>central</mirrorOf></mirror></mirrors>
+            <servers><server><id>c</id><username>u</username><password>p</password></server></servers>
+          </settings>
+          XML
+
+      # 走 build.sh,不走 ./mvnw。差别只有一处:隔离校验跑不跑。
+      - name: 测试
+        run: ./server/build.sh -q test
+
+  # ══════════════ 前端 ══════════════
+  frontend:
+    name: 前端 · lint / build / 边界扫描
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - run: npm ci
+
+      - run: npm run lint
+
+      - run: npm run build
+
+      # 能力边界文案扫描(docs/14 §四 A · R-05)。脚本由另一条线在加,
+      # 这里只负责调用。用 --if-present 是为了「还没加上」与「加上了但挂了」
+      # 能被区分开:前者静默跳过,后者照常染红。
+      # 注意是 `npm run --if-present <script>` 而不是把 flag 放在脚本名后面 ——
+      # 后者在部分 npm 版本里会被当成传给脚本的参数,于是缺席时直接报错退出。
+      - name: 能力边界文案扫描(存在才跑)
+        run: npm run --if-present test:boundary
+
+  # ══════════════ 回写议题 ══════════════
+  report:
+    name: 回写 Multica 议题
+    runs-on: ubuntu-latest
+    needs: [backend, frontend]
+    # always():绿要回写 verdict=true,红更要回写 verdict=false。
+    # 只在成功时回写,等于分诊器永远看不到失败 —— 那正是要自动化掉的那件事。
+    if: always()
+    steps:
+      - uses: actions/checkout@v4
+
+      # 这一步永远绿(脚本自身保证 exit 0),它染不红上面两个 job 的判决。
+      # multica CLI 不在 runner 上、token 没配、或者 62.234.164.41:8080 打不通,
+      # 都只打一条警告 —— 那三件事都还没验证过(docs/14 §八),而闸 1 的判决
+      # 已经在上面两个 job 里做完了。
+      - name: 回写闸 1 判决
+        env:
+          MULTICA_TOKEN: ${{ secrets.MULTICA_TOKEN }}
+        run: |
+          ./scripts/ci/multica-report.sh \
+            --backend  '${{ needs.backend.result }}' \
+            --frontend '${{ needs.frontend.result }}'

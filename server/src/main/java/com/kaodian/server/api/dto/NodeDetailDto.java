@@ -31,6 +31,9 @@ import java.util.List;
  * @param practiced  练了几道 —— <b>用户自己敲进来的数</b>
  * @param correct    对了几道 —— 同上。产品从不判题(01 §2.2)
  * @param sources    碰过这个考点的来源名集合,按首次出现顺序
+ * @param assertedAt 用户按下「我已掌握」的时刻;没按过是 {@code null}。
+ *                   <b>它不改上面任何一个数</b> —— 触达次数、状态、正确率一个都不动
+ *                   (01 §5.2:补丁不是解法)。它只让这个考点从盲区榜上消失
  */
 public record NodeDetailDto(
         String code,
@@ -45,13 +48,14 @@ public record NodeDetailDto(
         int correct,
         Double accuracy,
         Instant latestAt,
-        List<String> sources
+        List<String> sources,
+        Instant assertedAt
 ) {
     public static NodeDetailDto from(NodeCoverage n) {
         return new NodeDetailDto(
                 n.code(), n.name(), n.groupCode(), n.groupName(), n.recent5yCount(),
                 n.state().name(), n.state().label(),
                 n.touchCount(), n.practiced(), n.correct(), n.accuracy(), n.latestAt(),
-                n.sources());
+                n.sources(), n.assertedAt());
     }
 }

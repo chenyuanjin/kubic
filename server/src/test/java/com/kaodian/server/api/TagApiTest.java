@@ -6,6 +6,8 @@ import com.kaodian.server.api.dto.UnknownFieldException;
 import com.kaodian.server.collect.CandidateRecall;
 import com.kaodian.server.collect.InMemoryRecordTagStore;
 import com.kaodian.server.collect.RecordTag;
+import com.kaodian.server.collect.AssertionStore;
+import com.kaodian.server.collect.InMemoryAssertionStore;
 import com.kaodian.server.collect.RecordTagStore;
 import com.kaodian.server.collect.TagOrigin;
 import com.kaodian.server.collect.TaggingService;
@@ -438,8 +440,15 @@ class TagApiTest {
 
         @Bean
         CoverageReader coverageReader(SyllabusSource syllabus, TouchStore store,
-                                      RecordTagStore tagStore, CoverageService coverage, Clock clock) {
-            return new CoverageReader(syllabus, store, tagStore, coverage, clock);
+                                      RecordTagStore tagStore, AssertionStore assertionStore,
+                                      CoverageService coverage, Clock clock) {
+            return new CoverageReader(syllabus, store, tagStore, assertionStore, coverage, clock);
+        }
+
+        /** 「我已掌握」。它不进覆盖度的分子(01 §5.2:补丁不是解法),但 CoverageReader 要读它。 */
+        @Bean
+        AssertionStore assertionStore() {
+            return new InMemoryAssertionStore();
         }
 
         @Bean

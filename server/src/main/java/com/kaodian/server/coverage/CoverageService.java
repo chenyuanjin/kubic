@@ -2,6 +2,7 @@ package com.kaodian.server.coverage;
 
 import com.kaodian.server.collect.RecordTag;
 import com.kaodian.server.collect.Touch;
+import com.kaodian.server.collect.UserAssertion;
 import com.kaodian.server.syllabus.Syllabus;
 
 import java.time.Instant;
@@ -50,7 +51,14 @@ public class CoverageService {
         };
     }
 
-    /** 一个考点的完整视图:骨架侧的事实 + 行为侧的统计 + 推出来的状态。 */
+    /**
+     * 一个考点的完整视图:骨架侧的事实 + 行为侧的统计 + 推出来的状态。
+     *
+     * @param assertedAt 用户按下「我已掌握」的时刻;<b>没按过是 {@code null}</b>。
+     *                   🔴 它<b>不参与</b> {@link #state} 的推导,也不参与覆盖率 ——
+     *                   见 {@link UserAssertion} 与 {@link #summarize}。它是<b>独立状态</b>
+     *                   (docs/10 §5.2),摆在五态旁边,不是第六态
+     */
     public record NodeCoverage(
             String code,
             String name,
@@ -62,8 +70,14 @@ public class CoverageService {
             int practiced,
             int correct,
             Instant latestAt,
-            List<String> sources
+            List<String> sources,
+            Instant assertedAt
     ) {
+        /** 用户声明过掌握这个考点。<b>与「碰过」无关</b>,两者可以任意组合。 */
+        public boolean asserted() {
+            return assertedAt != null;
+        }
+
         /**
          * 用户自填正确率。{@code null} 表示没练过 —— 界面上显示为「—」,不是 0%。
          *
@@ -109,15 +123,29 @@ public class CoverageService {
         }
     }
 
-    /** 覆盖概览。北极星指标「主动查看盲区的人数」看的就是这一屏。 */
+    /**
+     * 覆盖概览。北极星指标「主动查看盲区的人数」看的就是这一屏。
+     *
+     * @param asserted 声明「我已掌握」的考点数 —— docs/10 §6.4:<b>断言单列不并入</b>。
+     *                 它<b>不是</b> {@link #covered} 的一部分,也<b>不是</b> {@link #empty}
+     *                 的对立面:一个被声明的考点如果确实一条记录都没有,它<b>同时</b>
+     *                 记在 {@code empty} 和这里。两个数相加没有意义,界面上也不该并排求和 ——
+     *                 它是另一个维度的计数,理由见 {@link UserAssertion}
+     */
     public record Summary(
             int total,
             int covered,
             int empty,
             int whollyEmptyGroups,
+            int asserted,
             Map<NodeState, Integer> distribution
     ) {
-        /** 覆盖率。分母是考点总数,分子是有记录的考点数。 */
+        /**
+         * 覆盖率。分母是考点总数,分子是有记录的考点数。
+         *
+         * <p>🔴 {@link #asserted} 没有出现在这个式子里,这是它整件事的重点:
+         * <b>按「我已掌握」不会让这个数动一下</b>(01 §5.2:补丁不是解法)。
+         */
         public double ratio() {
             return total == 0 ? 0 : (double) covered / total;
         }
@@ -159,7 +187,46 @@ public class CoverageService {
      */
     public List<GroupCoverage> compute(Syllabus syllabus, List<Touch> touches,
                                        List<RecordTag> tags, Instant now) {
+        return compute(syllabus, touches, tags, List.of(), now);
+    }
+
+    /**
+     * 骨架 + 行为 + 标签 + <b>「我已掌握」</b> → 全树的覆盖视图。
+     *
+     * <h2>🔴 断言是第五个输入,而不是第六种状态</h2>
+     *
+     * 它<b>只被记在 {@link NodeCoverage#assertedAt} 上</b>,不参与 {@link NodeState#derive}、
+     * 不改 {@code covered}、不改 {@code blindScore}。三处口径全在下游:
+     * <table border="1">
+     *   <caption>断言在三处的落法(docs/10 §6.4 / §5.2)</caption>
+     *   <tr><th>口径</th><th>怎么落</th><th>在哪</th></tr>
+     *   <tr><td>覆盖率<b>分子不变</b></td>
+     *       <td>什么都不做 —— {@code covered} 只数 {@code state().covered()}</td>
+     *       <td>就在下面这个循环里,<b>看不到 asserted 这个词</b></td></tr>
+     *   <tr><td>概览<b>单列一格</b></td><td>数一遍 {@code asserted()}</td>
+     *       <td>{@link #summarize}</td></tr>
+     *   <tr><td>盲区榜<b>排除</b></td><td>过滤掉 {@code asserted()}</td>
+     *       <td>{@link #blindSpots}</td></tr>
+     * </table>
+     *
+     * <p>为什么放进 {@code compute} 而不是让三个查询端点各自去查一次声明表:
+     * 与类注释里那句「两处算同一个数就一定会算出两个数」是同一条 ——
+     * 覆盖率、盲区榜、树上的格子必须来自<b>同一次读取</b>,否则同一屏上会出现
+     * 「盲区榜里没有它,但树上它没有已掌握标记」这种自相矛盾的画面。
+     *
+     * @param assertions 「我已掌握」的全部行。指向树外 / 已归档考点的行会被<b>安静地忽略</b>:
+     *                   那不是错误,是考点被删了或被归档了,而归档本来就退出差集
+     */
+    public List<GroupCoverage> compute(Syllabus syllabus, List<Touch> touches, List<RecordTag> tags,
+                                       List<UserAssertion> assertions, Instant now) {
         Map<String, List<Touch>> byNode = project(touches, tags);
+
+        Map<String, Instant> assertedAt = new LinkedHashMap<>();
+        for (UserAssertion a : assertions) {
+            // 同一个考点最多一行(主键就是 nodeCode,见 FileAssertionStore),
+            // 万一文件被手工改出两行,取先写下的那条 —— 与「重复断言不刷新时刻」同一句话。
+            assertedAt.putIfAbsent(a.nodeCode(), a.assertedAt());
+        }
 
         List<GroupCoverage> result = new ArrayList<>();
         for (Syllabus.Group g : syllabus.groups()) {
@@ -173,6 +240,9 @@ public class CoverageService {
                 NodeState state = NodeState.derive(ts, now);
                 if (state.covered()) {
                     covered++;
+                    // 🔴 这一句里没有 assertedAt。「我已掌握」不让任何考点变成「碰过」——
+                    //    01 §5.2:它是补丁不是解法,而一个能靠点按钮刷高的覆盖率
+                    //    与没有覆盖率是一样的。加一句 `|| asserted` 就是把补丁伪装成疗效。
                 }
 
                 int practiced = 0;
@@ -194,7 +264,8 @@ public class CoverageService {
 
                 nodes.add(new NodeCoverage(
                         n.code(), n.name(), g.code(), g.name(), n.recent5yCount(),
-                        state, ts.size(), practiced, correct, latest, List.copyOf(sources)));
+                        state, ts.size(), practiced, correct, latest, List.copyOf(sources),
+                        assertedAt.get(n.code())));
             }
             result.add(new GroupCoverage(g.code(), g.name(), List.copyOf(nodes), covered, g.recent5yCount()));
         }
@@ -256,7 +327,21 @@ public class CoverageService {
         return byNode;
     }
 
-    /** 覆盖概览。 */
+    /**
+     * 覆盖概览。
+     *
+     * <h2>🔴 「我已掌握」在这里<b>单列一格</b>,不并入任何一个已有的数</h2>
+     *
+     * docs/10 §6.4:「分母 = level 3 节点数;分子 = {@code discarded=0} 的触达节点数;
+     * <b>断言单列不并入</b>」。所以下面 {@code asserted} 是自己数自己的一遍循环变量,
+     * 它<b>不加进 {@code covered}</b>(那会让覆盖率因为点按钮而上升)、
+     * <b>也不从 {@code empty} 里减掉</b>(那个考点确实还是一条记录都没有)、
+     * <b>更不占 {@code distribution} 里的一格</b>(五态是从记录推出来的,断言不是记录)。
+     * <p>
+     * 这三个「不」合起来的效果是:一个用户把 18 个考点全部声明掌握之后,这一屏上
+     * <b>只有一个数变了</b> —— 「已声明 18 个」。覆盖率还是 44%,盲区还是 10 个。
+     * 变的只是他不会再在「先补这几个」里看到它们({@link #blindSpots})。
+     */
     public Summary summarize(List<GroupCoverage> groups) {
         Map<NodeState, Integer> dist = new LinkedHashMap<>();
         for (NodeState s : NodeState.values()) {
@@ -265,6 +350,7 @@ public class CoverageService {
         int total = 0;
         int covered = 0;
         int whollyEmptyGroups = 0;
+        int asserted = 0;
 
         for (GroupCoverage g : groups) {
             if (g.whollyEmpty()) {
@@ -275,10 +361,14 @@ public class CoverageService {
                 if (n.state().covered()) {
                     covered++;
                 }
+                if (n.asserted()) {
+                    asserted++;
+                }
                 dist.merge(n.state(), 1, Integer::sum);
             }
         }
-        return new Summary(total, covered, total - covered, whollyEmptyGroups, Map.copyOf(dist));
+        return new Summary(total, covered, total - covered, whollyEmptyGroups,
+                asserted, Map.copyOf(dist));
     }
 
     /**
@@ -288,6 +378,14 @@ public class CoverageService {
      * 保证同样的输入永远得到同样的排序,不会因为 map 遍历顺序而抖动。
      *
      * <p>{@code STABLE} 权重为 0,自然落在最后,不需要额外过滤。
+     *
+     * <h2>🔴 已经声明「我已掌握」的考点<b>排除在外</b>(docs/10 §6.4)</h2>
+     *
+     * 这是断言这个按钮<b>唯一真正做的事</b> —— 用户按它,要的就是这份清单别再提它。
+     * 覆盖率不动、五态不动、分母不动,只有这一份清单短了一行。
+     * <p>
+     * 过滤必须排在 {@code limit(top)} <b>之前</b>:排在后面的话,声明过的考点会先占掉名额、
+     * 再被删掉,于是「要 5 个」返回 3 个,而榜上明明还有别的盲区。
      */
     public List<NodeCoverage> blindSpots(List<GroupCoverage> groups, int top) {
         List<NodeCoverage> flat = new ArrayList<>();
@@ -300,6 +398,7 @@ public class CoverageService {
                 .thenComparingInt(flat::indexOf));          // 同分 → 树序
         return ordered.stream()
                 .filter(n -> n.blindScore() > 0)
+                .filter(n -> !n.asserted())      // 🔴 排除已断言节点(docs/10 §6.4),必须在 limit 之前
                 .limit(top)
                 .toList();
     }

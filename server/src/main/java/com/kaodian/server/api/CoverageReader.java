@@ -1,9 +1,11 @@
 package com.kaodian.server.api;
 
+import com.kaodian.server.collect.AssertionStore;
 import com.kaodian.server.collect.RecordTag;
 import com.kaodian.server.collect.RecordTagStore;
 import com.kaodian.server.collect.Touch;
 import com.kaodian.server.collect.TouchStore;
+import com.kaodian.server.collect.UserAssertion;
 import com.kaodian.server.coverage.CoverageService;
 import com.kaodian.server.coverage.CoverageService.GroupCoverage;
 import com.kaodian.server.coverage.CoverageService.NodeCoverage;
@@ -35,6 +37,7 @@ public class CoverageReader {
     private final SyllabusSource syllabus;
     private final TouchStore store;
     private final RecordTagStore tagStore;
+    private final AssertionStore assertionStore;
     private final CoverageService coverage;
     private final Clock clock;
 
@@ -45,12 +48,17 @@ public class CoverageReader {
      *                 这正是「新增考点后分母 +1」那条测试守着的东西
      * @param tagStore 标签层。<b>覆盖度的分子从这里出来</b>({@code discarded=0} 的那些,
      *                 docs/10 §6.4)。它和行为层必须在<b>同一次读取</b>里取齐 —— 见 {@link #read}
+     * @param assertionStore 「我已掌握」。🔴 <b>覆盖度的分子<u>不</u>从这里出来</b> ——
+     *                 它只做两件事:让盲区榜少一行、让概览多一格(docs/10 §6.4
+     *                 「断言单列不并入」/「排除已断言节点」)。为什么不并入见 {@link UserAssertion}。
+     *                 它必须和另外两层在<b>同一次读取</b>里取齐,理由同上
      */
     public CoverageReader(SyllabusSource syllabus, TouchStore store, RecordTagStore tagStore,
-                          CoverageService coverage, Clock clock) {
+                          AssertionStore assertionStore, CoverageService coverage, Clock clock) {
         this.syllabus = syllabus;
         this.store = store;
         this.tagStore = tagStore;
+        this.assertionStore = assertionStore;
         this.coverage = coverage;
         this.clock = clock;
     }
@@ -97,7 +105,13 @@ public class CoverageReader {
         //    采集那一刻的主标签是推出来的。派生规则只有 RecordTag.effectiveTagsOf 一处。
         List<RecordTag> tags = RecordTag.effectiveTagsOf(touches, tagStore.findAll());
 
-        return new Snapshot(tree, now, touches, coverage.compute(tree, touches, tags, now));
+        // 「我已掌握」也在这一次读取里取齐。它不进覆盖度的分子(01 §5.2:补丁不是解法),
+        // 但盲区榜要按它过滤、概览要按它单列一格 —— 两处都得看到同一份声明,
+        // 否则会出现「榜上没有它,概览里也没算它」这种谁都解释不了的一屏。
+        List<UserAssertion> assertions = assertionStore.findAll();
+
+        return new Snapshot(tree, now, touches,
+                coverage.compute(tree, touches, tags, assertions, now));
     }
 
     /** 纯转发给 {@link CoverageService#summarize}。 */

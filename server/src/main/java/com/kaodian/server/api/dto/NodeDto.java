@@ -18,6 +18,11 @@ import java.time.Instant;
  * @param stateLabel    中文名,前端直接显示,不硬编码
  * @param touchCount    我在这个考点上有几条记录
  * @param latestAt      最近一次触达;从没碰过是 {@code null},界面显示「—」而不是某个默认日期
+ * @param assertedAt    用户按下「我已掌握」的时刻;没按过是 {@code null}。
+ *                      <b>它与 {@code state} 是两个维度</b>,不是第六态 —— 一个考点可以
+ *                      「空白 + 已声明」。这个字段在树上必须给出来,因为断言的<b>唯一效果</b>
+ *                      是让那个考点从盲区榜上消失:再不在树上留个印子,用户就没有任何地方
+ *                      能看到自己按过什么、更没有地方能取消
  */
 public record NodeDto(
         String code,
@@ -26,12 +31,13 @@ public record NodeDto(
         String state,
         String stateLabel,
         int touchCount,
-        Instant latestAt
+        Instant latestAt,
+        Instant assertedAt
 ) {
     public static NodeDto from(NodeCoverage n) {
         return new NodeDto(
                 n.code(), n.name(), n.recent5yCount(),
                 n.state().name(), n.state().label(),
-                n.touchCount(), n.latestAt());
+                n.touchCount(), n.latestAt(), n.assertedAt());
     }
 }

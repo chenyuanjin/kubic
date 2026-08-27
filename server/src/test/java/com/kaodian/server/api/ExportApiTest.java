@@ -4,6 +4,9 @@ import com.jayway.jsonpath.JsonPath;
 import com.kaodian.server.collect.Touch;
 import com.kaodian.server.collect.TouchKind;
 import com.kaodian.server.collect.InMemoryRecordTagStore;
+import com.kaodian.server.collect.AssertionStore;
+import com.kaodian.server.collect.InMemoryAssertionStore;
+import com.kaodian.server.collect.UserAssertion;
 import com.kaodian.server.collect.RecordTagStore;
 import com.kaodian.server.collect.TouchStore;
 import com.kaodian.server.coverage.CoverageService;
@@ -78,7 +81,7 @@ class ExportApiTest {
      * 没有一列装得下机构的课程内容,也没有一列装得下题干。
      * <p>
      * 这张表同时钉住两件事:<b>列不许多</b>(加一列必须先来改这里,而改这里要回答值从哪来),
-     * <b>块不许多</b>(见 {@code exportColumnsArePinned} 里那句「表头行恰好 6 条」)。
+     * <b>块不许多</b>(见 {@code exportColumnsArePinned} 里那句「表头行恰好 {@code PINNED_COLUMNS.size()} 条」)。
      */
     private static final Map<String, List<String>> PINNED_COLUMNS = pinnedColumns();
 
@@ -90,6 +93,11 @@ class ExportApiTest {
         m.put("nodes", List.of("考点 code", "考点", "题型 code", "题型", "近五年频次",
                 "状态代码", "状态", "触达次数", "练了几道", "对了几道", "正确率", "最近触达", "来源"));
         m.put("archived", List.of("考点 code", "考点", "题型 code", "题型", "近五年频次", "记录数"));
+        // 「我已掌握」—— docs/10 §5.2 user_assertion 那一行的最后四个字:「导出时可区分」。
+        // 每一列的值都来自已有的字段:前四列是骨架层的 code 与名字,末一列是用户按按钮那一刻。
+        // 🔴 没有一列装得下机构的内容,也没有一列能写一句「为什么我觉得我会了」——
+        //    那个字段一年后装的就是题干(R-01)。
+        m.put("asserted", List.of("考点 code", "考点", "题型 code", "题型", "声明时刻"));
         m.put("records", List.of("记录 id", "时间", "方式代码", "方式", "来源",
                 "考点 code", "考点", "题型 code", "题型", "练了几道", "对了几道"));
         return Map.copyOf(m);
@@ -104,10 +112,14 @@ class ExportApiTest {
     @Autowired
     private SwappableSyllabus syllabus;
 
+    @Autowired
+    private InMemoryAssertionStore assertions;
+
     @BeforeEach
     void seed() {
         store.reset(manyTouches());
         syllabus.reset();
+        assertions.reset();
     }
 
     // ---------------------------------------------------------------- 无删减
@@ -246,9 +258,10 @@ class ExportApiTest {
     // ---------------------------------------------------------------- 内容边界
 
     @Test
-    @DisplayName("🔴 R-06:导出的列被钉死 —— 六块,列名逐字一致,md 与 csv 用的是同一张表")
+    @DisplayName("🔴 R-06:导出的列被钉死 —— 七块,列名逐字一致,md 与 csv 用的是同一张表")
     void exportColumnsArePinned() throws Exception {
-        syllabus.archive("growth-rate");        // 六块都非空,md 才会把六张表头都写出来
+        syllabus.archive("growth-rate");        // 每一块都非空,md 才会把全部表头都写出来
+        assertions.put(new UserAssertion("share-calc", Instant.parse("2026-08-20T09:00:00Z")));
 
         String csv = body("csv");
         String md = body("md");
@@ -266,6 +279,56 @@ class ExportApiTest {
 
         assertEquals(PINNED_COLUMNS.size(), csv.lines().filter(l -> l.startsWith("section,")).count(),
                 "导出多了或少了一整块。加一块之前先回答:它的每一列的值从哪个字段来?(R-06)");
+    }
+
+    /**
+     * 🔴 docs/10 §5.2 {@code user_assertion} 那一行的最后四个字:<b>「导出时可区分」</b>。
+     *
+     * <h2>为什么这一条要在三种格式里各验一遍</h2>
+     *
+     * json 那一份是<b>白来的</b> —— {@code NodeDetailDto} 上有 {@code assertedAt},
+     * 拿走整份 json 自然就看得出来。而 md 与 csv 的「考点」那张表列名是钉死的,
+     * 没有一列装得下这件事;只在 json 里能区分,等于<b>对拿 csv 的人删减了</b>(§6.5「无删减」)。
+     * 所以「已声明掌握的考点」单成一块。
+     *
+     * <h2>⚠️ 顺带钉住:它没有被并进「已归档的考点」</h2>
+     *
+     * 归档把考点从<b>分母</b>里拿掉(比值仍然诚实,{@code R-49}),声明把考点<b>留在分母里</b>、
+     * 不进分子。所以被声明的考点<b>照旧出现在「考点」块里</b>,而被归档的考点不在。
+     * 两块要是合成一段,这份导出就再也答不出「这个百分比是怎么来的」。
+     */
+    @Test
+    @DisplayName("🔴 导出时可区分「我已掌握」—— 三种格式各有一块,而且它没有被并进归档清单(§5.2)")
+    void assertedNodesAreDistinguishableInAllThreeFormats() throws Exception {
+        assertions.put(new UserAssertion("base-value", Instant.parse("2026-08-20T09:00:00Z")));
+
+        String json = body("json");
+        assertEquals("base-value", JsonPath.read(json, "$.assertedNodes[0].code"));
+        assertEquals(1, ((List<?>) JsonPath.read(json, "$.assertedNodes[*].code")).size());
+        assertEquals(0, ((List<?>) JsonPath.read(json, "$.archivedNodes[*].code")).size(),
+                "声明不是归档 —— 它一行都不该出现在归档清单里");
+
+        List<String> csvRows = csvRowsOf(body("csv"), "asserted");
+        assertEquals(1, csvRows.size(), "csv 里没有「已声明掌握的考点」这一块");
+        assertTrue(csvRows.get(0).contains("base-value"), csvRows.get(0));
+        assertTrue(csvRows.get(0).contains("2026-08-20T09:00:00Z"),
+                "「什么时候按的」是这一块唯一比「考点」块多出来的信息:" + csvRows.get(0));
+
+        List<String> mdRows = mdRowsOf(body("md"), "已声明掌握的考点");
+        assertEquals(1, mdRows.size(), "md 里没有「已声明掌握的考点」这一块");
+        assertTrue(mdRows.get(0).contains("base-value"), mdRows.get(0));
+
+        // 🔴 它仍然在「考点」块里 —— 声明不让考点退出差集,那是归档干的事
+        assertEquals(18, mdRowsOf(body("md"), "考点").size(),
+                "被声明的考点从「考点」块里消失了 —— 那是把断言写成了归档");
+    }
+
+    @Test
+    @DisplayName("没人按过按钮时,那一块是空的但仍然在 —— 整块消失会让人以为导出漏了")
+    void theAssertedBlockStaysEvenWhenEmpty() throws Exception {
+        assertEquals(0, csvRowsOf(body("csv"), "asserted").size());
+        assertEquals(List.of(), mdRowsOf(body("md"), "已声明掌握的考点"));
+        assertEquals(0, ((List<?>) JsonPath.read(body("json"), "$.assertedNodes[*].code")).size());
     }
 
     @Test
@@ -489,8 +552,15 @@ class ExportApiTest {
         /** {@link CoverageReader} 是 {@code @Component},web 切片不扫它。 */
         @Bean
         CoverageReader coverageReader(SyllabusSource syllabus, TouchStore store,
-                                      RecordTagStore tagStore, CoverageService coverage, Clock clock) {
-            return new CoverageReader(syllabus, store, tagStore, coverage, clock);
+                                      RecordTagStore tagStore, AssertionStore assertionStore,
+                                      CoverageService coverage, Clock clock) {
+            return new CoverageReader(syllabus, store, tagStore, assertionStore, coverage, clock);
+        }
+
+        /** 「我已掌握」。它不进覆盖度的分子(01 §5.2:补丁不是解法),但导出必须能把它区分出来(§5.2)。 */
+        @Bean
+        InMemoryAssertionStore assertionStore() {
+            return new InMemoryAssertionStore();
         }
 
         /** 标签层。导出不打标,但覆盖度的分子要从这里出来。 */

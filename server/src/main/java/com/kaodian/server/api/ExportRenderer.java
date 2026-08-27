@@ -55,7 +55,7 @@ final class ExportRenderer {
 
     // ———————————————————————— 列名 ————————————————————————
     //
-    // 🔴 这五张表就是导出的内容边界(R-06)。每一列要么是我们自己的统计,要么是用户自己录的东西:
+    // 🔴 这六张表就是导出的内容边界(R-06)。每一列要么是我们自己的统计,要么是用户自己录的东西:
     //    来源【名字】、时间、方式、考点 code 与名称、用户自填的两个整数。
     //    没有一列装得下机构的课程内容,也没有一列装得下题干(R-01)——
     //    因为上游的 Touch 与 Syllabus 里根本没有那样的字段可供取用。
@@ -77,6 +77,20 @@ final class ExportRenderer {
     private static final List<String> ARCHIVED_COLUMNS = List.of(
             "考点 code", "考点", "题型 code", "题型", "近五年频次", "记录数");
 
+    /**
+     * 「我已掌握」那一块 —— docs/10 §5.2 {@code user_assertion} 那一行的最后四个字:
+     * <b>「导出时可区分」</b>。
+     *
+     * <p>没有「状态」「触达次数」这些列:它们在上面的「考点」块里已经有了,而<b>那才是权威的那一份</b>。
+     * 这一块回答的只有一个问题 ——「哪些考点是我自己按下按钮说会了的,什么时候按的」。
+     * <p>
+     * 🔴 它<b>不能</b>被并进「考点」块的一列了事,也不能被并进「已归档的考点」:
+     * 归档的考点<b>不在</b>「考点」块里(它退出了差集),而声明过的考点<b>在</b>。
+     * 两者摆在一起会让读这份文件的人以为它们对那个百分比做了同一件事,而它们没有。
+     */
+    private static final List<String> ASSERTED_COLUMNS = List.of(
+            "考点 code", "考点", "题型 code", "题型", "声明时刻");
+
     private static final List<String> RECORD_COLUMNS = List.of(
             "记录 id", "时间", "方式代码", "方式", "来源",
             "考点 code", "考点", "题型 code", "题型", "练了几道", "对了几道");
@@ -85,7 +99,7 @@ final class ExportRenderer {
     private static final String MD_EMPTY = "—";
 
     /**
-     * 一份导出拆成五块,顺序固定。
+     * 一份导出拆成六块,顺序固定。
      *
      * <p>顺序是「先说这是什么,再说整体,最后才是逐条」——
      * 一份存档要能从上往下读下来,而不是打开先撞见三千行流水。
@@ -120,6 +134,12 @@ final class ExportRenderer {
                     n.recent5yCount(), n.recordCount()));
         }
         sections.add(new Section("archived", "已归档的考点", ARCHIVED_COLUMNS, archived));
+
+        List<List<String>> asserted = new ArrayList<>();
+        for (NodeDetailDto n : e.assertedNodes()) {
+            asserted.add(row(n.code(), n.name(), n.groupCode(), n.groupName(), n.assertedAt()));
+        }
+        sections.add(new Section("asserted", "已声明掌握的考点", ASSERTED_COLUMNS, asserted));
 
         List<List<String>> records = new ArrayList<>();
         for (TimelineItemDto t : e.records()) {
@@ -190,9 +210,9 @@ final class ExportRenderer {
      *
      * <h2>为什么是「分块 + 第一列写块名」,而不是一张大表</h2>
      *
-     * 五块的列数与含义都不一样,硬拼成一张表要么并列出一堆空格子,要么丢掉几块。
+     * 六块的列数与含义都不一样,硬拼成一张表要么并列出一堆空格子,要么丢掉几块。
      * 分块之后每块自带表头,第一列是块名({@code meta / summary / states / nodes /
-     * archived / records}),于是<b>一个文件里能一眼看出哪几行是记录</b>,
+     * archived / asserted / records}),于是<b>一个文件里能一眼看出哪几行是记录</b>,
      * 数「无删减」那个数也不用靠猜。
      *
      * <h2>不加 BOM</h2>

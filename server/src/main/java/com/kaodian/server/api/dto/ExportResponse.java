@@ -23,10 +23,11 @@ import java.util.List;
  *
  * <h2>🔴 字段表就是内容边界(R-06)</h2>
  *
- * 全部七个分量,一个都不装机构的课程内容:
+ * 全部八个分量,一个都不装机构的课程内容:
  * <ul>
  *   <li>{@code subject} / {@code summary} —— 我们自己的元信息与统计</li>
- *   <li>{@code nodes} / {@code archivedNodes} —— 考点 code、名称、频次统计、我的触达情况</li>
+ *   <li>{@code nodes} / {@code archivedNodes} / {@code assertedNodes} ——
+ *       考点 code、名称、频次统计、我的触达情况,以及我自己按过的那个按钮</li>
  *   <li>{@code records} —— <b>来源名、时间、方式、考点</b>,以及用户自填的两个整数</li>
  * </ul>
  * 没有题干({@code R-01}),没有讲义、没有课程内容({@code R-06})—— 上游的 {@link Touch}
@@ -49,6 +50,19 @@ import java.util.List;
  *                      docs/13 {@code R-49}:「归档可以无声刷高覆盖率」,
  *                      而三条对策之一就是「导出带完整归档清单」。少了这一段,
  *                      导出就成了那句无声的同谋
+ * @param assertedNodes 声明「我已掌握」的考点 —— docs/10 §5.2 {@code user_assertion}
+ *                      那一行的最后四个字:<b>「导出时可区分」</b>。
+ *                      <p>
+ *                      它是 {@code nodes} 的一个子集(不像 {@code archivedNodes} 那样是补集):
+ *                      被声明的考点<b>仍然在差集里、仍然占着分母</b>,所以它照旧出现在 {@code nodes} 里。
+ *                      单摘一段出来,是因为 md 与 csv 的「考点」那张表<b>没有一列装得下这件事</b>
+ *                      (列名是钉死的,{@code ExportRenderer} 类注释),
+ *                      而 §5.2 要的「可区分」必须在三种格式里同时成立 ——
+ *                      只在 json 里能看出来,等于对拿 csv 的人删减了(§6.5「无删减」)。
+ *                      <p>
+ *                      ⚠️ 它与 {@code archivedNodes} 不是一回事,不要合并成一段「特殊考点」:
+ *                      归档把考点从<b>分母</b>里拿掉(比值仍然诚实),声明把考点<b>留在分母里</b>、
+ *                      不进分子。合成一段之后,导出就再也答不出「这个 44% 是怎么来的」
  * @param records       全部触达记录,<b>按发生时间升序</b>。{@code /api/records} 是倒序的(最近的在最上面),
  *                      那是屏幕的需要;一份存档按发生顺序读才连得起来
  */
@@ -59,6 +73,7 @@ public record ExportResponse(
         int recordCount,
         List<NodeDetailDto> nodes,
         List<SyllabusNodeDto> archivedNodes,
+        List<NodeDetailDto> assertedNodes,
         List<TimelineItemDto> records
 ) {
 
@@ -90,6 +105,12 @@ public record ExportResponse(
             }
         }
 
+        // 「我已掌握」的那些。从上面已经算好的 nodes 里筛,不去问 AssertionStore ——
+        // 免得同一件事有两个出处:一个指向已删除考点的声明行不在 nodes 里,也就不该在这里。
+        List<NodeDetailDto> asserted = nodes.stream()
+                .filter(n -> n.assertedAt() != null)
+                .toList();
+
         List<TimelineItemDto> records = touches.stream()
                 .map(t -> TimelineItemDto.from(t, syllabus))
                 .toList();
@@ -101,6 +122,7 @@ public record ExportResponse(
                 touches.size(),
                 nodes,
                 List.copyOf(archived),
+                asserted,
                 records);
     }
 }

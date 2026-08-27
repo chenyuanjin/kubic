@@ -25,8 +25,9 @@ import java.util.List;
  *
  * <h2>🔴 {@code DELETE} 逐条路径开,永远不开给 {@code /api/**}</h2>
  *
- * 契约里需要 {@code DELETE} 的只有两条:{@code DELETE /api/account}(注销账号,§6.1)
- * 和 {@code DELETE /api/records/{id}}(删记录,§6.2)。
+ * 契约里需要 {@code DELETE} 的只有三条:{@code DELETE /api/account}(注销账号,§6.1)、
+ * {@code DELETE /api/records/{id}}(删记录,§6.2)和 {@code DELETE /api/assertions}
+ * (取消「我已掌握」,§6.4)。
  * 图省事的做法是往全局白名单里加一个 {@code DELETE} —— 那会<b>连带给
  * {@code /api/syllabus/**} 开了删除口子</b>,而骨架层的删除守则是
  * 「有记录就不许删,只能归档」。<b>那条守则保护的正是行为层的记录</b>,
@@ -67,6 +68,17 @@ public class ApiCorsConfig implements WebMvcConfigurer {
         registry.addMapping("/api/records/*")
                 .allowedOrigins(allowedOrigins.toArray(String[]::new))
                 .allowedMethods("GET", "POST", "DELETE")
+                .allowedHeaders("Content-Type", "Authorization")
+                .allowCredentials(false)
+                .maxAge(3600);
+
+        // 取消「我已掌握」(docs/10 §6.4 的 DELETE /assertions)。
+        // 🔴 写成 /api/assertions 这一条路径,不是 /api/assertions/** ——
+        //    契约里这两个端点都没有路径变量(body 只接受 nodeCode),
+        //    多一层通配就是提前给一批还不存在的子路径放行。
+        registry.addMapping("/api/assertions")
+                .allowedOrigins(allowedOrigins.toArray(String[]::new))
+                .allowedMethods("POST", "DELETE")
                 .allowedHeaders("Content-Type", "Authorization")
                 .allowCredentials(false)
                 .maxAge(3600);

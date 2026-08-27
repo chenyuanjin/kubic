@@ -305,6 +305,10 @@ class NoStemFieldTest {
             entry("Touch#id", Reason.SERVER_ISSUED_ID),
             entry("Touch#nodeCode", Reason.SERVER_ISSUED_ID),
             entry("Touch#sourceName", Reason.BOUNDED_UPSTREAM),
+            // 「我已掌握」那一行的全部内容就是这个 code 加一个时刻。写入口是
+            // AssertionRequest#nodeCode(@Size(max = 64)),与 Touch#nodeCode 同一个理由:
+            // 它是查表用的键,查不到就 400,没有任何一条路会把它当成文本存起来。
+            entry("UserAssertion#nodeCode", Reason.SERVER_ISSUED_ID),
             entry("TouchKind#label", Reason.SERVER_CONSTANT),
             entry("CaptureService.CaptureRequest#nodeCode", Reason.SERVER_ISSUED_ID),
             entry("CaptureService.CaptureRequest#sourceName", Reason.BOUNDED_UPSTREAM),

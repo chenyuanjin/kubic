@@ -1,0 +1,72 @@
+{
+  "_comment": [
+    "骨架层种子数据 —— 山东省考 · 行测 · 资料分析",
+    "",
+    "🔴 这个文件里只有三样东西:考点名称、层级关系、近五年频次统计。",
+    "   没有题干,没有解析,没有任何机构的课程内容。",
+    "   频次是【统计事实】(某考点近五年出现几次),不受汇编著作权保护 —— 见 docs/07。",
+    "   真题原文属于离线区,永远不进这个仓库,也不进线上库 —— 见 docs/07 与 docs/10 §5.1。",
+    "",
+    "考点命名为自行归纳,不沿用任何机构既有体系与措辞 —— R-07 / docs/04 §1.2。",
+    "",
+    "结构:模块 module → 题型 group → 考点 node,三层。不做第四层 —— 01 §2.5。"
+  ],
+  "subject": {
+    "code": "sd-xingce-ziliao",
+    "region": "山东省考",
+    "exam": "行测",
+    "module": "资料分析",
+    "recent5yWindow": "2021-2025",
+    "levels": ["模块", "题型", "考点"]
+  },
+  "groups": [
+    {
+      "code": "growth",
+      "name": "增长类",
+      "nodes": [
+        { "code": "growth-rate",      "name": "增长率计算",  "recent5yCount": 9 },
+        { "code": "growth-amount",    "name": "增长量计算",  "recent5yCount": 8 },
+        { "code": "base-value",       "name": "基期量计算",  "recent5yCount": 7 },
+        { "code": "interval-growth",  "name": "间隔增长率",  "recent5yCount": 6 },
+        { "code": "current-value",    "name": "现期量计算",  "recent5yCount": 5 },
+        { "code": "annual-avg-growth","name": "年均增长率",  "recent5yCount": 4 },
+        { "code": "mixed-growth",     "name": "混合增长率",  "recent5yCount": 2 }
+      ]
+    },
+    {
+      "code": "multiple",
+      "name": "倍数与比较",
+      "nodes": [
+        { "code": "multiple-calc",    "name": "倍数计算",    "recent5yCount": 5 },
+        { "code": "multiple-change",  "name": "倍数变化",    "recent5yCount": 3 },
+        { "code": "yoy-mom",          "name": "同比与环比",  "recent5yCount": 4 }
+      ]
+    },
+    {
+      "code": "effect",
+      "name": "效应类",
+      "nodes": [
+        { "code": "contribution-rate","name": "贡献率",      "recent5yCount": 3 },
+        { "code": "pull-growth",      "name": "拉动增长",    "recent5yCount": 3 }
+      ]
+    },
+    {
+      "code": "average-share",
+      "name": "平均与比重",
+      "nodes": [
+        { "code": "share-calc",       "name": "比重计算",    "recent5yCount": 8 },
+        { "code": "average-calc",     "name": "平均数计算",  "recent5yCount": 6 },
+        { "code": "share-change",     "name": "比重变化",    "recent5yCount": 5 }
+      ]
+    },
+    {
+      "code": "fast-math",
+      "name": "速算技巧",
+      "nodes": [
+        { "code": "truncate-divide",  "name": "截位直除",    "recent5yCount": 7 },
+        { "code": "feature-number",   "name": "特征数字法",  "recent5yCount": 4 },
+        { "code": "fraction-compare", "name": "分数比较",    "recent5yCount": 3 }
+      ]
+    }
+  ]
+}

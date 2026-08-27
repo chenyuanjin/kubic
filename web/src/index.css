@@ -1,0 +1,185 @@
+@import 'tailwindcss';
+
+/* ============================================================================
+   考点盲区 · 设计系统  风格 A「极客暗色 · 命令条驱动」
+   ----------------------------------------------------------------------------
+   色值来自设计稿 tokens.css,一次性搬进 @theme 变成 CSS 变量 + Tailwind 工具类。
+   组件里只写 bg-bg2 / text-t3 / border-hair 这样的 token 名,不写十六进制 ——
+   换主题只改这一块,不用翻 18 个组件。
+
+   骨架规则(违反即失去风格,不是审美问题):
+     1. 没有左侧固定菜单。导航靠 ⌘K 命令面板 + 分组行。
+     2. 没有面包屑。位置信息压进命令条左侧的 scope 段。
+     3. 没有卡片。信息靠 1px 发丝线分隔,不靠圆角容器。
+     4. 零阴影。box-shadow 只允许用于 inset 选中指示。
+     5. 圆角 ≤ 3px。唯一例外是状态点(圆形)。
+     6. 零 emoji。图标一律 CSS 绘制或 mono 字形(⌘ ↵ ⌥ ⇧)。
+     7. 字体强制配对:正文 Helvetica Neue / 苹方,数字与快捷键 SF Mono + tabular-nums。
+     8. 酸性绿 --color-acid 是唯一强调色,只给「当前主操作」和序号。
+        红 --color-red 只给弱 / 空白 / 危险 / 降级。
+     9. 快捷键徽标常驻,不是 hover 才出现。
+    10. 密度是优点。行高 29–34px,一屏看全 18 个考点。
+
+   第 4、5 条不是靠自觉:@theme 里把 --shadow-* 与 radius-md 以上全部置成 initial,
+   写 shadow-md / rounded-lg 会在构建期就没有这个类,越线是写不出来的。
+   ========================================================================== */
+
+@theme static {
+  /* —— 表面:从最凹到最凸 —— */
+  --color-bg: #0e0f11; /* 页面底 */
+  --color-bg2: #141518; /* 抬起:命令条 / 底栏 / hover */
+  --color-bg3: #0a0b0d; /* 压凹:分组头 / kbd / 代码块 */
+  --color-sel: #171a1f; /* 选中行 */
+
+  /* —— 发丝线 —— */
+  --color-hair: #232529;
+  --color-hair2: #2e3137; /* 需要更强分隔时,仍是 1px */
+
+  /* —— 文字三级 —— */
+  --color-tx: #e6e7ea;
+  --color-t2: #9ba0a8;
+  --color-t3: #61666e;
+
+  /* —— 唯一强调 + 唯一告警 —— */
+  --color-acid: #c9f24d;
+  --color-red: #ff6b5a;
+
+  /* —— 五态色。全部可由「有没有 / 几次 / 多久前」推出,与 NodeState 一一对应 —— */
+  --color-s-stable: #e6e7ea; /* 稳    练过且近期 */
+  --color-s-weak: #ff6b5a; /* 弱    练过但用户自填正确率低 */
+  --color-s-rusty: #61666e; /* 生疏  练过但 >30 天 */
+  --color-s-touch: #9ba0a8; /* 仅接触 听过看过,没练 */
+  --color-s-empty: #3a3e44; /* 空白  无任何记录 */
+
+  --color-track: #1b1d21; /* 计量条底槽 */
+
+  --font-sans: 'Helvetica Neue', 'PingFang SC', 'Hiragino Sans GB', system-ui, sans-serif;
+  --font-mono: 'SF Mono', Menlo, Consolas, 'Roboto Mono', monospace;
+
+  /* 圆角 ≤ 3px —— 更大的档位直接从工具类里删掉 */
+  --radius-xs: 2px;
+  --radius-sm: 3px;
+  --radius-md: initial;
+  --radius-lg: initial;
+  --radius-xl: initial;
+  --radius-2xl: initial;
+  --radius-3xl: initial;
+  --radius-4xl: initial;
+
+  /* 零阴影 —— 外阴影工具类全部删掉,只剩 shadow-[inset_…] 这种显式写法 */
+  --shadow-*: initial;
+  --drop-shadow-*: initial;
+  --text-shadow-*: initial;
+}
+
+@layer base {
+  /* Tailwind 4 的默认边框色是 currentColor;这里改回发丝线,
+     免得每处 border-b 都要再补一个 border-hair。 */
+  *,
+  ::before,
+  ::after {
+    border-color: var(--color-hair);
+  }
+
+  :root {
+    color-scheme: dark; /* 让原生控件(select 弹出层、滚动条)跟着暗色走 */
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  /* 手机浏览器的地址栏会伸缩,100% 取的是「大视口」——
+     于是底栏那一条会被地址栏盖住,而它上面写着数据是真的还是离线示例。
+     dvh 跟着可视区域走,这一条永远露着。 */
+  html {
+    height: 100dvh;
+  }
+
+  body {
+    margin: 0;
+    background: var(--color-bg);
+    color: var(--color-tx);
+    font: 13px / 1.6 var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    /* 一整屏应用,滚动发生在内部容器里 —— 窄屏也一样,只是滚的那个容器换了一个 */
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+
+  ::selection {
+    background: var(--color-acid);
+    color: var(--color-bg);
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+    color: inherit;
+    background: none;
+    border: none;
+    outline: none;
+  }
+
+  /* 焦点指示只能是 inset —— 零阴影那条规则不给外发光留口子 */
+  :focus-visible {
+    outline: none;
+    box-shadow: inset 0 0 0 1px var(--color-acid);
+  }
+
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-hair2);
+    border-radius: 2px;
+  }
+}
+
+/* ============================================================================
+   cmdk 的内部节点只能用属性选择器够到,所以这几条留在 CSS 里。
+   值仍然全部取自上面的 token,没有新色号。
+   ========================================================================== */
+[cmdk-list] {
+  overflow-y: auto;
+  max-height: min(52vh, 460px);
+}
+
+[cmdk-group-heading] {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 26px;
+  padding: 0 12px;
+  background: var(--color-bg3);
+  border-bottom: 1px solid var(--color-hair);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-t3);
+}
+
+/* 选中行:inset 左边条,这是唯一被允许的 box-shadow */
+[cmdk-item][data-selected='true'] {
+  background: var(--color-sel);
+  box-shadow: inset 2px 0 0 var(--color-acid);
+}
+
+[cmdk-item][data-disabled='true'] {
+  opacity: 0.55;
+}
+
+[cmdk-empty] {
+  padding: 18px 12px;
+  font-size: 12px;
+  color: var(--color-t3);
+}

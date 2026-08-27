@@ -10,22 +10,27 @@ import type {
   CreateRecordRequest,
   CreateRecordResponse,
   Dashboard,
+  RecordPageResponse,
   SummaryDto,
   SyllabusWriteResponse,
-  TimelineResponse,
   TreeResponse,
 } from './types'
 
 export const DASHBOARD_KEY = ['dashboard'] as const
 
 /**
- * 时间线一次要多少条。
+ * 逐条记录一次要多少条。
  *
- * 200 是服务端 `TimelineController` 的上限。要满额是因为每个考点的做题数由这批记录求和
- * (树接口不返回做题数),<b>取不满就得整体显示「—」</b> —— 见 derive.ts 的截断闸门。
- * 真到需要分页的量级时,该补的是服务端的 cursor(docs/10 §6.2),不是在这里悄悄多请求几次。
+ * 200 是服务端 `RecordPageResponse.MAX_LIMIT` 的值(参数名就叫 `limit`,默认 50)。
+ * 要满额是因为每个考点的做题数由这批记录求和(树接口不返回做题数),
+ * <b>取不满就得整体显示「—」</b> —— 见 derive.ts 的截断闸门。
+ * <p>
+ * 服务端的 cursor 分页已经有了(`hasMore` / `nextCursor`),但这里<b>仍然只拉第一页</b>:
+ * 一屏要么拿到全量、要么诚实地说「算不准」,在后台连翻几页拼一份「看起来是全量」的和,
+ * 恰好是这个闸门要挡的那件事。真到超过 200 条的量级,该改的是这一屏怎么承认自己算不准,
+ * 不是在这里多发几个请求。
  */
-const TIMELINE_LIMIT = 200
+const RECORDS_LIMIT = 200
 
 /**
  * 盲区榜一次要多少个。
@@ -48,21 +53,38 @@ const BLINDSPOT_TOP = 100
  *
  * <h2>路径逐条对着 server 侧的 @GetMapping</h2>
  *
- * 时间线在 `/api/timeline`,<b>不在 `/api/records`</b> —— 后者只有 `@PostMapping`,
- * GET 过去是 405。早先这里写的是 `GET /api/records`,后果是:后端跑得好好的,
- * 整屏也永远退回离线示例数据,而且理由写着「HTTP 405」,查起来像后端坏了。
+ * 逐条记录在 <b>`GET /api/records`</b>(cursor 分页,§6.2 采集线的读侧)。
+ * `/api/timeline` <b>不再是这条路</b>:它现在出的是按天/周分桶的聚合视图(§6.4),
+ * <b>响应体里一条 `items` 都没有</b>。
+ *
+ * <h3>这一段话已经反过来一次了,两次都是同一个坑</h3>
+ *
+ * 第一次:这里写的是 `GET /api/records`,而那时候那个控制器<b>只有 `@PostMapping`</b>,
+ * GET 过去是 405。后果是后端跑得好好的,整屏却永远退回离线示例数据,理由写着「HTTP 405」——
+ * 查起来像后端坏了。于是改成了 `/api/timeline`,并在这里留了那句「不在 `/api/records`」。
+ * <p>
+ * 第二次就是现在:`/api/records` 补上了 `@GetMapping`,`/api/timeline` 改成了聚合视图,
+ * <b>那句话整个反了过来</b>。而这一次的表现比 405 还难查 —— 请求会 <b>200</b>,
+ * `timeline.items` 是 `undefined`,炸在 derive.ts 的 `for...of` 里,
+ * 界面上仍旧是那句「已退回离线示例数据」,只是理由换成了一行 TypeError。
+ * <p>
+ * <b>两次的成因是同一个:这里的 URL 和响应形状都是手抄的,`tsc` 一个字都不校验</b> ——
+ * `getJson<T>` 里的 `T` 是断言不是校验,路径更是一个普通字符串。所以纪律有两条:
+ * 改这几行时对着 server 侧的 `@GetMapping` 和 `dto/` 一起看;
+ * <b>并且默认这段注释本身也会过期</b>,它已经过期过一次了。
  */
 async function fetchDashboard(): Promise<Dashboard> {
   try {
-    const [tree, summary, blindspots, timeline] = await Promise.all([
+    const [tree, summary, blindspots, recordPage] = await Promise.all([
       // 没有 withCoverage 开关 —— 一棵不带覆盖的树没有任何用处,服务端也没定义这个参数
       getJson<TreeResponse>('/syllabus/tree'),
       getJson<SummaryDto>('/coverage/summary'),
       getJson<BlindSpotsResponse>(`/coverage/blindspots?top=${BLINDSPOT_TOP}`),
-      getJson<TimelineResponse>(`/timeline?limit=${TIMELINE_LIMIT}`),
+      // 只传 limit,不传 cursor —— 不带 cursor 就是从最新的一条开始的第一页
+      getJson<RecordPageResponse>(`/records?limit=${RECORDS_LIMIT}`),
     ])
 
-    return toDashboard('live', tree, summary, blindspots, timeline)
+    return toDashboard('live', tree, summary, blindspots, recordPage)
   } catch (err) {
     // 🔴 不静默失败,也不假装是真数据:把原因原样带到界面上。
     return buildMockDashboard(describeError(err))

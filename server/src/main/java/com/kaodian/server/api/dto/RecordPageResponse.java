@@ -17,17 +17,18 @@ import java.util.List;
  *   <tr><td>契约</td><td>§6.2 采集</td><td>§6.4 查询</td></tr>
  *   <tr><td>给谁用</td><td><b>记录本身</b>:翻历史、找那条记错的删掉</td>
  *       <td><b>聚合视图</b>:按天/周看「这段时间碰过些什么」</td></tr>
- *   <tr><td>翻页</td><td>cursor,能一直往回翻</td><td>{@code limit} 截最近 N 条</td></tr>
+ *   <tr><td>翻页</td><td>cursor,能一直往回翻</td><td>{@code buckets} 往回给几格</td></tr>
+ *   <tr><td>出什么</td><td>一条一条的记录</td><td>一格一格的统计,<b>没有 items</b></td></tr>
  *   <tr><td>属于</td><td>采集这条线的读侧</td><td>查询那条线,与覆盖概览、盲区并列</td></tr>
  * </table>
  *
- * <b>合并成一个是错的</b>:聚合视图迟早要按天分桶、要带每天的覆盖增量,
+ * <b>合并成一个是错的</b>:聚合视图按天分桶、每格只出三个数,
  * 而删记录那个页面要的是一条一条、能翻到底。把两种需求塞进一个端点,
  * 结果是一堆互相排斥的查询参数,以及一个谁都不敢改的返回体。
  *
- * <p>⚠ 顺带记一笔:{@code /api/timeline} 今天返回的是<b>平铺的最近 N 条</b>,
- * 还没有做契约 §6.4 要的按天/周聚合。这一条<b>不在本轮范围内、也没有被顺手改掉</b> ——
- * 它是那个端点自己的欠账,不是这个端点的理由。
+ * <p>⚠ 这里原先记着一笔欠账:{@code /api/timeline} 曾经返回<b>平铺的最近 N 条</b>,
+ * 也就是在干这个端点的活,§6.4 要的按天/周聚合没人做。<b>那笔账已经还了</b> ——
+ * 见 {@link TimelineResponse}。
  *
  * <h2>为什么 cursor 不是 offset</h2>
  *
@@ -72,8 +73,10 @@ public record RecordPageResponse(
     /**
      * 每页条数的默认值与上限。
      *
-     * <p>与 {@code TimelineController} 的 50/200 保持一致,不是巧合也不是复制:
-     * 两个端点翻的是同一批记录,一屏该放多少条这件事没有理由在两处给出两个答案。
+     * <p>这两个数原先是「与 {@code TimelineController} 的 50/200 保持一致」——
+     * 那时候两个端点翻的是同一批记录。现在 {@code /api/timeline} 出的是格子不是条目
+     * (它的那对数在 {@link TimelineResponse#DEFAULT_BUCKETS}),<b>没有可对齐的东西了</b>:
+     * 「一屏放多少条记录」和「一次给多少格」是两个不相干的问题,凑成同一个数才是巧合。
      */
     public static final int DEFAULT_LIMIT = 50;
     public static final int MAX_LIMIT = 200;

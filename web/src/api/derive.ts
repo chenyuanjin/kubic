@@ -8,7 +8,7 @@ import type {
   SummaryDto,
   StateCountDto,
   NodeState,
-  TimelineResponse,
+  RecordPageResponse,
   TreeResponse,
 } from './types'
 
@@ -26,10 +26,10 @@ import type {
  *
  * 树接口(`NodeDto`)不返回做题数,那四个字段只在单点详情 `NodeDetailDto` 里有,
  * 而一屏 18 行不可能发 18 个详情请求(docs/10 §6.4:整棵树一次返回)。
- * 所以这两个数由时间线里<b>同一批原始记录</b>求和 —— 和 server 侧
+ * 所以这两个数由 `GET /api/records` 那一页里<b>同一批原始记录</b>求和 —— 和 server 侧
  * `CoverageService.compute` 逐行同一个写法:只累加 `practiced > 0` 的那些,不做四舍五入。
  * <p>
- * 但它有一个前提:拿到的记录必须是<b>全量</b>。时间线一旦被 limit 截断,求出来的和就偏小,
+ * 但它有一个前提:拿到的记录必须是<b>全量</b>。那一页一旦被 limit 截断,求出来的和就偏小,
  * 而偏小的正确率会把「稳」显示成「弱」—— 那是产品最没资格说的一句话。
  * 所以 {@link buildDrillIndex} 用 `returned === total` 当闸门,不满足就整体给 null,
  * 界面显示「—」并说明原因。<b>宁缺毋滥:算不准就不显示,不硬凑。</b>
@@ -45,14 +45,21 @@ interface Drill {
 }
 
 /**
+ * 闸门是 `returned === total`,<b>不是 `!page.hasMore`</b>。
+ *
+ * 端点换成 `/api/records` 之后这两个判据在第一页上恰好同真同假,但它们问的不是一件事:
+ * `hasMore` 说的是「这个游标之后还有没有」,而这里要的是「手上这批是不是<b>全部</b>」。
+ * 哪天这里带上 cursor 翻第二页,`hasMore` 会在最后一页变成 false,而那一页只有几条 ——
+ * 求和照样是错的,闸门却放行了。两个字段名都在,选错的那个不会报错,只会悄悄算偏。
+ *
  * @returns 记录全量时返回 `code → {practiced, correct}`;被截断时返回 `null`,
  *          调用方据此把三个字段全部置为「不知道」
  */
-function buildDrillIndex(timeline: TimelineResponse): Map<string, Drill> | null {
-  if (timeline.returned !== timeline.total) return null
+function buildDrillIndex(page: RecordPageResponse): Map<string, Drill> | null {
+  if (page.returned !== page.total) return null
 
   const byNode = new Map<string, Drill>()
-  for (const item of timeline.items) {
+  for (const item of page.items) {
     // 与 server 侧 Touch.hasDrill() 同一条判据:practiced > 0 才算一笔做题
     if (item.practiced === null || item.practiced <= 0) continue
     const acc = byNode.get(item.nodeCode) ?? { practiced: 0, correct: 0 }
@@ -98,16 +105,21 @@ function toNodeView(
   }
 }
 
-/** 四个响应 → 一屏。`source` 与 `offlineReason` 由调用方给,这里不猜。 */
+/**
+ * 四个响应 → 一屏。`source` 与 `offlineReason` 由调用方给,这里不猜。
+ *
+ * @param recordPage `GET /api/records` 的<b>第一页</b>。这里不接 `/api/timeline` 的聚合视图 ——
+ *                   那边出的是一格一格的统计,`items` 一条都没有,而这一层要的是逐条记录
+ */
 export function toDashboard(
   source: DataSource,
   tree: TreeResponse,
   summary: SummaryDto,
   blindspots: BlindSpotsResponse,
-  timeline: TimelineResponse,
+  recordPage: RecordPageResponse,
   offlineReason?: string,
 ): Dashboard {
-  const drills = buildDrillIndex(timeline)
+  const drills = buildDrillIndex(recordPage)
   const blindByCode = new Map(blindspots.items.map((b) => [b.code, b]))
 
   const groups: GroupView[] = tree.groups.map((g) => ({
@@ -132,7 +144,7 @@ export function toDashboard(
     blindspots: blindspots.items
       .map((b) => byCode.get(b.code))
       .filter((n): n is NodeView => n !== undefined),
-    records: timeline.items,
+    records: recordPage.items,
     drillsKnown: drills !== null,
   }
 }

@@ -36,7 +36,7 @@ import java.util.List;
  * <h2>为什么复用 {@link NodeDetailDto} / {@link TimelineItemDto} 而不新定义字段</h2>
  *
  * §6.5 要的是「字段名与 API 契约一致」。复用现成的 DTO 是让这句话<b>在编译期成立</b>的唯一办法:
- * {@code GET /api/timeline} 与导出里的一条记录长得一模一样,不是因为有人对齐过,
+ * {@code GET /api/records} 与导出里的一条记录长得一模一样,不是因为有人对齐过,
  * 是因为它们本来就是同一个 record。顺带地,红线扫描的白名单也不需要为导出新增一行 ——
  * 这份导出没有引入任何一个新的自由文本位置。
  *
@@ -49,7 +49,7 @@ import java.util.List;
  *                      docs/13 {@code R-49}:「归档可以无声刷高覆盖率」,
  *                      而三条对策之一就是「导出带完整归档清单」。少了这一段,
  *                      导出就成了那句无声的同谋
- * @param records       全部触达记录,<b>按发生时间升序</b>。时间线端点是倒序的(最近的在最上面),
+ * @param records       全部触达记录,<b>按发生时间升序</b>。{@code /api/records} 是倒序的(最近的在最上面),
  *                      那是屏幕的需要;一份存档按发生顺序读才连得起来
  */
 public record ExportResponse(

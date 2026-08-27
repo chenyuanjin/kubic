@@ -5,11 +5,11 @@ import type {
   Dashboard,
   GroupDto,
   NodeState,
+  RecordPageResponse,
   StateCountDto,
   SubjectDto,
   SummaryDto,
   TimelineItemDto,
-  TimelineResponse,
   TouchKind,
   TreeNodeDto,
   TreeResponse,
@@ -21,9 +21,11 @@ import type {
  * <h2>它扮演的是<b>服务端</b>,不是「另一份界面数据」</h2>
  *
  * 这个文件产出的是 `/syllabus/tree`、`/coverage/summary`、`/coverage/blindspots`、
- * `/timeline` 四个端点的<b>响应体</b>,然后走 {@link toDashboard} —— 和 live 分支同一条路。
+ * `/records` 四个端点的<b>响应体</b>,然后走 {@link toDashboard} —— 和 live 分支同一条路。
  * 这样做的理由很实在:如果 mock 直接拼视图模型,它就绕开了合成逻辑,
  * 于是「离线时好好的、接上后端就炸」这类事没有任何一层能拦住。<b>离线路径是 live 路径的排练。</b>
+ * 反过来也成立:live 那边换了端点(时间线从 `/timeline` 搬到 `/records`),
+ * <b>这里的形状必须当天跟着换</b> —— 两边一旦分叉,排练的就是另一出戏了。
  * 也因此,五态的中文名、名次、排序分在这里也由「服务端」给出,而不是留给界面去补。
  *
  * <h2>为什么值得在前端重算一遍,而不是塞一份写死的 JSON</h2>
@@ -221,7 +223,13 @@ function deriveState(items: TimelineItemDto[], now: number): NodeState {
 /* 四个端点的响应体                                                            */
 /* ========================================================================== */
 
-function buildTimeline(now: number): TimelineResponse {
+/**
+ * `GET /api/records` 的第一页。
+ *
+ * <b>不是 `/api/timeline`</b>:那个端点出的是按天/周分桶的聚合视图,一条 `items` 都没有,
+ * 而这一屏(最近记录、来源名、每个考点的做题数)要的全是逐条记录。
+ */
+function buildRecordPage(now: number): RecordPageResponse {
   const groupOf = new Map(SEED.flatMap((g) => g.nodes.map((n) => [n.code, g])))
   const nameOf = new Map(SEED.flatMap((g) => g.nodes.map((n) => [n.code, n.name])))
 
@@ -246,13 +254,16 @@ function buildTimeline(now: number): TimelineResponse {
     }
   }).sort((a, b) => Date.parse(b.occurredAt) - Date.parse(a.occurredAt)) // 最近的在最上面
 
-  // returned === total:这份示例数据永远是全量,不会触发 derive.ts 的截断闸门
-  return { total: items.length, returned: items.length, items }
+  // returned === total:这份示例数据永远是全量,不会触发 derive.ts 的截断闸门。
+  // 也因此 hasMore 恒为 false、nextCursor 恒为 null —— 8 条记录一页装得下,没有第二页。
+  // 这两个字段照样给出来:mock 扮演的是服务端,少一个字段就等于替 live 分支
+  // 少排练了一种可能出现的响应(比如「拿到的是残缺的一页」该怎么显示)。
+  return { total: items.length, returned: items.length, hasMore: false, nextCursor: null, items }
 }
 
-function buildGroups(timeline: TimelineResponse, now: number): GroupDto[] {
+function buildGroups(recordPage: RecordPageResponse, now: number): GroupDto[] {
   const byNode = new Map<string, TimelineItemDto[]>()
-  for (const t of timeline.items) {
+  for (const t of recordPage.items) {
     const list = byNode.get(t.nodeCode)
     if (list) list.push(t)
     else byNode.set(t.nodeCode, [t])
@@ -356,10 +367,10 @@ function buildBlindSpots(groups: GroupDto[], top: number): BlindSpotsResponse {
  * @param top 与 live 分支请求的 `?top=` 保持一致,免得两边的名次范围不同
  */
 export function buildMockDashboard(offlineReason: string, now: number = Date.now(), top = 100): Dashboard {
-  const timeline = buildTimeline(now)
-  const groups = buildGroups(timeline, now)
+  const recordPage = buildRecordPage(now)
+  const groups = buildGroups(recordPage, now)
   const summary = summarize(groups)
   const tree: TreeResponse = { subject: SUBJECT, summary, groups }
 
-  return toDashboard('mock', tree, summary, buildBlindSpots(groups, top), timeline, offlineReason)
+  return toDashboard('mock', tree, summary, buildBlindSpots(groups, top), recordPage, offlineReason)
 }

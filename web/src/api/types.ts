@@ -151,11 +151,17 @@ export interface BlindSpotsResponse {
 }
 
 /* ========================================================================== */
-/* GET /api/timeline                 → server: dto/TimelineResponse.java       */
+/* GET /api/records                  → server: dto/RecordPageResponse.java     */
 /* ========================================================================== */
 
 /**
- * 时间线上的一条 —— server: dto/TimelineItemDto.java。
+ * 一条原始记录 —— server: dto/TimelineItemDto.java。
+ *
+ * ⚠ <b>名字里的 Timeline 已经不指 `/api/timeline` 了。</b>它现在只出现在采集线的响应里
+ * (`GET /api/records`、`POST /api/records` 及其批量版);`/api/timeline` 改成按天/周的聚合视图之后
+ * 一条 items 都不出。server 侧<b>刻意没有跟着改名</b>(理由写在那个 record 的 javadoc 里:
+ * 一次纯改名的提交混进别的改动里,得到的是一份没人看得清的 diff),所以这边也不改 ——
+ * <b>两边同时改才叫改名</b>,单边改只是又多一处得对照着看的差异。
  *
  * 🔴 这里没有内容字段,一个都没有:没有 content / text / transcript / imageUrl。
  * 语音的转写文本用完即弃,原图送识别一次即删,它们从来没有进过任何一条记录。
@@ -182,14 +188,36 @@ export interface TimelineItemDto {
 }
 
 /**
- * server: dto/TimelineResponse.java。
+ * `GET /api/records` 的一页 —— server: dto/RecordPageResponse.java。
  *
- * `total` 是行为层记录总数,`returned` 是本次截取的条数。
+ * `total` 是行为层记录<b>总数</b>(不是本页的),`returned` 是本页几条。
  * <b>两个数不等,就说明这一屏拿到的记录是残缺的</b> —— 见 derive.ts 里那个截断闸门。
+ *
+ * <h2>`hasMore` / `nextCursor`:字段照抄,界面这一轮不翻页</h2>
+ *
+ * 一屏要的是<b>全量记录</b>(每个考点的做题数要对这批记录求和),不是一页一页往回翻;
+ * 拿不全时正确的反应是显示「—」,不是在后台悄悄多请求几次拼起来(见 queries.ts 的同一条)。
+ * 所以这两个字段今天没有调用方,<b>但照样写在这里</b> —— 这份文件对着的是服务端的响应体,
+ * 不是界面今天用到的那个子集;按「用不到就不写」裁字段,下一个人得去翻 Java 才知道还有什么。
+ * <p>
+ * 🔴 判「还有没有更旧的」用 `hasMore`,<b>不要用 `nextCursor !== null`</b>:
+ * 两者含义相同是实现细节,而那个布尔是契约(server 侧那个 record 的 javadoc 明写了这条)。
+ *
+ * <h2>`/api/timeline` 在这份文件里<b>没有类型</b>,是故意的</h2>
+ *
+ * 那个端点现在返回按天/周分桶的聚合视图(docs/10 §6.4,`{granularity, zone, from, to, buckets}`),
+ * <b>里面一条 items 都没有</b>。界面今天没有按天/周的图,把它抄下来等于凭空加一个功能。
+ * 哪天真要画那张图了,再照着 `dto/TimelineResponse.java` 抄一份新类型进来,
+ * 而不是把它和这个分页形状揉成一个 —— 两种需求塞进一个类型,结果是一堆互相排斥的可选字段。
  */
-export interface TimelineResponse {
+export interface RecordPageResponse {
   total: number
   returned: number
+  /** 还有没有更旧的。记录是倒序的,所以「下一页」指的是更早的那些。 */
+  hasMore: boolean
+  /** 下一页从哪儿接着翻;没有更多时为 null。服务端签发,客户端<b>不解也不拼</b>,原样回传。 */
+  nextCursor: string | null
+  /** 本页的记录,<b>按发生时间倒序</b>,最近的在最前。 */
   items: TimelineItemDto[]
 }
 

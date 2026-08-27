@@ -168,8 +168,9 @@ class SyllabusAdminApiTest {
                 .andExpect(jsonPath("$.practiced").value(12))
                 .andExpect(jsonPath("$.state").value("STABLE"));
 
-        // 时间线上那条老记录也跟着显示新名字 —— 它本来就是按 code 反查的
-        mockMvc.perform(get("/api/timeline"))
+        // 记录列表上那条老记录也跟着显示新名字 —— 它本来就是按 code 反查的。
+        // 逐条的记录读 /api/records(§6.2);/api/timeline 现在只出按天/周的格子(§6.4)
+        mockMvc.perform(get("/api/records"))
                 .andExpect(jsonPath("$.total").value(8))
                 .andExpect(jsonPath("$.items[0].nodeCode").value("growth-rate"))
                 .andExpect(jsonPath("$.items[0].nodeName").value("增长率(我自己的说法)"));
@@ -207,13 +208,13 @@ class SyllabusAdminApiTest {
                 .andExpect(jsonPath("$.total").value(18))
                 .andExpect(jsonPath("$.covered").value(8))
                 .andExpect(jsonPath("$.percent").value(44));
-        mockMvc.perform(get("/api/timeline")).andExpect(jsonPath("$.total").value(8));
+        mockMvc.perform(get("/api/records")).andExpect(jsonPath("$.total").value(8));
     }
 
     @Test
     @DisplayName("🔴 出路一:先把记录搬到别的考点,再删。记录总数不变,时间戳不重置")
     void moveRecordsThenDelete() throws Exception {
-        mockMvc.perform(get("/api/timeline"))
+        mockMvc.perform(get("/api/records"))
                 .andExpect(jsonPath("$.items[0].nodeCode").value("growth-rate"))
                 .andExpect(jsonPath("$.items[0].practiced").value(12));
 
@@ -229,7 +230,7 @@ class SyllabusAdminApiTest {
                 .andExpect(jsonPath("$.summary.covered").value(8))
                 .andExpect(jsonPath("$.summary.percent").value(44));
 
-        mockMvc.perform(get("/api/timeline"))
+        mockMvc.perform(get("/api/records"))
                 .andExpect(jsonPath("$.total").value(8))                       // 🔴 一条都没丢
                 .andExpect(jsonPath("$.items[0].nodeCode").value("average-calc"))
                 .andExpect(jsonPath("$.items[0].practiced").value(12));
@@ -259,7 +260,7 @@ class SyllabusAdminApiTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("SAME_NODE"));
 
-        mockMvc.perform(get("/api/timeline")).andExpect(jsonPath("$.total").value(8));
+        mockMvc.perform(get("/api/records")).andExpect(jsonPath("$.total").value(8));
     }
 
     /**
@@ -297,7 +298,7 @@ class SyllabusAdminApiTest {
                 .andExpect(jsonPath("$.code").value("NODE_NOT_FOUND"));
 
         // 两次都被拒,记录一条没动
-        mockMvc.perform(get("/api/timeline"))
+        mockMvc.perform(get("/api/records"))
                 .andExpect(jsonPath("$.total").value(8))
                 .andExpect(jsonPath("$.items[0].nodeCode").value("growth-rate"));
     }
@@ -319,7 +320,7 @@ class SyllabusAdminApiTest {
         mockMvc.perform(get("/api/syllabus/nodes/growth-rate")).andExpect(status().isNotFound());
 
         // 但历史还在,而且还有名字 —— 归档不是「这段历史不存在了」
-        mockMvc.perform(get("/api/timeline"))
+        mockMvc.perform(get("/api/records"))
                 .andExpect(jsonPath("$.total").value(8))
                 .andExpect(jsonPath("$.items[0].nodeCode").value("growth-rate"))
                 .andExpect(jsonPath("$.items[0].nodeName").value("增长率计算"));

@@ -37,7 +37,7 @@ import java.time.format.DateTimeFormatter;
  *   <tr><th>承诺</th><th>落点</th></tr>
  *   <tr><td><b>无删减</b></td>
  *       <td>{@link ExportResponse#of} 直接吃 {@code snapshot.touches()} ——
- *           没有 limit、没有 cursor、没有过滤。对比 {@code /api/timeline} 有 {@code limit}、
+ *           没有 limit、没有 cursor、没有过滤。对比 {@code /api/records} 有 {@code limit}、
  *           {@code /api/coverage/blindspots} 有 {@code top ≤ 100}:
  *           <b>那两个是「先看这些」,这个是「全都给我」</b></td></tr>
  *   <tr><td><b>无水印</b></td>

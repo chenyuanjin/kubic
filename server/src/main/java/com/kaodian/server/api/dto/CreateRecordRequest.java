@@ -69,7 +69,7 @@ public record CreateRecordRequest(
         TouchKind kind,
 
         @NotBlank(message = "必须给出来源名")
-        @Size(max = 60, message = "来源名最长 60 个字符 —— 它是个名字,不是放内容的地方")
+        @Size(max = MAX_SOURCE_NAME_LENGTH, message = "来源名最长 60 个字符 —— 它是个名字,不是放内容的地方")
         String sourceName,
 
         @NotBlank(message = "必须挂到一个考点上")
@@ -88,6 +88,27 @@ public record CreateRecordRequest(
                 message = "去重键最长 64 个字符 —— 它是个 id,不是放内容的地方")
         String clientToken
 ) {
+
+    /**
+     * 来源名的长度上限 —— <b>整个仓库只有这一个数</b>。
+     *
+     * <h2>为什么从字面量提成常量</h2>
+     *
+     * 原来这个 60 只写在下面那个 {@code @Size} 里,够用是因为当时只有<b>写入</b>这一侧需要它。
+     * 现在读侧也需要:{@link BucketSourceDto} 要把来源名再吐出去,而
+     * {@code NoStemFieldTest} 逼着那个字段说出自己的上限。
+     * <p>
+     * 在下游再敲一遍 60 就会出现<b>两个数</b>,而两个数迟早对不上 ——
+     * 到那时真正生效的是小的那个,没人说得清是哪个。所以两处引用同一个常量:
+     * 这不是「写了两遍」,是<b>编译期只有一个数</b>。做法与 {@link Touch#MAX_CLIENT_TOKEN_LENGTH}
+     * 完全一样,那里也写着同一段理由。
+     *
+     * <h2>为什么是 60</h2>
+     *
+     * 「粉笔 · 资料分析系统班 L12」二十来个字。60 是宽裕的,
+     * 同时<b>挡住了把一整段题干塞进「来源名」这条最省事的绕路</b>。
+     */
+    public static final int MAX_SOURCE_NAME_LENGTH = 60;
 
     /**
      * 两个数要么都给,要么都不给。

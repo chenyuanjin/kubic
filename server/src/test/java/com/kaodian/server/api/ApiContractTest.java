@@ -33,8 +33,14 @@ import tools.jackson.databind.json.JsonMapper;
 
 import java.lang.reflect.RecordComponent;
 import java.time.Clock;
+import java.time.DayOfWeek;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
+import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -43,6 +49,7 @@ import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -83,6 +90,15 @@ class ApiContractTest {
 
     @Autowired
     private InMemoryTouchStore store;
+
+    /**
+     * 时间线分桶用的时区 —— 与 {@code kaodian.api.timeline.zone} 的默认值同一个。
+     *
+     * <p>这里<b>写死</b>而不是从配置读:这个常量正是被验的那件事。
+     * 从配置读的话,有人把配置改成 UTC 之后,测试会跟着改口径然后照样绿 ——
+     * 一条跟着被测对象一起走的断言,和一条被注释掉的断言,外观是一样的。
+     */
+    private static final ZoneId BEIJING = ZoneId.of("Asia/Shanghai");
 
     @BeforeEach
     void resetToContract() {
@@ -217,24 +233,234 @@ class ApiContractTest {
                 .andExpect(jsonPath("$.requestedTop").value(20));
     }
 
+    // ---------------------------------------------------------------- 时间线聚合(§6.4)
+
+    /**
+     * 契约 §6.4 那一行是「时间线聚合 · 按天/周聚合触达」。
+     *
+     * <p>这一条钉的是<b>它不再是平铺的最近 N 条</b> —— 那是 {@code GET /api/records} 的活
+     * (§6.2),两个端点做同一件事的时候,没做的那件事没有任何测试会提起。
+     */
     @Test
-    @DisplayName("🔴 GET /api/timeline —— 只有来源名、时间、方式、考点,没有任何内容字段")
-    void timelineCarriesNoContent() throws Exception {
+    @DisplayName("GET /api/timeline —— 出的是格子不是条目,默认按天 30 格")
+    void timelineAggregatesIntoBucketsInsteadOfListingRecords() throws Exception {
         mockMvc.perform(get("/api/timeline"))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$.granularity").value("DAY"))
+                .andExpect(jsonPath("$.granularityLabel").value("按天"))
+                .andExpect(jsonPath("$.zone").value("Asia/Shanghai"))
+                .andExpect(jsonPath("$.buckets.length()").value(30))
+                // 🔴 一条 items 都没有:这个端点不再是 /api/records 的第二份实现
+                .andExpect(jsonPath("$.items").doesNotExist())
+                .andExpect(jsonPath("$.returned").doesNotExist())
+                // 8 条记录里,32 天前与 33 天前那两条落在 30 格窗口之外 ——
+                // 它们仍然计进 total,只是不属于任何一格
                 .andExpect(jsonPath("$.total").value(8))
-                .andExpect(jsonPath("$.returned").value(8))
-                // 倒序:最近发生的在最上面(growth-rate 是「今天」那条)
-                .andExpect(jsonPath("$.items[0].nodeCode").value("growth-rate"))
-                .andExpect(jsonPath("$.items[0].kind").value("DRILL"))
-                .andExpect(jsonPath("$.items[0].kindLabel").value("记做题"))
-                .andExpect(jsonPath("$.items[0].sourceName").value("粉笔 · 资料分析系统班 L12"))
-                .andExpect(jsonPath("$.items[0].nodeName").value("增长率计算"))
-                .andExpect(jsonPath("$.items[0].occurredAt").isString())   // ISO-8601,不是 epoch 数字
-                .andExpect(jsonPath("$.items[0].content").doesNotExist())
-                .andExpect(jsonPath("$.items[0].text").doesNotExist())
-                .andExpect(jsonPath("$.items[0].transcript").doesNotExist())
-                .andExpect(jsonPath("$.items[0].imageUrl").doesNotExist());
+                .andExpect(jsonPath("$.counted").value(6))
+                // 最后一格是今天(升序:旧 → 新)。growth-rate 那条就记在今天
+                .andExpect(jsonPath("$.buckets[29].start").value(LocalDate.now(BEIJING).toString()))
+                .andExpect(jsonPath("$.buckets[29].end").value(LocalDate.now(BEIJING).toString()))
+                .andExpect(jsonPath("$.buckets[29].touchCount").value(1))
+                .andExpect(jsonPath("$.buckets[29].nodeCount").value(1))
+                .andExpect(jsonPath("$.buckets[29].sources.length()").value(1))
+                .andExpect(jsonPath("$.buckets[29].sources[0].sourceName")
+                        .value("粉笔 · 资料分析系统班 L12"))
+                .andExpect(jsonPath("$.buckets[29].sources[0].touchCount").value(1))
+                // 🔴 6 天前那一格是空的,而它照样在数组里:
+                // 只吐有记录的格子,会让「连着几天没记」和「每天都记」在图上长得一模一样
+                .andExpect(jsonPath("$.buckets[23].start")
+                        .value(LocalDate.now(BEIJING).minusDays(6).toString()))
+                .andExpect(jsonPath("$.buckets[23].touchCount").value(0))
+                .andExpect(jsonPath("$.buckets[23].nodeCount").value(0))
+                .andExpect(jsonPath("$.buckets[23].sources.length()").value(0));
+    }
+
+    /**
+     * 🔴 {@code R-05} 在聚合视图上的形状 —— <b>只做统计,不做判断</b>。
+     *
+     * <p>聚合是这条红线最容易失守的地方:相邻两格的数一旦并排摆着,
+     * 「这周比上周多了 40%」只差一次减法。<b>字段名就是措辞</b> ——
+     * 契约里出现 {@code improved} 的那天,前端不写「进步了」反倒成了额外的克制。
+     * <p>
+     * 顺带把 {@code R-01} 也钉上:整份响应体里连一个能装下内容的字段都没有。
+     */
+    @Test
+    @DisplayName("🔴 R-05:每一格只有三个数,没有趋势、没有正确率、没有一个字的评价")
+    void timelineBucketsCarryStatisticsOnlyNeverAJudgement() throws Exception {
+        String body = mockMvc.perform(get("/api/timeline"))
+                .andExpect(status().isOk())
+                // 判断类字段:一个都不许有
+                .andExpect(jsonPath("$.buckets[29].trend").doesNotExist())
+                .andExpect(jsonPath("$.buckets[29].changeVsPrevious").doesNotExist())
+                .andExpect(jsonPath("$.buckets[29].streak").doesNotExist())
+                .andExpect(jsonPath("$.buckets[29].improved").doesNotExist())
+                .andExpect(jsonPath("$.buckets[29].best").doesNotExist())
+                .andExpect(jsonPath("$.buckets[29].worst").doesNotExist())
+                // 「对不对」那一侧:正确率进了桶,「这周退步了」就只差一次减法
+                // (docs/10 §5.2 撤掉 practice_log 时给的就是这条理由)
+                .andExpect(jsonPath("$.buckets[29].accuracy").doesNotExist())
+                .andExpect(jsonPath("$.buckets[29].practiced").doesNotExist())
+                .andExpect(jsonPath("$.buckets[29].correct").doesNotExist())
+                // 整份响应上也没有平均数 —— 它看着中立,唯一的用途是拿今天去和它比
+                .andExpect(jsonPath("$.averagePerDay").doesNotExist())
+                .andExpect(jsonPath("$.mostActiveBucket").doesNotExist())
+                // 🔴 R-01:没有任何能装下内容的字段
+                .andExpect(jsonPath("$.buckets[29].content").doesNotExist())
+                .andExpect(jsonPath("$.buckets[29].transcript").doesNotExist())
+                .andReturn().getResponse().getContentAsString();
+
+        for (String judgement : List.of("进步", "退步", "薄弱", "坚持", "打卡", "掌握", "建议")) {
+            assertFalse(body.contains(judgement),
+                    "聚合视图里出现了「" + judgement + "」—— 产品只报「有没有、几次、多久前」(R-05)");
+        }
+    }
+
+    /**
+     * 🔴 时区那条决定的落点。
+     *
+     * <p>用户说的「今天」是北京时间的今天。按 UTC 切,<b>北京时间 0 点到 8 点记的那几笔
+     * 会被算进「昨天」</b> —— 用户刚记完就翻开时间线,看到的是「昨天 1 条、今天 0 条」。
+     * 这与短信频控里「日按哪个时区算」是同一条决定
+     * ({@code kaodian.auth.sms.zone}:「用户说的『明天』是北京时间的明天」)。
+     */
+    @Test
+    @DisplayName("🔴 按北京时间切「一天」:凌晨 0:30 记的那笔算今天,不算昨天")
+    void dayBucketsFollowBeijingMidnightNotUtc() throws Exception {
+        LocalDate today = LocalDate.now(BEIJING);
+        ZonedDateTime justAfterMidnight = today.atStartOfDay(BEIJING).plusMinutes(30);
+
+        // 这一句是上面那个断言的前提:这个时刻在 UTC 眼里【确实是昨天】。
+        // 前提一旦不成立(比如有人把 BEIJING 改成 UTC),下面那条断言就会安安静静地假过。
+        assertNotEquals(today, LocalDate.ofInstant(justAfterMidnight.toInstant(), ZoneOffset.UTC),
+                "北京时间 0:30 在 UTC 下必须落在前一天,否则这个测试什么都没验");
+
+        store.reset(List.of(at("t-midnight", "growth-rate", "地铁上", justAfterMidnight)));
+
+        mockMvc.perform(get("/api/timeline").param("buckets", "2"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.buckets.length()").value(2))
+                .andExpect(jsonPath("$.buckets[1].start").value(today.toString()))
+                .andExpect(jsonPath("$.buckets[1].touchCount").value(1))
+                .andExpect(jsonPath("$.buckets[0].start").value(today.minusDays(1).toString()))
+                .andExpect(jsonPath("$.buckets[0].touchCount").value(0))
+                .andExpect(jsonPath("$.counted").value(1));
+    }
+
+    /**
+     * 🔴 周从周一起算,而且是<b>日历周</b>不是「最近 7 天」。
+     *
+     * <p>滑动窗口每天都在挪,于是同一段历史今天看和明天看是两组不同的数 ——
+     * 而「几次」必须是一个问两遍答案一样的数(01 §2.2)。
+     */
+    @Test
+    @DisplayName("granularity=week —— 周一起算,周日那条落在上一格")
+    void weekBucketsAreCalendarWeeksStartingMonday() throws Exception {
+        LocalDate thisMonday = LocalDate.now(BEIJING).with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+
+        store.reset(List.of(
+                at("t-mon", "growth-rate", "粉笔 · 资料分析系统班 L12",
+                        thisMonday.atStartOfDay(BEIJING).plusHours(9)),
+                at("t-sun", "average-calc", "中公 · 资料分析专项",
+                        thisMonday.minusDays(1).atStartOfDay(BEIJING).plusHours(23))));
+
+        mockMvc.perform(get("/api/timeline").param("granularity", "week").param("buckets", "4"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.granularity").value("WEEK"))
+                .andExpect(jsonPath("$.granularityLabel").value("按周"))
+                .andExpect(jsonPath("$.buckets.length()").value(4))
+                .andExpect(jsonPath("$.from").value(thisMonday.minusWeeks(3).toString()))
+                // ⚠ to 可能是未来的日期:本周还没过完。截到今天会让最后一格比别的格子窄,
+                // 而一根宽度不等的柱子在图上直接就是误读
+                .andExpect(jsonPath("$.to").value(thisMonday.plusDays(6).toString()))
+                .andExpect(jsonPath("$.buckets[3].start").value(thisMonday.toString()))
+                .andExpect(jsonPath("$.buckets[3].end").value(thisMonday.plusDays(6).toString()))
+                .andExpect(jsonPath("$.buckets[3].touchCount").value(1))
+                // 上周日 23:00 那条 —— 只差一小时,但它是上一格
+                .andExpect(jsonPath("$.buckets[2].start").value(thisMonday.minusWeeks(1).toString()))
+                .andExpect(jsonPath("$.buckets[2].touchCount").value(1))
+                .andExpect(jsonPath("$.counted").value(2));
+    }
+
+    @Test
+    @DisplayName("一格里数的是「几条」和「几个不同考点」,两个数不是一回事")
+    void bucketCountsDistinctNodesSeparatelyFromRecords() throws Exception {
+        ZonedDateTime todayNoon = LocalDate.now(BEIJING).atStartOfDay(BEIJING).plusHours(12);
+        store.reset(List.of(
+                at("t-a", "growth-rate", "粉笔 · 资料分析系统班 L12", todayNoon),
+                at("t-b", "growth-rate", "粉笔 · 资料分析系统班 L12", todayNoon.plusMinutes(10)),
+                at("t-c", "average-calc", "粉笔 · 资料分析系统班 L12", todayNoon.plusMinutes(20))));
+
+        mockMvc.perform(get("/api/timeline").param("buckets", "1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.buckets[0].touchCount").value(3))
+                .andExpect(jsonPath("$.buckets[0].nodeCount").value(2));
+    }
+
+    /**
+     * 来源分布的顺序必须是<b>确定的</b>。
+     *
+     * <p>它是从一个 {@code HashMap} 折出来的,而 {@code HashMap} 的迭代顺序不是承诺 ——
+     * 不显式排序的话,同一份数据两次请求可以给出两种顺序,前端的图会自己抖起来。
+     * 并列也必须打破:只按条数排,两个 1 条的来源仍然是随机序。
+     */
+    @Test
+    @DisplayName("来源分布按条数倒序,并列按名字 —— 同一份数据两次请求同序")
+    void sourceBreakdownIsOrderedByCountThenName() throws Exception {
+        ZonedDateTime todayNoon = LocalDate.now(BEIJING).atStartOfDay(BEIJING).plusHours(12);
+        List<Touch> seed = new ArrayList<>();
+        for (int i = 0; i < 3; i++) {
+            seed.add(at("t-fb-" + i, "growth-rate", "粉笔 · 资料分析系统班 L12", todayNoon.plusMinutes(i)));
+        }
+        seed.add(at("t-zg", "average-calc", "中公 · 资料分析专项", todayNoon.plusHours(1)));
+        seed.add(at("t-bz", "average-calc", "B站 · 资料分析技巧", todayNoon.plusHours(2)));
+        store.reset(seed);
+
+        mockMvc.perform(get("/api/timeline").param("buckets", "1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.buckets[0].sources.length()").value(3))
+                .andExpect(jsonPath("$.buckets[0].sources[0].sourceName")
+                        .value("粉笔 · 资料分析系统班 L12"))
+                .andExpect(jsonPath("$.buckets[0].sources[0].touchCount").value(3))
+                // 并列 1 条 —— 按名字排,'B'(0x42)在 '中'(0x4E2D)前面
+                .andExpect(jsonPath("$.buckets[0].sources[1].sourceName").value("B站 · 资料分析技巧"))
+                .andExpect(jsonPath("$.buckets[0].sources[2].sourceName").value("中公 · 资料分析专项"));
+    }
+
+    @Test
+    @DisplayName("🔴 不认识的 granularity → 400,而且报错里不回显整段原文")
+    void unknownGranularityIsRejectedWithoutEchoingIt() throws Exception {
+        mockMvc.perform(get("/api/timeline").param("granularity", "month"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("UNKNOWN_GRANULARITY"));
+
+        String pastedStem = "2023 年全国粮食总产量为 13908 亿斤,比上年增加 177 亿斤".repeat(40);
+        String body = mockMvc.perform(get("/api/timeline").param("granularity", pastedStem))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("UNKNOWN_GRANULARITY"))
+                .andReturn().getResponse().getContentAsString();
+        assertTrue(body.length() < pastedStem.length(),
+                "granularity 是查询参数,没有 @Size 管得着它 —— 回声必须自己截断");
+
+        // 大小写不敏感:一次大小写打错变成 400 没有任何好处(与 /api/export 的 format 同一条)
+        mockMvc.perform(get("/api/timeline").param("granularity", "Day"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.granularity").value("DAY"));
+        mockMvc.perform(get("/api/timeline").param("granularity", "WEEK"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.granularity").value("WEEK"));
+    }
+
+    @Test
+    @DisplayName("buckets 越界被拒;默认 30")
+    void timelineBucketsIsValidated() throws Exception {
+        mockMvc.perform(get("/api/timeline").param("buckets", "0"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
+        mockMvc.perform(get("/api/timeline").param("buckets", "367"))
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(get("/api/timeline"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.buckets.length()").value(30));
     }
 
     // ---------------------------------------------------------------- 采集
@@ -677,8 +903,13 @@ class ApiContractTest {
                 .andExpect(jsonPath("$.items[0].content").doesNotExist())
                 .andExpect(jsonPath("$.items[0].transcript").doesNotExist());
 
-        // §6.4 的聚合视图仍然在,两个端点各管各的(见 RecordPageResponse 的 javadoc)
-        mockMvc.perform(get("/api/timeline")).andExpect(status().isOk());
+        // §6.4 的聚合视图仍然在,而且【出的不是同一种东西】:那边是格子,这边是条目。
+        // 只断言它还回 200 是不够的 —— 两个端点又做成同一件事的时候,它照样回 200
+        // (见 RecordPageResponse 的 javadoc)
+        mockMvc.perform(get("/api/timeline"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.buckets").isArray())
+                .andExpect(jsonPath("$.items").doesNotExist());
     }
 
     @Test
@@ -1015,6 +1246,11 @@ class ApiContractTest {
         ts.add(new Touch("t-share-change", "share-change",
                 "粉笔 · 资料分析系统班 L12", TouchKind.VOICE, now.minus(Duration.ofDays(5)), null));
         return ts;
+    }
+
+    /** 聚合测试用的一条记录 —— 时刻按北京时间给,因为要验的就是「这一笔算哪一天」。 */
+    private static Touch at(String id, String node, String source, ZonedDateTime when) {
+        return new Touch(id, node, source, TouchKind.MANUAL, when.toInstant(), null);
     }
 
     private static void drill(List<Touch> ts, Instant now, String node, String source,

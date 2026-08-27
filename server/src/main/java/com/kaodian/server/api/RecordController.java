@@ -258,7 +258,9 @@ public class RecordController {
      * <b>那一条是 §6.4 的聚合视图,这一条是采集线的读侧</b>,两个都留着。
      *
      * @param cursor 上一页返回的 {@code nextCursor};第一页不传
-     * @param limit  每页几条。默认 50,上限 200 —— 与 {@code /api/timeline} 同一组数
+     * @param limit  每页几条。默认 50,上限 200。
+     *               <b>这两个数不再与 {@code /api/timeline} 共享</b> —— 那边改成聚合视图之后已经没有
+     *               {@code limit} 了,它按 {@code buckets} 数格子。两处从此各定各的,别再当成一组数改。
      */
     @GetMapping
     public RecordPageResponse list(

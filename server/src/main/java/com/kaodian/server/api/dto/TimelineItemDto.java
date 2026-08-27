@@ -6,7 +6,17 @@ import com.kaodian.server.syllabus.Syllabus;
 import java.time.Instant;
 
 /**
- * 时间线上的一条 —— 「你什么时候、从哪个来源、以什么方式碰过哪个考点」。
+ * 一条原始记录 —— 「你什么时候、从哪个来源、以什么方式碰过哪个考点」。
+ *
+ * <h2>⚠ 名字里的 Timeline 已经不指 {@code /api/timeline} 了</h2>
+ *
+ * 这条 DTO 现在只出现在<b>采集线</b>的响应里({@code GET /api/records}、
+ * {@code POST /api/records} 及其批量版)。{@code /api/timeline} 改成 §6.4 的聚合视图之后
+ * 一条 {@code items} 都不出了,见 {@link TimelineResponse}。
+ * <p>
+ * <b>没有跟着改名</b>,是因为改名要动 {@code RecordController} 与前端的类型定义,
+ * 而那两处正被别的改动占着 —— 一次纯改名的提交混进去,得到的是一份没人看得清的 diff。
+ * 记在这里,别让下一个人以为它还挂在那个端点上。
  *
  * <h2>🔴 这里没有内容字段,一个都没有</h2>
  *

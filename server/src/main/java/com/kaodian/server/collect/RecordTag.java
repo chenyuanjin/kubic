@@ -133,13 +133,22 @@ public record RecordTag(
      * <p>{@code confirmedAt} 直接取记录的发生时刻:用户在采集时<b>亲手从树里挑了这个考点</b>,
      * 那一下就是确认本身,不该再要求他事后对自己刚挑的东西点一次「确认」。
      *
-     * <p>⚪ {@code origin} 恒为 {@link TagOrigin#MANUAL},<b>今天这是对的、明天不一定</b>:
-     * 现存的每一条采集路径都要求用户已经挑好了考点({@code CaptureService.capture} 里
-     * 「先看用户挑没挑」那条分支),而 {@code captureFromPhoto} 的「识别挑的」这条路
-     * <b>还没有对应的 HTTP 端点</b>。等 docs/10 §6.2 的 {@code POST /records/{id}/image} 落地,
-     * {@code Mounting.RECOGNIZED} 那一支必须<b>真的落一行 origin=auto 的标签</b>,
-     * 不能继续走这里 —— 否则模型挂上去的考点会被记成手动的,准确率口径当场失真。
-     * 落点见 {@link RecordTagStore#put}。
+     * <p>{@code origin} 恒为 {@link TagOrigin#MANUAL},<b>今天这仍然是对的</b>,
+     * 但理由已经比原先窄了一档,得说清楚是哪一档:
+     * <ul>
+     *   <li><b>已经不成立的那半句</b>:「{@code origin=auto} 今天没有 HTTP 产出路径」——
+     *       docs/10 §6.2 的 {@code POST /records/{id}/image} 已落地
+     *       ({@code RecognitionController#recognizePhotos} → {@link TaggingService#suggest}),
+     *       命中时会<b>真的往库里落一行 {@code TagOrigin#AUTO}</b>。
+     *       但它落的是<b>另一条标签</b>,不是主标签:主标签的 {@code nodeCode} 永远取自
+     *       {@link Touch#nodeCode()},而那是用户自己挑的</li>
+     *   <li>⚪ <b>仍然悬着的那半句</b>:{@code CaptureService#captureFromPhoto} 的
+     *       {@code Mounting.RECOGNIZED} —— 模型挑的考点<b>直接成为 {@code Touch#nodeCode}</b>
+     *       的那条路,<b>至今没有 HTTP 端点</b>(现存每条采集路径都要求用户先挑好考点)。
+     *       它落地那天,那一支必须真的落一行 origin=auto 的主标签,<b>不能继续走这里</b> ——
+     *       否则模型挂上去的考点会被记成手动的,{@code 1.2.5.2} 的准确率口径当场失真。
+     *       落点见 {@link RecordTagStore#put}</li>
+     * </ul>
      */
     public static RecordTag primaryOf(Touch touch) {
         return new RecordTag(

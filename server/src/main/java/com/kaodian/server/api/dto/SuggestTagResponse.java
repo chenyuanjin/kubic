@@ -1,11 +1,22 @@
 package com.kaodian.server.api.dto;
 
+import com.kaodian.server.collect.TaggingService;
 import jakarta.validation.constraints.Size;
 
 import java.util.List;
 
 /**
  * 一次补标的答复 —— docs/10 §6.3:「响应是 {@code nodeId + confidence} 或 {@code NO_MATCH}」。
+ *
+ * <h2>两个端点共用这一个形状</h2>
+ *
+ * {@code POST /records/{id}/tags/suggest}(§6.3)与 {@code POST /records/{id}/image}(§6.2)
+ * 走的是<b>同一条打标管线</b>({@code TaggingService.suggest} 的四段),区别只在于
+ * <b>手里有没有可送进模型的素材</b>:前者没有(所以常态是 {@code NO_MATERIAL}),
+ * 后者带着这次上传的原图。
+ * <p>
+ * 同一件事的答复形状不同的话,前端就得为它写两套渲染,而其中一套迟早跟不上另一套。
+ * 所以这里也是那个端点的答复,{@link #messageFor} 那句话同样只写在这一处。
  *
  * <h2>🔴 全部结果都是 200,包括「模型挂了」</h2>
  *
@@ -42,4 +53,29 @@ public record SuggestTagResponse(
         NodeDetailDto node,
         SummaryDto summary
 ) {
+
+    /**
+     * 六种结局各说各的话。
+     *
+     * <h2>为什么措辞在这里,而不在枚举上</h2>
+     *
+     * {@code TagOrigin} 那段说过为什么标签侧的枚举不带中文 label —— 一旦枚举带上给用户看的字,
+     * 就会有人为了让提示好看去改枚举本身,而其中一个是不可变的。措辞属于接口层。
+     *
+     * <h2>为什么在这里而不是在某个控制器里</h2>
+     *
+     * 走这条管线的端点<b>有两个</b>({@code /tags/suggest} 与 {@code /image},见类注释)。
+     * 措辞写在其中一个控制器里,另一个就只能抄一遍 —— 而抄出来的两份迟早会说两句不一样的话,
+     * 用户看到的就是「同一个结果,换个入口说法变了」。
+     */
+    public static String messageFor(TaggingService.Outcome outcome) {
+        return switch (outcome) {
+            case SUGGESTED -> "识别挑了一个考点,请确认或丢弃。";
+            case ALREADY_TAGGED -> "这个考点已经挂在这条记录上了,没有重复挂。";
+            case NOT_RECALLED -> "来源名里没有可用线索,没有候选可送 —— 请自己从树里挑一个考点。";
+            case NO_MATERIAL -> "这条记录没有可再次识别的素材(原图与转写都不留存),请自己从树里挑一个考点。";
+            case NO_MATCH -> "没认出来 —— 请自己从树里挑一个考点。";
+            case UNAVAILABLE -> "识别服务暂时不可用,可以稍后重试,也可以自己从树里挑一个考点。";
+        };
+    }
 }

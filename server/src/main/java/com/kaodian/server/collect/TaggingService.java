@@ -44,8 +44,13 @@ import java.util.UUID;
  * 拿零字节去调一次视觉模型是「假装成功」的另一种写法,而假装成功比诚实失败危险得多
  * ({@code StubVisionTagger} 的类注释写的就是这件事)。
  * <p>
- * 完整那条路(带着字节走完四段)在这个方法里<b>是实现好的</b>,只是还没有 HTTP 入口:
- * docs/10 §6.2 的 {@code POST /records/{id}/image} 落地那天,它把字节递进来就通了。
+ * 完整那条路(带着字节走完四段)在这个方法里是实现好的,而且<b>现在有 HTTP 入口了</b>:
+ * docs/10 §6.2 的 {@code POST /records/{id}/image} 已落地
+ * ({@code RecognitionController#recognizePhotos}),它把这次上传的原图字节递进来,
+ * 命中时<b>真的落一行 {@code origin=auto} 的标签</b>。
+ * <p>
+ * 也就是说 ⚪ 那一段说的是 <b>{@code /tags/suggest} 这一条路</b>:事后补标手里没有素材,
+ * 而那不是实现偷懒,是红线的直接后果 —— 服务端一份都没留。
  * 契约层面的缺口已在交付说明里报出,本轮不自行改契约。
  */
 @Service

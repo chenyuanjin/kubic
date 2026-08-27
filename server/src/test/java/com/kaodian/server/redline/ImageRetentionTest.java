@@ -45,11 +45,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * (48h 有效)与已禁用的 Files API <b>等价</b>,容易被当成「不是 Files API 所以能用」。
  * 所以下面拦的是<b>行为</b>(把图交给厂商存起来再引用),不是某个厂商的名字。
  *
- * <h2>三组断言各自守什么</h2>
+ * <h2>四组断言各自守什么</h2>
  * <ol>
  *   <li>{@link #noVendorFileStagingKeywords} —— 厂商暂存关键字。已经有名字的那些路</li>
  *   <li>{@link #outboundHostsAreWhitelisted} —— 出站 host 白名单。还没有名字的那些路</li>
- *   <li>{@link #recognizePackageNeverPersistsBytes} —— tripwire。<b>今天必然通过</b>,见该方法注释</li>
+ *   <li>{@link #recognizePackageNeverPersistsBytes} —— tripwire,守<b>模型出口</b>。
+ *       <b>今天必然通过</b>,见该方法注释</li>
+ *   <li>{@link #byteHandlingCallersNeverPersistBytes} —— 同一条 tripwire,守<b>上传入口</b>。
+ *       2026-08-27 两个上传端点落地后加的:字节在进模型之前先经过几个别的类,
+ *       而「收一个上传就存下来」在那几个类里比在 {@code recognize} 里更自然</li>
  * </ol>
  */
 class ImageRetentionTest {
@@ -367,41 +371,10 @@ class ImageRetentionTest {
         List<Path> files = sources(pkg);
         assertTrue(files.size() >= 4, "recognize 包只扫到 " + files.size() + " 个文件,不对劲");
 
+        // 判据与 ④ 共用一段(persistenceHitsIn):两条断言的区别只在扫哪些文件,不在判什么。
         List<String> hits = new ArrayList<>();
         for (Path file : files) {
-            String[] lines = stripComments(read(file)).split("\n", -1);
-            for (int i = 0; i < lines.length; i++) {
-                String line = lines[i];
-
-                for (Forbidden f : NO_PERSIST) {
-                    if (contains(line, f)) {
-                        hits.add(display(file) + ":" + (i + 1) + "  违反 R-04(不落盘)—— 「"
-                                + f.token() + "」:" + f.why() + "\n      >>> " + line.strip());
-                    }
-                }
-
-                if (line.contains("System.out") || line.contains("System.err")
-                        || line.contains("printStackTrace")) {
-                    hits.add(display(file) + ":" + (i + 1)
-                            + "  违反 R-04(不进日志)—— 标准输出不受日志级别控制,一开就全打出来"
-                            + "\n      >>> " + line.strip());
-                    continue;
-                }
-
-                if (!isLogCall(line)) {
-                    continue;
-                }
-                String statement = statementFrom(lines, i).toLowerCase(Locale.ROOT);
-                for (String risky : RISKY_IN_LOG) {
-                    if (statement.contains(risky)) {
-                        hits.add(display(file) + ":" + (i + 1)
-                                + "  违反 R-04(不进日志)—— 日志语句里出现「" + risky
-                                + "」;一次 log.debug 就等于把原图落了盘(docs/10 §8.1)"
-                                + "\n      >>> " + line.strip());
-                        break;
-                    }
-                }
-            }
+            hits.addAll(persistenceHitsIn(file));
         }
 
         assertTrue(hits.isEmpty(),
@@ -409,6 +382,110 @@ class ImageRetentionTest {
                         + "停一下,重读 docs/08 §四 R-04 与 docs/10 §8.1:"
                         + "\n原图只在内存里过一次,不写磁盘、不进对象存储、不进任何级别的日志。\n"
                         + String.join("\n", hits));
+    }
+
+    // ——————————————————— ④ 调用方也不许落盘 ———————————————————
+
+    /**
+     * 手里真的握着原始字节的<b>调用方</b>。
+     *
+     * <h2>为什么范围要从 {@code recognize} 包扩出来</h2>
+     *
+     * ③ 那条守的是「模型出口」。但从 2026-08-27 起,原图与音频<b>在进出口之前先经过几个别的类</b>:
+     * HTTP 端点把 base64 解成 {@code byte[]}、把 multipart 读成 {@code byte[]},再递给打标管线。
+     * <b>「先落个临时文件再处理」这句话在这几个类里比在 {@code recognize} 里更自然</b> ——
+     * 那里是「拼一次请求」,这里是「收一个上传」,而收上传的标准写法就是存下来。
+     * <p>
+     * ③ 的注释说它「今天必然通过,那正是它存在的理由」。这一条同样如此。
+     *
+     * <h2>为什么是一份点名清单,而不是整个 {@code api} 包</h2>
+     *
+     * 因为整个 {@code api} 包扫不了,而且不该扫:{@code auth} 那边的
+     * {@code FileTokenStore} / {@code FileSignupLedger} <b>本来就该写磁盘</b>
+     * (令牌与注册流水是要落盘的数据),把它们一起拦下来只会逼人给这条断言加白名单,
+     * 而<b>一条被加过白名单的红线断言,和一条被注释掉的断言,外观是一样的</b>。
+     * <p>
+     * 点名清单的代价是「有人新增一个经手字节的类时得记得加一行」——这是真的缺口,
+     * 不藏着。缓解手段是下面那句存在性断言:清单里任何一项被改名或挪走,
+     * <b>这条断言当场红</b>,而不是安安静静地少扫一个文件。
+     */
+    private static final List<String> BYTE_HANDLING_CALLERS = List.of(
+            // POST /records/{id}/image 与 /audio 的落点:base64 解出来的原图、multipart 读出来的音频
+            "com/kaodian/server/api/RecognitionController.java",
+            // 图片请求体本身 —— byte[] 就在这个 record 里
+            "com/kaodian/server/api/dto/PhotoRecognitionRequest.java",
+            // 音频端点的答复:它的全部主张就是「里面没有转写文本」
+            "com/kaodian/server/api/dto/AudioRecognitionResponse.java",
+            // 打标管线的调用方:material 那个 byte[] 从这里走到模型出口
+            "com/kaodian/server/collect/TaggingService.java",
+            // 拍照采集:image 那个 byte[] 同上
+            "com/kaodian/server/collect/CaptureService.java");
+
+    @Test
+    @DisplayName("🔴 tripwire:握着原图/音频字节的调用方,同样不许落盘、外发或打进日志")
+    void byteHandlingCallersNeverPersistBytes() {
+        Path root = mainJava();
+        List<String> hits = new ArrayList<>();
+
+        for (String relative : BYTE_HANDLING_CALLERS) {
+            Path file = root.resolve(relative);
+            // 清单腐烂的唯一防线:改名或挪走当场红,而不是少扫一个文件还照样绿。
+            assertTrue(Files.isRegularFile(file),
+                    "点名清单里的「" + relative + "」不存在了 —— 它是被改名、被挪走,还是被删了?"
+                            + "\n如果那段经手字节的代码搬到了别处,把清单跟着改;"
+                            + "如果它真的没了,把这一行删掉。不要留一行扫不到东西的清单。");
+            hits.addAll(persistenceHitsIn(file));
+        }
+
+        assertTrue(hits.isEmpty(),
+                "🔴 tripwire 响了 —— 有人在原图/音频的【入口侧】写下了一条落盘或日志的路。"
+                        + "\n重读 docs/08 §四 R-04 与 docs/10 §8.1:原图只在内存里过一次,"
+                        + "不写磁盘、不进对象存储、不进任何级别的日志;音频同理(docs/10 §5.2「不建的表」)。\n"
+                        + String.join("\n", hits));
+    }
+
+    /**
+     * ③ 与 ④ 共用的那段判定 —— <b>规则只写一处</b>。
+     *
+     * <p>两条断言的区别只在扫哪些文件:一个是「模型出口」,一个是「上传入口」。
+     * 判据抄两遍的话,迟早只有一份跟着 {@link #NO_PERSIST} 一起更新。
+     */
+    private static List<String> persistenceHitsIn(Path file) {
+        List<String> hits = new ArrayList<>();
+        String[] lines = stripComments(read(file)).split("\n", -1);
+        for (int i = 0; i < lines.length; i++) {
+            String line = lines[i];
+
+            for (Forbidden f : NO_PERSIST) {
+                if (contains(line, f)) {
+                    hits.add(display(file) + ":" + (i + 1) + "  违反 R-04(不落盘)—— 「"
+                            + f.token() + "」:" + f.why() + "\n      >>> " + line.strip());
+                }
+            }
+
+            if (line.contains("System.out") || line.contains("System.err")
+                    || line.contains("printStackTrace")) {
+                hits.add(display(file) + ":" + (i + 1)
+                        + "  违反 R-04(不进日志)—— 标准输出不受日志级别控制,一开就全打出来"
+                        + "\n      >>> " + line.strip());
+                continue;
+            }
+
+            if (!isLogCall(line)) {
+                continue;
+            }
+            String statement = statementFrom(lines, i).toLowerCase(Locale.ROOT);
+            for (String risky : RISKY_IN_LOG) {
+                if (statement.contains(risky)) {
+                    hits.add(display(file) + ":" + (i + 1)
+                            + "  违反 R-04(不进日志)—— 日志语句里出现「" + risky
+                            + "」;一次 log.debug 就等于把原图落了盘(docs/10 §8.1)"
+                            + "\n      >>> " + line.strip());
+                    break;
+                }
+            }
+        }
+        return hits;
     }
 
     private static boolean isLogCall(String line) {

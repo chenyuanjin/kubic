@@ -87,8 +87,13 @@ public class TagController {
      * 拿零字节去调一次视觉模型是「假装成功」的另一种写法,所以这里明确地不给素材,
      * 由 {@code TaggingService} 回一个 {@code NO_MATERIAL} 说清原因。
      * <p>
-     * 带着字节走完四段的那条路在 {@code TaggingService.suggest} 里<b>是实现好的</b>,
-     * 只是还没有 HTTP 入口 —— docs/10 §6.2 的 {@code POST /records/{id}/image} 落地那天接上即可。
+     * 带着字节走完四段的那条路在 {@code TaggingService.suggest} 里是实现好的,而且
+     * <b>现在有 HTTP 入口了</b>:docs/10 §6.2 的 {@code POST /records/{id}/image}
+     * ({@link RecognitionController#recognizePhotos})。两个端点共用
+     * {@link SuggestTagResponse} 这一个答复形状,区别只在于<b>手里有没有素材</b>。
+     * <p>
+     * ⚪ <b>这个端点本身的缺口没有跟着补上,而且补不了</b>:它是「事后」补标,
+     * 而事后服务端手里一份素材都没有 —— 那不是实现偷懒,是红线的直接后果。
      * 契约层面的缺口(§6.3 的 suggest 依赖 §5.2 的 {@code extracted_text},
      * 而那个字段与本仓库的红线冲突)已在交付说明里报出,本轮不自行改契约。
      *
@@ -108,7 +113,7 @@ public class TagController {
 
         return new SuggestTagResponse(
                 suggestion.outcome().name(),
-                messageFor(suggestion),
+                SuggestTagResponse.messageFor(suggestion.outcome()),
                 suggestion.confidence(),
                 suggestion.candidateCount(),
                 tag == null ? null : TagDto.from(tag, tree),
@@ -219,21 +224,7 @@ public class TagController {
         return node == null ? null : NodeDetailDto.from(node);
     }
 
-    /**
-     * 六种结局各说各的话。
-     *
-     * <p>措辞写在这一处,不写在枚举上:{@code TagOrigin} 那段说过为什么标签侧的枚举不带中文 label ——
-     * 一旦枚举带上给用户看的字,就会有人为了让提示好看去改枚举本身,而其中一个是不可变的。
-     * 这里是接口层,措辞本来就该在这儿。
-     */
-    private static String messageFor(Suggestion suggestion) {
-        return switch (suggestion.outcome()) {
-            case SUGGESTED -> "识别挑了一个考点,请确认或丢弃。";
-            case ALREADY_TAGGED -> "这个考点已经挂在这条记录上了,没有重复挂。";
-            case NOT_RECALLED -> "来源名里没有可用线索,没有候选可送 —— 请自己从树里挑一个考点。";
-            case NO_MATERIAL -> "这条记录没有可再次识别的素材(原图与转写都不留存),请自己从树里挑一个考点。";
-            case NO_MATCH -> "没认出来 —— 请自己从树里挑一个考点。";
-            case UNAVAILABLE -> "识别服务暂时不可用,可以稍后重试,也可以自己从树里挑一个考点。";
-        };
-    }
+    // 六种结局各说各的话 —— 那段 switch 搬到了 SuggestTagResponse#messageFor。
+    // 搬家的理由写在那个方法上:走同一条管线的端点现在有两个(这里 + POST /records/{id}/image),
+    // 措辞留在其中一个控制器里,另一个就只能抄一遍,而抄出来的两份迟早会说两句不一样的话。
 }

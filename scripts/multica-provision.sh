@@ -145,6 +145,30 @@ fi
 exists() { [[ $DRY == 1 ]] && return 1; python3 "$LIB" has "$1" "$2"; }
 idof()   { python3 "$LIB" id-of "$1" "$2" 2>/dev/null; }
 
+# ══════════════ 0c. 仓库 / 属性 / 标签 ══════════════
+# 交付流水线的配置底座(docs/14 §九)。全部幂等:已存在时 CLI 自己会拒,忽略即可。
+say "注册仓库、自定义属性与标签"
+M repo add git@github.com:chenyuanjin/kubic.git \
+  --description "考点盲区(NoteTool)· server + web + docs" --output json >/dev/null 2>&1 \
+  && dim "+ repo kubic" || dim "· repo 已存在或失败,忽略"
+
+M property create --name "闸门" --type select --icon shield \
+  --description "这条议题的判决由哪一道闸给出。agent闸无裁决权,只写 metadata。" \
+  --option "机器闸:#22c55e" --option "agent闸:#f59e0b" --option "关卡:#ef4444" \
+  --output json >/dev/null 2>&1 && dim "+ property 闸门" || dim "· property 闸门 已存在,跳过"
+
+M property create --name "红线命中" --type multi_select --icon flag \
+  --description "命中的 08 §四 🔴 条目。任一非空即进入闸3 差异人审。" \
+  --option "R-01:#ef4444" --option "R-02:#ef4444" --option "R-03:#ef4444" --option "R-04:#ef4444" \
+  --option "R-05:#ef4444" --option "R-06:#ef4444" --option "R-07:#ef4444" --option "R-08:#ef4444" \
+  --option "R-36:#ef4444" --option "R-37:#ef4444" \
+  --output json >/dev/null 2>&1 && dim "+ property 红线命中" || dim "· property 红线命中 已存在,跳过"
+
+for lb in "需人审:#f59e0b" "已豁免:#a855f7"; do
+  M label create --name "${lb%%:*}" --color "${lb##*:}" --output json >/dev/null 2>&1 \
+    && dim "+ label ${lb%%:*}" || dim "· label ${lb%%:*} 已存在,跳过"
+done
+
 # ══════════════ 1. 智能体 ══════════════
 # 开发=claude / 文档审核+深度测试=codex / UI审核+功能测试=opencode
 # (reasonix 已按要求移除,其对抗性测试职责改由 codex 承担)
@@ -163,6 +187,15 @@ mk_agent() { # $1=名称 $2=runtime名 $3=model(可空) $4=thinking(可空) $5=i
     err "$nm: runtime \"$rtname\" 未解析到,跳过"
     return 0
   fi
+  # 交付/收尾协议按职能追加(2026-08-27,docs/14 §九)。协议只存一份 ——
+  # 改协议时不用去七个 instructions 字符串里各找一遍。
+  case "$nm" in
+    *开发|*执行)   instr="$instr
+$PROTO_DEV" ;;
+    *审核|*测试*)  instr="$instr
+$PROTO_REVIEW" ;;
+  esac
+
   local base=(agent create --name "$nm" --runtime-id "$rid"
               --max-concurrent-tasks 4 --instructions "$instr" --output json)
   local args=("${base[@]}")
@@ -197,6 +230,37 @@ COMMON_GUARD='硬约束(违反即停,来自 docs/01 与 docs/08 风险登记册)
 - 不使用公司非公开材料/设备/上班时间(R-08)
 关卡是 pass/fail,不是可调目标。数据在临界线上不要微调产品再试(R-10)。
 北极星指标是"主动查看盲区的人数",不是注册数不是DAU。'
+
+# ── 交付协议(docs/14 §九)。两段,按职能分发 ──
+PROTO_DEV='
+── 交付协议(硬性)──
+1) 分支名必须是 KUBI-<议题号>-<英文短语>,例:KUBI-12-offline-queue。
+   Multica 的 PR↔议题关联就是靠这个字符串做的。没有它,CI 结果回不到议题上,
+   整条流水线断在这里 —— 这不是命名洁癖。
+2) 提交前本机必须绿:
+   后端 ./server/build.sh -q test    前端 (cd web && npm run lint && npm run build)
+3) 仓库装了 core.hooksPath=.githooks,两道闸:
+   · 密钥/账号数据/原图缓存被强加 → 拒绝(R-04 / R-59)
+   · docs/01-04 决策层文档 → 需 ALLOW_DECISION_EDIT=1,且会在提交信息里留一条 trailer
+   撞上闸时先想清楚再用出路,不要顺手加环境变量绕过去。
+4) 【你没有裁决权】做完把状态改 in_review,不改 done。
+   multica issue status <id> in_review --no-start
+5) 数据目录默认 ~/.kaodian(仓库外)。绝不把 kaodian.data.dir 指到仓库内。'
+
+PROTO_REVIEW='
+── 收尾协议(硬性。不做完这四步 = 本次运行未完成)──
+1) 散文写在评论里,判决写在 metadata 里。人只读 metadata:
+   multica issue metadata set <id> --key verdict        --value true|false
+   multica issue metadata set <id> --key blocking_count --value <数字>
+   multica issue metadata set <id> --key repro_cmd      --value "<可复现命令>"
+   multica issue metadata set <id> --key redline_hit    --value "R-xx"    # 无则不写
+2) 命中任一 🔴 时,同时打 `红线命中` 属性 + 加 `需人审` 标签。
+3) 状态改 in_review:multica issue status <id> in_review --no-start
+4) 【你没有裁决权】绝不把状态改成 done —— 那是闸3(人)与闸4(关卡)的事。
+   你的结论是「输入」,不是「判决」。
+
+【无 repro_cmd 的判决一律作废】不可复现的审核意见没有价值,写了也会被打回。
+判据是 pass/fail,数据落在临界线时判 fail,不要为了让它过而放宽标准(R-10)。'
 
 mk_agent "产品轨-开发" claude claude-opus-5 high \
 "你负责 docs/08 的第 1 条线(产品轨)。按 docs/06 的逐周排期推进,严格遵守排期纪律:

@@ -38,8 +38,17 @@ public record RecognitionResult(String nodeCode, double confidence, boolean abov
     public static final double MIN_CONFIDENCE = 0.75;
 
     public RecognitionResult {
-        if (confidence < 0.0 || confidence > 1.0) {
-            throw new IllegalArgumentException("置信度必须在 0~1:" + confidence);
+        // 🔴 NaN 必须单独挡一次(R-72)。它不是「一个越界的数」,它是「跟任何数比较都为 false 的东西」——
+        // 下面那行范围校验对它返回 false,再往下的阈值裁决 confidence < MIN_CONFIDENCE 同样返回 false,
+        // 于是它两道全过,变成一次【高置信度命中】。这是宁缺毋滥的反向缺口:
+        // 不是低于线被放行,是根本没在线上却被当成过了线,而 NaN 恰恰最该被当成「不知道」。
+        //
+        // 为什么是抛而不是降级成 NO_MATCH:降级会把「置信度算不出来」压成
+        // 「什么都没认出来」(confidence 0.0),而这个 record 的全部设计就是要把这两件事分开。
+        // 「记录动作永不失败」这条保证兑现在更上一层(docs/08 §1.3.7.1:识别不可用时先落地后异步补),
+        // 不靠在这里把一个坏值悄悄洗成好值。
+        if (Double.isNaN(confidence) || confidence < 0.0 || confidence > 1.0) {
+            throw new IllegalArgumentException("置信度必须是 0~1 的实数:" + confidence);
         }
         if (nodeCode != null && nodeCode.isBlank()) {
             throw new IllegalArgumentException("nodeCode 要么是树里的 code,要么是 null,不能是空串");

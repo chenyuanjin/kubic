@@ -335,27 +335,25 @@ class ClosedSetTaggingTest {
     }
 
     @Test
-    @DisplayName("⚠️ NaN 置信度当前能穿过阈值并成为一次命中 —— 钉住的是现状,不是应有行为")
-    void nanConfidenceCurrentlySlipsThroughTheThreshold() {
-        // 这条用例是唯一一条「钉住现状而不是钉住红线」的:实测发现的口子,主代码不由测试来改。
+    @DisplayName("🔴 NaN 置信度被构造器拒收 —— 它不是「低于线」,是「根本没在线上」(R-72)")
+    void nanConfidenceIsRejectedOutright() {
+        // 这条曾经是一条「钉住现状」的用例:2026-08-27 实测发现 NaN 两道全过,
+        // 变成一次高置信度命中。范围校验 confidence < 0.0 || confidence > 1.0 对 NaN 返回 false,
+        // 阈值裁决 confidence < MIN_CONFIDENCE 同样返回 false —— NaN 跟任何数比较都是 false。
         //
-        // 口子在哪:范围校验写的是 confidence < 0.0 || confidence > 1.0,阈值裁决写的是
-        // confidence < MIN_CONFIDENCE。NaN 与任何数比较都是 false,于是它两道都过 ——
-        // 一个「模型没给出置信度、解析时算成了 NaN」的答案,会变成一次高置信度命中,
-        // 而 NaN 恰恰是最该被当成「不知道」的那种值。这是宁缺毋滥的一个反向缺口:
-        // 不是低于线被放行,是根本没在线上却被当成过了线。
+        // 修法选的是构造器拒收,而不是在 of() 里当 0.0 处理:后者会把「置信度算不出来」
+        // 压成「什么都没认出来」,而这个 record 的全部设计就是要把这两种失败模式分开
+        // (见它对 noMatch(confidence) 保留置信度的那段论证)。
         //
-        // 触发条件不是空想:Double.parseDouble("NaN")、0.0/0.0 的归一化、
-        // 缺字段时的默认计算,任何一处都能产出它,而且不会报错。
-        //
-        // 需要人来判怎么修(构造器加 Double.isNaN 拒收,还是在 of() 里当 0.0 处理),
-        // 所以这里只把现状钉住:哪天有人修了,这条会红,那是好事,连同注释一起删。
-        RecognitionResult nan = RecognitionResult.of("growth-rate", Double.NaN);
-        assertTrue(nan.matched(), "现状:NaN 没被拦住。修了这个口子请一并删掉这条用例");
-        assertTrue(Double.isNaN(nan.confidence()));
-
-        // 出口自检拦不住它 —— code 确实在候选集里,闭集这道没问题,漏的是阈值那道。
-        assertTrue(afterModelSays(nan).matched(), "闭集检查管不着置信度,这个洞只能在阈值那层堵");
+        // 触发路径不是空想:Double.parseDouble("NaN")、0.0/0.0 的归一化、缺字段时的默认计算。
+        assertThrows(IllegalArgumentException.class,
+                () -> RecognitionResult.of("growth-rate", Double.NaN),
+                "NaN 必须当场炸,不能变成一次命中");
+        assertThrows(IllegalArgumentException.class,
+                () -> RecognitionResult.noMatch(Double.NaN),
+                "NO_MATCH 也不例外 —— 一个算不出来的置信度不该被存下来当排查依据");
+        assertThrows(IllegalArgumentException.class,
+                () -> new RecognitionResult(null, Double.NaN, false));
     }
 
     @Test

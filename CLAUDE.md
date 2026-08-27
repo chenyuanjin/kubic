@@ -4,17 +4,31 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this repository is
 
-A **documentation-only decision record** for a pre-implementation product exploration. There is no source code, build system, test suite, or package manifest — only nine Chinese-language Markdown documents under `docs/`. It *is* a git repo (single commit `2231ca7`; docs 05–09 are still untracked).
+A **decision record that has grown a working prototype**. Fourteen Chinese-language Markdown documents under `docs/` carry the reasoning; `server/` (Spring Boot 4.1.1 / Java 21) and `web/` (React 19 + Vite + Tailwind 4) carry the code. **The documents remain authoritative** — the code implements them, not the other way round.
 
-`files.zip` is a **stale backup of the original four documents only** (dated 2026-08-20, before 05–09 existed). Ignore it; don't treat it as a source of truth or re-sync it unless asked.
+`files.zip` is a **stale backup of the original four documents only** (dated 2026-08-20). Ignore it; don't treat it as a source of truth or re-sync it unless asked.
 
-Do not look for or invent build/lint/test commands. All work here is reading, revising, and extending prose.
+### Commands
+
+```bash
+./server/build.sh -q test          # 后端测试。唯一允许的构建入口 —— 直接 ./mvnw 会让依赖走公司私服(docs/10 §1.3)
+./server/build.sh -q test -Dtest=X # 单个测试类
+cd web && npm run lint             # oxlint
+cd web && npm run build            # tsc -b && vite build
+cd web && npm run test:boundary    # 能力边界文案扫描(R-05)
+```
+
+`build.sh` requires `~/.m2/settings-side.xml` and refuses to run if it points at a private mirror or carries credentials. **Never bypass it.**
+
+`git config core.hooksPath .githooks` is **local config and does not travel with a clone** — set it in every new working copy or both commit gates are silently off.
 
 The product: a **cross-source study-record tool for Chinese exam candidates** (公考 civil service + 考研 postgrad). Core formula: `盲区 = 骨架层 − 行为层` — blind spots are the set difference between a maintained syllabus tree and what the user has actually touched. The defensibility claim is that incumbents (粉笔/中公/华图) *structurally cannot* aggregate competitors' study records, because doing so tears down their own walls.
 
-Current state: a runnable demo exists (**not in this repo**), design decks exist (in OpenDesign, **not in this repo**; the three-way visual direction is still undecided — `08` `R-29`), and there is **zero real user feedback**. That gap is the entire point of the document set.
+Current state (2026-08-27): the backend has ~270 green tests including five red-line assertion suites; the visual direction **is decided** (风格 A「极客暗色 · 命令条驱动」, 55 screens in OpenDesign — `08` `R-29` closed); a Multica agent pipeline runs delivery (see below). And there is still **zero real user feedback** — `1.1.4` (the two daily numbers that are gate 0's entire input) is empty.
 
-## The nine documents: two layers
+**That last sentence is the point of the whole repository.** Everything else on this page is infrastructure around a hypothesis nobody has tested.
+
+## The fourteen documents: two layers
 
 **Never let the execution layer overwrite the decision layer.** `05` states it explicitly: "04 的关卡判据在这里一个字都不改." When new research contradicts a decision-layer document, record the correction downstream and annotate upstream — do not silently rewrite the original. Doc `04`'s cost table keeps its superseded ¥2,000 estimate with a pointer, exactly for this reason.
 
@@ -38,10 +52,15 @@ Doc 03 opens by arguing against itself ("框架能防止重复犯已犯过的错
 | `05-执行清单.md` | Checklist form of `04`. Two blocks: 产品开发 (gate-governed) + 上线准备 (approval-governed) |
 | `06-阶段0至关卡2详细排期.md` | Week-by-week schedule to gate 2, with the workload math that decides whether stage 1 is feasible |
 | `07-数据线：骨架原料的获取与隔离.md` | The data track: acquiring syllabus raw material without becoming a piracy host |
-| `08-总路线图.md` | Parent/child todo tree across all three tracks + **the unified risk register `R-01`…`R-35`** |
+| `08-总路线图.md` | Parent/child todo tree across all three tracks + **the unified risk register `R-01`…`R-74`** |
 | `09-识别链路选型.md` | ASR / image-recognition vendor selection, pricing, compliance basis (as-of 2026-08) |
+| `10-技术架构与接口契约.md` | Layering, tables, interface signatures, the Step2 isolation red line (§1.3 = why `build.sh` exists) |
+| `11-商业化与额度设计.md` | Pricing and quota design (**gate 2 onward**) |
+| `12-基础数据：抓取范围与渠道.md` | 56 domains / 81 channels surveyed. Mostly a record of what **not** to scrape and why |
+| `13-后端系统设计与组件接入.md` | Call ordering, spring-ai wiring, login/SMS/WeChat gates. The layer under `10` |
+| `14-自动化交付工作流.md` | The Multica delivery pipeline: four gates, metadata contract, process norms (§九) |
 
-`08` is the aggregate view — `05`/`06`/`07` are its expansions, and `09` is the evidence layer under `06`'s tech-selection table. **New risks go into `08` §四 with an `R-xx` id**, not into ad-hoc lists.
+`08` is the aggregate view — `05`/`06`/`07` are its expansions, `09` is the evidence layer under `06`, `13` is the layer under `10`, and `14` is the delivery infrastructure around all of it. **New risks go into `08` §四 with an `R-xx` id** (currently `R-01`…`R-74`), not into ad-hoc lists.
 
 ## Three tracks, three different clocks
 
@@ -57,6 +76,25 @@ Serializing produces two wastes: registering a company / filing ICP before a gat
 
 `07` §六 is a **conflict declaration** — read it before touching the data track. The data track may accumulate raw material for four subjects while the product ships exactly one module. The single test for whether that line has been crossed: **has 人工校正命名 been done for a second subject?**
 
+## The delivery pipeline (docs/14)
+
+Work is dispatched through a Multica workspace (`kubicc`, issue prefix `KUBI`). Four gates; **a human stands only at the fourth**:
+
+| Gate | Who runs it | Verdict power |
+|---|---|---|
+| 1 机器闸 | CI: `build.sh -q test` + web lint/build/boundary | Yes — the only place that auto-changes status |
+| 2 agent 审核 | review/test agents | **No.** Writes metadata only |
+| 3 差异人审 | you | Only handles exceptions |
+| 4 关卡 | you | Yes. **Never automate this** (`R-10`) |
+
+Rules that bind any agent working here:
+
+- **Agents may advance an issue to `in_review`, never to `done`.** An agent's conclusion is *input*, not *judgment*.
+- **Verdicts go in metadata, prose goes in comments.** Five keys: `verdict` / `blocking_count` / `repro_cmd` / `redline_hit` / `escalate`. **A verdict without a reproducible `repro_cmd` is void** — and `repro_cmd` must run from the repo root with no absolute paths.
+- **Branch `KUBI-<n>-<slug>`.** Not naming hygiene — the PR↔issue link is built from that string; without it gate 1's result never reaches the issue.
+- `红线命中` is a **property**, `需人审` is a **label**. Different commands. Agents must never create new labels or properties.
+- **Every assertion must have been made red once before it counts.** All five red-line suites were deliberately broken and restored during authoring. See `14` §9.10 for the three design lessons — most importantly: **a blacklist must not match this repo's own compliance comments**, which are written in negative form and therefore contain the forbidden word.
+
 ## Hard constraints
 
 Settled decisions, several marked "不改变". Treat as invariants; flag conflicts rather than quietly working around them.
@@ -64,7 +102,7 @@ Settled decisions, several marked "不改变". Treat as invariants; flag conflic
 - **能力边界** — never judge "对不对". Only "有没有、几次、多久前".
 - **不做教研** — no subject-matter instruction. Academic judgment is outsourced to external models. Described as the source of every other advantage.
 - **不碰内容** — never store institutions' course content; record source name and timestamp only.
-- **Image retention** 🔴 — after extraction, original images get local/short-term cache only. Never long-term cloud storage or sharing. **This includes vendor image-staging APIs** (e.g. DeepSeek Files API) — inline base64 only (`09` §四, `08` `R-04`). Doc 01 notes this cannot be reversed later.
+- **Image retention** 🔴 — after extraction, original images get local/short-term cache only. Never long-term cloud storage or sharing. **This includes vendor image-staging APIs** — DeepSeek Files API *and* 百炼's `oss://dashscope-instant/...` (`R-52` extends `R-04` to every vendor's file staging). Inline base64 only (`09` §四). Machine-checked by `ImageRetentionTest`. Doc 01 notes this cannot be reversed later.
 - **真题原文不上线** 🔴 — the online schema must have no field capable of holding a question stem (`07` §二, `R-01`). Scraping code must not contain login/captcha/fingerprint capability — "不是不用,是不写" (`R-02`).
 - **宁缺毋滥** — discard auto-tags that don't match rather than force-fitting; wrong tags corrupt the coverage metric that is the whole product.
 - **Closed-set tagging** 🔴 — the model selects a node id from supplied candidates or returns "no match". It never generates label text. This single constraint blocks both hallucinated 考点 and inadvertent reuse of institutions' wording (`P1-8`, `R-07`).

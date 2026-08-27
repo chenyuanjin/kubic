@@ -6,6 +6,10 @@ import com.kaodian.server.api.dto.UnknownFieldException;
 import com.kaodian.server.collect.CaptureService;
 import com.kaodian.server.collect.Touch;
 import com.kaodian.server.collect.TouchKind;
+import com.kaodian.server.collect.InMemoryRecordTagStore;
+import com.kaodian.server.collect.RecordTag;
+import com.kaodian.server.collect.TagOrigin;
+import com.kaodian.server.collect.RecordTagStore;
 import com.kaodian.server.collect.TouchStore;
 import com.kaodian.server.coverage.CoverageService;
 import com.kaodian.server.recognize.VisionTagger;
@@ -91,6 +95,10 @@ class ApiContractTest {
     @Autowired
     private InMemoryTouchStore store;
 
+    /** 标签层。这个文件不打标,只用它验一件事:删记录时那句<b>级联删标签</b>真的发生了。 */
+    @Autowired
+    private RecordTagStore tagStore;
+
     /**
      * 时间线分桶用的时区 —— 与 {@code kaodian.api.timeline.zone} 的默认值同一个。
      *
@@ -103,6 +111,10 @@ class ApiContractTest {
     @BeforeEach
     void resetToContract() {
         store.reset(contractTouches());
+        // 标签层也得跟着清干净:@WebMvcTest 的上下文在一个类里是复用的,
+        // 一条留下来的标签会让后面每一个断言覆盖率的用例都多算一格 ——
+        // 而它是不是留下来了,取决于方法执行顺序,那是最难查的一种红。
+        tagStore.findAll().forEach(t -> tagStore.deleteByRecord(t.recordId()));
     }
 
     // ---------------------------------------------------------------- 查询
@@ -872,6 +884,24 @@ class ApiContractTest {
     }
 
     @Test
+    @DisplayName("🔴 删记录时级联删它的标签(docs/10 §6.2)—— 不删会留下一批没人会再过滤的孤儿行")
+    void deletingARecordCascadesToItsTags() throws Exception {
+        // 那些孤儿行今天进不了覆盖度(CoverageService 会跳过指不到记录的标签),
+        // 所以这不是一条会立刻算错数的路 —— 它的危险在于【下一个读它们的人未必也做那层过滤】。
+        // 契约把「级联删标签」写成了这个端点的约束,那它就得真的发生,而不是靠下游都记得防一手。
+        tagStore.put(new RecordTag("tag-x", "t-share-change", "average-calc",
+                RecordTag.MANUAL_CONFIDENCE, TagOrigin.MANUAL, Instant.now(), false));
+        tagStore.put(new RecordTag("tag-y", "t-growth-rate", "average-calc",
+                RecordTag.MANUAL_CONFIDENCE, TagOrigin.MANUAL, Instant.now(), false));
+
+        mockMvc.perform(delete("/api/records/{id}", "t-share-change"))
+                .andExpect(status().isOk());
+
+        assertEquals(List.of("tag-y"), tagStore.findAll().stream().map(RecordTag::id).toList(),
+                "被删记录的标签行还留着 —— 契约里那句「级联删标签」没有对应物");
+    }
+
+    @Test
     @DisplayName("🔴 删一条不存在的记录 → 404,而且消息里不回显那个 id(路径变量没有长度上限)")
     void deletingAMissingRecordIs404AndEchoesNothing() throws Exception {
         String pastedStem = "2023 年全国粮食总产量为 13908 亿斤,比上年增加 177 亿斤".repeat(40);
@@ -1364,8 +1394,21 @@ class ApiContractTest {
         /** {@link CoverageReader} 是 {@code @Component},web 切片不扫它。 */
         @Bean
         CoverageReader coverageReader(SyllabusSource syllabus, TouchStore store,
-                                      CoverageService coverage, Clock clock) {
-            return new CoverageReader(syllabus, store, coverage, clock);
+                                      RecordTagStore tagStore, CoverageService coverage, Clock clock) {
+            return new CoverageReader(syllabus, store, tagStore, coverage, clock);
+        }
+
+        /**
+         * 标签层。<b>覆盖度的分子从这里出来</b>,所以它必须真的在场 ——
+         * 给个空实现会让这个测试跑在一个「标签永远为空」的世界里,而那正是覆盖度口径的一半。
+         *
+         * <p>这个测试不打标,所以它从头到尾是空的;空<b>不等于没有</b>:
+         * 采集时挂上的那条主标签是由记录推出来的(见 {@code RecordTag#effectiveTagsOf}),
+         * 一行都不必存,44% 照样算得出来。这条正是那个设计要保住的东西。
+         */
+        @Bean
+        RecordTagStore recordTagStore() {
+            return new InMemoryRecordTagStore();
         }
 
         /** {@link CaptureService} 同理。写入端点委托给它,不自己 new Touch。 */

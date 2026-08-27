@@ -1,5 +1,6 @@
 package com.kaodian.server.api;
 
+import com.kaodian.server.collect.CandidateRecall;
 import com.kaodian.server.collect.TouchLedger;
 import com.kaodian.server.collect.TouchStore;
 import com.kaodian.server.coverage.CoverageService;
@@ -41,6 +42,19 @@ public class ApiBeans {
     @Bean
     public CoverageService coverageService() {
         return new CoverageService();
+    }
+
+    /**
+     * 候选召回 —— 打标管线的第 ① 段(docs/13 §1.3)。
+     *
+     * <p>与 {@link CoverageService} 同一个理由放在这里而不是打 {@code @Component}:
+     * 它是<b>纯领域对象</b>(一棵树 + 一个字符串进,一组候选出),没有任何状态、
+     * 不认识 Spring;{@code collect} 包应该能在没有容器的情况下被直接 new 出来测试。
+     * <b>谁组装,谁依赖框架。</b>
+     */
+    @Bean
+    public CandidateRecall candidateRecall() {
+        return new CandidateRecall();
     }
 
     /**

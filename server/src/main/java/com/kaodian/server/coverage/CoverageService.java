@@ -1,14 +1,17 @@
 package com.kaodian.server.coverage;
 
+import com.kaodian.server.collect.RecordTag;
 import com.kaodian.server.collect.Touch;
 import com.kaodian.server.syllabus.Syllabus;
 
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * 整个产品的那一行公式:<b>{@code 盲区 = 骨架层 − 行为层}</b>。
@@ -125,12 +128,38 @@ public class CoverageService {
         }
     }
 
-    /** 骨架 + 行为 → 全树的覆盖视图。 */
+    /**
+     * 骨架 + 行为 → 全树的覆盖视图,<b>不看标签表</b>。
+     *
+     * <p>等价于「每条记录只有采集那一刻挂上的那条主标签,没有人确认过、也没有人丢弃过」——
+     * 这正是标签表出现之前的口径,所以它不是一条并行的算法,是
+     * {@link #compute(Syllabus, List, List, Instant)} 的一次<b>纯委托</b>:
+     * 真正的计算只有一处,不会出现「两处算同一个数就一定会算出两个数」。
+     */
     public List<GroupCoverage> compute(Syllabus syllabus, List<Touch> touches, Instant now) {
-        Map<String, List<Touch>> byNode = new LinkedHashMap<>();
-        for (Touch t : touches) {
-            byNode.computeIfAbsent(t.nodeCode(), k -> new ArrayList<>()).add(t);
-        }
+        return compute(syllabus, touches, RecordTag.effectiveTagsOf(touches, List.of()), now);
+    }
+
+    /**
+     * 骨架 + 行为 + <b>标签</b> → 全树的覆盖视图。
+     *
+     * <h2>🔴 覆盖度的分子由标签数出来,不由记录数出来</h2>
+     *
+     * docs/10 §6.4:「分子 = <b>{@code discarded=0}</b> 的触达节点数」;
+     * docs/10 §5.2:「{@code discarded=1} 即宁缺毋滥的落地:<b>可见,但不计覆盖度</b>」({@code P1-7})。
+     * 落到这里就是 {@link #project} 里那一句 {@code countsInCoverage()} 的过滤 ——
+     * 被丢弃的标签仍然查得到、看得见,只是不再把它那个考点算成「碰过」。
+     * <p>
+     * 这条口径必须在这一层实现,不能留给接口层「查的时候顺手过滤一下」:
+     * 覆盖率、五态、盲区排序三个数都是从这里出去的,漏掉任何一个都会让同一屏上出现两套口径。
+     *
+     * @param tags 有效标签,来自 {@link RecordTag#effectiveTagsOf} ——
+     *             <b>不是</b> {@code RecordTagStore.findAll()} 的原样返回:
+     *             那里面没有推出来的主标签,直接拿来算会让绝大多数记录凭空消失
+     */
+    public List<GroupCoverage> compute(Syllabus syllabus, List<Touch> touches,
+                                       List<RecordTag> tags, Instant now) {
+        Map<String, List<Touch>> byNode = project(touches, tags);
 
         List<GroupCoverage> result = new ArrayList<>();
         for (Syllabus.Group g : syllabus.groups()) {
@@ -170,6 +199,61 @@ public class CoverageService {
             result.add(new GroupCoverage(g.code(), g.name(), List.copyOf(nodes), covered, g.recent5yCount()));
         }
         return List.copyOf(result);
+    }
+
+    /**
+     * 标签 → 「哪个考点下挂着哪些记录」。<b>差集运算真正的输入。</b>
+     *
+     * <h2>三条规则,每条都对应一个会算错的写法</h2>
+     *
+     * <table border="1">
+     *   <caption>project 的三条规则</caption>
+     *   <tr><th>规则</th><th>不这么写会怎样</th></tr>
+     *   <tr><td>丢弃的标签跳过</td>
+     *       <td>用户说过「不是这个考点」,覆盖度却还算着它 —— 盲区永远不肯回来({@code P1-7})</td></tr>
+     *   <tr><td>指不到记录的标签跳过</td>
+     *       <td>记录删了、标签行还在时,那个考点会凭空保持「碰过」</td></tr>
+     *   <tr><td>同一记录同一考点只算一次</td>
+     *       <td>一条记录被手动挂到同一个考点两次(或补标与手动挂撞上),
+     *           它的做题数会被<b>加两遍</b> —— 而做题数直接决定五态里的「弱」</td></tr>
+     * </table>
+     *
+     * <p>每个考点下的记录按<b>行为层原本的顺序</b>重排,而不是按标签的顺序。
+     * 来源名集合是「按首次出现顺序」出接口的,跟着标签顺序走会让界面上那一列悄悄换序,
+     * 而不会有任何一条断言红。
+     */
+    private static Map<String, List<Touch>> project(List<Touch> touches, List<RecordTag> tags) {
+        Map<String, Touch> byId = new LinkedHashMap<>();
+        Map<String, Integer> order = new LinkedHashMap<>();
+        for (int i = 0; i < touches.size(); i++) {
+            Touch t = touches.get(i);
+            byId.put(t.id(), t);
+            order.put(t.id(), i);
+        }
+
+        Map<String, List<Touch>> byNode = new LinkedHashMap<>();
+        Set<String> counted = new HashSet<>();
+        for (RecordTag tag : tags) {
+            if (!tag.countsInCoverage()) {
+                continue;                                   // 可见,但不计覆盖度
+            }
+            Touch t = byId.get(tag.recordId());
+            if (t == null) {
+                continue;                                   // 标签指向的记录已经不在了
+            }
+            // 分隔符写成 \u0000 的转义,不写成一个真的 NUL 字节:后者会让整个源文件在 grep / file
+            // 眼里变成二进制,而这个仓库有好几条红线断言是【把生效代码当文本扫一遍】的
+            // (ImageRetentionTest)。选 \u0000 本身是因为它不可能出现在 code 或 id 里,
+            // 换成 '-' 之类的话,("a-b", "c") 与 ("a", "b-c") 会拼成同一个键 —— 两条不同的挂载被当成一条。
+            if (!counted.add(tag.nodeCode() + '\u0000' + tag.recordId())) {
+                continue;
+            }
+            byNode.computeIfAbsent(tag.nodeCode(), k -> new ArrayList<>()).add(t);
+        }
+        for (List<Touch> list : byNode.values()) {
+            list.sort(Comparator.comparingInt(t -> order.get(t.id())));
+        }
+        return byNode;
     }
 
     /** 覆盖概览。 */

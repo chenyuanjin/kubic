@@ -14,6 +14,7 @@ import com.kaodian.server.api.dto.TimelineItemDto;
 import com.kaodian.server.collect.CaptureService;
 import com.kaodian.server.collect.CaptureService.CaptureRequest;
 import com.kaodian.server.collect.CaptureService.CaptureResult;
+import com.kaodian.server.collect.RecordTagStore;
 import com.kaodian.server.collect.Touch;
 import com.kaodian.server.collect.TouchStore;
 import com.kaodian.server.coverage.CoverageService.NodeCoverage;
@@ -85,6 +86,16 @@ public class RecordController {
     private final TouchStore store;
 
     /**
+     * 级联删标签用它 —— 契约见 {@link #delete}。
+     *
+     * <p>只用到 {@link RecordTagStore#deleteByRecord} 一个方法。不走 {@code TaggingService}
+     * 是因为那一层是<b>打标的写入路径</b>(校验考点、守住 origin、不复活丢弃过的),
+     * 而这里要做的只是把一条记录连同它的标签一起收走 —— 借道打标服务只会让那条路径
+     * 多一个与打标无关的调用者。
+     */
+    private final RecordTagStore tagStore;
+
+    /**
      * 逐条校验批量条目用的校验器。
      *
      * <h2>为什么不能给批量的元素挂 {@code @Valid}</h2>
@@ -99,11 +110,13 @@ public class RecordController {
     private final Validator validator;
 
     public RecordController(CaptureService capture, SyllabusSource syllabus,
-                            CoverageReader reader, TouchStore store, Validator validator) {
+                            CoverageReader reader, TouchStore store, RecordTagStore tagStore,
+                            Validator validator) {
         this.capture = capture;
         this.syllabus = syllabus;
         this.reader = reader;
         this.store = store;
+        this.tagStore = tagStore;
         this.validator = validator;
     }
 
@@ -213,11 +226,18 @@ public class RecordController {
     /**
      * 删一条记录。
      *
-     * <h2>⚪ 契约的「级联删标签」这一半今天是空的,没有被假装做掉</h2>
+     * <h2>级联删标签 —— 契约的另一半,现在有对应物了</h2>
      *
-     * 说明写在 {@link RecordDeletedResponse} 的 javadoc 里,连同它落地时要动哪儿。
-     * 这里只重复一句结论:<b>今天没有标签表</b>,{@code Touch} 直接挂着一个 {@code nodeCode},
-     * 删掉记录就删掉了它的全部挂载关系。
+     * docs/10 §6.2 的原文是「<b>级联删标签</b>,触发覆盖层重算」。
+     * 标签表落地之后这句话是真的要做的事:留着标签行不删,会剩下一批指向不存在记录的标签,
+     * 而<b>下一个读它们的人未必也做「记录还在吗」这层过滤</b>——那时用户删了记录,
+     * 盲区却不肯回来。
+     * <p>
+     * 顺序是<b>先删记录、再删标签</b>:反过来的话,删标签成功而删记录失败时,
+     * 用户会看到一条覆盖度已经掉下去、记录却还在列表上的记录,而他没做过任何事。
+     * 现在这个顺序下最坏情况是留几行孤儿标签,它们进不了覆盖度(见
+     * {@code CoverageService.project} 的第二条规则),只是躺在文件里。
+     * <b>失败方向选的是「多几行没人看的数据」,不是「少一个数」。</b>
      *
      * <h2>「触发覆盖层重算」不需要一次显式调用</h2>
      *
@@ -240,6 +260,7 @@ public class RecordController {
             throw new ApiException(HttpStatus.NOT_FOUND, "RECORD_NOT_FOUND",
                     "找不到这条记录 —— 它可能已经被删掉了。");
         }
+        tagStore.deleteByRecord(id);            // 级联删标签(docs/10 §6.2)
 
         CoverageReader.Snapshot snapshot = reader.read();
         NodeCoverage node = snapshot.node(deleted.nodeCode());

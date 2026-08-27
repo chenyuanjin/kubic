@@ -4,6 +4,8 @@ import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.kaodian.server.api.dto.CreateNodeRequest;
 import com.kaodian.server.collect.CaptureService;
 import com.kaodian.server.collect.FileTouchStore;
+import com.kaodian.server.collect.InMemoryRecordTagStore;
+import com.kaodian.server.collect.RecordTagStore;
 import com.kaodian.server.collect.TouchStore;
 import com.kaodian.server.coverage.CoverageService;
 import com.kaodian.server.recognize.VisionTagger;
@@ -878,8 +880,14 @@ class SyllabusAdminApiTest {
         /** {@link CoverageReader} 是 {@code @Component},web 切片不扫它。 */
         @Bean
         CoverageReader coverageReader(SyllabusSource syllabus, TouchStore store,
-                                      CoverageService coverage, Clock clock) {
-            return new CoverageReader(syllabus, store, coverage, clock);
+                                      RecordTagStore tagStore, CoverageService coverage, Clock clock) {
+            return new CoverageReader(syllabus, store, tagStore, coverage, clock);
+        }
+
+        /** 标签层。考点管理不打标,但覆盖度的分子要从这里出来。 */
+        @Bean
+        RecordTagStore recordTagStore() {
+            return new InMemoryRecordTagStore();
         }
 
         @Bean

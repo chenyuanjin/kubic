@@ -1,5 +1,7 @@
 package com.kaodian.server.api;
 
+import com.kaodian.server.collect.RecordTag;
+import com.kaodian.server.collect.RecordTagStore;
 import com.kaodian.server.collect.Touch;
 import com.kaodian.server.collect.TouchStore;
 import com.kaodian.server.coverage.CoverageService;
@@ -32,6 +34,7 @@ public class CoverageReader {
 
     private final SyllabusSource syllabus;
     private final TouchStore store;
+    private final RecordTagStore tagStore;
     private final CoverageService coverage;
     private final Clock clock;
 
@@ -40,10 +43,14 @@ public class CoverageReader {
      *                 骨架层现在可写,持有一棵不可变的 record 等于持有进程启动那一刻的快照 ——
      *                 用户新增一个考点之后覆盖率的分母不动,<b>而且不会报错</b>。
      *                 这正是「新增考点后分母 +1」那条测试守着的东西
+     * @param tagStore 标签层。<b>覆盖度的分子从这里出来</b>({@code discarded=0} 的那些,
+     *                 docs/10 §6.4)。它和行为层必须在<b>同一次读取</b>里取齐 —— 见 {@link #read}
      */
-    public CoverageReader(SyllabusSource syllabus, TouchStore store, CoverageService coverage, Clock clock) {
+    public CoverageReader(SyllabusSource syllabus, TouchStore store, RecordTagStore tagStore,
+                          CoverageService coverage, Clock clock) {
         this.syllabus = syllabus;
         this.store = store;
+        this.tagStore = tagStore;
         this.coverage = coverage;
         this.clock = clock;
     }
@@ -81,7 +88,16 @@ public class CoverageReader {
         Instant now = clock.instant();
         Syllabus tree = syllabus.current();
         List<Touch> touches = store.findAll();
-        return new Snapshot(tree, now, touches, coverage.compute(tree, touches, now));
+
+        // 行为层与标签层<b>一起读一次</b>,然后才算差集。分两次去问的话,中间要是恰好落了一次丢弃,
+        // 就可能出现「记录已经有了、它的标签还没读到」——那个考点会不报错地少算一次触达。
+        // 与「树只在这里问一次」是同一条纪律。
+        //
+        // 🔴 tagStore.findAll() 不能直接拿去算:库里只有【后来发生的事】(补标、加挂、确认、丢弃),
+        //    采集那一刻的主标签是推出来的。派生规则只有 RecordTag.effectiveTagsOf 一处。
+        List<RecordTag> tags = RecordTag.effectiveTagsOf(touches, tagStore.findAll());
+
+        return new Snapshot(tree, now, touches, coverage.compute(tree, touches, tags, now));
     }
 
     /** 纯转发给 {@link CoverageService#summarize}。 */

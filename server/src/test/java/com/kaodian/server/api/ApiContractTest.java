@@ -1,5 +1,6 @@
 package com.kaodian.server.api;
 
+import com.kaodian.server.api.dto.BatchCreateRecordsRequest;
 import com.kaodian.server.api.dto.CreateRecordRequest;
 import com.kaodian.server.api.dto.UnknownFieldException;
 import com.kaodian.server.collect.CaptureService;
@@ -11,6 +12,8 @@ import com.kaodian.server.recognize.VisionTagger;
 import com.kaodian.server.syllabus.Syllabus;
 import com.kaodian.server.syllabus.SyllabusLoader;
 import com.kaodian.server.syllabus.SyllabusSource;
+import com.jayway.jsonpath.JsonPath;
+import jakarta.validation.constraints.Size;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -41,8 +44,10 @@ import java.util.Set;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -353,10 +358,427 @@ class ApiContractTest {
                 .andExpect(jsonPath("$.trace").doesNotExist());
     }
 
+    // ---------------------------------------------------------------- 幂等
+
+    @Test
+    @DisplayName("🔴 clientToken 幂等:同一个键提交两次 → 第二次 200 + 原来那条,库里只多一条")
+    void sameClientTokenIsStoredOnlyOnce() throws Exception {
+        String body = """
+                {"kind":"MANUAL","sourceName":"粉笔 · 资料分析系统班 L12",
+                 "nodeCode":"average-calc","clientToken":"offline-2026-08-27-001"}
+                """;
+
+        String firstId = mockMvc.perform(post("/api/records")
+                        .contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        assertEquals(9, store.count(), "第一次:种子 8 条 + 这条");
+
+        mockMvc.perform(post("/api/records")
+                        .contentType(MediaType.APPLICATION_JSON).content(body))
+                // 🔴 200 不是 201:服务端什么都没新建,回 Created 是在说谎
+                .andExpect(status().isOk())
+                // 返回的必须是【原来那条】—— id 与 occurredAt 都是第一次的
+                .andExpect(jsonPath("$.record.id").value(
+                        JsonPath.read(firstId, "$.record.id").toString()))
+                .andExpect(jsonPath("$.record.occurredAt").value(
+                        JsonPath.read(firstId, "$.record.occurredAt").toString()));
+
+        assertEquals(9, store.count(), "第二次一条都不该多 —— 多一条就等于覆盖度的分子被数了两次");
+    }
+
+    @Test
+    @DisplayName("幂等只对同一个键成立:两个不同的 clientToken 是两条记录")
+    void differentClientTokensAreDifferentRecords() throws Exception {
+        for (String token : List.of("q-1", "q-2")) {
+            mockMvc.perform(post("/api/records")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("""
+                                    {"kind":"MANUAL","sourceName":"自己刷题","nodeCode":"average-calc",
+                                     "clientToken":"%s"}
+                                    """.formatted(token)))
+                    .andExpect(status().isCreated());
+        }
+        assertEquals(10, store.count());
+    }
+
+    @Test
+    @DisplayName("🔴 不带 clientToken 的两次提交是两条记录 —— 空的去重键不是一个能互相匹配的值")
+    void recordsWithoutTokenAreNeverDeduplicated() throws Exception {
+        String body = """
+                {"kind":"MANUAL","sourceName":"自己刷题","nodeCode":"average-calc"}
+                """;
+        mockMvc.perform(post("/api/records").contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isCreated());
+        mockMvc.perform(post("/api/records").contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isCreated());
+
+        // 判重的失败方向只能是「多一条」:多一条用户看得见、删得掉;
+        // 少一条是他记了却没记上,而他不会知道。
+        assertEquals(10, store.count(), "两条都要在 —— 它们只是长得一样,不是同一条");
+    }
+
+    @Test
+    @DisplayName("clientToken 有长度上限 —— 超了 400,挡住把题干塞进去重键这条绕路")
+    void clientTokenIsLengthCapped() throws Exception {
+        mockMvc.perform(post("/api/records")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"kind":"MANUAL","sourceName":"自己刷题","nodeCode":"growth-rate",
+                                 "clientToken":"%s"}
+                                """.formatted("题".repeat(65))))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))
+                .andExpect(jsonPath("$.message").value(Matchers.containsString("clientToken")));
+        assertEquals(8, store.count());
+    }
+
+    // ---------------------------------------------------------------- 批量补传
+
+    @Test
+    @DisplayName("POST /api/records/batch —— 三条落库,覆盖度跟着动")
+    void batchStoresEveryItem() throws Exception {
+        mockMvc.perform(post("/api/records/batch")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"records":[
+                                  {"kind":"MANUAL","sourceName":"地铁上","nodeCode":"average-calc","clientToken":"o-1"},
+                                  {"kind":"DRILL","sourceName":"地铁上","nodeCode":"yoy-mom","practiced":5,"correct":4,"clientToken":"o-2"},
+                                  {"kind":"PASTE","sourceName":"地铁上","nodeCode":"multiple-calc","clientToken":"o-3"}
+                                ]}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.submitted").value(3))
+                .andExpect(jsonPath("$.stored").value(3))
+                .andExpect(jsonPath("$.duplicated").value(0))
+                .andExpect(jsonPath("$.failed").value(0))
+                .andExpect(jsonPath("$.results[0].index").value(0))
+                .andExpect(jsonPath("$.results[0].status").value("STORED"))
+                .andExpect(jsonPath("$.results[0].clientToken").value("o-1"))
+                .andExpect(jsonPath("$.results[1].record.practiced").value(5))
+                .andExpect(jsonPath("$.results[2].error").doesNotExist());
+
+        assertEquals(11, store.count());
+        mockMvc.perform(get("/api/coverage/summary")).andExpect(jsonPath("$.covered").value(11));
+    }
+
+    /**
+     * 🔴 这是整个批量端点存在的理由,也是它最容易被写错的一条。
+     *
+     * <p>「一条不合法 → 整批回滚」是最省事的写法,而在补传这个场景下它意味着:
+     * 用户断网记了一天,第二条挂着一个他自己后来删掉的考点,<b>那一天全部白记</b>。
+     * 而且客户端拿到 400 之后除了重试没有第二个动作,重试还会再撞同一条 —— 队列永远吐不完。
+     */
+    @Test
+    @DisplayName("🔴 部分成功:一条挂在树外的考点上,其余照落,不整批回滚")
+    void batchIsPartiallySuccessful() throws Exception {
+        mockMvc.perform(post("/api/records/batch")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"records":[
+                                  {"kind":"MANUAL","sourceName":"地铁上","nodeCode":"average-calc","clientToken":"o-1"},
+                                  {"kind":"MANUAL","sourceName":"地铁上","nodeCode":"我自己起的考点","clientToken":"o-2"},
+                                  {"kind":"MANUAL","sourceName":"地铁上","nodeCode":"yoy-mom","clientToken":"o-3"}
+                                ]}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.stored").value(2))
+                .andExpect(jsonPath("$.failed").value(1))
+                .andExpect(jsonPath("$.results[0].status").value("STORED"))
+                .andExpect(jsonPath("$.results[1].status").value("FAILED"))
+                .andExpect(jsonPath("$.results[1].error.code").value("NODE_NOT_IN_SYLLABUS"))
+                .andExpect(jsonPath("$.results[1].error.traceId").isNotEmpty())
+                .andExpect(jsonPath("$.results[1].record").doesNotExist())
+                // 🔴 第 3 条在坏的那条【之后】,它必须照样落地 —— 这一条挂了就说明中途断了
+                .andExpect(jsonPath("$.results[2].status").value("STORED"));
+
+        assertEquals(10, store.count(), "坏的那条不落库,好的两条一条都不能少");
+    }
+
+    @Test
+    @DisplayName("🔴 批量里的重复条目算 DUPLICATE,不算失败 —— 补传敢重发全靠这一条")
+    void batchTreatsReplayAsDuplicateNotFailure() throws Exception {
+        String batch = """
+                {"records":[
+                  {"kind":"MANUAL","sourceName":"地铁上","nodeCode":"average-calc","clientToken":"o-1"},
+                  {"kind":"MANUAL","sourceName":"地铁上","nodeCode":"yoy-mom","clientToken":"o-2"}
+                ]}
+                """;
+        mockMvc.perform(post("/api/records/batch")
+                        .contentType(MediaType.APPLICATION_JSON).content(batch))
+                .andExpect(jsonPath("$.stored").value(2));
+
+        // 断线重连,整批再发一次 —— 这正是离线队列的常态
+        mockMvc.perform(post("/api/records/batch")
+                        .contentType(MediaType.APPLICATION_JSON).content(batch))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.stored").value(0))
+                .andExpect(jsonPath("$.duplicated").value(2))
+                .andExpect(jsonPath("$.failed").value(0))
+                .andExpect(jsonPath("$.results[0].status").value("DUPLICATE"))
+                .andExpect(jsonPath("$.results[0].record.id").isNotEmpty());
+
+        assertEquals(10, store.count(), "重发一整批,一条都不该多");
+    }
+
+    @Test
+    @DisplayName("🔴 补传缺 clientToken → 那一条被拒,其余照落 —— 没有它的补传是注定重复的写入")
+    void batchItemWithoutClientTokenIsRejected() throws Exception {
+        mockMvc.perform(post("/api/records/batch")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"records":[
+                                  {"kind":"MANUAL","sourceName":"地铁上","nodeCode":"average-calc"},
+                                  {"kind":"MANUAL","sourceName":"地铁上","nodeCode":"yoy-mom","clientToken":"o-2"}
+                                ]}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.failed").value(1))
+                .andExpect(jsonPath("$.results[0].status").value("FAILED"))
+                .andExpect(jsonPath("$.results[0].error.code").value("MISSING_CLIENT_TOKEN"))
+                // clientToken 缺失时结果里它是 null,所以客户端只能靠 index 对回队列里那一条
+                .andExpect(jsonPath("$.results[0].clientToken").doesNotExist())
+                .andExpect(jsonPath("$.results[0].index").value(0))
+                .andExpect(jsonPath("$.results[1].status").value("STORED"));
+
+        assertEquals(9, store.count());
+    }
+
+    @Test
+    @DisplayName("🔴 单批上限 50:超了整批 400,不截断到 50 条处理")
+    void batchOverFiftyIsRejectedWhole() throws Exception {
+        StringBuilder items = new StringBuilder();
+        for (int i = 0; i < 51; i++) {
+            items.append(i == 0 ? "" : ",").append("""
+                    {"kind":"MANUAL","sourceName":"地铁上","nodeCode":"average-calc","clientToken":"o-%d"}
+                    """.formatted(i));
+        }
+
+        mockMvc.perform(post("/api/records/batch")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"records\":[" + items + "]}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
+
+        // 🔴 一条都不许落。截断到 50 条处理是这里最危险的写法:
+        // 服务端存 50 条回一个成功,客户端清空整个队列 —— 用户丢了 1 笔,两边都以为一切正常。
+        assertEquals(8, store.count());
+    }
+
+    @Test
+    @DisplayName("空批被拒 —— 空的补传只可能是客户端的 bug")
+    void emptyBatchIsRejected() throws Exception {
+        mockMvc.perform(post("/api/records/batch")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"records\":[]}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
+    }
+
+    @Test
+    @DisplayName("🔴 R-07 在批量端点上同样成立:外层壳和内层条目都不接受未定义字段")
+    void batchRejectsUnknownFieldsAtBothLevels() throws Exception {
+        // 外层:如果这里宽容,{"records":[...], "tags":[...]} 会被安静忽略,调用方以为标签生效了
+        mockMvc.perform(post("/api/records/batch")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"records":[{"kind":"MANUAL","sourceName":"地铁上",
+                                             "nodeCode":"average-calc","clientToken":"o-1"}],
+                                 "tags":["我自己想的考点"]}
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("UNKNOWN_FIELD"))
+                .andExpect(jsonPath("$.message").value(Matchers.containsString("tags")));
+
+        // 内层:解析层的失败必然是整批的 —— 它不是「有一条数据不干净」,是调用方在试探红线
+        mockMvc.perform(post("/api/records/batch")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"records":[
+                                  {"kind":"MANUAL","sourceName":"地铁上","nodeCode":"average-calc","clientToken":"o-1"},
+                                  {"kind":"MANUAL","sourceName":"地铁上","nodeCode":"yoy-mom","clientToken":"o-2",
+                                   "transcript":"2023 年全国粮食产量为..."}
+                                ]}
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("UNKNOWN_FIELD"));
+
+        assertEquals(8, store.count(), "解析就没过,一条都不该落");
+    }
+
+    @Test
+    @DisplayName("批里某一条的字段不合法 → 只拒那一条,而且报错里没有用户送来的值")
+    void batchItemValidationFailsAloneAndEchoesNothing() throws Exception {
+        mockMvc.perform(post("/api/records/batch")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"records":[
+                                  {"kind":"DRILL","sourceName":"%s","nodeCode":"average-calc","clientToken":"o-1"},
+                                  {"kind":"MANUAL","sourceName":"地铁上","nodeCode":"yoy-mom","clientToken":"o-2"}
+                                ]}
+                                """.formatted("题".repeat(200))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.failed").value(1))
+                .andExpect(jsonPath("$.stored").value(1))
+                .andExpect(jsonPath("$.results[0].error.code").value("VALIDATION_FAILED"))
+                .andExpect(jsonPath("$.results[0].error.message")
+                        .value(Matchers.containsString("sourceName")))
+                // 🔴 一批 50 条,原样回声等于把 50 段用户输入一起写进响应体和访问日志
+                .andExpect(jsonPath("$.results[0].error.message")
+                        .value(Matchers.not(Matchers.containsString("题题题"))));
+    }
+
+    // ---------------------------------------------------------------- 删记录
+
+    @Test
+    @DisplayName("DELETE /api/records/{id} —— 记录没了,那个考点的状态跟着退回去")
+    void deleteRecordMovesTheNodeBack() throws Exception {
+        // share-change 只有一条记录(仅接触),删掉它那个考点就该回到空白
+        mockMvc.perform(delete("/api/records/{id}", "t-share-change"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value("t-share-change"))
+                .andExpect(jsonPath("$.node.state").value("EMPTY"))
+                .andExpect(jsonPath("$.summary.covered").value(7))
+                .andExpect(jsonPath("$.summary.percent").value(39));
+
+        assertEquals(7, store.count());
+        mockMvc.perform(get("/api/coverage/summary")).andExpect(jsonPath("$.covered").value(7));
+    }
+
+    @Test
+    @DisplayName("🔴 删一条不存在的记录 → 404,而且消息里不回显那个 id(路径变量没有长度上限)")
+    void deletingAMissingRecordIs404AndEchoesNothing() throws Exception {
+        String pastedStem = "2023 年全国粮食总产量为 13908 亿斤,比上年增加 177 亿斤".repeat(40);
+
+        String body = mockMvc.perform(delete("/api/records/{id}", pastedStem))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("RECORD_NOT_FOUND"))
+                .andExpect(jsonPath("$.traceId").isNotEmpty())
+                .andReturn().getResponse().getContentAsString();
+
+        assertFalse(body.contains("粮食"),
+                "那个 id 是客户端自己刚发过来的,回显一个字的信息都不增加,却开了一条往日志里写题干的路");
+        assertEquals(8, store.count());
+    }
+
+    // ---------------------------------------------------------------- cursor 分页
+
+    @Test
+    @DisplayName("GET /api/records —— 倒序、带 total,与 /api/timeline 是两个端点")
+    void recordsAreListedNewestFirst() throws Exception {
+        mockMvc.perform(get("/api/records"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.total").value(8))
+                .andExpect(jsonPath("$.returned").value(8))
+                .andExpect(jsonPath("$.hasMore").value(false))
+                .andExpect(jsonPath("$.nextCursor").doesNotExist())
+                .andExpect(jsonPath("$.items[0].nodeCode").value("growth-rate"))
+                // 🔴 与时间线同一条纪律:这里没有内容字段,一个都没有
+                .andExpect(jsonPath("$.items[0].content").doesNotExist())
+                .andExpect(jsonPath("$.items[0].transcript").doesNotExist());
+
+        // §6.4 的聚合视图仍然在,两个端点各管各的(见 RecordPageResponse 的 javadoc)
+        mockMvc.perform(get("/api/timeline")).andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("🔴 cursor 翻页把 8 条不重不漏地翻完")
+    void cursorPagingCoversEveryRecordExactlyOnce() throws Exception {
+        List<String> seen = new ArrayList<>();
+        String cursor = null;
+        for (int page = 0; page < 10; page++) {                 // 上限只为防死循环
+            var request = get("/api/records").param("limit", "3");
+            if (cursor != null) {
+                request = request.param("cursor", cursor);
+            }
+            String body = mockMvc.perform(request)
+                    .andExpect(status().isOk())
+                    .andReturn().getResponse().getContentAsString();
+
+            List<String> ids = JsonPath.read(body, "$.items[*].id");
+            seen.addAll(ids);
+            if (!(boolean) JsonPath.read(body, "$.hasMore")) {
+                assertNull(JsonPath.read(body, "$.nextCursor"), "没有更多时不该再给游标");
+                break;
+            }
+            cursor = JsonPath.read(body, "$.nextCursor");
+        }
+
+        assertEquals(8, seen.size(), "翻完之后条数必须正好等于总数 —— 多了是重复,少了是漏条");
+        assertEquals(8, Set.copyOf(seen).size(), "同一条不能被吐两次");
+    }
+
+    /**
+     * 🔴 这一条是游标为什么要带 id 的全部理由。
+     *
+     * <p>补传一次落 50 条,它们的 {@code occurredAt} 全部来自<b>同一次 {@code clock.instant()}</b>。
+     * 游标只锚时间戳的话,这一整批要么一起被跳过、要么一起被重复吐出来 ——
+     * 而它们恰恰是用户断网那天记的全部东西。
+     */
+    @Test
+    @DisplayName("🔴 同一毫秒里的多条记录也能被翻完 —— 补传落下的那一批就是这样")
+    void cursorSurvivesRecordsSharingATimestamp() throws Exception {
+        Instant sameMoment = Instant.now().minus(Duration.ofDays(7));
+        List<Touch> burst = new ArrayList<>();
+        for (int i = 0; i < 6; i++) {
+            burst.add(new Touch("t-burst-" + i, "average-calc", "地铁上",
+                    TouchKind.MANUAL, sameMoment, null, "o-" + i));
+        }
+        store.reset(burst);
+
+        List<String> seen = new ArrayList<>();
+        String cursor = null;
+        for (int page = 0; page < 10; page++) {
+            var request = get("/api/records").param("limit", "2");
+            if (cursor != null) {
+                request = request.param("cursor", cursor);
+            }
+            String body = mockMvc.perform(request).andReturn().getResponse().getContentAsString();
+            seen.addAll(JsonPath.read(body, "$.items[*].id"));
+            if (!(boolean) JsonPath.read(body, "$.hasMore")) {
+                break;
+            }
+            cursor = JsonPath.read(body, "$.nextCursor");
+        }
+
+        assertEquals(6, seen.size(), "同一毫秒的 6 条一条都不能少");
+        assertEquals(6, Set.copyOf(seen).size(), "也一条都不能重复");
+    }
+
+    @Test
+    @DisplayName("🔴 解不开的游标 → 400,而且报错里不回显整段原文")
+    void badCursorIsRejectedWithoutEchoingIt() throws Exception {
+        String pastedStem = "2023 年全国粮食总产量为 13908 亿斤,比上年增加 177 亿斤".repeat(40);
+
+        String body = mockMvc.perform(get("/api/records").param("cursor", pastedStem))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_CURSOR"))
+                .andReturn().getResponse().getContentAsString();
+        assertTrue(body.length() < pastedStem.length(),
+                "游标是查询参数,没有 @Size 管得着它 —— 回声必须自己截断");
+
+        // 长度够短但根本不是游标的,同样是 INVALID_CURSOR,不是 500
+        mockMvc.perform(get("/api/records").param("cursor", "不是游标"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_CURSOR"));
+    }
+
+    @Test
+    @DisplayName("limit 越界被拒;默认 50")
+    void recordsLimitIsValidated() throws Exception {
+        mockMvc.perform(get("/api/records").param("limit", "0"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
+        mockMvc.perform(get("/api/records").param("limit", "201"))
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(get("/api/records"))
+                .andExpect(status().isOk());
+    }
+
     // ---------------------------------------------------------------- 跨域
 
     @Test
-    @DisplayName("CORS:放行 Vite dev server;方法白名单里没有 DELETE")
+    @DisplayName("CORS:放行 Vite dev server;全局方法白名单里没有 DELETE")
     void corsAllowsViteDevServerOnly() throws Exception {
         mockMvc.perform(options("/api/coverage/summary")
                         .header("Origin", "http://localhost:5173")
@@ -370,6 +792,29 @@ class ApiContractTest {
         mockMvc.perform(options("/api/coverage/summary")
                         .header("Origin", "https://evil.example.com")
                         .header("Access-Control-Request-Method", "GET"))
+                .andExpect(status().isForbidden());
+    }
+
+    /**
+     * 🔴 {@code DELETE} 是逐条路径开的,不是往 {@code /api/**} 里加一个方法。
+     *
+     * <p>加在全局上会<b>连带给 {@code /api/syllabus/**} 开删除口子</b>,
+     * 而骨架层的删除守则(有记录就不许删,只能归档)保护的正是行为层的记录 ——
+     * 它不能被一行图省事的跨域配置从旁边绕开。这个测试守的就是这条边界。
+     */
+    @Test
+    @DisplayName("🔴 CORS:DELETE 只开给 /api/records/*,骨架层那边照旧不开")
+    void corsOpensDeleteOnlyWhereTheContractAsksForIt() throws Exception {
+        mockMvc.perform(options("/api/records/t-share-change")
+                        .header("Origin", "http://localhost:5173")
+                        .header("Access-Control-Request-Method", "DELETE"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Access-Control-Allow-Methods",
+                        Matchers.containsString("DELETE")));
+
+        mockMvc.perform(options("/api/syllabus/nodes/growth-rate")
+                        .header("Origin", "http://localhost:5173")
+                        .header("Access-Control-Request-Method", "DELETE"))
                 .andExpect(status().isForbidden());
     }
 
@@ -436,6 +881,45 @@ class ApiContractTest {
         }
     }
 
+    /**
+     * 🔴 批量端点的<b>外层壳</b>也要有第二道锁,理由与上面那条一模一样。
+     *
+     * <p>批量是绕过 R-07 最省事的一条路:外层若对未定义字段宽容,
+     * {@code {"records":[…], "tags":["我自己想的考点"]}} 会被安静忽略,调用方以为标签生效了。
+     * 而走 MockMvc 的那条测试证明不了「有两道锁」—— 真实配置里
+     * {@code FAIL_ON_UNKNOWN_PROPERTIES} 一直开着,第一道锁会先响。所以这里同样把它拆掉。
+     */
+    @Test
+    @DisplayName("🔴 批量外层壳的第二道锁:关掉 FAIL_ON_UNKNOWN_PROPERTIES 也照样拒未定义字段")
+    void batchShellRejectsUnknownFieldsEvenWithoutTheMapperFlag() {
+        JsonMapper lenient = JsonMapper.builder()
+                .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)   // 第一道锁,故意拆掉
+                .build();
+
+        for (String field : List.of("tags", "labels", "notes")) {
+            String body = """
+                    {"records":[{"kind":"MANUAL","sourceName":"地铁上",
+                                 "nodeCode":"growth-rate","clientToken":"o-1"}],
+                     "%s":["2023 年全国粮食产量为..."]}
+                    """.formatted(field);
+
+            Exception thrown = assertThrows(Exception.class,
+                    () -> lenient.readValue(body, BatchCreateRecordsRequest.class),
+                    "配置锁拆掉之后 " + field + " 就进来了 —— 内层每一条严、外层松,等于整条线松");
+
+            UnknownFieldException lock = null;
+            for (Throwable t = thrown; t != null && t != t.getCause(); t = t.getCause()) {
+                if (t instanceof UnknownFieldException ufe) {
+                    lock = ufe;
+                }
+            }
+            assertNotNull(lock, "拦下它的必须是 DTO 上那道锁,不是别的解析错误:" + thrown);
+            assertEquals(field, lock.fieldName());
+            assertFalse(lock.getMessage().contains("粮食产量"),
+                    "异常消息里只能有字段名,不能有字段的值");
+        }
+    }
+
     @Test
     @DisplayName("🔴 报错回声有长度上限 —— 路径变量/查询参数没有 @Size 管着,别成了写日志的通道")
     void rejectionMessagesDoNotEchoUnboundedUserInput() throws Exception {
@@ -456,13 +940,40 @@ class ApiContractTest {
                 "subject 是查询参数,没有 @Size 管得着它 —— 回声必须自己截断");
     }
 
+    /**
+     * 🔴 字段表从五个变成六个,是 {@code clientToken} 加进来的那一次(docs/10 §6.2「client_token 幂等」)。
+     *
+     * <p>这个断言的作用不是「数字必须是 5」,是<b>加字段这件事必须先在这里被挡一下</b>:
+     * 改这一行的人得先回答「这个字段会不会变成放内容的地方」。
+     * {@code clientToken} 的答案是它有上限({@link Touch#MAX_CLIENT_TOKEN_LENGTH} = 64),
+     * 而 64 装不下任何一道题的题干 —— 下一个字段也得拿出同样量级的答案。
+     */
     @Test
-    @DisplayName("🔴 写入请求体的字段表被钉死:五个,不多不少")
+    @DisplayName("🔴 写入请求体的字段表被钉死:六个,不多不少")
     void createRequestShapeIsPinned() {
         List<String> fields = Arrays.stream(CreateRecordRequest.class.getRecordComponents())
                 .map(RecordComponent::getName).toList();
-        assertEquals(List.of("kind", "sourceName", "nodeCode", "practiced", "correct"), fields,
+        assertEquals(List.of("kind", "sourceName", "nodeCode", "practiced", "correct", "clientToken"), fields,
                 "「只接受 nodeCode,不接受 name」是 R-07 在接口层的实现 —— 加字段前先回去看 docs/10 §6.3");
+    }
+
+    @Test
+    @DisplayName("🔴 clientToken 有长度上限,而且上限只有一个数 —— 它是 id,不是放内容的地方")
+    void clientTokenHasASingleCeiling() {
+        RecordComponent rc = Arrays.stream(CreateRecordRequest.class.getRecordComponents())
+                .filter(c -> c.getName().equals("clientToken"))
+                .findFirst().orElseThrow();
+        // @Size 会按自身的 @Target 落到分量 / 访问器 / 后备字段里的某几处 —— 三处都看一遍,
+        // 别因为落点不同就当成「没写」(与 NoStemFieldTest#sizeOf 同一条)
+        Size size = rc.getAnnotation(Size.class);
+        if (size == null) {
+            size = rc.getAccessor().getAnnotation(Size.class);
+        }
+
+        assertNotNull(size, "clientToken 没有 @Size —— 那它就能装下一整道题(R-01)");
+        assertEquals(Touch.MAX_CLIENT_TOKEN_LENGTH, size.max(),
+                "上限必须引用 Touch.MAX_CLIENT_TOKEN_LENGTH,不能自己写一个数:"
+                        + "请求体、领域记录、落盘 JSON 三处都要说得出上限,三个数迟早对不上");
     }
 
     private static List<Class<?>> dtoRecords() {
@@ -537,10 +1048,44 @@ class ApiContractTest {
             return touches.stream().filter(t -> t.nodeCode().equals(nodeCode)).toList();
         }
 
+        /** 契约见 {@link TouchStore#findByClientToken} —— 没有去重键不是一个能互相匹配的值。 */
+        @Override
+        public Touch findByClientToken(String clientToken) {
+            if (clientToken == null || clientToken.isBlank()) {
+                return null;
+            }
+            return touches.stream()
+                    .filter(t -> clientToken.equals(t.clientToken()))
+                    .findFirst()
+                    .orElse(null);
+        }
+
+        /**
+         * 契约见 {@link TouchStore#append} —— <b>幂等在这一层</b>。
+         *
+         * <p>这个内存版必须跟着实现这一条,不能只让 {@code FileTouchStore} 实现:
+         * 否则接口契约测试跑的是一个「没有幂等」的 store,
+         * 而幂等恰恰是这一批端点要验的东西 —— 那样验的就是假的。
+         */
         @Override
         public Touch append(Touch touch) {
+            Touch existing = findByClientToken(touch.clientToken());
+            if (existing != null) {
+                return existing;
+            }
             touches.add(touch);
             return touch;
+        }
+
+        /** 契约见 {@link TouchStore#delete} —— 删一条不存在的返回 null,不抛异常。 */
+        @Override
+        public Touch delete(String id) {
+            for (int i = 0; i < touches.size(); i++) {
+                if (touches.get(i).id().equals(id)) {
+                    return touches.remove(i);
+                }
+            }
+            return null;
         }
 
         @Override
@@ -556,7 +1101,7 @@ class ApiContractTest {
                 Touch t = touches.get(i);
                 if (t.nodeCode().equals(fromNodeCode)) {
                     touches.set(i, new Touch(t.id(), toNodeCode, t.sourceName(), t.kind(),
-                            t.occurredAt(), t.drill()));
+                            t.occurredAt(), t.drill(), t.clientToken()));
                     moved++;
                 }
             }

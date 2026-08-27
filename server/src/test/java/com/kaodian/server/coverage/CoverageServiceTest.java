@@ -165,13 +165,22 @@ class CoverageServiceTest {
         assertFalse(NodeState.EMPTY.covered());
     }
 
+    /**
+     * 第七个字段 {@code clientToken} 是去重键(docs/10 §6.2「client_token 幂等」)。
+     *
+     * <p>它是这条记录上<b>唯一一个来自客户端的字符串</b>,所以它能进来必须有个硬理由:
+     * 上限 {@link Touch#MAX_CLIENT_TOKEN_LENGTH} = 64,而 64 装不下任何一道题的题干,
+     * 且 {@code Touch} 的构造器会真的拒掉超长的值(不只是一个不参与校验的注解)。
+     */
     @Test
     @DisplayName("🔴 记录里只有来源名与时间戳 —— 结构上没有放课程内容的地方")
     void recordCarriesNoCourseContent() {
         // Touch 是 record,它的组件就是它的全部字段。这里断言的是【形状】,不是某次赋值。
         List<String> fields = java.util.Arrays.stream(Touch.class.getRecordComponents())
                 .map(java.lang.reflect.RecordComponent::getName).toList();
-        assertEquals(List.of("id", "nodeCode", "sourceName", "kind", "occurredAt", "drill"), fields);
+        assertEquals(
+                List.of("id", "nodeCode", "sourceName", "kind", "occurredAt", "drill", "clientToken"),
+                fields);
 
         for (String forbidden : List.of("content", "text", "body", "question", "transcript",
                 "imageUrl", "image", "answer", "explanation", "note")) {

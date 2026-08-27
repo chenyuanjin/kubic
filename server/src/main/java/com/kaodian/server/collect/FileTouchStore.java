@@ -127,9 +127,35 @@ public class FileTouchStore implements TouchStore {
     }
 
     @Override
+    public Touch findByClientToken(String clientToken) {
+        synchronized (lock) {
+            ensureLoaded();
+            return lookup(clientToken);
+        }
+    }
+
+    /**
+     * 追加一条记录。契约见 {@link TouchStore#append} —— <b>「查去重键 + 写」在同一把锁里。</b>
+     *
+     * <p>查重是线性扫描,没有索引。几百条量级下这是对的:为它建一张 {@code Map} 就要多一份
+     * 与 {@code touches} 同生共死的状态,而<b>两份状态迟早对不上</b>(reassign、delete 都得记得维护它)。
+     * 它撑不住的那天,正好就是 {@code 1.2.4} 换 JDBC 的那天 —— 那时候去重键是一个唯一索引,
+     * 而唯一索引本来就是数据库该干的事,不是这个文件该干的事。
+     */
+    @Override
     public Touch append(Touch touch) {
         synchronized (lock) {
             ensureLoaded();
+
+            // 🔴 幂等:同一个去重键重复提交 → 返回原来那条,不新建、不报错、不覆盖。
+            // 「不覆盖」这一条要紧:补传的那份带的是【补传时刻】的服务端时间戳,
+            // 拿它盖掉第一次落地的 occurredAt,等于让一条记录凭空变年轻 ——
+            // 而「多久前」是五态里唯一的时间依据(见 reassign 里同一句话)。
+            Touch existing = lookup(touch.clientToken());
+            if (existing != null) {
+                return existing;
+            }
+
             List<Touch> next = new ArrayList<>(touches);
             next.add(touch);
             next.sort(Comparator.comparing(Touch::occurredAt));
@@ -139,6 +165,45 @@ public class FileTouchStore implements TouchStore {
             touches = next;
             return touch;
         }
+    }
+
+    /** 契约见 {@link TouchStore#delete} —— 删一条不存在的记录返回 {@code null},不抛异常。 */
+    @Override
+    public Touch delete(String id) {
+        synchronized (lock) {
+            ensureLoaded();
+            Touch victim = null;
+            List<Touch> next = new ArrayList<>(touches.size());
+            for (Touch t : touches) {
+                // id 相同的只可能有一条(服务端签发的 UUID),但这里仍然写成「留下所有不匹配的」
+                // 而不是 remove 第一个命中的:万一历史文件里真有两条同 id,一次删干净好过留半条。
+                if (t.id().equals(id)) {
+                    victim = t;
+                } else {
+                    next.add(t);
+                }
+            }
+            if (victim == null) {
+                return null;                    // 什么都没变,不必写盘
+            }
+            // 先落盘再改内存,与 append 同一条纪律
+            writeAtomically(next);
+            touches = next;
+            return victim;
+        }
+    }
+
+    /** 调用方必须已经持有 {@link #lock} 且已 {@link #ensureLoaded}。 */
+    private Touch lookup(String clientToken) {
+        if (clientToken == null || clientToken.isBlank()) {
+            return null;                        // 「没有去重键」不是一个能互相匹配的值
+        }
+        for (Touch t : touches) {
+            if (clientToken.equals(t.clientToken())) {
+                return t;
+            }
+        }
+        return null;
     }
 
     @Override
@@ -164,8 +229,9 @@ public class FileTouchStore implements TouchStore {
             int moved = 0;
             for (Touch t : touches) {
                 if (t.nodeCode().equals(fromNodeCode)) {
+                    // clientToken 也要原样带过去:丢了它,那条记录就重新变得可以被补传一次
                     next.add(new Touch(t.id(), toNodeCode, t.sourceName(), t.kind(),
-                            t.occurredAt(), t.drill()));
+                            t.occurredAt(), t.drill(), t.clientToken()));
                     moved++;
                 } else {
                     next.add(t);
@@ -289,13 +355,18 @@ public class FileTouchStore implements TouchStore {
                 ? new Touch.Drill(n.path("practiced").asInt(0), n.path("correct").asInt(0))
                 : null;
 
+        // 没有 clientToken 就是没有 —— 空串会被 Touch 的构造器归一成 null,
+        // 好过让一堆「都没填」的老记录在 append 里互相判重。
+        String clientToken = n.path("clientToken").asString("");
+
         return new Touch(
                 required(n, "id"),
                 required(n, "nodeCode"),
                 n.path("sourceName").asString(""),
                 TouchKind.valueOf(required(n, "kind")),
                 at,
-                drill);
+                drill,
+                clientToken);
     }
 
     private static String required(JsonNode n, String field) {
@@ -326,6 +397,11 @@ public class FileTouchStore implements TouchStore {
         if (t.drill() != null) {
             o.put("practiced", t.drill().practiced());
             o.put("correct", t.drill().correct());   // 用户自己填的数,不是判出来的
+        }
+        if (t.clientToken() != null) {
+            // 🔴 去重键必须落盘。只留在内存里的话,进程一重启,离线队列里那批记录就能再补传一次,
+            // 而那正是 R-32 的防线要挡的场景 —— 无网时记的东西不能变成双份。
+            o.put("clientToken", t.clientToken());
         }
         return o;
     }

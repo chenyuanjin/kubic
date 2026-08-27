@@ -5,6 +5,7 @@ import com.kaodian.server.recognize.RecognitionUnavailableException;
 import com.kaodian.server.recognize.VisionTagger;
 import com.kaodian.server.syllabus.Syllabus;
 import com.kaodian.server.syllabus.SyllabusSource;
+import jakarta.validation.constraints.Size;
 import org.springframework.stereotype.Service;
 
 import java.time.Clock;
@@ -77,19 +78,34 @@ public class CaptureService {
      * 入参里若能装下一段文字,它迟早会被存下来 —— 01 §2.2 不碰内容,
      * docs/10 §5.1「不是不往里填,是不建这个列」。
      *
-     * @param kind       怎么记的
-     * @param sourceName 来源名,如「粉笔 · 资料分析系统班 L12」。<b>只是个名字</b>
-     * @param nodeCode   用户自己从树里挑的考点;可空,空则等模型识别
-     * @param practiced  练了几道;可空
-     * @param correct    <b>用户自己说</b>对了几道;可空
+     * @param kind        怎么记的
+     * @param sourceName  来源名,如「粉笔 · 资料分析系统班 L12」。<b>只是个名字</b>
+     * @param nodeCode    用户自己从树里挑的考点;可空,空则等模型识别
+     * @param practiced   练了几道;可空
+     * @param correct     <b>用户自己说</b>对了几道;可空
+     * @param clientToken 去重键;可空。<b>只有离线队列补传那条路会给</b>,契约见 {@link TouchStore#append}
      */
     public record CaptureRequest(
             TouchKind kind,
             String sourceName,
             String nodeCode,
             Integer practiced,
-            Integer correct
+            Integer correct,
+
+            @Size(max = Touch.MAX_CLIENT_TOKEN_LENGTH)
+            String clientToken
     ) {
+        /**
+         * 在线直接记 —— 没有去重键。
+         *
+         * <p>与 {@link Touch} 的六参构造器同一个理由:在线记一笔的成败当场就知道,
+         * 不需要去重键;强迫它编一个,只会让这个字段可以是任何东西。
+         */
+        public CaptureRequest(TouchKind kind, String sourceName, String nodeCode,
+                              Integer practiced, Integer correct) {
+            this(kind, sourceName, nodeCode, practiced, correct, null);
+        }
+
         /** 只挂一个考点,不带做题数。 */
         public static CaptureRequest manual(TouchKind kind, String sourceName, String nodeCode) {
             return new CaptureRequest(kind, sourceName, nodeCode, null, null);
@@ -142,8 +158,15 @@ public class CaptureService {
      */
     public sealed interface CaptureResult {
 
-        /** 落地了。 */
-        record Recorded(Touch touch, Mounting mounting, RecognitionResult recognition) implements CaptureResult {}
+        /**
+         * 落地了。
+         *
+         * @param replayed 这一次<b>没有新建任何东西</b>,返回的是同一个 {@code clientToken}
+         *                 之前已经落下的那条。调用方据此把 HTTP 状态从 201 降成 200、
+         *                 把批量里那一条标成「重复」—— 而不是当成一次新的写入去邀功
+         */
+        record Recorded(Touch touch, Mounting mounting, RecognitionResult recognition,
+                        boolean replayed) implements CaptureResult {}
 
         /**
          * 没落地。
@@ -165,10 +188,40 @@ public class CaptureService {
      * docs/11 §二「额度用尽 ≠ 记不了」的实现就是它一直在这儿。
      */
     public CaptureResult capture(CaptureRequest request) {
+        CaptureResult replay = replayOf(request);
+        if (replay != null) {
+            return replay;
+        }
         if (isBlank(request.nodeCode())) {
             return new CaptureResult.Rejected(Rejection.MISSING_NODE_CODE, RecognitionResult.noMatch());
         }
         return mountAndAppend(request, request.nodeCode(), Mounting.USER_PICKED, RecognitionResult.noMatch());
+    }
+
+    /**
+     * 补传命中已落地的那条 → 直接把它交回去,<b>后面一步都不走</b>。
+     *
+     * <h2>为什么判重要在这里,而不只在 {@link TouchStore#append} 里</h2>
+     *
+     * {@code append} 那道是<b>原子性</b>的锁(同一把写锁里查+写,两个并发补传不会各写一条)。
+     * 这一道管的是<b>语义</b>:一次补传如果走完全程,会先撞上校验,而那些校验的答案可能已经变了 ——
+     * 用户断网期间记的那个考点,回到线上时可能已经被他自己归档或删掉了。
+     * 那时 {@code mountAndAppend} 会回一句「这个考点不在树里」,而<b>那条记录明明早就落下了</b>。
+     * 一次成功的写入不能因为重发一遍就变成失败,否则离线队列会永远卡在那一条上重试。
+     * <p>
+     * 🔴 顺带挡住的是钱:{@link #captureFromPhoto} 里这一步在<b>调模型之前</b>,
+     * 所以补传重发不会再花一次识别(docs/10 §6.7.1「同一 idempotencyKey 重试不重复扣」)。
+     *
+     * @return 命中就返回 {@code Recorded(replayed = true)};没有去重键或没命中返回 {@code null}
+     */
+    private CaptureResult replayOf(CaptureRequest request) {
+        Touch existing = store.findByClientToken(request.clientToken());
+        if (existing == null) {
+            return null;
+        }
+        // 挂载来源按原样报 USER_PICKED / RECOGNIZED 是做不到的 —— 那是第一次落地时的事,没有存下来。
+        // 与其编一个,不如让 replayed 这个标志说话:调用方要的是「这次什么都没发生」,不是挂载来源。
+        return new CaptureResult.Recorded(existing, Mounting.USER_PICKED, RecognitionResult.noMatch(), true);
     }
 
     /**
@@ -192,6 +245,12 @@ public class CaptureService {
      * @param mimeType 如 {@code image/jpeg}
      */
     public CaptureResult captureFromPhoto(CaptureRequest request, byte[] image, String mimeType) {
+        // 🔴 判重在调模型【之前】—— 补传重发一次不该再花一次识别(见 replayOf)
+        CaptureResult replay = replayOf(request);
+        if (replay != null) {
+            return replay;
+        }
+
         List<VisionTagger.Candidate> candidates = candidates();
 
         RecognitionResult recognition = RecognitionResult.noMatch();
@@ -253,9 +312,21 @@ public class CaptureService {
                 request.sourceName(),
                 request.kind(),
                 clock.instant().truncatedTo(ChronoUnit.MILLIS),
-                drillOf(request));
+                drillOf(request),
+                request.clientToken());
 
-        return new CaptureResult.Recorded(store.append(touch), mounting, recognition);
+        // ⚪ 这里的时间戳是【服务端收到的时刻】,不是【用户离线记下的时刻】。
+        //    离线队列补传(docs/10 §6.2 的 /records/batch)因此会把上午 9 点记的那一笔标成中午 12 点。
+        //    补不了:请求体里没有 occurredAt,而那是有意的 —— CreateRecordRequest 的注释写着
+        //    「让客户端自报会让『生疏』变成一个可以被随手改掉的状态,补录历史记录要做时单开端点」。
+        //    这两条约束在补传这条路上直接冲突,本轮不自行裁定,已在交付说明里报上去。
+
+        Touch stored = store.append(touch);
+
+        // append 命中去重键时返回的是【原来那条】。用 id 是否还是我们刚生成的那个来判断,
+        // 比让 store 多返回一个布尔值可靠:它问的是事实(库里那条是不是我这次造的),
+        // 而不是相信调用链上某一层记得把标志传下来。
+        return new CaptureResult.Recorded(stored, mounting, recognition, !stored.id().equals(touch.id()));
     }
 
     /**

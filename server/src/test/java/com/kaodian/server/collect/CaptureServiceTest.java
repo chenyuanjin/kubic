@@ -10,6 +10,7 @@ import com.kaodian.server.recognize.RecognitionUnavailableException;
 import com.kaodian.server.recognize.StubAsrClient;
 import com.kaodian.server.recognize.StubVisionTagger;
 import com.kaodian.server.recognize.VisionTagger;
+import com.kaodian.server.syllabus.Syllabus;
 import com.kaodian.server.syllabus.SyllabusLoader;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -266,11 +267,91 @@ class CaptureServiceTest {
         }
     }
 
+    /**
+     * 第六个字段 {@code clientToken} 是去重键(docs/10 §6.2「client_token 幂等」)。
+     *
+     * <p>它能加进来,靠的是<b>装不下内容</b>而不是「约定它只放 id」:
+     * 上限 {@link Touch#MAX_CLIENT_TOKEN_LENGTH} = 64,而 64 装不下任何一道题的题干。
+     * 下一个想加字段的人得拿出同样量级的答案。
+     */
     @Test
     @DisplayName("🔴 采集入参里同样没有装内容的字段 —— 与 Touch 是同一条线")
     void captureRequestCarriesNoContent() {
         List<String> fields = Arrays.stream(CaptureRequest.class.getRecordComponents())
                 .map(RecordComponent::getName).toList();
-        assertEquals(List.of("kind", "sourceName", "nodeCode", "practiced", "correct"), fields);
+        assertEquals(List.of("kind", "sourceName", "nodeCode", "practiced", "correct", "clientToken"), fields);
+    }
+
+    /**
+     * 🔴 补传重发一次不该再花一次识别。
+     *
+     * <p>docs/10 §6.7.1:「同一 {@code idempotencyKey} 重试不重复扣」,而客户端复用的正是
+     * {@code record_event.client_token}。判重如果排在调模型之后,一次断网重连就能把用户的额度扣光 ——
+     * 那句话的原文就在契约里。这个测试用一个「一调用就炸」的 tagger 把顺序钉住。
+     */
+    @Test
+    @DisplayName("🔴 补传命中去重键 → 一步都不走,连模型都不调(不重复扣额度)")
+    void replayNeverTouchesTheModel() {
+        CaptureService service = serviceWith(new StubVisionTagger());
+        CaptureRequest offline = new CaptureRequest(
+                TouchKind.PHOTO, "地铁上", "average-calc", null, null, "offline-001");
+
+        CaptureResult.Recorded first = assertInstanceOf(CaptureResult.Recorded.class,
+                service.capture(offline));
+        assertFalse(first.replayed(), "第一次是真落地");
+
+        // 同一个 store 换一个「一调用就炸」的 tagger:它一旦被调用,这个测试就红
+        CaptureService withDeadModel = new CaptureService(store, new DeadTagger(),
+                SyllabusLoader.loadDefault(), Clock.fixed(NOW, ZoneOffset.UTC));
+        CaptureResult.Recorded replayed = assertInstanceOf(CaptureResult.Recorded.class,
+                withDeadModel.captureFromPhoto(offline, IMAGE, "image/jpeg"));
+
+        assertTrue(replayed.replayed(), "命中去重键 → 这一次什么都没新建");
+        assertEquals(first.touch().id(), replayed.touch().id(), "返回的必须是原来那条");
+        assertEquals(9, store.count(), "种子 8 条 + 第一次那条,重发不加条");
+    }
+
+    /**
+     * 🔴 一次成功的写入,不能因为重发一遍就变成失败。
+     *
+     * <p>用户断网期间记的那个考点,回到线上时可能已经被他自己归档了。
+     * 如果判重排在校验之后,补传会收到一句「这个考点不在树里」——
+     * 而<b>那条记录明明早就落下了</b>,于是离线队列会永远卡在那一条上重试。
+     */
+    @Test
+    @DisplayName("🔴 补传重发时考点已被归档也照样成功 —— 判重排在校验之前")
+    void replaySucceedsEvenIfTheNodeIsArchivedNow() {
+        Syllabus full = SyllabusLoader.loadDefault();
+        // SyllabusSource 是「每次现问」的,所以一个可变的持有者就够,不必造一个假 store
+        java.util.concurrent.atomic.AtomicReference<Syllabus> tree = new java.util.concurrent.atomic.AtomicReference<>(full);
+
+        store = new FileTouchStore(dataDir.resolve("touches.json"));
+        CaptureService service = new CaptureService(store, new StubVisionTagger(),
+                tree::get, Clock.fixed(NOW, ZoneOffset.UTC));
+
+        CaptureRequest offline = new CaptureRequest(
+                TouchKind.MANUAL, "地铁上", "average-calc", null, null, "offline-001");
+        assertInstanceOf(CaptureResult.Recorded.class, service.capture(offline));
+
+        tree.set(withArchived(full, "average-calc"));
+        // 前提:归档之后,同样内容但没有去重键的一笔确实会被拒 —— 否则下面那条断言什么都没证明
+        assertInstanceOf(CaptureResult.Rejected.class,
+                service.capture(CaptureRequest.manual(TouchKind.MANUAL, "地铁上", "average-calc")));
+
+        CaptureResult.Recorded replayed = assertInstanceOf(CaptureResult.Recorded.class,
+                service.capture(offline));
+        assertTrue(replayed.replayed());
+        assertEquals(9, store.count());
+    }
+
+    /** 把一棵树里的某个考点标成已归档,其余原样。 */
+    private static Syllabus withArchived(Syllabus tree, String nodeCode) {
+        return new Syllabus(tree.subject(), tree.groups().stream()
+                .map(g -> new Syllabus.Group(g.code(), g.name(), g.nodes().stream()
+                        .map(n -> n.code().equals(nodeCode)
+                                ? new Syllabus.Node(n.code(), n.name(), n.recent5yCount(), true)
+                                : n)
+                        .toList()))
+                .toList());
     }
 }

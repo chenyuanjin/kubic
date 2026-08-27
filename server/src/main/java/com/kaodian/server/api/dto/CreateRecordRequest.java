@@ -1,6 +1,7 @@
 package com.kaodian.server.api.dto;
 
 import com.fasterxml.jackson.annotation.JsonAnySetter;
+import com.kaodian.server.collect.Touch;
 import com.kaodian.server.collect.TouchKind;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Max;
@@ -44,11 +45,23 @@ import jakarta.validation.constraints.Size;
  * 让客户端自报会让「生疏」变成一个可以被随手改掉的状态。补录历史记录是另一件事,
  * 要做的时候单开端点,不在这里开口子。
  *
- * @param kind       怎么记的。手动三种永远可用 —— 额度用尽 ≠ 记不了(docs/11 §二)
- * @param sourceName 来源名。<b>只是个名字,不含该来源的任何内容</b>
- * @param nodeCode   挂到哪个考点。必须是骨架树里已存在的 code
- * @param practiced  练了几道,可空。<b>用户自己填的数</b>
- * @param correct    对了几道,可空。同上 —— 产品从不判题(01 §2.2)
+ * <h2>{@code clientToken} 是第六个字段,而它没有破上面那三道锁</h2>
+ *
+ * 它是<b>客户端生成的去重键</b>,docs/10 §6.2 的「{@code client_token} 幂等」。
+ * 加一个字段进来必须先回答「它会不会变成放内容的地方」,答案是不会 ——
+ * 它有上限({@link Touch#MAX_CLIENT_TOKEN_LENGTH} = 64),而 64 装不下任何一道题的题干。
+ * <b>这正是 R-01 想要的形状:不是靠约定它只放 id,是靠它放不下别的。</b>
+ * <p>
+ * 可空,因为在线直接记的那条路不需要它:请求成败当场就知道。
+ * 需要它的只有断网时进了本地队列、之后走 {@code POST /records/batch} 补传的那些
+ * ——那条路上它是<b>必填</b>(见 {@link BatchCreateRecordsRequest})。
+ *
+ * @param kind        怎么记的。手动三种永远可用 —— 额度用尽 ≠ 记不了(docs/11 §二)
+ * @param sourceName  来源名。<b>只是个名字,不含该来源的任何内容</b>
+ * @param nodeCode    挂到哪个考点。必须是骨架树里已存在的 code
+ * @param practiced   练了几道,可空。<b>用户自己填的数</b>
+ * @param correct     对了几道,可空。同上 —— 产品从不判题(01 §2.2)
+ * @param clientToken 去重键,可空。同一个键重复提交<b>返回原来那条,不新建</b>
  */
 public record CreateRecordRequest(
 
@@ -69,7 +82,11 @@ public record CreateRecordRequest(
 
         @Min(value = 0, message = "题数不能为负")
         @Max(value = 1000, message = "单条记录的题数不超过 1000")
-        Integer correct
+        Integer correct,
+
+        @Size(max = Touch.MAX_CLIENT_TOKEN_LENGTH,
+                message = "去重键最长 64 个字符 —— 它是个 id,不是放内容的地方")
+        String clientToken
 ) {
 
     /**

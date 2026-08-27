@@ -218,6 +218,152 @@ class FileTouchStoreTest {
         assertEquals(0, store.findByNode("mixed-growth").size());
     }
 
+    // ——————————————————— 🔴 幂等:同一个 clientToken 只落一条 ———————————————————
+
+    @Test
+    @DisplayName("🔴 同一个 clientToken 追加两次 → 返回原来那条,库里只多一条")
+    void sameClientTokenAppendsOnce() {
+        FileTouchStore store = store();
+        Touch first = store.append(new Touch("t-a", "average-calc", "地铁上",
+                TouchKind.MANUAL, Instant.now(), null, "offline-001"));
+
+        // 补传时客户端并不知道服务端给的 id,它重发的是【另一条】记录,只是去重键相同
+        Touch again = store.append(new Touch("t-b", "average-calc", "地铁上",
+                TouchKind.MANUAL, Instant.now().plusSeconds(3600), null, "offline-001"));
+
+        assertEquals(first.id(), again.id(), "返回的必须是原来那条");
+        assertEquals(9, store.count(), "多一条就等于覆盖度的分子被数了两次");
+        // 🔴 不覆盖:补传那份带的是补传时刻的时间戳,拿它盖掉第一次的 occurredAt
+        //    等于让一条记录凭空变年轻,而「多久前」是五态里唯一的时间依据
+        assertEquals(first.occurredAt(), again.occurredAt());
+    }
+
+    @Test
+    @DisplayName("🔴 clientToken 落盘 —— 进程重启之后那条补传仍然重复不了")
+    void clientTokenSurvivesReopen() throws Exception {
+        store().append(new Touch("t-a", "average-calc", "地铁上",
+                TouchKind.MANUAL, Instant.now(), null, "offline-001"));
+
+        assertTrue(Files.readString(file(), StandardCharsets.UTF_8).contains("offline-001"),
+                "只留在内存里的话,进程一重启那批记录就能再补传一次");
+
+        FileTouchStore reopened = store();
+        assertNotNull(reopened.findByClientToken("offline-001"));
+        reopened.append(new Touch("t-b", "average-calc", "地铁上",
+                TouchKind.MANUAL, Instant.now(), null, "offline-001"));
+        assertEquals(9, reopened.count());
+    }
+
+    @Test
+    @DisplayName("🔴 没有 clientToken 的记录之间永不判重 —— 空的去重键不是一个能互相匹配的值")
+    void recordsWithoutTokenNeverMatchEachOther() {
+        FileTouchStore store = store();
+        store.append(new Touch("t-a", "average-calc", "自己刷题", TouchKind.MANUAL, Instant.now(), null));
+        store.append(new Touch("t-b", "average-calc", "自己刷题", TouchKind.MANUAL, Instant.now(), null));
+
+        // 判重的失败方向只能是「多一条」:多一条用户看得见、删得掉;
+        // 少一条是他记了却没记上,而他不会知道。种子 8 条里也都没有去重键。
+        assertEquals(10, store.count());
+        assertNull(store.findByClientToken(null));
+        assertNull(store.findByClientToken("   "));
+    }
+
+    @Test
+    @DisplayName("🔴 空白 clientToken 被归一成「没有」,不会让两条不相干的记录互相判重")
+    void blankClientTokenIsNormalisedToAbsent() {
+        FileTouchStore store = store();
+        store.append(new Touch("t-a", "average-calc", "自己刷题", TouchKind.MANUAL, Instant.now(), null, "  "));
+        store.append(new Touch("t-b", "yoy-mom", "自己刷题", TouchKind.MANUAL, Instant.now(), null, ""));
+
+        assertEquals(10, store.count(), "两条都要在 —— 它们只是都没填去重键,不是同一条");
+        assertFalse(Files.exists(file()) && store.findAll().stream()
+                        .anyMatch(t -> "".equals(t.clientToken()) || "  ".equals(t.clientToken())),
+                "空白串不该原样留在记录里");
+    }
+
+    @Test
+    @DisplayName("去重键有长度上限 —— 它是个 id,不是放内容的地方(R-01)")
+    void clientTokenIsLengthCapped() {
+        assertThrows(IllegalArgumentException.class,
+                () -> new Touch("t-a", "average-calc", "自己刷题", TouchKind.MANUAL,
+                        Instant.now(), null, "题".repeat(Touch.MAX_CLIENT_TOKEN_LENGTH + 1)));
+    }
+
+    @Test
+    @DisplayName("改挂记录时 clientToken 跟着搬 —— 丢了它那条记录就重新变得可以被补传一次")
+    void reassignKeepsClientToken() {
+        FileTouchStore store = store();
+        store.append(new Touch("t-a", "average-calc", "地铁上",
+                TouchKind.MANUAL, Instant.now(), null, "offline-001"));
+
+        assertEquals(1, store.reassign("average-calc", "yoy-mom"));
+        assertNotNull(store.findByClientToken("offline-001"));
+        assertEquals("yoy-mom", store.findByClientToken("offline-001").nodeCode());
+    }
+
+    /**
+     * 🔴 这一条是「判重为什么必须在 {@code append} 里」的全部理由。
+     *
+     * <p>把它挪到调用方去做「先查再写」,查和写之间就有一个窗口。而离线队列补传<b>本身就是重发</b>:
+     * 发一半断了、客户端不确定服务端收没收到、于是整批再发一次 —— 两次请求完全可以叠在一起。
+     * 那时两个线程各自查到「没有」,然后各自写一条,用户看到的是记录变成了双份。
+     */
+    @Test
+    @DisplayName("🔴 并发用同一个 clientToken 追加 —— 只能落一条")
+    void concurrentAppendsWithTheSameTokenLandOnce() throws Exception {
+        FileTouchStore store = store();
+        int threads = 8;
+        CountDownLatch start = new CountDownLatch(1);
+        CountDownLatch done = new CountDownLatch(threads);
+
+        for (int t = 0; t < threads; t++) {
+            int id = t;
+            new Thread(() -> {
+                try {
+                    start.await();
+                    store.append(new Touch("t-race-" + id, "average-calc", "地铁上",
+                            TouchKind.MANUAL, Instant.now(), null, "offline-001"));
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                } finally {
+                    done.countDown();
+                }
+            }).start();
+        }
+        start.countDown();
+        assertTrue(done.await(30, TimeUnit.SECONDS), "并发追加超时");
+
+        assertEquals(9, store.count(), "8 个线程抢同一个去重键,只能落一条");
+        assertEquals(9, store().count(), "磁盘上也只能有一条");
+    }
+
+    // ——————————————————— 删记录 ———————————————————
+
+    @Test
+    @DisplayName("delete 删掉那一条并落盘;换个实例读出来也少了那条")
+    void deleteRemovesExactlyOneAndPersists() {
+        FileTouchStore store = store();
+        Touch gone = store.delete("seed-share-change");
+
+        assertNotNull(gone);
+        assertEquals("share-change", gone.nodeCode(), "返回被删的那条 —— 调用方要靠它知道哪个考点要重算");
+        assertEquals(7, store.count());
+        assertEquals(7, store().count(), "磁盘上也要少一条");
+        assertEquals(0, store.findByNode("share-change").size());
+    }
+
+    @Test
+    @DisplayName("删一条不存在的记录返回 null,不抛异常,也不写盘")
+    void deletingAMissingRecordIsNotAFailure() throws Exception {
+        FileTouchStore store = store();
+        store.count();                                  // 先触发播种,让文件落地
+        long before = Files.getLastModifiedTime(file()).toMillis();
+
+        assertNull(store.delete("t-不存在"), "「删一条不存在的记录」是调用方要分辨的情况,不是服务端的故障");
+        assertEquals(8, store.count());
+        assertEquals(before, Files.getLastModifiedTime(file()).toMillis(), "什么都没变就不该写盘");
+    }
+
     @Test
     @DisplayName("并发追加一条都不能丢 —— 记录是这个产品的全部资产")
     void concurrentAppendsLoseNothing() throws Exception {

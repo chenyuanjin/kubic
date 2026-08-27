@@ -57,12 +57,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * 不写成一个宽松的正则是有意的:正则一次放行一大片,而白名单逼着加字段的人停下来回答
  * 「凭什么」。<b>挑不出理由,说明这个字段不该存在。</b>
  *
- * <h2>⚪ 白名单里有 {@link Reason#KNOWN_GAP}</h2>
+ * <h2>⚪ 白名单里还剩一行 {@link Reason#KNOWN_GAP}</h2>
  *
- * 那几行不是理由,是缺口:{@code deviceLabel} 与 {@code referrer} 今天真的没有上限,
- * 而且它们会被原样写进 {@code tokens.json} 和 {@code signups.json}。按 01 §5 的规矩,
- * 没解决的事摆在明面上,不拿一句漂亮话盖过去 —— 想收口就去给它们加 {@code @Size},
- * 然后把这里的行删掉。
+ * 那一行不是理由,是缺口。2026-08-27 收掉了七行({@code deviceLabel} × 4、{@code referrer} × 3,
+ * docs/08 §四 R-73):三个登录请求体加了 {@code @Size},{@code SessionDto} 那一行改判为
+ * {@link Reason#BOUNDED_UPSTREAM} —— 它是响应,加注解不校验任何东西,收口点在写入口。
+ * <p>
+ * 剩下的 {@code AccountDto#nickname} <b>没有跟着收</b>,理由写在那一行上。
+ * 按 01 §5 的规矩,没解决的事摆在明面上,不拿一句漂亮话盖过去 ——
+ * 也不为了让表短一行就编一个上限出来。
  */
 class NoStemFieldTest {
 
@@ -171,10 +174,12 @@ class NoStemFieldTest {
         /**
          * ⚪ 这不是理由,是缺口。
          *
-         * <p>写在这里的字段今天确实没有上限,而且其中一部分会被原样落盘。
-         * 摆出来是为了让它可数、可查(01 §5:没解决的事不拿话盖过去),
-         * 不是为了让下一个字段有个地方可以挂。<b>这一档不接受新增</b> ——
-         * 新字段要么有 {@code @Size},要么挑得出上面五个理由之一。
+         * <p>写在这里的字段今天确实没有上限。摆出来是为了让它可数、可查
+         * (01 §5:没解决的事不拿话盖过去),不是为了让下一个字段有个地方可以挂。
+         * <b>这一档不接受新增</b> —— 新字段要么有 {@code @Size},要么挑得出上面五个理由之一。
+         *
+         * <p>也不接受<b>为了让表短一行而编一个上限</b>:上限该由写入口的形状定,
+         * 没有写入口就定不出数,那时候诚实的做法是留在这一档。
          */
         KNOWN_GAP
     }
@@ -188,15 +193,20 @@ class NoStemFieldTest {
 
             // ———————————————————————— api.dto:账号 ————————————————————————
             entry("AccountDto#userId", Reason.SERVER_ISSUED_ID),
-            // ⚪ 今天恒为 null:AppUser#create 传的就是 null,没有任何接口能写它。
-            //    等有了改昵称的接口,这一行要么变成 @Size,要么就该红。
+            // ⚪ R-73 收口时唯一没收的一行。今天恒为 null:AppUser#create 传的就是 null,
+            //    全仓库没有任何接口能写它 —— 它装不下题干,靠的是「没有入口」,不是「有上限」。
+            //    没给它编一个数是有意的:上限由那个接口的形状定(昵称是个称呼还是一句签名,
+            //    20 和 60 是两个答案),现在写一个进来,只是让这张表短一行,而那个数没有任何输入验证过它。
+            //    ⚠️ 这一档真正的风险在这一行上:「没有写入口」不是这个测试守得住的性质 ——
+            //    加写入口的那次提交不会红。所以它留在这里,而不是被当成已经解决。
             entry("AccountDto#nickname", Reason.KNOWN_GAP),
             entry("AccountDto#maskedPhone", Reason.BOUND_BY_FORMAT),
             entry("AccountDto#identities", Reason.SERVER_CONSTANT),
             entry("DeactivateResponse#exportHint", Reason.SERVER_CONSTANT),
             entry("SessionDto#tokenHash", Reason.SERVER_ISSUED_ID),
-            // ⚪ 用户可写、且被 FileTokenStore 原样写进 tokens.json。没有上限。
-            entry("SessionDto#deviceLabel", Reason.KNOWN_GAP),
+            // 响应字段,@Size 挂上去不校验任何东西。上限写在写入口的三个登录请求体上
+            // (LoginFieldLimits.MAX_DEVICE_LABEL = 40),见 SessionDto 类注释。
+            entry("SessionDto#deviceLabel", Reason.BOUNDED_UPSTREAM),
             entry("RevokeSessionRequest#tokenHash", Reason.SERVER_ISSUED_ID),
 
             // ———————————————————————— api.dto:登录与绑定 ————————————————————————
@@ -222,20 +232,13 @@ class NoStemFieldTest {
             entry("SmsVerifyRequest#phone", Reason.BOUND_BY_FORMAT),
             entry("SmsVerifyRequest#code", Reason.BOUND_BY_FORMAT),
             entry("SmsVerifyRequest#purpose", Reason.BOUND_BY_FORMAT),
-            // ⚪ 同 SessionDto#deviceLabel;referrer 会被 FileSignupLedger 写进 signups.json。
-            entry("SmsVerifyRequest#deviceLabel", Reason.KNOWN_GAP),
-            entry("SmsVerifyRequest#referrer", Reason.KNOWN_GAP),
             entry("WeChatAuthorizeUrlResponse#url", Reason.SERVER_ISSUED_ID),
             entry("WeChatAuthorizeUrlResponse#state", Reason.SERVER_ISSUED_ID),
             entry("WeChatLoginRequest#entry", Reason.BOUND_BY_FORMAT),
             entry("WeChatLoginRequest#code", Reason.BOUND_BY_FORMAT),
             entry("WeChatLoginRequest#state", Reason.SERVER_ISSUED_ID),
-            entry("WeChatLoginRequest#deviceLabel", Reason.KNOWN_GAP),
-            entry("WeChatLoginRequest#referrer", Reason.KNOWN_GAP),
             entry("WeChatPhoneLoginRequest#loginCode", Reason.BOUND_BY_FORMAT),
             entry("WeChatPhoneLoginRequest#phoneCode", Reason.BOUND_BY_FORMAT),
-            entry("WeChatPhoneLoginRequest#deviceLabel", Reason.KNOWN_GAP),
-            entry("WeChatPhoneLoginRequest#referrer", Reason.KNOWN_GAP),
 
             // ———————————————————————— api.dto:错误 ————————————————————————
             entry("ApiError#code", Reason.SERVER_CONSTANT),

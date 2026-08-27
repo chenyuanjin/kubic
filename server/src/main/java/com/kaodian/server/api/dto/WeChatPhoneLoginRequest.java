@@ -2,6 +2,7 @@ package com.kaodian.server.api.dto;
 
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 
 /**
  * 小程序一步登录 —— <b>同一次交互里同时拿到微信身份与手机号</b>。
@@ -24,12 +25,17 @@ import jakarta.validation.constraints.NotBlank;
  *
  * <p>两个 code <b>各自 5 分钟有效、各自单次消费</b>。
  *
+ * @param deviceLabel 与 {@link SmsVerifyRequest#deviceLabel()} 同一条纪律,上限见 {@link LoginFieldLimits}
  * @param referrer ⚪ 只在建号时记进注册流水,给「陌生 vs 熟人」的人工判定留线索
  */
 public record WeChatPhoneLoginRequest(
         @NotBlank(message = "缺少登录 code") String loginCode,
         @NotBlank(message = "缺少手机号 code") String phoneCode,
+        @Size(max = LoginFieldLimits.MAX_DEVICE_LABEL,
+                message = "设备名最长 40 个字符 —— 它是个名字,不是放内容的地方")
         String deviceLabel,
+        @Size(max = LoginFieldLimits.MAX_REFERRER,
+                message = "渠道标识最长 64 个字符 —— 它是个标识,不是放内容的地方")
         String referrer
 ) {
 

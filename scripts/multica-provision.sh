@@ -248,14 +248,26 @@ PROTO_DEV='
 5) 数据目录默认 ~/.kaodian(仓库外)。绝不把 kaodian.data.dir 指到仓库内。'
 
 PROTO_REVIEW='
-── 收尾协议(硬性。不做完这四步 = 本次运行未完成)──
-1) 散文写在评论里,判决写在 metadata 里。人只读 metadata:
+── 收尾协议(硬性。不做完 = 本次运行未完成)──
+散文写在评论里,判决写在下面这些字段里。人只读字段。
+
+1) 五个 metadata 键(键名与类型不得自创,2026-08-27 定):
    multica issue metadata set <id> --key verdict        --value true|false
    multica issue metadata set <id> --key blocking_count --value <数字>
-   multica issue metadata set <id> --key repro_cmd      --value "<可复现命令>"
-   multica issue metadata set <id> --key redline_hit    --value "R-xx"    # 无则不写
-2) 命中任一 🔴 时,同时打 `红线命中` 属性 + 加 `需人审` 标签。
+   multica issue metadata set <id> --key repro_cmd      --type string --value "<命令>"
+   multica issue metadata set <id> --key redline_hit    --type string --value "R-04,R-05"
+   · redline_hit 只填 🔴 红线(R-01~R-08 / R-36 / R-37)。🟠🟡 写在评论里,不进这个字段。
+   · 多条用英文逗号分隔,【不要】自己加引号 —— 用 --type string,CLI 会处理。
+   · repro_cmd 必须能从【仓库根目录】直接跑:相对路径,不得出现 /Users/... 这类绝对路径,
+     否则换一台机器就复现不了,这条判决等于没写。
+
+2) 命中 🔴 时两件事,别搞混 ——【属性】和【标签】是两个东西:
+   multica issue property set <id> --name "红线命中" --value "R-04,R-05"   # ← 属性
+   multica issue label add <id> <「需人审」标签id>                          # ← 标签
+   绝不新建标签或属性。取值域之外的值一律说明在评论里,不要为了塞进去而改名字。
+
 3) 状态改 in_review:multica issue status <id> in_review --no-start
+
 4) 【你没有裁决权】绝不把状态改成 done —— 那是闸3(人)与闸4(关卡)的事。
    你的结论是「输入」,不是「判决」。
 

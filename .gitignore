@@ -1,0 +1,35 @@
+# ── macOS / 编辑器 ──
+.DS_Store
+*.swp
+.idea/
+.vscode/
+
+# ── 🔴 密钥与运行时数据:绝不进仓库 ──
+# 默认落在 ~/.kaodian(仓库外),这里挡的是「有人把 kaodian.data.dir 指到仓库内」那一次。
+# auth-keys.properties 属于【数据】不属于配置(docs/13 §6.9 / R-59):
+# 换一把 HMAC 密钥 = 全部老用户静默登不回原账号。它进了仓库就等于公开。
+auth-keys.properties
+auth-accounts.json
+auth-*.json
+.kaodian/
+/data/
+*.pem
+*.jks
+*.p12
+.env
+.env.*
+
+# ── 🔴 原图缓存:R-04 ──
+# 原图只允许本机短期缓存,不上云、不共享。仓库是「共享」的一种。
+/cache/
+*.orig.jpg
+*.orig.png
+
+# ── 构建产物(子目录 .gitignore 已覆盖,这里是兜底)──
+target/
+node_modules/
+dist/
+
+# ── 历史遗留 ──
+# files.zip 是 2026-08-20 原始四份文档的陈旧备份,已跟踪,保留不删(CLAUDE.md)。
+# 不再新增同类归档件。

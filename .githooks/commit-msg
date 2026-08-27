@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+# 提交信息规范 · 一条硬需求 + 一条留痕
+#
+#   ① 分支形如 KUBI-<n>-* 时,提交信息必须含 KUBI-<n> —— 缺了就自动补一条 trailer。
+#      这不是洁癖:Multica 的 PR↔议题关联【就是靠这个字符串做的】。
+#      没有它,闸1 的 CI 结果回不到议题上,整条流水线断在这里。
+#   ② 决策层文档的覆盖提交,写一条 Decision-layer-edit trailer。
+set -uo pipefail
+MSG="$1"
+GITDIR="$(git rev-parse --git-dir)"
+BR="$(git symbolic-ref --short HEAD 2>/dev/null || echo '')"
+
+if [[ "$BR" =~ ^(KUBI-[0-9]+) ]]; then
+  KEY="${BASH_REMATCH[1]}"
+  if ! grep -qi "$KEY" "$MSG"; then
+    printf '\n%s\n' "Refs: $KEY" >> "$MSG"
+    printf '\033[2m  · 已自动补 trailer: Refs: %s\033[0m\n' "$KEY" >&2
+  fi
+elif [[ "$BR" != "main" && "$BR" != "v1" ]]; then
+  printf '\033[2m  · 提示:分支名不含 KUBI-<n>,此提交不会被 Multica 关联到议题\033[0m\n' >&2
+fi
+
+if [[ -f "$GITDIR/DECISION_EDIT" ]]; then
+  files="$(tr '\n' ' ' < "$GITDIR/DECISION_EDIT")"
+  printf '\n%s\n' "Decision-layer-edit: $files" >> "$MSG"
+  rm -f "$GITDIR/DECISION_EDIT"
+  printf '\033[2m  · 已留痕: Decision-layer-edit\033[0m\n' >&2
+fi
+exit 0

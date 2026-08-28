@@ -1,9 +1,12 @@
 import { useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import { useCreateRecord } from '../api/queries'
+import { useRecognizePhotos } from '../api/recognize'
 import type { DataSource, GroupView, TimelineItemDto, TouchKind } from '../api/types'
 import { KIND_LABEL } from '../lib/nodeState'
-import { Button, GroupHeader, GlyphIcon, Kbd, Note, Tag } from '../ui/primitives'
+import { rawImages } from '../lib/rawImageDb'
+import { RawImageDrop } from './RawImageDrop'
+import { Button, GroupHeader, Kbd, Note, Tag } from '../ui/primitives'
 
 /**
  * 记一笔 —— 四个入口一屏全露,不做二级菜单。
@@ -19,9 +22,20 @@ import { Button, GroupHeader, GlyphIcon, Kbd, Note, Tag } from '../ui/primitives
  * 粘进来的文字、录音、原图<b>都不在请求体里</b> —— CreateRecordRequest 里没有它们的位置。
  * 文字只用来帮用户挑考点,挑完就没用了。
  *
- * <h2>🔴 语音与拍照当前是「未接入」,不是「即将上线」</h2>
+ * <h2>🔴 语音仍然是「未接入」,不是「即将上线」</h2>
  *
- * 后端识别链路还是 stub。把入口画出来但明确置灰并标注,好过做一个点下去转圈然后失败的按钮。
+ * ASR 那条链路还是 stub。把入口画出来但明确置灰并标注,好过做一个点下去转圈然后失败的按钮。
+ *
+ * <h2>拍照那条<b>已经接上了</b>,而它的次序是被 `R-85` 定死的</h2>
+ *
+ * 顺序是<b>先挑考点 → 记下 → 图跟着这条记录送去识别</b>,不是「先拍照、让模型帮我挑考点」。
+ * 后者服务端今天没有入口:`CreateRecordRequest.nodeCode` 是 `@NotBlank`,
+ * 没有考点就落不下记录,而 `/records/{id}/image` 要的正是一个已经存在的记录 id
+ * (`CaptureService.captureFromPhoto` 的 `Mounting.RECOGNIZED` 至今没有 HTTP 端点)。
+ * <p>
+ * ⚠️ <b>这里没有替产品发明绕法</b>(比如先落一条挂到「未分类」的假考点再改挂)——
+ * 那会凭空造出一种需要在界面上表达的记录状态,或者让主标签变成可变的。
+ * 两条出路都得有人选,见 docs/08 §四 `R-85`。
  */
 export function CaptureSheet({
   groups,
@@ -45,17 +59,46 @@ export function CaptureSheet({
   const [practiced, setPracticed] = useState('')
   const [correct, setCorrect] = useState('')
 
+  /**
+   * 这一笔要一起送去识别的原图 —— <b>只存 id,不存字节</b>。
+   *
+   * 字节在本机缓存里躺着(带着过期戳),这里拿到的是它的 id。
+   * 把 `File` 放进这个 state 是最省事的写法,而它会造出<b>第二份没有过期戳的原图副本</b>
+   * ——见 RawImageDrop 的类注释。
+   */
+  const [pendingImageIds, setPendingImageIds] = useState<string[]>([])
+  const [imageNote, setImageNote] = useState<string | null>(null)
+
   const create = useCreateRecord()
+  const recognize = useRecognizePhotos()
   const node = nodes.find((n) => n.code === nodeCode)
 
   const p = toInt(practiced)
   const c = toInt(correct)
   const hasDrill = p !== null && p > 0
 
-  // 形式由「哪个入口有内容」推出,不额外做一个单选框让用户再选一次
-  const kind: TouchKind = hasDrill ? 'DRILL' : pasted.trim() ? 'PASTE' : 'MANUAL'
+  /**
+   * 形式由「哪个入口有内容」推出,不额外做一个单选框让用户再选一次。
+   *
+   * 🔴 <b>带图时 `PHOTO` 排在 `DRILL` 前面,这一条是被 docs/10 §8.2 定的。</b>
+   * 那张表的最后一行:服务端关于图片能知道的<b>全部信息</b>是
+   * `record_event.capture_type='photo'` 这一个枚举值。带了图却记成 `DRILL`,
+   * 那一个字节的信息就<b>永远没有别的地方能补</b> —— 库里没有任何图片字段。
+   * 反过来,做题的两个整数走的是它们自己的字段,记成 `PHOTO` 一个数都不会丢。
+   * <b>会丢的那个排在前面。</b>
+   */
+  const kind: TouchKind = pendingImageIds.length > 0
+    ? 'PHOTO'
+    : hasDrill
+      ? 'DRILL'
+      : pasted.trim()
+        ? 'PASTE'
+        : 'MANUAL'
 
   const problem = validate({ nodeCode, sourceName, practiced, correct, p, c })
+
+  /** 落库中 / 送图中都算忙。忙的时候锁住原图那一屏的删除按钮 —— 别删掉一张正在送的图。 */
+  const busy = create.isPending || recognize.isPending
 
   /**
    * 🔴 请求体只有这五个字段,而且做题数是<b>扁平的 practiced / correct</b>。
@@ -67,17 +110,53 @@ export function CaptureSheet({
    * 两个数<b>要么都给,要么都不给</b>:只给 practiced 会让服务端替用户把 correct 填成 0,
    * 凭空造出一个「全错」的记录 —— 而那正好会把这个考点判成「弱」。
    */
-  function submit() {
-    if (problem || create.isPending) return
-    create.mutate(
-      {
+  async function submit() {
+    if (problem || busy) return
+    setImageNote(null)
+
+    const created = await create
+      .mutateAsync({
         kind,
         sourceName: sourceName.trim(),
         nodeCode,
         ...(hasDrill ? { practiced: p, correct: c ?? 0 } : {}),
-      },
-      { onSuccess: onClose },
-    )
+      })
+      .catch(() => null)
+
+    // 记录都没落下,就没有 recordId 可挂图。错误由下面 create.isError 那段如实说。
+    if (created === null) return
+
+    if (pendingImageIds.length === 0) {
+      onClose()
+      return
+    }
+
+    /* 🔴 图是在记录之后送的,而且送失败<b>不回滚那条记录</b>。
+       docs/13 §1.5:降级方向是「少功能」,不是「少记录」。
+       把它显示成「没记下来」会让用户去重记一遍 —— 于是库里多一条重复记录,
+       而覆盖率算的是「几次」,重复记录正好污染那一列。 */
+    try {
+      // 字节从本机缓存里读回来 —— 它们从进这一屏起就只有那一个落点,而且带着过期戳。
+      const rows = await Promise.all(pendingImageIds.map((id) => rawImages.read(id)))
+      const photos = rows.filter((r) => r !== null).map((r) => r.blob)
+      if (photos.length < pendingImageIds.length) {
+        // 到期删除在这半秒里生效了,或者用户刚按了「删」。少送几张,不假装它们还在。
+        setImageNote('有原图已经到期或被删掉,这次只送了还在的那几张。')
+      }
+      if (photos.length > 0) {
+        const res = await recognize.mutateAsync({ recordId: created.record.id, photos })
+        setImageNote(res.message)
+        setPendingImageIds([])
+        return // 🔴 不自动关:那句 message 是六种结局里的一种,用户得看见它
+      }
+    } catch (err) {
+      setImageNote(
+        `这一笔已经记下了,只是这次没送成:${err instanceof Error ? err.message : String(err)}。` +
+          '原图还在本机缓存里,可以再记一笔重试,也可以直接删掉它。',
+      )
+      return
+    }
+    onClose()
   }
 
   return (
@@ -102,7 +181,7 @@ export function CaptureSheet({
           }
           if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
             e.preventDefault()
-            submit()
+            void submit()
           }
         }}
       >
@@ -187,32 +266,17 @@ export function CaptureSheet({
             </div>
           </div>
 
-          {/* ── 入口二:拍照(未接入) ────────────────────────────────────────
+          {/* ── 入口二:拖张图进来 ────────────────────────────────────────────
               🔴 这里是「你自己截好的图、自己拖进来」,不是「替你去截屏」。
               设计稿 H12 那屏画过「边看课边记 · ⌥S 截屏记」——<b>那条不做</b>:
               iPad 沙箱不允许录别的 App 的声音或画面,桌面端要系统级录屏权限,
               而这个产品不该为了记一笔去要那种权限。用户自己切屏、自己截图再导进来,可以;
-              「替你听、替你截」,不行。所以这里只有一个接收区,没有任何「开始捕捉」。 */}
-          <GroupHeader title="拖张图进来" right="你自己截的图" />
-          <div className="px-4 py-3">
-            <div className="flex h-[62px] flex-col items-center justify-center gap-1.5 rounded-sm border border-dashed border-hair2 bg-bg3 text-[12px] text-t3 opacity-55">
-              <GlyphIcon kind="image" />
-              <span className="inline-flex items-center gap-2">
-                把截图或照片拖到这儿 <Tag tone="warn">未接入</Tag>
-              </span>
-            </div>
-            <div className="mt-2">
-              <Note warn>
-                识别链路还是 stub,拖进来也不会有反应 —— 这里不做假的进度条。
-                <br />
-                接通之后的规矩已经定死:原图 base64 送识别一次即弃,
-                <b className="font-normal text-red">不上云、不共享、不长期存储</b>。
-                <br />
-                <b className="font-normal text-t2">不会去监听你的截图目录,也不会录别的 App 的屏。</b>
-                图只能你自己拖进来。
-              </Note>
-            </div>
-          </div>
+              「替你听、替你截」,不行。所以这里只有一个接收区,没有任何「开始捕捉」。
+
+              🔴 这一段整个搬到 RawImageDrop 里去了,因为它不只是一个接收区:
+              同意点、倒计时、立即删除三样都挂在 docs/08 `1.1.3` 的 UI 审核项上,
+              和「记一笔」这一屏其余部分不是同一件事,混在一个组件里两边都会被改坏。 */}
+          <RawImageDrop pendingIds={pendingImageIds} onPendingIdsChange={setPendingImageIds} busy={busy} />
 
           {/* ── 入口三:记做题 ───────────────────────────────────────────────
               右边原本写着「⌘L」,但 ⌘L 从来没被绑过,而且在浏览器里它是「跳到地址栏」——
@@ -291,14 +355,35 @@ export function CaptureSheet({
               <Button onClick={onClose}>
                 取消 <Kbd>esc</Kbd>
               </Button>
-              <Button variant="primary" disabled={problem !== null || create.isPending} onClick={submit}>
-                {create.isPending ? '记下中…' : '记下'} <Kbd tone="dark">⌘↵</Kbd>
-              </Button>
+              {/* 🔴 imageNote 一旦有值,就说明<b>那条记录已经在库里了</b>(见 submit 的次序)。
+                  这时主按钮必须换成「完成」:留着「记下」的话,用户看完那句结局再按一下,
+                  落下的是<b>第二条一模一样的记录</b> —— 而覆盖率数的正是「几次」。 */}
+              {imageNote !== null ? (
+                <Button variant="primary" onClick={onClose}>
+                  完成 <Kbd tone="dark">esc</Kbd>
+                </Button>
+              ) : (
+                <Button variant="primary" disabled={problem !== null || busy} onClick={() => void submit()}>
+                  {create.isPending ? '记下中…' : recognize.isPending ? '送图中…' : '记下'}{' '}
+                  <Kbd tone="dark">⌘↵</Kbd>
+                </Button>
+              )}
             </span>
           </div>
 
           <div className="mt-3">
-            {problem ? (
+            {/* 🔴 记录已落地、图这一步的结局单独说 —— 它排在 create.isError 前面,
+                因为到这一步时那条记录<b>已经在库里了</b>,再显示一句「没记下来」是假的。
+                这句话直接用服务端给的 message:六种结局该说的下一步完全不同,
+                而那句措辞服务端已经写好了(SuggestTagResponse 的类注释)。 */}
+            {imageNote !== null ? (
+              <Note warn>
+                {imageNote}
+                <br />
+                这一笔<b className="font-normal text-t2">已经落地</b>,认不出考点也不会把整条记录丢掉。
+                原图还在本机缓存里,到期会自己删,也可以现在就删。
+              </Note>
+            ) : problem ? (
               <Note warn>{problem}</Note>
             ) : create.isError ? (
               <Note warn>

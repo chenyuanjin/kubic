@@ -8,6 +8,7 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "test:boundary": "node scripts/capability-boundary-scan.mjs",
+    "test:retention": "node --test tests/*.test.ts",
     "preview": "vite preview"
   },
   "dependencies": {

@@ -449,6 +449,63 @@ export interface CreateRecordResponse {
   node: NodeDetailDto | null
 }
 
+/**
+ * 一条标签 —— server: dto/TagDto.java。
+ *
+ * 🔴 <b>这里同样没有任何内容字段。</b>一条标签能说的全部是「哪条记录、哪个考点、谁挂的、多有把握」。
+ * `nodeName` / `groupName` 取自骨架树,不是模型生成的文本 ——
+ * 闭集打标的定义就是「模型只能从候选里挑一个 id,永不产出标签文字」(`R-07` / `P1-8`)。
+ */
+export interface TagDto {
+  id: string
+  recordId: string
+  nodeCode: string
+  /** 骨架树删过节点时为 null。 */
+  nodeName: string | null
+  groupCode: string | null
+  groupName: string | null
+  confidence: number
+  /** `auto` / `manual` / `recognized` 之类,服务端的 wire name。 */
+  origin: string
+  confirmedAt: string | null
+  /** 低于阈值被丢掉的那些。<b>宁缺毋滥</b>:丢掉不等于删掉,它仍然看得见,只是不进覆盖。 */
+  discarded: boolean
+  countsInCoverage: boolean
+  primary: boolean
+}
+
+/**
+ * `POST /api/records/{id}/image` 与 `POST /api/records/{id}/tags/suggest` 的<b>同一个</b>答复
+ * —— server: dto/SuggestTagResponse.java。
+ *
+ * <h2>🔴 六种结局全是 HTTP 200,包括「模型挂了」</h2>
+ *
+ * 记录早就在库里了,补标失败什么都没损坏。回 503 会让前端把它当成一次失败去重试,
+ * 而它没有失败,它只是这次没认出来(server 侧那个 record 的 javadoc 写的就是这条)。
+ * 所以判断分支要读 {@link outcome},<b>不要读状态码</b>。
+ *
+ * <h2>`message` 直接显示,不要在前端再写一套措辞</h2>
+ *
+ * 六种结局该说的下一步完全不同(「自己从树里挑一个」和「稍后重试」是两回事),
+ * 而那句话服务端已经写好了。前端另写一份的结果是两份措辞各自演化,
+ * 而用户看到的永远只有前端那份 —— 于是服务端那份的用心全部作废。
+ */
+export interface SuggestTagResponse {
+  /** `SUGGESTED` / `ALREADY_TAGGED` / `NOT_RECALLED` / `NO_MATERIAL` / `NO_MATCH` / `UNAVAILABLE`。 */
+  outcome: string
+  /** 给界面直接用的那句中文。 */
+  message: string
+  /** 模型自报的把握。<b>没匹配上也带着值</b> —— 「被阈值丢掉」和「什么都没认出来」得能分开。 */
+  confidence: number
+  /** 这次召回出了几个候选。<b>0 表示压根没调模型。</b> */
+  candidateCount: number
+  /** 落下的那条标签;没落下时 null。 */
+  tag: TagDto | null
+  tags: TagDto[] | null
+  node: NodeDetailDto | null
+  summary: SummaryDto | null
+}
+
 /* ========================================================================== */
 /* 视图模型 —— 由上面四个响应合成,组件只认这一层                                */
 /* ========================================================================== */

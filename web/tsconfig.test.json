@@ -1,0 +1,37 @@
+{
+  /*
+    tests/ 的第三个 project —— 见 tests/rawImageCache.test.ts 头部。
+
+    刻意与 tsconfig.app.json 有两处不同,两处都是判据:
+
+      · types 是 node 不是 vite/client,lib 里【没有 DOM】——
+        判据层(src/lib/rawImageCache.ts)因此不许碰任何 DOM 符号。
+        哪天有人在那一层写下 indexedDb / window / Blob,`tsc -b` 当场红,
+        而不是等到它悄悄变成一段跑不进测试的逻辑。
+
+      · module 用 nodenext:这些文件是真的被 node 跑起来的
+        (npm run test:retention),不是被 vite 打包的。
+        用 bundler 解析会让 tsc 认可一些 node 跑不起来的写法。
+  */
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.test.tsbuildinfo",
+    "target": "es2023",
+    "lib": ["ES2023"],
+    "types": ["node"],
+    "skipLibCheck": true,
+
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+    "moduleDetection": "force",
+    "noEmit": true,
+
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "erasableSyntaxOnly": true,
+    "noFallthroughCasesInSwitch": true
+  },
+  "include": ["tests"]
+}

@@ -4,15 +4,45 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this repository is
 
-A **decision record that has grown a working prototype**. Fourteen Chinese-language Markdown documents under `docs/` carry the reasoning; `server/` (Spring Boot 4.1.1 / Java 21) and `web/` (React 19 + Vite + Tailwind 4) carry the code. **The documents remain authoritative** — the code implements them, not the other way round.
+A **decision record that has grown a working prototype**. Fifteen Chinese-language Markdown documents under `docs/` carry the reasoning; `server/` (Spring Boot 4.1.1 / Java 21) and `web/` (React 19 + Vite + Tailwind 4) carry the code. **The documents remain authoritative** — the code implements them, not the other way round.
 
 `files.zip` is a **stale backup of the original four documents only** (dated 2026-08-20). Ignore it; don't treat it as a source of truth or re-sync it unless asked.
+
+### server/ 的四个模块 (2026-08-28 由单模块拆开)
+
+边界照着**真实的包依赖方向**切,不是照分层名词切。依赖图无环:
+
+| 模块 | 内容 | 依赖 |
+|---|---|---|
+| `kaodian-domain` | `syllabus` / `recognize` / `collect` / `coverage` / `config` —— 「盲区 = 骨架层 − 行为层」这条公式本身 | 无(**刻意没有 web 依赖**) |
+| `kaodian-auth` | `auth` + `auth.vendor` | 无(**刻意不依赖 domain**) |
+| `kaodian-agent` | agent 运行时:`channel` / `orchestrator` / `tool` / `storage` / `llm` / `prompt` | domain |
+| `kaodian-app` | `api.*` + 启动类 + 配置 —— 唯一产出可执行 jar | 全部 |
+
+两个「刻意」是重点:**`auth` 与业务侧的 import 交集是空集**,单独成模块正是为了让这个「空」有物理形态;
+**`domain` 没有 web 依赖**,想在里面 import 一个 Controller 时 Maven 会先一步告诉你放错地方了。
+`kaodian-agent` **不依赖 `kaodian-auth`** —— agent 拿不到账号体系,这是被 Maven 保证的。
+
+没有 `kaodian-common`:抽不出来。唯一像共享基元的 `AuthJsonFile` 在自己的注释里写明了刻意不下放。
+
+`api` 包内按领域分子包:`support`(异常/CORS/会话解析)、`auth`、`syllabus`、`record`、`insight`(覆盖率/时间线/导出)、`agent`;
+`api.dto` 同样分子包,跨领域共用的进 `dto/common`。
 
 ### Commands
 
 ```bash
-./server/build.sh -q test          # 后端测试。唯一允许的构建入口 —— 直接 ./mvnw 会让依赖走公司私服(docs/10 §1.3)
-./server/build.sh -q test -Dtest=X # 单个测试类
+./server/build.sh -q test          # 后端测试(四个模块全跑)。唯一允许的构建入口 —— 直接 ./mvnw 会让依赖走公司私服(docs/10 §1.3)
+# agent 接真实模型手工验证(密钥只走环境变量,不进仓库;端点与模型已有默认值,默认走免费档):
+#   KAODIAN_MODEL_KEY=sk-or-... java -jar server/kaodian-app/target/kaodian-app-*.jar
+#   curl -N -X POST localhost:8080/api/agent/chat -H 'Content-Type: application/json' -d '{"message":"我的覆盖率怎么样"}'
+# 默认 OpenRouter + minimax/minimax-m3:free —— 关卡 0 之前不为还没人用的功能付费。
+# 免费模型表天天变,换之前先查「免费且支持 tools」的当前清单:见 application.properties 里那条 curl。
+# 🔴 换模型/换端点后【必须】跑两个问题,不能只跑「你好」(见 docs/08 R-88):
+#     ① 需要调工具的  —— 「我的覆盖率怎么样」
+#     ② 越界的        —— 「这道题怎么做,教教我」(应当拒绝讲解并转报记录)
+./server/build.sh -q test -Dtest=X -Dsurefire.failIfNoSpecifiedTests=false   # 单个测试类
+                                   # 🔴 后半截不能省:多模块下 -Dtest=X 会在【不含该类的模块】上失败,
+                                   #    报的是「No tests matching pattern」而不是真正的测试结果
 cd web && npm run lint             # oxlint
 cd web && npm run build            # tsc -b && vite build
 cd web && npm run test:boundary    # 能力边界文案扫描(R-05)
@@ -24,11 +54,13 @@ cd web && npm run test:boundary    # 能力边界文案扫描(R-05)
 
 The product: a **cross-source study-record tool for Chinese exam candidates** (公考 civil service + 考研 postgrad). Core formula: `盲区 = 骨架层 − 行为层` — blind spots are the set difference between a maintained syllabus tree and what the user has actually touched. The defensibility claim is that incumbents (粉笔/中公/华图) *structurally cannot* aggregate competitors' study records, because doing so tears down their own walls.
 
-Current state (2026-08-27): the backend has ~270 green tests including five red-line assertion suites; the visual direction **is decided** (风格 A「极客暗色 · 命令条驱动」, 55 screens in OpenDesign — `08` `R-29` closed); a Multica agent pipeline runs delivery (see below). And there is still **zero real user feedback** — `1.1.4` (the two daily numbers that are gate 0's entire input) is empty.
+Current state (2026-08-28): the backend is **four Maven modules** with ~480 green tests including six red-line assertion suites; the visual direction **is decided** (风格 A「极客暗色 · 命令条驱动」, 55 screens in OpenDesign — `08` `R-29` closed); a Multica agent pipeline runs delivery (see below); an in-product **conversational agent** (`kaodian-agent`, SSE + tool pool + file storage) runs end to end. And there is still **zero real user feedback** — `1.1.4` (the two daily numbers that are gate 0's entire input) is empty.
+
+**The agent is the newest instance of the documented failure mode, not an exception to it** (`08` `R-85`): it has a demo, it streams, it can be polished indefinitely, and it contributes **nothing** to gate 0's judgement. The self-check when sitting down: *am I adding a tool to the agent, or am I finding those two daily numbers?*
 
 **That last sentence is the point of the whole repository.** Everything else on this page is infrastructure around a hypothesis nobody has tested.
 
-## The fourteen documents: two layers
+## The fifteen documents: two layers
 
 **Never let the execution layer overwrite the decision layer.** `05` states it explicitly: "04 的关卡判据在这里一个字都不改." When new research contradicts a decision-layer document, record the correction downstream and annotate upstream — do not silently rewrite the original. Doc `04`'s cost table keeps its superseded ¥2,000 estimate with a pointer, exactly for this reason.
 
@@ -52,15 +84,16 @@ Doc 03 opens by arguing against itself ("框架能防止重复犯已犯过的错
 | `05-执行清单.md` | Checklist form of `04`. Two blocks: 产品开发 (gate-governed) + 上线准备 (approval-governed) |
 | `06-阶段0至关卡2详细排期.md` | Week-by-week schedule to gate 2, with the workload math that decides whether stage 1 is feasible |
 | `07-数据线：骨架原料的获取与隔离.md` | The data track: acquiring syllabus raw material without becoming a piracy host |
-| `08-总路线图.md` | Parent/child todo tree across all three tracks + **the unified risk register `R-01`…`R-74`** |
+| `08-总路线图.md` | Parent/child todo tree across all three tracks + **the unified risk register `R-01`…`R-87`** |
 | `09-识别链路选型.md` | ASR / image-recognition vendor selection, pricing, compliance basis (as-of 2026-08) |
 | `10-技术架构与接口契约.md` | Layering, tables, interface signatures, the Step2 isolation red line (§1.3 = why `build.sh` exists) |
 | `11-商业化与额度设计.md` | Pricing and quota design (**gate 2 onward**) |
 | `12-基础数据：抓取范围与渠道.md` | 56 domains / 81 channels surveyed. Mostly a record of what **not** to scrape and why |
 | `13-后端系统设计与组件接入.md` | Call ordering, spring-ai wiring, login/SMS/WeChat gates. The layer under `10` |
 | `14-自动化交付工作流.md` | The Multica delivery pipeline: four gates, metadata contract, process norms (§九) |
+| `15-Agent框架与能力边界.md` | `kaodian-agent`: seven phases, tool levels, and **which of the three capability-boundary defenses is missing** (§四) |
 
-`08` is the aggregate view — `05`/`06`/`07` are its expansions, `09` is the evidence layer under `06`, `13` is the layer under `10`, and `14` is the delivery infrastructure around all of it. **New risks go into `08` §四 with an `R-xx` id** (currently `R-01`…`R-74`), not into ad-hoc lists.
+`08` is the aggregate view — `05`/`06`/`07` are its expansions, `09` is the evidence layer under `06`, `13` is the layer under `10`, `14` is the delivery infrastructure around all of it, and `15` documents the agent framework that grew outside the three tracks. **New risks go into `08` §四 with an `R-xx` id** (currently `R-01`…`R-87`), not into ad-hoc lists.
 
 ## Three tracks, three different clocks
 
@@ -99,7 +132,7 @@ Rules that bind any agent working here:
 
 Settled decisions, several marked "不改变". Treat as invariants; flag conflicts rather than quietly working around them.
 
-- **能力边界** — never judge "对不对". Only "有没有、几次、多久前".
+- **能力边界** — never judge "对不对". Only "有没有、几次、多久前". Since the agent landed there are **two** `ChatModel` injection points (`recognize` and `agent.llm`), not one — `13` §4.1's "除 recognize 外无 ChatModel 注入点" no longer holds verbatim; the surviving rule is *injection points stay countable and each has a name* (`08` `R-86`). 🔴 The prompt's "don't judge correctness" is the **second** line of defence — it only *asks* the model. What makes it impossible is that **no tool can reach a question stem, answer, or explanation**. Adding a tool that returns question content ends the boundary that moment, and nothing will error.
 - **不做教研** — no subject-matter instruction. Academic judgment is outsourced to external models. Described as the source of every other advantage.
 - **不碰内容** — never store institutions' course content; record source name and timestamp only.
 - **Image retention** 🔴 — after extraction, original images get local/short-term cache only. Never long-term cloud storage or sharing. **This includes vendor image-staging APIs** — DeepSeek Files API *and* 百炼's `oss://dashscope-instant/...` (`R-52` extends `R-04` to every vendor's file staging). Inline base64 only (`09` §四). Machine-checked by `ImageRetentionTest`. Doc 01 notes this cannot be reversed later.

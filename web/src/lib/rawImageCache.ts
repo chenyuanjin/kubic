@@ -25,20 +25,45 @@
  * 宁可这张图没被缓存,也不要一张<b>没有过期戳的原图</b> ——
  * 那正是 `R-04` 要防的那个终局:<b>没有过期戳 = 永不过期</b>。
  *
- * <h2>到期删除有两条触发,少一条都会漏</h2>
+ * <h2>🔴 2026-08-29:到期【归档】,不再删除</h2>
+ *
+ * 改动之前这一层的到期行为是<b>删除</b>,并且有一条写死的判据
+ * ——「过期的原图必须从存储里消失,不是被隐藏」。<b>这条判据已被有意反转。</b>
+ * <p>
+ * 决策人:项目所有者,2026-08-29。当时摆在面前的两个选项里,
+ * 另一个是「保持删除,把 `R-102` 归档等桌面壳补足」,选的是这一个。
+ * <p>
+ * <b>守住的边界没有变,变的只有本机保留时长:</b>
+ * <table border="1">
+ *   <tr><th>仍然成立</th><th>已经改变</th></tr>
+ *   <tr><td>原图<b>只在本机</b>,不上云、不同步、不共享(`R-04` 的主干)</td>
+ *       <td>到期不再删除,改为置 `archivedAt` 后<b>无限期本地保留</b></td></tr>
+ *   <tr><td>用户按「立即删除」就是<b>真删</b>({@link RawImageCache.forget})</td>
+ *       <td>{@link RawImageCache.read} 现在<b>读得出归档行</b></td></tr>
+ *   <tr><td>存图即写过期戳,算不出戳就一个字节都不落</td>
+ *       <td>{@link RawImageBackend} 多了第二个写方法 {@link RawImageBackend.archive}</td></tr>
+ * </table>
+ *
+ * <p>⚠️ <b>这一改把空间问题从「本层自己解决」变成了「配额问题」</b>:
+ * {@link RawImageCache.sweep} 不再释放任何空间,而 `maxEntries` 只管活跃段。
+ * 归档段会一直长到 IndexedDB 配额上限,届时 {@link RawImageCache.store} 会失败。
+ * 已登记为 `R-105`,<b>没有在本层擅自加一条「归档也淘汰」的规则</b> ——
+ * 那等于把刚被改掉的删除行为从后门放回来。
+ *
+ * <h2>归档有两条触发,和原先的删除触发是同两条</h2>
  *
  * <table border="1">
  *   <tr><th>触发</th><th>它单独漏掉的场景</th></tr>
  *   <tr><td>启动时扫一遍({@link RawImageCache.sweep},由界面在挂载时调)</td>
- *       <td>用户开着页面不动:一个整天不刷新的标签页里,图放到天荒地老</td></tr>
- *   <tr><td>存新图时顺带清({@link RawImageCache.store} 内部)</td>
- *       <td><b>用户再也不导第二张图</b>:最后那一批原图永远等不到下一次写</td></tr>
+ *       <td>用户开着页面不动</td></tr>
+ *   <tr><td>存新图时顺带扫({@link RawImageCache.store} 内部)</td>
+ *       <td>用户再也不导第二张图</td></tr>
  * </table>
  *
- * 两条都不覆盖的场景仍然存在(用户从此不再打开这个产品),那一段只能靠 TTL 本身够短。
- * ⚪ 这是本层的已知边界:<b>浏览器里没有后台定时器能在页面关掉之后删东西</b>,
- * 写一个 Service Worker 也只是把「再也不打开」推后一步,不是消除它。
+ * <p>⚪ `R-102`(「页面关掉之后没有定时器能删东西」)<b>因这次改动不再是缺口</b> ——
+ * 到期本来就不删了,漏不漏扫都不改变字节的去留,只影响 `archivedAt` 晚写多久。
  */
+
 
 /* ========================================================================== */
 /* TTL                                                                        */
@@ -124,6 +149,15 @@ export interface RawImageMeta {
   readonly storedAt: number
   /** 🔴 过期时刻。与字节<b>同一次写入</b>,见本文件头。 */
   readonly expiresAt: number
+  /**
+   * 🔴 归档时刻;`null` = 仍在活跃期。
+   *
+   * <p><b>2026-08-29 决策变更</b>:到期<b>不再删除</b>,改为归档保留(本机)。
+   * 见本文件头「归档而非删除」一节与 `docs/01 §2.3` 的加注。
+   * <p>它由 {@link RawImageBackend.archive} 单独写,<b>不能在 {@link RawImageBackend.put} 里带进来</b> ——
+   * 存图那一刻它必然是 `null`,没有「一存进来就是归档态」这种行。
+   */
+  readonly archivedAt: number | null
 }
 
 /**
@@ -167,8 +201,19 @@ export interface RawImageBackend {
   listMeta(): Promise<RawImageMeta[]>
   /** 取一行(含字节)。不存在返回 `null`。 */
   read(id: string): Promise<StoredRawImage | null>
-  /** 按 id 批量删。删不存在的 id 不算错。 */
+  /** 按 id 批量删。删不存在的 id 不算错。<b>只服务于用户手按的删</b>,不再服务于到期。 */
   deleteMany(ids: readonly string[]): Promise<void>
+  /**
+   * 🔴 按 id 批量归档 —— <b>只写 `archivedAt` 一个字段,不碰字节、不碰过期戳</b>。
+   *
+   * <p>它是 {@link put} 之外的第二个写方法,而这个接口原本刻意只有一个写。
+   * 加它的理由只有一条:到期行为从「删」改成「归档」(2026-08-29),
+   * 而归档必须能<b>就地改一个字段</b>,不能靠「读出整行再 put 回去」——
+   * 那条路要把全部字节再过一遍手,正是本层一直在避免的事。
+   * <p>它<b>无法</b>被用来实现「先存图后补戳」:它只认 `archivedAt`,
+   * 碰不到 `expiresAt`,也碰不到 `blob`。接口仍然窄,只是窄在了新的地方。
+   */
+  archive(ids: readonly string[], at: number): Promise<void>
 }
 
 /**
@@ -196,6 +241,13 @@ export class RawImageExpiryError extends Error {
  * 一行坏数据变成一张<b>永不过期的原图</b>,而那正好是 `R-04` 的终局。
  * 版本升级、手改 IndexedDB、写到一半断电,任何原因产生的残行都走这条路 ——
  * <b>存疑就删,不是宁可留着</b>。这也是「宁缺毋滥」在这条链路上的形态。
+ */
+export function isArchived(meta: RawImageMeta): boolean {
+  return typeof meta.archivedAt === 'number' && Number.isFinite(meta.archivedAt)
+}
+
+/**
+ * 🔴 <b>没有合法过期戳的行,一律当成已经过期。</b>(判据方向未变)
  */
 export function isExpired(meta: RawImageMeta, now: number): boolean {
   if (typeof meta.expiresAt !== 'number' || !Number.isFinite(meta.expiresAt)) return true
@@ -322,6 +374,7 @@ export class RawImageCache {
       label: input.label,
       storedAt,
       expiresAt,
+      archivedAt: null,
       blob: input.blob,
     }
     requireAtomicExpiry(row)
@@ -334,18 +387,34 @@ export class RawImageCache {
   }
 
   /**
-   * 扫一遍,把到期的删掉,返回被删掉的 id。
+   * 扫一遍,把到期的<b>归档</b>,返回被归档的 id。
    *
-   * <p>界面挂载时调一次(触发一),{@link store} 里调一次(触发二)。
-   * 它<b>不返回还活着的那些</b> —— 那是 {@link list} 的事,两件事混在一个返回值里,
-   * 调用方迟早会拿「删了几张」当「还剩几张」用。
+   * <p><b>2026-08-29 之前这里是删除</b>。改成归档之后,这个方法不再释放任何空间 ——
+   * 它只是把行从「活跃」挪到「归档」。空间问题因此从本层消失、转移到配额上,见 `R-105`。
+   *
+   * <p>已归档的行不会被重复归档({@link isArchived} 过滤),
+   * 所以反复调用它不会把 `archivedAt` 一路往后推。
    */
   async sweep(): Promise<string[]> {
     const now = this.now()
     const all = await this.backend.listMeta()
-    const doomed = all.filter((m) => isExpired(m, now)).map((m) => m.id)
-    if (doomed.length > 0) await this.backend.deleteMany(doomed)
+    const doomed = all.filter((m) => !isArchived(m) && isExpired(m, now)).map((m) => m.id)
+    if (doomed.length > 0) await this.backend.archive(doomed, now)
     return doomed
+  }
+
+  /**
+   * 已归档的原图,<b>最近归档的排在前面</b>。
+   *
+   * <p>它和 {@link list} 是两个不相交的集合:活跃的不在这里,归档的不在那里。
+   * 界面要分两处显示,<b>不要合成一个列表再用状态标记区分</b> ——
+   * 那会让「本机还留着多少张原图」这个数字从界面上消失,而那正是用户唯一该看见的数。
+   */
+  async listArchived(): Promise<RawImageMeta[]> {
+    await this.sweep()
+    return (await this.backend.listMeta())
+      .filter(isArchived)
+      .sort((a, b) => (b.archivedAt ?? 0) - (a.archivedAt ?? 0))
   }
 
   /**
@@ -359,25 +428,22 @@ export class RawImageCache {
     await this.sweep()
     const now = this.now()
     return (await this.backend.listMeta())
-      .filter((m) => !isExpired(m, now))
+      .filter((m) => !isArchived(m) && !isExpired(m, now))
       .sort((a, b) => a.expiresAt - b.expiresAt)
   }
 
   /**
    * 取回一张图的字节 —— 唯一会碰到原图内容的读口。
    *
-   * <p>过期的取不到:不是「取到了但标记为过期」,是<b>当场删掉并返回 `null`</b>。
-   * 留一条「过期但还能读出来」的路,等于给这条红线开一个后门。
+   * <p>🔴 <b>2026-08-29 起,已归档的行照样读得出来。</b>
+   * 改动之前这里写的是「过期的当场删掉并返回 null」,理由是「留一条『过期但还能读出来』
+   * 的路,等于给这条红线开一个后门」。<b>那扇门现在是被有意打开的</b> ——
+   * 归档的全部意义就是「留着还能用」,读不出来的归档等于删除。
+   * <p>仍然守住的是另外两条:归档只在<b>本机</b>,以及用户按删就是真删。
    */
   async read(id: string): Promise<StoredRawImage | null> {
     await this.sweep()
-    const row = await this.backend.read(id)
-    if (row === null) return null
-    if (isExpired(row, this.now())) {
-      await this.backend.deleteMany([id])
-      return null
-    }
-    return row
+    return await this.backend.read(id)
   }
 
   /** 用户按的「立即删除」。docs/08 的 UI 审核项之一:随时能手动删掉。 */
@@ -398,7 +464,9 @@ export class RawImageCache {
    * 两种时长的行,那时「最早存的」和「最早该走的」不再是同一批,而该先走的显然是后者。
    */
   private async evictBeyondCap(keep: number): Promise<void> {
-    const all = await this.backend.listMeta()
+    // 🔴 上限只管【活跃】那一段。归档的不参与淘汰 —— 归档就是「不自动删」的意思,
+    //    让上限去删归档,等于把刚改掉的行为从后门放回来。代价见 `R-105`(配额)。
+    const all = (await this.backend.listMeta()).filter((m) => !isArchived(m))
     if (all.length <= keep) return
     const doomed = [...all].sort((a, b) => a.expiresAt - b.expiresAt).slice(0, all.length - keep)
     await this.backend.deleteMany(doomed.map((m) => m.id))
@@ -414,5 +482,6 @@ function toMeta(row: StoredRawImage): RawImageMeta {
     label: row.label,
     storedAt: row.storedAt,
     expiresAt: row.expiresAt,
+    archivedAt: row.archivedAt,
   }
 }

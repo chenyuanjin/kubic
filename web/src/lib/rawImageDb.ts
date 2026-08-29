@@ -156,6 +156,41 @@ export const indexedDbRawImageBackend: RawImageBackend = {
       tx.onerror = () => reject(new RawImageStorageError('删本地原图缓存失败。', tx.error))
     })
   },
+
+  /**
+   * 🔴 就地置 `archivedAt`,<b>不重写字节</b>。
+   *
+   * <p>一个事务读改写完整批,理由和 {@link deleteMany} 同源:分成 N 个事务的话,
+   * 中途失败会留下一批「已经过期、又没归档」的行 —— 下次 sweep 会把它们再扫一遍,
+   * `archivedAt` 于是被推到一个更晚的时刻,归档时间就不再是「它当初到期的那一刻」。
+   *
+   * <p>读出来的整行原样 `put` 回去,只换 `archivedAt` 一个字段。
+   * 这里必须走「读整行再写整行」是 IndexedDB 的限制(没有部分更新),
+   * 但它<b>不违反本层「少碰几次字节」的纪律</b> —— 归档是<b>一次性</b>事件,
+   * 每张图一生只经过这里一次,不像 listMeta 那样每次扫描都来。
+   *
+   * <p>行不存在就跳过,不报错:和 {@link deleteMany} 一致。
+   */
+  async archive(ids: readonly string[], at: number): Promise<void> {
+    if (ids.length === 0) return
+    const db = await openDb()
+    await new Promise<void>((resolve, reject) => {
+      const tx = db.transaction(STORE, 'readwrite')
+      const store = tx.objectStore(STORE)
+      for (const id of ids) {
+        const req = store.get(id)
+        req.onsuccess = () => {
+          const row = req.result as StoredRawImage | undefined
+          if (row === undefined) return
+          if (typeof row.archivedAt === 'number') return // 已归档,不重复推后时刻
+          store.put({ ...row, archivedAt: at })
+        }
+      }
+      tx.oncomplete = () => resolve()
+      tx.onabort = () => reject(new RawImageStorageError('归档本地原图被中止。', tx.error))
+      tx.onerror = () => reject(new RawImageStorageError('归档本地原图失败。', tx.error))
+    })
+  },
 }
 
 /* ========================================================================== */

@@ -71,6 +71,20 @@ class MemoryBackend implements RawImageBackend {
     return Promise.resolve(this.rows.get(id) ?? null)
   }
 
+  /** archive 被调用过几次。用来验「归档是一次性事件,不会被反复推后」。 */
+  archives = 0
+
+  archive(ids: readonly string[], at: number): Promise<void> {
+    this.archives += 1
+    for (const id of ids) {
+      const row = this.rows.get(id)
+      if (row === undefined) continue
+      if (typeof row.archivedAt === 'number') continue
+      this.rows.set(id, { ...row, archivedAt: at })
+    }
+    return Promise.resolve()
+  }
+
   deleteMany(ids: readonly string[]): Promise<void> {
     for (const id of ids) this.rows.delete(id)
     return Promise.resolve()
@@ -178,7 +192,7 @@ test('🔴 时钟坏掉时同样一个字节都不落', async () => {
 /* 1.1.3.2 / 1.1.3.3 到期自动删除 —— 拨时钟实测                                 */
 /* ========================================================================== */
 
-test('🔴 1.1.3.3 把时钟拨过期之后,图【真的没了】—— 不是只是列表里不显示', async () => {
+test('🔴 1.1.3.3 把时钟拨过期之后,图【归档而不是删除】—— 字节仍在本机', async () => {
   const { backend, cache, clock } = setup()
 
   const meta = await cache.store({ blob: bytes(2048), label: '资料分析-01.png' })
@@ -188,32 +202,78 @@ test('🔴 1.1.3.3 把时钟拨过期之后,图【真的没了】—— 不是�
   // ——「改系统时间」就是这一行。TTL 之后再多一毫秒。
   clock.advance(RAW_IMAGE_TTL_MS + 1)
 
-  assert.deepEqual(await cache.list(), [], '过期之后列表里不该还有它')
-  // 🔴 这一条是真正的判据:落到存储口里的那一行被【删掉】了,
-  //    而不是「还在,只是被过滤掉了」。后者在磁盘上仍然是一张原图。
-  assert.equal(backend.rows.size, 0, '过期的原图必须从存储里消失,不是被隐藏')
+  assert.deepEqual(await cache.list(), [], '过期之后不该再出现在【活跃】列表里')
+
+  /* 🔴 2026-08-29 决策变更:这条断言被有意反转。
+     改动之前这里写的是 `backend.rows.size === 0`,注释是
+     「过期的原图必须从存储里消失,不是被隐藏」。
+     现在的行为是【归档】:行还在、字节还在,只是挪出活跃段。 */
+  assert.equal(backend.rows.size, 1, '归档不删行 —— 字节必须还在本机')
+  const row = backend.rows.get(meta.id)
+  assert.ok(row, '行应该还在')
+  assert.equal(typeof row.archivedAt, 'number', 'archivedAt 应该被写上')
+  assert.equal(row.blob.size, 2048, '🔴 归档保留的是【字节本身】,不是一条元信息')
+
+  const archived = await cache.listArchived()
+  assert.deepEqual(archived.map((m) => m.id), [meta.id], '应该出现在归档列表里')
 })
 
-test('1.1.3.2 到期是「>=」:差一毫秒还在,到点就走', async () => {
+test('🔴 归档之后仍然读得出来 —— 读不出来的归档等于删除', async () => {
+  const { cache, clock } = setup()
+  const meta = await cache.store({ blob: bytes(512), label: '归档也要能用.png' })
+
+  clock.advance(RAW_IMAGE_TTL_MS + 1)
+  await cache.sweep()
+
+  const row = await cache.read(meta.id)
+  assert.ok(row, '归档行必须仍可读')
+  assert.equal(row.blob.size, 512)
+})
+
+test('归档是一次性的 —— 反复 sweep 不会把 archivedAt 一路往后推', async () => {
+  const { backend, cache, clock } = setup({ ttlMs: HOUR })
+  const meta = await cache.store({ blob: bytes(), label: 'a.png' })
+
+  clock.advance(HOUR + 1)
+  assert.deepEqual(await cache.sweep(), [meta.id], '第一次 sweep 应该报出它归档了哪一张')
+  const first = backend.rows.get(meta.id)?.archivedAt
+
+  clock.advance(10 * HOUR)
+  assert.deepEqual(await cache.sweep(), [], '已归档的不该被再归档一次')
+  assert.equal(backend.rows.get(meta.id)?.archivedAt, first, 'archivedAt 应该停在它当初到期的那一刻')
+})
+
+test('🔴 用户按的「立即删除」仍然是真删 —— 归档改的是【到期】,不是【手动删】', async () => {
+  const { backend, cache, clock } = setup({ ttlMs: HOUR })
+  const meta = await cache.store({ blob: bytes(), label: '我不想留.png' })
+
+  clock.advance(HOUR + 1)
+  await cache.sweep()
+  assert.equal(backend.rows.size, 1, '先确认它是归档态而不是已经没了')
+
+  await cache.forget(meta.id)
+  assert.equal(backend.rows.size, 0, '用户按删就得真删 —— 归档不是「删不掉」')
+})
+
+test('1.1.3.2 到期是「>=」:差一毫秒还活跃,到点就归档', async () => {
   const { backend, cache, clock } = setup({ ttlMs: HOUR })
   await cache.store({ blob: bytes(), label: 'a.png' })
 
   clock.advance(HOUR - 1)
-  assert.equal((await cache.list()).length, 1, '还差 1 毫秒,不该删')
+  assert.equal((await cache.list()).length, 1, '还差 1 毫秒,不该归档')
 
   clock.advance(1)
-  /* ⚪ 这一行是这条断言第一次写时漏掉的,而漏掉之后它<b>红了</b> ——
-     记在这里因为那次红说清了一件事实:删除是【被触发的】,不是自己发生的。
-     浏览器里没有能在页面关掉之后跑的定时器,所以两条触发(启动扫一遍 / 存新图顺带清)
-     就是全部。把它们当成「反正会自己删」来写,断言和产品会一起错。 */
+  /* ⚪ 归档同样是【被触发的】,不是自己发生的 —— 两条触发就是全部。
+     不过归档之后这一点的后果比原先轻:漏扫只影响 archivedAt 晚写多久,
+     不再影响字节的去留(那正是 R-102 因这次改动而消解的原因)。 */
   await cache.sweep()
-  assert.equal(backend.rows.size, 0, '到点即删 —— expiresAt <= now 就算过期')
+  assert.equal(backend.rows.size, 1, '行还在')
+  assert.equal((await cache.list()).length, 0, '但已不在活跃段')
 })
 
-test('触发一:启动时扫一遍 —— 页面根本没被打开过的那批也会被清掉', async () => {
+test('触发一:启动时扫一遍 —— 上一次会话留下的那批会被归档', async () => {
   const { backend, clock } = setup({ ttlMs: HOUR })
 
-  // 上一次会话存的图。
   const before = new RawImageCache({
     backend,
     now: clock.now,
@@ -222,31 +282,32 @@ test('触发一:启动时扫一遍 —— 页面根本没被打开过的那批�
   })
   await before.store({ blob: bytes(), label: '昨晚.png' })
 
-  // 关掉页面、过了两小时、重新打开 —— 新的实例,同一个存储。
   clock.advance(2 * HOUR)
   const after = new RawImageCache({ backend, now: clock.now, ttlMs: HOUR })
 
-  assert.deepEqual(await after.sweep(), ['old-1'], 'sweep 应该报出它删了哪一张')
-  assert.equal(backend.rows.size, 0)
+  assert.deepEqual(await after.sweep(), ['old-1'], 'sweep 应该报出它归档了哪一张')
+  assert.equal(backend.rows.size, 1, '归档不删行')
+  assert.deepEqual((await after.listArchived()).map((m) => m.id), ['old-1'])
 })
 
-test('触发二:存新图时顺带清 —— 旧的走,新的留', async () => {
+test('触发二:存新图时顺带扫 —— 旧的进归档,新的在活跃', async () => {
   const { backend, cache, clock } = setup({ ttlMs: HOUR })
 
   const old = await cache.store({ blob: bytes(), label: '旧.png' })
   clock.advance(2 * HOUR)
   const fresh = await cache.store({ blob: bytes(), label: '新.png' })
 
-  assert.equal(backend.rows.has(old.id), false, '存新图那一次应该把过期的旧图带走')
-  assert.equal(backend.rows.has(fresh.id), true)
-  assert.equal(backend.rows.size, 1)
+  assert.equal(backend.rows.size, 2, '两行都在 —— 旧的没被删,只是归档了')
+  assert.equal(typeof backend.rows.get(old.id)?.archivedAt, 'number')
+  assert.equal(backend.rows.get(fresh.id)?.archivedAt, null)
+  assert.deepEqual((await cache.list()).map((m) => m.id), [fresh.id], '活跃段只剩新的')
 })
 
 /* ========================================================================== */
-/* 存疑就删                                                                    */
+/* 存疑就归档                                                                  */
 /* ========================================================================== */
 
-test('🔴 没有合法过期戳的残行一律当成已过期 —— 存疑就删,不是宁可留着', async () => {
+test('🔴 没有合法过期戳的残行一律当成已过期 —— 存疑就归档,不是宁可留在活跃段', async () => {
   for (const bad of [Number.NaN, Number.POSITIVE_INFINITY, undefined, null, '永远']) {
     const { backend, cache, clock } = setup()
     // 绕过判据层直接塞一行进存储 —— 模拟版本升级 / 手改 IndexedDB / 写到一半断电。
@@ -258,23 +319,37 @@ test('🔴 没有合法过期戳的残行一律当成已过期 —— 存疑就�
       label: '来路不明.png',
       storedAt: clock.now(),
       expiresAt: bad as unknown as number,
+      archivedAt: null,
       blob: bytes(),
     })
 
-    assert.deepEqual(await cache.list(), [], `expiresAt=${String(bad)}:不该出现在列表里`)
-    assert.equal(backend.rows.size, 0, `expiresAt=${String(bad)}:应该被当成过期并删掉`)
+    /* 判据方向没变:算不出合法过期戳就当它已经过期。
+       变的只有「过期之后怎么处置」—— 2026-08-29 起是归档,不是删除。
+       残行因此不会以「永不过期的活跃原图」的形态留在库里,这一点仍然成立。 */
+    assert.deepEqual(await cache.list(), [], `expiresAt=${String(bad)}:不该出现在活跃列表里`)
+    assert.equal(
+      typeof backend.rows.get('legacy')?.archivedAt,
+      'number',
+      `expiresAt=${String(bad)}:应该被当成过期并归档`,
+    )
   }
 })
 
-test('read 取不到过期的图,而且顺手把它删了 —— 不留「过期但还能读」这条后门', async () => {
+test('🔴 read 读得到归档行 —— 这扇门是 2026-08-29 有意打开的', async () => {
   const { backend, cache, clock } = setup({ ttlMs: HOUR })
   const meta = await cache.store({ blob: bytes(), label: 'a.png' })
 
   assert.ok(await cache.read(meta.id), '没过期时读得到')
 
   clock.advance(HOUR)
-  assert.equal(await cache.read(meta.id), null)
-  assert.equal(backend.rows.size, 0)
+  /* 改动之前这里断言的是 `read() === null` 且 `rows.size === 0`,
+     注释写的是「不留『过期但还能读』这条后门」。
+     归档的全部意义就是「留着还能用」,所以那扇门现在是开的。
+     仍然关着的是另外两扇:不上云、用户按删就是真删。 */
+  const row = await cache.read(meta.id)
+  assert.ok(row, '归档行仍然读得出来')
+  assert.equal(typeof row.archivedAt, 'number')
+  assert.equal(backend.rows.size, 1)
 })
 
 /* ========================================================================== */

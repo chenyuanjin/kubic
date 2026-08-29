@@ -1,0 +1,8 @@
+{
+  "$schema": "../gen/schemas/mobile-schema.json",
+  "identifier": "mobile",
+  "description": "iOS / Android 的权限集。本轮不接后端、不做功能,一个权限都不需要;不写通配 capability(docs/15 §4.3)。",
+  "platforms": ["iOS", "android"],
+  "windows": ["main"],
+  "permissions": []
+}

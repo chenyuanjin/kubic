@@ -1,0 +1,8 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "desktop",
+  "description": "macOS 的权限集。壳不调用任何 Tauri 插件,所以这里是空的 —— 空不是省略,是结论(docs/15 §九)。",
+  "platforms": ["macOS"],
+  "windows": ["main"],
+  "permissions": []
+}

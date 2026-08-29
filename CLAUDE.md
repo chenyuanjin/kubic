@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this repository is
 
-A **decision record that has grown a working prototype**. Fifteen Chinese-language Markdown documents under `docs/` carry the reasoning; `server/` (Spring Boot 4.1.1 / Java 21) and `web/` (React 19 + Vite + Tailwind 4) carry the code. **The documents remain authoritative** — the code implements them, not the other way round.
+A **decision record that has grown a working prototype**. Seventeen Chinese-language Markdown documents under `docs/` carry the reasoning; `server/` (Spring Boot 4.1.1 / Java 21) and `web/` (React 19 + Vite + Tailwind 4) carry the code. **The documents remain authoritative** — the code implements them, not the other way round.
 
 `files.zip` is a **stale backup of the original four documents only** (dated 2026-08-20). Ignore it; don't treat it as a source of truth or re-sync it unless asked.
 
@@ -60,7 +60,7 @@ Current state (2026-08-28): the backend is **four Maven modules** with ~480 gree
 
 **That last sentence is the point of the whole repository.** Everything else on this page is infrastructure around a hypothesis nobody has tested.
 
-## The fifteen documents: two layers
+## The seventeen documents: two layers
 
 **Never let the execution layer overwrite the decision layer.** `05` states it explicitly: "04 的关卡判据在这里一个字都不改." When new research contradicts a decision-layer document, record the correction downstream and annotate upstream — do not silently rewrite the original. Doc `04`'s cost table keeps its superseded ¥2,000 estimate with a pointer, exactly for this reason.
 
@@ -84,7 +84,7 @@ Doc 03 opens by arguing against itself ("框架能防止重复犯已犯过的错
 | `05-执行清单.md` | Checklist form of `04`. Two blocks: 产品开发 (gate-governed) + 上线准备 (approval-governed) |
 | `06-阶段0至关卡2详细排期.md` | Week-by-week schedule to gate 2, with the workload math that decides whether stage 1 is feasible |
 | `07-数据线：骨架原料的获取与隔离.md` | The data track: acquiring syllabus raw material without becoming a piracy host |
-| `08-总路线图.md` | Parent/child todo tree across all three tracks + **the unified risk register `R-01`…`R-87`** |
+| `08-总路线图.md` | Parent/child todo tree across all three tracks + **the unified risk register `R-01`…`R-107`** |
 | `09-识别链路选型.md` | ASR / image-recognition vendor selection, pricing, compliance basis (as-of 2026-08) |
 | `10-技术架构与接口契约.md` | Layering, tables, interface signatures, the Step2 isolation red line (§1.3 = why `build.sh` exists) |
 | `11-商业化与额度设计.md` | Pricing and quota design (**gate 2 onward**) |
@@ -92,8 +92,10 @@ Doc 03 opens by arguing against itself ("框架能防止重复犯已犯过的错
 | `13-后端系统设计与组件接入.md` | Call ordering, spring-ai wiring, login/SMS/WeChat gates. The layer under `10` |
 | `14-自动化交付工作流.md` | The Multica delivery pipeline: four gates, metadata contract, process norms (§九) |
 | `15-Agent框架与能力边界.md` | `kaodian-agent`: seven phases, tool levels, and **which of the three capability-boundary defenses is missing** (§四) |
+| `16-产品路线图与用户共创.md` | The two **outward-facing** modules: a user-visible roadmap and a feedback board. Form and red lines only, **no schedule** — §零 fixes the ordering: both need existing users first |
+| `17-原图存储：判据层与存储层.md` | `KUBI-63`: the raw-image storage contract — 判据层/存储层 split (frozen as already built), how the browser and the desktop shell share one decision layer, and the migration path |
 
-`08` is the aggregate view — `05`/`06`/`07` are its expansions, `09` is the evidence layer under `06`, `13` is the layer under `10`, `14` is the delivery infrastructure around all of it, and `15` documents the agent framework that grew outside the three tracks. **New risks go into `08` §四 with an `R-xx` id** (currently `R-01`…`R-87`), not into ad-hoc lists.
+`08` is the aggregate view — `05`/`06`/`07` are its expansions, `09` is the evidence layer under `06`, `13` is the layer under `10`, `14` is the delivery infrastructure around all of it, and `15` documents the agent framework that grew outside the three tracks. **New risks go into `08` §四 with an `R-xx` id** (currently `R-01`…`R-107`), not into ad-hoc lists.
 
 ## Three tracks, three different clocks
 

@@ -1,0 +1,10 @@
+# cargo tauri ios/android init 的生成物(壳技术方案 §2.4)。
+#
+# 不进仓库的理由:它是【生成物】,而且里面带着本机绝对路径与 Xcode 版本痕迹。
+# 代价是每台新机器都要先跑一次 `cargo tauri ios init` —— 这一步写在 README 里。
+#
+# 🔴 所以:任何需要长期存在的 iOS 配置都不能写在 gen/ 下,下一次 init 就没了。
+#    Info.plist 的加项写在 shell/Info.ios.plist,由 Tauri 合并进去。
+gen/
+
+target/

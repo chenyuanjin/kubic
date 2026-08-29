@@ -1,0 +1,33 @@
+[package]
+name = "kaodian-shell"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.77"
+description = "考点盲区 · 壳。把 web/dist 内嵌进二进制,三端共用同一份产物。"
+publish = false
+
+# 🔴 lib 目标是 Tauri 2 移动端的硬性要求,不是风格选择。
+# iOS/Android 的构建产物是一个由 Xcode / Gradle 链接的静态库或动态库,
+# 入口是 lib.rs 里的 `run()`,不是 main.rs。桌面端仍走 main.rs。
+# 壳技术方案 §2.4 的目录表写于移动端落地之前,只列了 main.rs —— 见 shell/README.md「与方案的偏差」。
+[lib]
+name = "kaodian_shell_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+# 🔴 依赖黑名单由 build.sh 步骤 ① 执行:不得出现任何模型 SDK、
+# 任何崩溃上报 / 遥测 SDK(壳技术方案 §六)。加依赖前先对着那一节看。
+tauri = { version = "2", features = [] }
+# 编译期把 web/dist 打进二进制。选它是因为三端拿资源的方式各不相同
+# (macOS 在 .app/Contents/Resources,Android 要走 AssetManager),
+# 内嵌把这个差异消成零 —— 壳技术方案 §3.3。
+include_dir = "0.7"
+# 同步、无 async 运行时、无 TLS 的极小 HTTP 服务。
+# ⚠️ 壳技术方案 §7 把「具体用哪个 Rust HTTP 库」留给 KUBI-65 决定。
+# 这里选 tiny_http 只是为了让 iOS 脚手架能跑起来,KUBI-65 要换就换,
+# local_server.rs 的对外形状(bind / serve)是契约,库不是。
+tiny_http = "0.12"
+serde_json = "1"

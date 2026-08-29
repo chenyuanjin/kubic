@@ -1,0 +1,8 @@
+{
+  "$schema": "../gen/schemas/mobile-schema.json",
+  "identifier": "mobile",
+  "description": "iOS / Android 的权限集。按平台分文件,不写一个『全都给』的通配 capability(壳技术方案 §4.3)。这里只有 core:default —— 前端没装 @tauri-apps/api,一次 IPC 都不发,所以不需要任何插件权限。往这里加一条之前,先问它服务于哪个已成立的需求。",
+  "platforms": ["iOS", "android"],
+  "windows": ["main"],
+  "permissions": ["core:default"]
+}

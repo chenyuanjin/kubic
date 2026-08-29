@@ -1,0 +1,8 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "desktop",
+  "description": "macOS 的权限集。与 mobile.json 分开是为了让『某个能力只在某端有』这件事有物理形态,而不是靠运行时判断(壳技术方案 §4.3)。托盘等原生能力的取舍由 KUBI-64 判定、KUBI-65 落地,本轮不预留。",
+  "platforms": ["macOS"],
+  "windows": ["main"],
+  "permissions": ["core:default"]
+}

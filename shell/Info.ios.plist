@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  iOS 专属 Info.plist 加项。**由 shell/build.sh 步骤 ③b 注入**,不是 Tauri 自动合并的。
+
+  ⚠️ 实测结论(2026-08-30):Tauri 2.11.4 **不会**读取 tauri 目录下的 Info.plist /
+  Info.ios.plist。生成链路是 tauri → gen/apple/project.yml → xcodegen → Info.plist,
+  中间没有一处会看这个文件。所以注入必须由 build.sh 自己做,
+  它同时改 project.yml(来源)和已生成的 Info.plist(产物)。
+
+  🔴 这个文件必须在 gen/ 之外,因为 gen/ 是 git-ignored 的(壳技术方案 §2.4)。
+  写进 gen/ 的任何配置,下一次 `cargo tauri ios init` 就没了。
+
+  为什么需要它:壳的窗口指向 http://127.0.0.1:17840(明文 HTTP),
+  而 iOS 的 App Transport Security 默认拒绝一切明文 HTTP 加载。
+  NSAllowsLocalNetworking 只放开本地回环与本地网络,不放开公网明文 ——
+  这正好是壳需要的那一格。
+
+  🔴 不要改成 NSAllowsArbitraryLoads。那会把公网明文一起放开,
+  而壳↔上游那一段在阶段 2+ 是 HTTPS,放开它等于把 TLS 边界拆了(壳技术方案 §3.6)。
+-->
+<plist version="1.0">
+  <dict>
+    <key>NSAppTransportSecurity</key>
+    <dict>
+      <key>NSAllowsLocalNetworking</key>
+      <true/>
+    </dict>
+  </dict>
+</plist>

@@ -1,0 +1,8 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "desktop",
+  "description": "macOS 的权限集。permissions 为空,且这个空是结论不是待办 —— 页面从来不发 IPC(withGlobalTauri: false,且窗口指向的是回环 HTTP origin,Tauri 不会往远端 origin 注入 IPC),所以没有任何 core 命令需要被授权。壳需要的两件事(回环监听、查端口占用)都发生在 Rust 侧,不经过这套权限系统。按平台分文件、不写一个『全都给』的通配 capability,见 docs/15 §4.3。",
+  "platforms": ["macOS"],
+  "windows": ["main"],
+  "permissions": []
+}

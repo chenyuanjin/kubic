@@ -1,0 +1,8 @@
+{
+  "$schema": "../gen/schemas/mobile-schema.json",
+  "identifier": "mobile",
+  "description": "iOS / Android 的权限集。同 desktop.json:permissions 为空。移动端本轮的目标只是『能构建、能装、能打开首页』(KUBI-66 / KUBI-67),连后端都不接 —— 首屏落在前端已有的离线示例数据整屏回退上。分成两个文件不是为了现在有差异,是为了将来出现差异时它有地方去,而不是被塞进一个通配 capability 里。",
+  "platforms": ["iOS", "android"],
+  "windows": ["main"],
+  "permissions": []
+}

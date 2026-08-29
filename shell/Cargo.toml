@@ -1,0 +1,64 @@
+[package]
+name = "kaodian-shell"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.80"
+publish = false
+description = "考点盲区桌面壳 —— 内嵌 web/dist,回环静态直出 + /api 反代(docs/15-壳技术方案)"
+
+# 🔴 依赖表是一条能力边界的执行装置,不只是构建配置(docs/15 §六)。
+#
+# 这里【永远】不该出现的三类:
+#   ① 任何模型 SDK(openai / anthropic / ollama / spring-ai 的 rust 对应物……)
+#      —— 学科判断整个外包给用户自己接的模型,而调模型的地方只有 server 的 recognize 与 agent.llm 两处。
+#   ② 任何崩溃上报 / 遥测(sentry / opentelemetry / posthog……)
+#      —— 它会把数据送出这台机器,而红线的原话是「只存在他自己的机器上」。
+#   ③ 任何云存储 / 同步 SDK —— 同上。
+#
+# 这三条由 build.sh 步骤 ① 的依赖黑名单在【构建期】拦,不靠 code review。
+# 黑名单同时扫 Cargo.toml 与 Cargo.lock —— 只扫前者的话,一个传递依赖就能绕过去。
+
+[build-dependencies]
+tauri-build = { version = "2", features = ["config-json5"] }
+
+[dependencies]
+# —— 壳本体 ——
+# 刻意【不】启用任何 tauri 插件:每引入一个原生能力,就多一处浏览器与壳不一致的地方
+# (KUBI-64 原话)。托盘与后台定时器是 KUBI-68 的落点,不在本议题。
+tauri = { version = "2", features = ["config-json5"] }
+
+# —— 回环服务 + 反代 ——
+# 选 hyper 而不是 axum/reqwest,理由只有一条:R-74。
+# 请求体必须【流式转发、不缓冲落盘】,而 hyper 的 Incoming body 可以原样交给上游连接,
+# 中间不经过任何 Vec<u8>。图片走 base64 内联,6 张图必然超过任何默认缓冲。
+hyper = { version = "1", features = ["http1", "server", "client"] }
+hyper-util = { version = "0.1", features = ["tokio", "server", "client-legacy", "http1"] }
+http-body-util = "0.1"
+tokio = { version = "1", features = ["rt-multi-thread", "net", "time", "macros"] }
+
+# 上游是 https 时走【系统信任库】(docs/15 §3.4 规则 8)。
+# 没有任何开关能关掉校验、加自定义 CA 或做证书固定 —— 那三件事都不提供接口,
+# 而不是提供了再劝人别用。
+hyper-rustls = { version = "0.27", default-features = false, features = [
+    "native-tokio",
+    "http1",
+    "tls12",
+    "ring",
+] }
+rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12"] }
+
+# —— 内嵌前端产物 ——
+# 编译期把 ../web/dist 整个读进二进制。三端拿资源的方式各不相同
+# (macOS 在 .app/Contents/Resources,Android 要走 AssetManager),内嵌把这个差异消成零。
+include_dir = "0.7"
+
+# —— 配置文件 ——
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[profile.release]
+# 壳里没有需要被采样的性能问题,而二进制里带着 dist 已经不小了。
+opt-level = "s"
+lto = true
+codegen-units = 1
+strip = true

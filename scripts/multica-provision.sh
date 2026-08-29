@@ -4,6 +4,8 @@
 #
 #   预演:  ./scripts/multica-provision.sh --dry-run
 #   执行:  ./scripts/multica-provision.sh
+#   非交互(agent/CI):
+#          ./scripts/multica-provision.sh --yes
 #   指定工作空间(Kubicc):
 #          ./scripts/multica-provision.sh --workspace-id <uuid|slug|前缀>
 #
@@ -25,10 +27,12 @@ set -uo pipefail
 KUBICC="903c14c4-e5de-4e47-b3bc-3412818f4fa6"
 
 DRY=0
+YES=0
 WSID="$KUBICC"
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --dry-run)      DRY=1; shift ;;
+    -y|--yes)       YES=1; shift ;;
     --workspace-id) WSID="${2:-}"; shift 2 ;;
     -h|--help)      sed -n '2,20p' "$0"; exit 0 ;;
     *)              echo "未知参数: $1" >&2; exit 2 ;;
@@ -120,19 +124,35 @@ if [[ $DRY == 0 ]]; then
   if [[ "$WSID" == "$KUBICC" ]]; then dim "kubicc  $WSID"
   else dim "自定义  $WSID  ⚠ 非 kubicc,确认这是你要的空间"; fi
   multica ${WSFLAG[@]+"${WSFLAG[@]}"} workspace get "$WSID" --output table 2>&1 | head -12 >&2
-  printf '  \033[33m回车继续,Ctrl-C 中止 …\033[0m ' >&2
-  read -r _ < /dev/tty 2>/dev/null || true
+  # 无 TTY 时旧写法是 `read < /dev/tty 2>/dev/null || true` —— 重定向失败后
+  # `|| true` 直接放行,等于 agent/CI 里这道闸门根本不存在,58 条议题可能
+  # 落进错的工作空间且无人确认。改为:非交互必须显式 --yes。
+  if [[ $YES == 1 ]]; then
+    dim "--yes:跳过人工确认"
+  elif { true >/dev/tty; } 2>/dev/null; then
+    printf '  \033[33m回车继续,Ctrl-C 中止 …\033[0m ' >&2
+    read -r _ < /dev/tty || true
+  else
+    err "非交互环境(无 TTY),拒绝在未经确认的情况下写入工作空间"
+    dim "确认上面的工作空间无误后,加 --yes 重跑:"
+    dim "  ./scripts/multica-provision.sh --yes"
+    exit 1
+  fi
 fi
 
 # ══════════════ 0b. 读取目录,建立幂等基线 ══════════════
 say "读取 runtime / agent / squad / project 目录"
-if [[ $DRY == 1 ]]; then
-  for f in "$RT" "$AG" "$SQ" "$PJ" "$IS"; do echo '[]' > "$f"; done
-  dim "(预演:目录留空,所有对象都会显示为待创建)"
-else
-  if ! multica ${WSFLAG[@]+"${WSFLAG[@]}"} runtime list --output json > "$RT" 2>/dev/null; then
+# 预演也读真实目录。旧版在 --dry-run 时把五份目录清空,于是预演把每个对象
+# 都列成"待创建" —— 而预演唯一值得回答的问题恰恰是"哪些已存在、还差哪些"。
+# 读目录全是只读命令,预演读它们不破坏"预演不写"的语义。
+if ! multica ${WSFLAG[@]+"${WSFLAG[@]}"} runtime list --output json > "$RT" 2>/dev/null; then
+  if [[ $DRY == 1 ]]; then
+    err "预演:runtime list 读取失败,退化为空目录 —— 下面的差异表不可信"
+    for f in "$RT" "$AG" "$SQ" "$PJ" "$IS"; do echo '[]' > "$f"; done
+  else
     err "multica runtime list 失败 —— 先确认已登录且工作空间正确"; exit 1
   fi
+else
   multica ${WSFLAG[@]+"${WSFLAG[@]}"} agent   list --output json > "$AG" 2>/dev/null || echo '[]' > "$AG"
   multica ${WSFLAG[@]+"${WSFLAG[@]}"} squad   list --output json > "$SQ" 2>/dev/null || echo '[]' > "$SQ"
   multica ${WSFLAG[@]+"${WSFLAG[@]}"} project list --output json > "$PJ" 2>/dev/null || echo '[]' > "$PJ"
@@ -142,7 +162,7 @@ else
   dim "runtime $(python3 "$LIB" count "$RT") 个 / 已有 agent $(python3 "$LIB" count "$AG") 个 / 已有议题 $(python3 "$LIB" count "$IS") 条"
 fi
 
-exists() { [[ $DRY == 1 ]] && return 1; python3 "$LIB" has "$1" "$2"; }
+exists() { python3 "$LIB" has "$1" "$2"; }
 idof()   { python3 "$LIB" id-of "$1" "$2" 2>/dev/null; }
 
 # ══════════════ 0c. 仓库 / 属性 / 标签 ══════════════
@@ -181,11 +201,14 @@ mk_agent() { # $1=名称 $2=runtime名 $3=model(可空) $4=thinking(可空) $5=i
     dim "· $nm 已存在,跳过  ($id)"
     return 0
   fi
-  if [[ $DRY == 1 ]]; then
-    rid="DRY-RT-$rtname"
-  elif ! rid="$(python3 "$LIB" resolve "$RT" "$rtname")"; then
-    err "$nm: runtime \"$rtname\" 未解析到,跳过"
-    return 0
+  if ! rid="$(python3 "$LIB" resolve "$RT" "$rtname")"; then
+    if [[ $DRY == 1 ]]; then
+      rid="DRY-RT-$rtname"
+      dim "· 预演:runtime \"$rtname\" 未解析到,用占位符继续"
+    else
+      err "$nm: runtime \"$rtname\" 未解析到,跳过"
+      return 0
+    fi
   fi
   # 交付/收尾协议按职能追加(2026-08-27,docs/14 §九)。协议只存一份 ——
   # 改协议时不用去七个 instructions 字符串里各找一遍。
@@ -418,7 +441,7 @@ mkparent() { # $1=标题 $2=描述 $3=assignee $4=project标题
 
   # 重跑时父议题已存在,issue create 会因重复检测被拒 —— 必须改为复用已有 id,
   # 否则返回空 id,51 条子议题会全部变成无父孤儿。
-  if [[ $DRY == 0 ]] && exists "$IS" "$t"; then
+  if exists "$IS" "$t"; then
     pid="$(idof "$IS" "$t")"
     if uuid_ok "$pid"; then dim "· 父议题已存在,复用  $t  ($pid)"; echo "$pid"; return 0; fi
   fi
@@ -436,12 +459,19 @@ mkparent() { # $1=标题 $2=描述 $3=assignee $4=project标题
 mkchild() { # $1=父id $2=标题 $3=stage $4=assignee $5=project标题
   # 父 id 无效时必须停,绝不能拿空串或错误文本当 --parent 建出一堆孤儿议题
   uuid_ok "$1" || { err "  跳过(父议题无效): $2"; return 0; }
+  # 先查目录再建。旧版直接建、靠服务端重复检测兜底,于是:
+  #   1) 预演数不出"还差几条"(它把 55 条全列成待创建,而其中多数已存在)
+  #   2) 真跑时"已存在"和"真失败"打印同一句,失败会被当成幂等噪音吞掉
+  if exists "$IS" "$2"; then
+    dim "  · 已存在,跳过: $2"
+    return 0
+  fi
   local extra=(); while IFS= read -r x; do extra+=("$x"); done < <(pflag "$5")
   if M issue create --title "$2" --parent "$1" --stage "$3" --assignee "$4" \
        ${extra[@]+"${extra[@]}"} --output json >/dev/null 2>&1; then
     return 0
   else
-    dim "  · 已存在或创建失败,跳过: $2"
+    err "  ✗ 创建失败(目录里没有同名议题,不是幂等跳过): $2"
     return 0
   fi
 }
@@ -533,15 +563,27 @@ for t in "3.3.1 抓取纪律写进代码 🔴R-02 不写登录/绕过能力" \
   mkchild "$P3" "$t" 3 "数据轨-开发" "线3 数据轨"; done
 
 # ══════════════ 5. 横向职能议题 ══════════════
+# 无父无 stage 的横向议题。和 mkchild 一样先查目录,让预演能数准。
+mkflat() { # $1=标题 $2=assignee $3=priority $4=描述
+  if exists "$IS" "$1"; then dim "  · 已存在,跳过: $1"; return 0; fi
+  if M issue create --title "$1" --assignee "$2" --priority "$3" \
+       --description "$4" --output json >/dev/null 2>&1; then
+    return 0
+  else
+    err "  ✗ 创建失败: $1"
+    return 0
+  fi
+}
+
 say "建立审核与测试议题"
-M issue create --title "【审核】文档合规巡检" --assignee "文档审核" --priority medium --output json \
-  --description "定期核对 docs/ 变更是否违反决策层与风险登记册。执行层不得覆盖决策层;'待确认'项不得被推理悄悄关闭;不得展开关卡2之后的排期。" >/dev/null
-M issue create --title "【审核】UI 去AI味与能力边界巡检" --assignee "UI审核" --priority medium --output json \
-  --description "查骨架级同质化(左菜单+面包屑+表格+统一按钮)、字体同族、能力边界泄露(正确率判定/讲解/打卡)、图片红线三处表达、题型层是否能表达整块未触达。" >/dev/null
-M issue create --title "【测试】采集到差集全链路" --assignee "功能测试" --priority high --output json \
-  --description "离线队列/原图过期删除/宁缺毋滥/闭集打标/账号合并/降级/导出/MCP只读。输出可复现失败用例。" >/dev/null
-M issue create --title "【测试】打标评测集与阈值对抗验证" --assignee "深度测试-推理" --priority high --output json \
-  --description "样本量是否支撑准确率断言;分层抽样;阈值是否真的实现了'宁可丢弃率高不可准确率低';差集边界数据;反向证伪关卡1判据。" >/dev/null
+mkflat "【审核】文档合规巡检" "文档审核" medium \
+  "定期核对 docs/ 变更是否违反决策层与风险登记册。执行层不得覆盖决策层;'待确认'项不得被推理悄悄关闭;不得展开关卡2之后的排期。"
+mkflat "【审核】UI 去AI味与能力边界巡检" "UI审核" medium \
+  "查骨架级同质化(左菜单+面包屑+表格+统一按钮)、字体同族、能力边界泄露(正确率判定/讲解/打卡)、图片红线三处表达、题型层是否能表达整块未触达。"
+mkflat "【测试】采集到差集全链路" "功能测试" high \
+  "离线队列/原图过期删除/宁缺毋滥/闭集打标/账号合并/降级/导出/MCP只读。输出可复现失败用例。"
+mkflat "【测试】打标评测集与阈值对抗验证" "深度测试-推理" high \
+  "样本量是否支撑准确率断言;分层抽样;阈值是否真的实现了'宁可丢弃率高不可准确率低';差集边界数据;反向证伪关卡1判据。"
 
 say "完成"
 [[ $DRY == 1 ]] && dim "(预演模式,未实际创建)"

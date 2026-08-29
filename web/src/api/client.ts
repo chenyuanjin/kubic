@@ -72,12 +72,34 @@ function describe(err: unknown): string {
   return err instanceof Error ? err.message : String(err)
 }
 
+/**
+ * 有令牌就带上。
+ *
+ * <h2>为什么直接读 localStorage,而不是从 auth.ts 引一个函数</h2>
+ *
+ * 反过来就成环了:`auth.ts` 要用 `postJson`,`client.ts` 又要用 `auth.ts` 的读取函数。
+ * 而这里需要的只是<b>一个字符串</b> —— 为它拉一条循环依赖不划算。
+ * 键名在两处各写一遍是这个取舍的代价,所以两处都用同一个常量名并互相指着。
+ *
+ * <p>🔴 拿不到令牌时<b>不加这个头</b>,而不是加一个空的 —— `Authorization: Bearer `
+ * 会让服务端走进「格式对但令牌为空」那条分支,而正确的语义是「这个请求没有身份」。
+ */
+function authHeader(): Record<string, string> {
+  try {
+    // 与 api/auth.ts 的 TOKEN_KEY 是同一个键
+    const t = localStorage.getItem('kaodian.auth.token')
+    return t ? { Authorization: `Bearer ${t}` } : {}
+  } catch {
+    return {}
+  }
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   let res: Response
   try {
     res = await fetch(`/api${path}`, {
       ...init,
-      headers: { Accept: 'application/json', ...init?.headers },
+      headers: { Accept: 'application/json', ...authHeader(), ...init?.headers },
       signal: AbortSignal.timeout(TIMEOUT_MS),
     })
   } catch (err) {

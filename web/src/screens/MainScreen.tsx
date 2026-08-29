@@ -5,6 +5,8 @@ import { BlindSpotSide } from '../features/BlindSpotSide'
 import { CaptureSheet } from '../features/CaptureSheet'
 import { CommandBar } from '../features/CommandBar'
 import { CommandPalette } from '../features/CommandPalette'
+import { AgentChat } from '../features/AgentChat'
+import { MobileTabs } from '../features/MobileTabs'
 import { CoverageHeader } from '../features/CoverageHeader'
 import { NodeList } from '../features/NodeList'
 import { StatusBar } from '../features/StatusBar'
@@ -23,13 +25,25 @@ import { Kbd } from '../ui/primitives'
  * 没有路由、没有第二条导航,scope 段换个词,主体换一块。加路由是先付账:
  * 这个产品的对象只有一棵树,层级浅到 URL 分层不带来任何东西。
  */
-export function MainScreen() {
+export function MainScreen({ onSignOut }: { onSignOut?: () => void } = {}) {
   const { data, isPending } = useDashboard()
 
   const [view, setView] = useState<'coverage' | 'syllabus'>('coverage')
   const [pickedCode, setPickedCode] = useState<string | null>(null)
   const [paletteSearch, setPaletteSearch] = useState<string | null>(null)
   const [captureOpen, setCaptureOpen] = useState(false)
+  const [chatOpen, setChatOpen] = useState(false)
+
+  /**
+   * 🔴 窄屏上先看哪一栏。<b>默认是盲区,不是考点列表。</b>
+   *
+   * 北极星指标是「主动查看盲区的人数」(01 §六)。而在这之前,窄屏的布局是
+   * 「18 个考点纵向排完,盲区栏落在最底下」—— 想看盲区得先滑过整张表。
+   * <b>把产品的唯一那个数放在需要滚动才能到达的位置,是在跟自己的指标作对。</b>
+   * <p>
+   * xl 起两栏并排,这个状态不起作用 —— 桌面上两边同时看得见,本来就不需要选。
+   */
+  const [mobileTab, setMobileTab] = useState<'blind' | 'nodes'>('blind')
 
   const flat = useMemo(() => (data ? flattenNodes(data.groups) : []), [data])
 
@@ -78,7 +92,8 @@ export function MainScreen() {
       const key = e.key.toLowerCase()
 
       if (e.key === 'Escape') {
-        if (captureOpen) setCaptureOpen(false)
+        if (chatOpen) setChatOpen(false)
+        else if (captureOpen) setCaptureOpen(false)
         else if (paletteOpen) closePalette()
         return
       }
@@ -106,8 +121,11 @@ export function MainScreen() {
         return
       }
       if (mod && key === 'j') {
+        // 2026-08-28:⌘J 从「打开面板给你看一条『未接入』」变成真的打开问答。
+        // 徽标常驻了很久,现在它背后终于有东西 —— 见 AgentChat。
         e.preventDefault()
-        openPalette('问 AI')
+        closePalette()
+        setChatOpen((v) => !v)
         return
       }
 
@@ -128,7 +146,7 @@ export function MainScreen() {
 
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [captureOpen, paletteOpen, overlayOpen, view, move, openPalette, closePalette, toggleSyllabus])
+  }, [captureOpen, chatOpen, paletteOpen, overlayOpen, view, move, openPalette, closePalette, toggleSyllabus])
 
   if (isPending || !data) {
     return (
@@ -157,11 +175,31 @@ export function MainScreen() {
           <span className="hidden items-center gap-[9px] lg:flex">
             <Kbd>⌘E 导出</Kbd>
             <Kbd>⌘J 问 AI</Kbd>
+            {onSignOut ? (
+              // 只在【真的登录过】时出现。跳过登录进来的看不到它 ——
+              // 给一个退不出去的「退出」比没有更让人困惑。
+              <button
+                type="button"
+                onClick={onSignOut}
+                title="吊销这台设备的令牌。服务端立刻失效,不等过期"
+                className="font-mono text-[11px] text-t3 hover:text-tx"
+              >
+                退出
+              </button>
+            ) : null}
           </span>
         }
         onToggleSyllabus={toggleSyllabus}
         syllabusOn={editing}
       />
+
+      {chatOpen && (
+        /* 问答挂在底部而不是盖住整屏:用户问「我该先补哪个」时,
+           上面那张考点表就是他要对照的东西 —— 盖掉它就得靠记忆去对。 */
+        <div className="h-[55vh] shrink-0 border-b border-hair bg-bg2">
+          <AgentChat onClose={() => setChatOpen(false)} />
+        </div>
+      )}
 
       {editing ? (
         <SyllabusEditor data={data} onBack={toggleSyllabus} />
@@ -169,9 +207,18 @@ export function MainScreen() {
         <>
           <CoverageHeader summary={data.summary} subject={data.subject} />
 
+          {/* 🔴 窄屏上「盲区」默认在前,而且要能一步切回来 —— 见 MobileTabs 的注释。 */}
+          <MobileTabs tab={mobileTab} onChange={setMobileTab} blindspotCount={data.summary.empty} />
+
           {/* xl 起是左右两栏、各滚各的;窄屏是一整条纵向滚动,副栏顺势落到主屏下面。
-              同一份 DOM,换的只是 flex 方向和滚动条归谁 —— 没有第二套组件。 */}
+              同一份 DOM,换的只是 flex 方向和滚动条归谁 —— 没有第二套组件。
+              窄屏再多一层:用 hidden 切哪一栏可见,xl 起两个 hidden 都失效,回到并排。 */}
           <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto xl:flex-row xl:overflow-hidden">
+            <div
+              className={`flex min-h-0 min-w-0 flex-1 flex-col ${
+                mobileTab === 'nodes' ? 'flex' : 'hidden'
+              } xl:flex`}
+            >
             <NodeList
               groups={data.groups}
               selectedCode={selectedCode}
@@ -181,13 +228,20 @@ export function MainScreen() {
                 setCaptureOpen(true)
               }}
             />
-            <BlindSpotSide
-              blindspots={data.blindspots}
-              records={data.records}
-              selectedCode={selectedCode}
-              onSelect={setPickedCode}
-              onAskAi={() => openPalette('问 AI')}
-            />
+            </div>
+            <div
+              className={`flex min-h-0 min-w-0 flex-col ${
+                mobileTab === 'blind' ? 'flex' : 'hidden'
+              } xl:flex`}
+            >
+              <BlindSpotSide
+                blindspots={data.blindspots}
+                records={data.records}
+                selectedCode={selectedCode}
+                onSelect={setPickedCode}
+                onAskAi={() => openPalette('问 AI')}
+              />
+            </div>
           </div>
         </>
       )}

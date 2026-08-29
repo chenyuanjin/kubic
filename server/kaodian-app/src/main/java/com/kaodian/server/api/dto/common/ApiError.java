@@ -1,4 +1,4 @@
-package com.kaodian.server.api.dto;
+package com.kaodian.server.api.dto.common;
 
 /**
  * 统一错误体 —— docs/10 §六:{@code {code, message, traceId}}。

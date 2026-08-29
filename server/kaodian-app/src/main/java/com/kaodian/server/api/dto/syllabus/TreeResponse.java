@@ -1,5 +1,8 @@
-package com.kaodian.server.api.dto;
+package com.kaodian.server.api.dto.syllabus;
 
+import com.kaodian.server.api.dto.common.GroupDto;
+import com.kaodian.server.api.dto.common.SubjectDto;
+import com.kaodian.server.api.dto.common.SummaryDto;
 import com.kaodian.server.coverage.CoverageService.GroupCoverage;
 import com.kaodian.server.coverage.CoverageService.Summary;
 import com.kaodian.server.syllabus.Syllabus;

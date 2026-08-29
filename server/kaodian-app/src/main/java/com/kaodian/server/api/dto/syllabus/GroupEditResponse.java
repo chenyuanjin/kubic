@@ -1,4 +1,6 @@
-package com.kaodian.server.api.dto;
+package com.kaodian.server.api.dto.syllabus;
+
+import com.kaodian.server.api.dto.common.SummaryDto;
 
 /**
  * 一次题型编辑之后返回的东西。理由同 {@link NodeEditResponse}:

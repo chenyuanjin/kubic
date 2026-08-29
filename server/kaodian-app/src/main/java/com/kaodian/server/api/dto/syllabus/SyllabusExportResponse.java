@@ -1,5 +1,6 @@
-package com.kaodian.server.api.dto;
+package com.kaodian.server.api.dto.syllabus;
 
+import com.kaodian.server.api.dto.common.SubjectDto;
 import com.kaodian.server.syllabus.Syllabus;
 
 import java.util.List;

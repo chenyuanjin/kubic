@@ -97,9 +97,19 @@ class NoStemFieldTest {
      * ({@code CaptureServiceTest.FakeTagger} 之类)确实会出现 {@code answer}、{@code IMAGE}
      * 这样的名字 —— <b>那是好事,不是违规</b>:测试本来就该拿这些词去构造反例。
      * 红线管的是<b>线上库的形状</b>,所以边界划在产物上,而不是在类名里认 {@code Test} 后缀。
+     *
+     * <p><b>2026-08-28 拆多模块后,判据从「等于某一个产物」改成「不是测试产物」。</b>
+     * 原先是 {@code Touch.class} 的 CodeSource —— 单模块时那就是唯一的 {@code target/classes},
+     * 拿它当基准没毛病。多模块后 {@code SCANNED_PACKAGES} 横跨两个模块:
+     * {@code collect} / {@code syllabus} 在 kaodian-domain(作为 <b>jar</b> 进 app 的类路径),
+     * {@code api.dto} 在 kaodian-app 自己的 {@code target/classes} —— 两者的 CodeSource
+     * 永远不可能相等,于是 {@code api.dto} 下 80 多个 DTO 被<b>整体静默排除</b>,
+     * 而白名单里对应的行全部变成「死行」。这就是拆模块当天 whitelistHasNoStaleEntries 变红的原因。
+     *
+     * <p>反过来定义更稳:被扫的包本来就限定在我们自己的三个包内,
+     * 唯一需要挡在外面的只有测试产物。这样再拆几个模块也不用回来改。
      */
-    private static final String MAIN_ARTIFACT =
-            Touch.class.getProtectionDomain().getCodeSource().getLocation().toString();
+    private static final String TEST_ARTIFACT_MARKER = "/target/test-classes";
 
     /**
      * 🔴 命中即失败,没有白名单。
@@ -523,7 +533,10 @@ class NoStemFieldTest {
 
     private static boolean isMainArtifact(Class<?> c) {
         var source = c.getProtectionDomain().getCodeSource();
-        return source != null && MAIN_ARTIFACT.equals(source.getLocation().toString());
+        if (source == null) {
+            return false;
+        }
+        return !source.getLocation().toString().contains(TEST_ARTIFACT_MARKER);
     }
 
     private static List<Member> membersOf(Class<?> c) {

@@ -1,8 +1,11 @@
-package com.kaodian.server.api;
+package com.kaodian.server.api.insight;
 
-import com.kaodian.server.api.CoverageReader.Snapshot;
-import com.kaodian.server.api.dto.BlindSpotsResponse;
-import com.kaodian.server.api.dto.SummaryDto;
+import com.kaodian.server.api.dto.insight.BlindSpotsResponse;
+import com.kaodian.server.api.dto.common.SummaryDto;
+import com.kaodian.server.coverage.CoverageReader;
+import com.kaodian.server.coverage.CoverageReader.Snapshot;
+import com.kaodian.server.api.dto.insight.BlindSpotsResponse;
+import com.kaodian.server.api.dto.common.SummaryDto;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import org.springframework.web.bind.annotation.GetMapping;

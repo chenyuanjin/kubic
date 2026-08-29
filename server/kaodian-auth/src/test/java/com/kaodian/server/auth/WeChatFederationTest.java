@@ -220,6 +220,61 @@ class WeChatFederationTest {
         assertTrue(tokens.verify(r.token().plaintext()).isPresent());
     }
 
+    @Test
+    @DisplayName("🔴 一步登录也要能看见微信内部分裂 —— 「回退」看不见,「并查」才看得见")
+    void oneStepSeesWeChatInternalSplit() {
+        // 造出微信内部分裂:入口 A 没绑开放平台时建了账号1(只有 openid);
+        // 入口 B 绑了,建了账号2(unionid)。
+        String openOnlyAcc = service.loginByWeChat(openIdOnly(OPENID_A), "入口A", null).user().id();
+        String unionAcc = service.loginByWeChat(withUnion(OPENID_B), "入口B", null).user().id();
+        assertNotEquals(openOnlyAcc, unionAcc);
+
+        // 现在从入口 A 走一步登录:unionid 命中账号2、openidA 命中账号1。
+        // 「回退」写法会在查到 unionid 的那一刻就返回,账号1 连同它的记录消失在视野里,
+        // 用户拿不到任何合并提示 —— 这正是复审指出的那一条。
+        var r = service.loginByWeChatWithPhone(withUnion(OPENID_A), PHONE, "小程序", null);
+
+        assertNotNull(r.splitMergeToken(), "🔴 分裂必须被看见,而不是被 linkQuietly 静默吞掉");
+
+        // 手机号是全新的、微信身份已存在 → 登进 unionid 那个账号(它是同一个人),
+        // 并把手机号挂上去。不是建新号 —— 建新号才是把这个人拆成第三个账号。
+        assertFalse(r.isNewAccount());
+        assertEquals(unionAcc, r.user().id(), "unionid 是「现在这个人」的权威身份");
+        assertEquals("138****8000", service.maskedPhoneOf(unionAcc).orElseThrow(),
+                "手机号应当被挂到登入的那个账号上");
+
+        assertTrue(accounts.findById(openOnlyAcc).orElseThrow().isActive(), "仍然不自动合并");
+        assertTrue(accounts.mergeLogs().isEmpty());
+    }
+
+    @Test
+    @DisplayName("一次只给一个合并令牌 —— 合并是不可逆的,一次确认只该授权一次")
+    void onlyOneMergeSuggestionAtATime() {
+        String phoneAcc = service.loginByPhone(phonePassed(), "H5", null).user().id();
+        String openOnlyAcc = service.loginByWeChat(openIdOnly(OPENID_A), "入口A", null).user().id();
+        String unionAcc = service.loginByWeChat(withUnion(OPENID_B), "入口B", null).user().id();
+
+        // 三个账号同时牵进来:手机号一个、unionid 一个、openid 一个
+        var r = service.loginByWeChatWithPhone(withUnion(OPENID_A), PHONE, "小程序", null);
+
+        assertEquals(phoneAcc, r.user().id(), "登进手机号那个 —— 记录大概率在那边");
+        assertNotNull(r.splitMergeToken());
+
+        // 令牌只有一个,而且它是可用的
+        var preview = service.previewMerge(phoneAcc, r.splitMergeToken());
+        assertNotNull(preview.expiresAt());
+
+        // 剩下那个不会消失:合并完之后再登一次会把它报出来
+        service.confirmMerge(phoneAcc, r.splitMergeToken());
+        var again = service.loginByWeChatWithPhone(withUnion(OPENID_A), PHONE, "小程序", null);
+        assertNotNull(again.splitMergeToken(), "下一次登录报出下一个分裂");
+        assertEquals(phoneAcc, again.user().id());
+        // 两个微信账号里,此刻应当已经有一个被并走了
+        long stillActive = java.util.stream.Stream.of(openOnlyAcc, unionAcc)
+                .filter(id -> accounts.findById(id).orElseThrow().isActive()).count();
+        assertEquals(1, stillActive, "合并了一个,还剩一个");
+    }
+
     // —— 边界 ——
 
     @Test

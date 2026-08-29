@@ -96,31 +96,18 @@ public class FileSmsCodeStore implements SmsCodeStore {
 
     /** 🔴 比对 + 改状态在同一把锁里 —— 见 {@link SmsCodeStore#consumeIfSent}。 */
     @Override
-    public boolean consumeIfSent(String phoneHmac, String codeHmac) {
+    public boolean consumeIfSent(String phoneHmac, String codeHmac, SmsPurpose purpose) {
         synchronized (lock) {
             ensureLoaded();
             SmsCode c = codes.get(phoneHmac);
-            if (c == null || c.state() != SmsCode.State.SENT || !c.codeHmac().equals(codeHmac)) {
+            if (c == null || c.state() != SmsCode.State.SENT
+                    || c.purpose() != purpose || !c.codeHmac().equals(codeHmac)) {
                 return false;
             }
             Map<String, SmsCode> next = new LinkedHashMap<>(codes);
             next.put(phoneHmac, c.consumed());
             persist(next, superseded, locks);
             return true;
-        }
-    }
-
-    @Override
-    public void countAttempt(String phoneHmac) {
-        synchronized (lock) {
-            ensureLoaded();
-            SmsCode c = codes.get(phoneHmac);
-            if (c == null) {
-                return;
-            }
-            Map<String, SmsCode> next = new LinkedHashMap<>(codes);
-            next.put(phoneHmac, c.withOneMoreAttempt());
-            persist(next, superseded, locks);
         }
     }
 
@@ -145,6 +132,22 @@ public class FileSmsCodeStore implements SmsCodeStore {
             next.put(phoneHmac, updated);
             persist(codes, superseded, next);
             return updated;
+        }
+    }
+
+    /** 见 {@link SmsCodeStore#discard} —— 只清「确定没送达」的那一条。 */
+    @Override
+    public void discard(String phoneHmac, String codeHmac) {
+        synchronized (lock) {
+            ensureLoaded();
+            SmsCode c = codes.get(phoneHmac);
+            // 比对 codeHmac:万一这一瞬间已经发了新的一条,那条是有效的,不能被这次清理误伤。
+            if (c == null || !c.codeHmac().equals(codeHmac)) {
+                return;
+            }
+            Map<String, SmsCode> next = new LinkedHashMap<>(codes);
+            next.remove(phoneHmac);
+            persist(next, superseded, locks);
         }
     }
 
@@ -230,8 +233,7 @@ public class FileSmsCodeStore implements SmsCodeStore {
                     SmsPurpose.ofWireName(required(n, "purpose")),
                     Instant.parse(required(n, "issuedAt")),
                     Instant.parse(required(n, "expiresAt")),
-                    SmsCode.State.valueOf(required(n, "state")),
-                    n.path("attempts").asInt(0));
+                    SmsCode.State.valueOf(required(n, "state")));
             out.put(c.phoneHmac(), c);
         }
         return out;
@@ -246,7 +248,6 @@ public class FileSmsCodeStore implements SmsCodeStore {
         o.put("issuedAt", c.issuedAt().toString());
         o.put("expiresAt", c.expiresAt().toString());
         o.put("state", c.state().name());
-        o.put("attempts", c.attempts());
         return o;
     }
 

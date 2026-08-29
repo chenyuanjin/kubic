@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>com.kaodian</groupId>
+		<artifactId>kaodian-server</artifactId>
+		<version>0.0.1-SNAPSHOT</version>
+	</parent>
+	<artifactId>kaodian-agent</artifactId>
+	<name>kaodian-agent</name>
+	<description>Agent 运行时:7 阶段编排 / 原子工具池 / 文件存储 / 流式分帧</description>
+
+	<dependencies>
+		<!-- 工具要查覆盖率、时间线、记录 —— agent 的价值全部来自 domain 里已有的那些数。 -->
+		<dependency>
+			<groupId>com.kaodian</groupId>
+			<artifactId>kaodian-domain</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-json</artifactId>
+		</dependency>
+
+		<!--
+			docs/13 §三 定的那条线:spring-ai 2.0.1 GA + OpenAI 兼容端点,【不引】spring-ai-alibaba。
+			DeepSeek 与百炼都提供兼容端点,一个 starter 靠 base-url 覆盖两家。
+
+			⚠ 曾经试过更强的一档:只引核心库 spring-ai-openai,自己 @Bean 造 ChatModel,
+			  让那五个越界模型的自动装配类【根本不在 classpath 上】——不是排除,是不存在。
+			  这条路在 2.0.1 上走不通:2.x 的 OpenAiChatModel 底层换成了官方 openai-java SDK,
+			  唯一的装配入口是 OpenAiSetup.setupSyncClient(...) —— 一个 16 参、无文档的内部 API
+			  (Credential / AzureOpenAIServiceVersion / azureUrlPathMode 等参数含义全靠猜),
+			  且流式还要再造一个 async client。手写它换来的不是更安全,是一个参数顺序错了
+			  也不会报错的装配。所以退回 starter + exclude —— 就是 docs/13 §4.2 写好的那条路。
+
+			🔴 代价必须记住:starter 会把 chat / embedding / image / audio-speech /
+			  audio-transcription / moderation 【六套】一起自动装配,我们只要 chat 一个。
+			  剩下五个由 kaodian-app 的 application.properties 显式 exclude,
+			  由 NoGenerativeModelBeanTest(R-51)在每次构建时盯着。
+			  ⚠ docs/13 §4.2 原文只列了三个、测试的 FALLBACK_EXCLUDE 列了四个 ——
+			  两处都漏了 moderation,而 moderation 恰恰在禁令表里(「不碰内容」)。已回写。
+		-->
+		<dependency>
+			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-starter-model-openai</artifactId>
+		</dependency>
+	</dependencies>
+</project>

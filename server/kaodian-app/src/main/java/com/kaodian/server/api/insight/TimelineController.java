@@ -1,8 +1,12 @@
-package com.kaodian.server.api;
+package com.kaodian.server.api.insight;
 
-import com.kaodian.server.api.dto.BucketSourceDto;
-import com.kaodian.server.api.dto.TimelineBucketDto;
-import com.kaodian.server.api.dto.TimelineResponse;
+import com.kaodian.server.api.dto.insight.TimelineBucketDto;
+import com.kaodian.server.api.dto.insight.TimelineResponse;
+import com.kaodian.server.api.dto.insight.BucketSourceDto;
+import com.kaodian.server.coverage.CoverageReader;
+import com.kaodian.server.api.dto.insight.BucketSourceDto;
+import com.kaodian.server.api.dto.insight.TimelineBucketDto;
+import com.kaodian.server.api.dto.insight.TimelineResponse;
 import com.kaodian.server.collect.Touch;
 import com.kaodian.server.collect.TouchStore;
 import jakarta.validation.constraints.Max;
@@ -53,7 +57,7 @@ import java.util.Set;
  *
  * <h2>🔴 时区从配置来,不从 {@code Clock} 来</h2>
  *
- * {@code ApiBeans#clock} 给的是 {@code Clock.systemUTC()},{@code clock.getZone()} 恒为 UTC。
+ * {@code DomainBeans#clock} 给的是 {@code Clock.systemUTC()},{@code clock.getZone()} 恒为 UTC。
  * 顺手用它会让上面那一整段变成一句空话,<b>而且测试不会红</b> ——
  * 因为跑测试的机器多半就在东八区,{@code Instant.now()} 附近的记录怎么切都落在同一天。
  * 时钟回答的是「现在几点」,时区回答的是「一天从哪儿开始」,这是两个问题。

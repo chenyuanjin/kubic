@@ -52,12 +52,13 @@ public interface SmsCodeStore {
      *
      * <p>所以这里是一个 compare-and-set,不是两次调用。
      *
-     * @return 真的由这次调用核销掉了吗。{@code false} = 码不对、状态不是 SENT、或者<b>已经被别人核销了</b>
+     * <p>🔴 {@code purpose} 也参与比对。服务层在调用之前已经比过一次了,这里再比是
+     * <b>纵深</b>:让「跨场景重放防护」这条不变式由 store 自己保证,而不是依赖每一个调用方都记得先比。
+     * store 只有这一个,调用方可以再写一个。
+     *
+     * @return 真的由这次调用核销掉了吗。{@code false} = 码不对、用途不符、状态不是 SENT、或者<b>已经被别人核销了</b>
      */
-    boolean consumeIfSent(String phoneHmac, String codeHmac);
-
-    /** 记一次输错(错误次数 +1)。与 {@link #recordFailure} 分开:这条只动码,不动锁。 */
-    void countAttempt(String phoneHmac);
+    boolean consumeIfSent(String phoneHmac, String codeHmac, SmsPurpose purpose);
 
     /** 这个号的错误计数与锁定窗口。从没错过则返回 {@link PhoneLock#clean}。 */
     PhoneLock lockOf(String phoneHmac);
@@ -71,6 +72,19 @@ public interface SmsCodeStore {
      * <b>攻击者只要并发就能把这道闸的强度打对折。</b>
      */
     PhoneLock recordFailure(String phoneHmac, java.time.Instant now);
+
+    /**
+     * 丢弃一条<b>确定没送达</b>的码。
+     *
+     * <p>只在 {@code definitelyNotCharged} 时调用 —— 那意味着运营商明确拒绝了(签名没批、余额不足),
+     * <b>用户手里不可能有这条码</b>。留着它的后果:下一次发码时它会被挪进 superseded 槽,
+     * 于是用户拿新码来验时,那个槽里躺着一条他从没见过的码 —— 槽被一条幽灵占着。
+     *
+     * <p>🔴 <b>失败原因「不确定」时绝不能调这个</b>:短信可能已经在路上了,
+     * 删掉它等于让一条用户即将收到的码验不过去。与 {@code SmsDeliveryException} 那张
+     * 「确定没发 vs 不确定」的表是同一条推理 —— 两个方向的错误代价不对称,就朝代价小的那边倒。
+     */
+    void discard(String phoneHmac, String codeHmac);
 
     /** 校验成功后清零。 */
     void clearLock(String phoneHmac);

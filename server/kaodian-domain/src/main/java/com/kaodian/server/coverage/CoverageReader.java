@@ -1,4 +1,4 @@
-package com.kaodian.server.api;
+package com.kaodian.server.coverage;
 
 import com.kaodian.server.collect.AssertionStore;
 import com.kaodian.server.collect.RecordTag;
@@ -6,7 +6,6 @@ import com.kaodian.server.collect.RecordTagStore;
 import com.kaodian.server.collect.Touch;
 import com.kaodian.server.collect.TouchStore;
 import com.kaodian.server.collect.UserAssertion;
-import com.kaodian.server.coverage.CoverageService;
 import com.kaodian.server.coverage.CoverageService.GroupCoverage;
 import com.kaodian.server.coverage.CoverageService.NodeCoverage;
 import com.kaodian.server.coverage.CoverageService.Summary;
@@ -19,9 +18,15 @@ import java.time.Instant;
 import java.util.List;
 
 /**
- * 接口层<b>唯一的取数入口</b>。
+ * <b>唯一的取数入口</b> —— HTTP 的四个查询端点走它,agent 的工具也走它。
  *
- * <h2>为什么四个查询端点必须走同一个类</h2>
+ * <p><b>2026-08-28 从 {@code api} 包下沉到 {@code coverage}。</b>它一直是纯领域取数
+ * (零 web 依赖:没有 HttpServletRequest、没有 DTO),待在接口层只是历史位置。
+ * 真正逼它搬家的是 agent:agent 的覆盖率工具需要<b>同一个口径</b>,
+ * 而 kaodian-agent 不依赖 kaodian-app —— 留在原地的话,agent 只能自己再拼一次三层取数,
+ * 那正好就是下面这段注释反对的事情。
+ *
+ * <h2>为什么所有查询必须走同一个类</h2>
  *
  * 覆盖率、五态、盲区排序,口径全部在 {@link CoverageService} 里。这里做的事只有两件:
  * 把「骨架 + 行为 + 现在几点」凑齐,和把结果原样递给控制器。

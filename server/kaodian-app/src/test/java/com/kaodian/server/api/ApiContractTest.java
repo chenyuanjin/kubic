@@ -1,8 +1,14 @@
 package com.kaodian.server.api;
 
-import com.kaodian.server.api.dto.BatchCreateRecordsRequest;
-import com.kaodian.server.api.dto.CreateRecordRequest;
-import com.kaodian.server.api.dto.UnknownFieldException;
+import com.kaodian.server.api.insight.CoverageController;
+import com.kaodian.server.api.record.RecordController;
+import com.kaodian.server.api.syllabus.SyllabusController;
+import com.kaodian.server.api.insight.TimelineController;
+import com.kaodian.server.config.DomainBeans;
+import com.kaodian.server.coverage.CoverageReader;
+import com.kaodian.server.api.dto.record.BatchCreateRecordsRequest;
+import com.kaodian.server.api.dto.record.CreateRecordRequest;
+import com.kaodian.server.api.dto.common.UnknownFieldException;
 import com.kaodian.server.collect.CaptureService;
 import com.kaodian.server.collect.Touch;
 import com.kaodian.server.collect.TouchKind;
@@ -88,7 +94,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         CoverageController.class,
         TimelineController.class,
         RecordController.class})
-@Import(ApiBeans.class)     // web 切片不扫 @Configuration,领域装配要显式带进来
+@Import(DomainBeans.class)     // web 切片不扫 @Configuration,领域装配要显式带进来
 class ApiContractTest {
 
     @Autowired

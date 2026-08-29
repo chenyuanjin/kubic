@@ -1,4 +1,4 @@
-package com.kaodian.server.api;
+package com.kaodian.server.api.support;
 
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Configuration;

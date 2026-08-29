@@ -1,8 +1,11 @@
 package com.kaodian.server.api;
 
-import com.kaodian.server.api.dto.MountTagRequest;
-import com.kaodian.server.api.dto.SuggestTagRequest;
-import com.kaodian.server.api.dto.UnknownFieldException;
+import com.kaodian.server.api.record.TagController;
+import com.kaodian.server.config.DomainBeans;
+import com.kaodian.server.coverage.CoverageReader;
+import com.kaodian.server.api.dto.record.MountTagRequest;
+import com.kaodian.server.api.dto.record.SuggestTagRequest;
+import com.kaodian.server.api.dto.common.UnknownFieldException;
 import com.kaodian.server.collect.CandidateRecall;
 import com.kaodian.server.collect.InMemoryRecordTagStore;
 import com.kaodian.server.collect.RecordTag;
@@ -68,7 +71,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * 一个把丢弃写成「只改标志、不进差集」的实现会全绿,而那正是 {@code P1-7} 要的那件事没做。
  */
 @WebMvcTest(controllers = TagController.class)
-@Import(ApiBeans.class)     // web 切片不扫 @Configuration,领域装配要显式带进来
+@Import(DomainBeans.class)     // web 切片不扫 @Configuration,领域装配要显式带进来
 class TagApiTest {
 
     /** 这个来源名召回得出候选(见 {@code CandidateRecallTest}),用来验 suggest 走到第 ② 段。 */
@@ -88,7 +91,7 @@ class TagApiTest {
 
     @BeforeEach
     void reset() {
-        // 时钟用 ApiBeans 那个 systemUTC(不在这里覆盖:两个 Clock bean 会撞名,
+        // 时钟用 DomainBeans 那个 systemUTC(不在这里覆盖:两个 Clock bean 会撞名,
         // 而给它加 @Primary 只会让「到底用了哪个时钟」变成一件要翻装配才知道的事)。
         // 所以记录时刻相对「现在」构造 —— 这个文件验的是接口形状,不验五态的时间边界,
         // 那是 CoverageServiceTest 的活。

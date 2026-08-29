@@ -1,6 +1,8 @@
-package com.kaodian.server.api;
+package com.kaodian.server.api.record;
 
-import com.kaodian.server.api.dto.RecordPageResponse;
+import com.kaodian.server.api.support.ApiException;
+import com.kaodian.server.api.dto.record.RecordPageResponse;
+import com.kaodian.server.api.dto.record.RecordPageResponse;
 import com.kaodian.server.collect.Touch;
 
 import java.nio.charset.StandardCharsets;

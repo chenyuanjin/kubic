@@ -1,4 +1,4 @@
-package com.kaodian.server.api;
+package com.kaodian.server.api.support;
 
 import com.kaodian.server.auth.AccessToken;
 import com.kaodian.server.auth.TokenService;

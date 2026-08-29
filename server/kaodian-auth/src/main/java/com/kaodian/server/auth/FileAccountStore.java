@@ -1,5 +1,7 @@
 package com.kaodian.server.auth;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -25,6 +27,8 @@ import java.util.Optional;
  */
 @Component
 public class FileAccountStore implements AccountStore {
+
+    private static final Logger log = LoggerFactory.getLogger(FileAccountStore.class);
 
     private static final String FILE_NAME = "auth-accounts.json";
 
@@ -176,6 +180,7 @@ public class FileAccountStore implements AccountStore {
                 throw new IllegalStateException("目标账号已注销,不能作为合并去向");
             }
             State next = state.copy();
+            java.util.Set<IdentityType> dropped = new java.util.LinkedHashSet<>();
             List<UserIdentity> moving = next.identities.values().stream()
                     .filter(i -> i.userId().equals(fromUserId))
                     .toList();
@@ -186,7 +191,15 @@ public class FileAccountStore implements AccountStore {
                 boolean conflict = next.identities.values().stream()
                         .anyMatch(x -> x.userId().equals(toUserId) && x.type() == i.type());
                 next.identities.remove(i.uniqueKey());
-                if (!conflict) {
+                if (conflict) {
+                    // 🔴 目标账号已经有同类型身份 —— 被并走的这一条<b>就此消失</b>。
+                    // 覆盖它更糟(留下来那个账号的手机号会在用户毫不知情时换成另一个号),
+                    // 但「丢弃」也不是没有代价:那个手机号从此登不回任何账号。
+                    // 所以这里必须留一条 WARN —— 用户三个月后问「我那个号怎么登不上了」,这是唯一的线索。
+                    dropped.add(i.type());
+                    log.warn("合并丢弃来源账号的 {} 身份:目标账号 {} 已有同类型身份。"
+                            + "该凭证从此不再指向任何账号", i.type().wireName(), toUserId);
+                } else {
                     next.identities.put(moved.uniqueKey(), moved);
                 }
             }

@@ -1,4 +1,4 @@
-package com.kaodian.server.api.dto;
+package com.kaodian.server.api.dto.auth;
 
 import com.kaodian.server.auth.AccessToken;
 

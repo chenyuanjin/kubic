@@ -1,4 +1,4 @@
-package com.kaodian.server.api.dto;
+package com.kaodian.server.api.dto.common;
 
 /**
  * 请求体里出现了 DTO 没有定义的字段。

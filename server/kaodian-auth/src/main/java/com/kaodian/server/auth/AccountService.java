@@ -131,31 +131,17 @@ public class AccountService {
     public LoginResult loginByWeChat(com.kaodian.server.auth.vendor.WeChatIdentity wx,
                                      String deviceLabel, String referrer) {
         Instant now = clock.instant();
-        Optional<AppUser> byUnion = wx.hasUnionId()
-                ? activeByIdentity(IdentityType.WX_UNION, wx.unionid())
-                : Optional.empty();
-        Optional<AppUser> byOpen = activeByIdentity(IdentityType.WX_OPEN, wx.openid());
+        WeChatResolution wxRes = resolveWeChat(wx);
 
         AppUser user;
         boolean isNew = false;
         PendingMerge split = null;
 
-        if (byUnion.isPresent() && byOpen.isPresent()
-                && !byUnion.get().id().equals(byOpen.get().id())) {
-            // 分裂已经发生。登进 unionid 那个 —— 它是「现在这个人」的权威身份,
-            // 而 openid 那个是当初没有 unionid 时留下的。
-            user = byUnion.get();
-            split = startMerge(byOpen.get().id(), user.id(), now);
-            log.warn("检测到微信账号分裂 openid账号={} unionid账号={},已给出合并建议(不自动合并)",
-                    byOpen.get().id(), user.id());
-        } else if (byUnion.isPresent()) {
-            user = byUnion.get();
-        } else if (byOpen.isPresent()) {
-            // 当初没拿到 unionid,现在拿到了。同一个人 —— 补一行,不建新号。
-            user = byOpen.get();
-            if (wx.hasUnionId()) {
-                log.info("为账号 {} 补上 unionid identity —— 避免它在下一次登录时被拆成两个账号", user.id());
-            }
+        if (wxRes.primary().isPresent()) {
+            // 登进 primary。有 unionid 时它就是 unionid 那个 —— 那是「现在这个人」的权威身份;
+            // 只有 openid 时说明当初没拿到 unionid,现在补一行即可(下面 linkQuietly),不建新号。
+            user = wxRes.primary().get();
+            split = suggestMergeFor(user, now, wxRes.other());
         } else {
             // 有 unionid 就拿它当第一条身份:它是跨入口同一个人的锚点,openid 换个入口就变。
             IdentityType primary = wx.hasUnionId() ? IdentityType.WX_UNION : IdentityType.WX_OPEN;
@@ -204,30 +190,23 @@ public class AccountService {
         Instant now = clock.instant();
         String phoneHmac = cipher.hmacOf(phone);
         Optional<AppUser> byPhone = activeByIdentity(IdentityType.PHONE, phoneHmac);
-        // 🔴 unionid 和 openid 都要查,与 loginByWeChat 一致。
-        // 只按主身份查一条的话:某人先用 openid-only 建过账号 A(require-unionid=false 时可能发生),
-        // 后来开放平台绑好,他走一步登录带回 unionid → 按 unionid 查不到 → 建账号 B,
-        // 而 openid 归属 A、linkQuietly 又把冲突静默吞掉 —— 分裂发生了,却连合并建议都没有。
-        Optional<AppUser> byWx = wx.hasUnionId()
-                ? activeByIdentity(IdentityType.WX_UNION, wx.unionid())
-                : Optional.empty();
-        if (byWx.isEmpty()) {
-            byWx = activeByIdentity(IdentityType.WX_OPEN, wx.openid());
-        }
+        // 🔴 微信这一侧走与 loginByWeChat 完全同一段解析(resolveWeChat)——
+        // 共用代码而不是各写一遍,因为「一致」如果只靠注释声明,它就会在某次改动后不再成立。
+        WeChatResolution wxRes = resolveWeChat(wx);
+        Optional<AppUser> byWx = wxRes.primary();
 
         AppUser user;
         boolean isNew = false;
         PendingMerge split = null;
 
-        if (byPhone.isPresent() && byWx.isPresent() && !byPhone.get().id().equals(byWx.get().id())) {
+        if (byPhone.isPresent()) {
+            // 老用户从小程序进来 —— 不建新号,直接把微信挂上去。
+            // 微信那一侧若另有账号(甚至两个:unionid 一个、openid 一个),一并纳入合并候选。
             user = byPhone.get();
-            split = startMerge(byWx.get().id(), user.id(), now);
-            log.warn("一步登录检测到账号分裂 微信账号={} 手机号账号={},登进手机号那个并给出合并建议",
-                    byWx.get().id(), user.id());
-        } else if (byPhone.isPresent()) {
-            user = byPhone.get();                 // 老用户从小程序进来 —— 不建新号,直接把微信挂上去
+            split = suggestMergeFor(user, now, byWx, wxRes.other());
         } else if (byWx.isPresent()) {
             user = byWx.get();
+            split = suggestMergeFor(user, now, wxRes.other());
         } else {
             // 手机号当第一条身份:它是这个产品阶段 2 唯一的通道,也是最稳的那个锚点。
             Created created = createOrJoin(IdentityType.PHONE, phoneHmac, cipher.protect(phone), now);
@@ -303,6 +282,68 @@ public class AccountService {
     private record Created(AppUser user, boolean freshlyCreated) {
     }
 
+
+    /**
+     * 把一个微信身份解析成「登哪个账号」+「有没有第二个账号」。
+     *
+     * <h2>为什么必须是<b>并查比对</b>,不能是<b>回退</b></h2>
+     *
+     * 「unionid 查不到就查 openid」(回退)只修好了一件事:openid-only 的老账号会被认出来。
+     * 但它<b>看不见分裂</b> —— 当 unionid 与 openid 指向<b>两个不同的账号</b>时,
+     * 回退会在查到 unionid 的那一刻就返回,openid 那个账号连同它的记录一起消失在视野里,
+     * 而用户不会收到任何合并提示。
+     * <p>
+     * 两条登录路径共用这一段,是为了让「一致」这件事由<b>代码结构</b>保证,
+     * 而不是由两处各写一遍再在注释里声明一致 —— 后者正是上一版出的问题。
+     *
+     * @param primary 登哪个(有 unionid 就是它:openid 换个入口就变,unionid 不变)
+     * @param other   分裂出来的另一个;没有分裂时为空
+     */
+    private record WeChatResolution(Optional<AppUser> primary, Optional<AppUser> other) {
+    }
+
+    private WeChatResolution resolveWeChat(com.kaodian.server.auth.vendor.WeChatIdentity wx) {
+        Optional<AppUser> byUnion = wx.hasUnionId()
+                ? activeByIdentity(IdentityType.WX_UNION, wx.unionid())
+                : Optional.empty();
+        Optional<AppUser> byOpen = activeByIdentity(IdentityType.WX_OPEN, wx.openid());
+
+        if (byUnion.isPresent() && byOpen.isPresent()
+                && !byUnion.get().id().equals(byOpen.get().id())) {
+            return new WeChatResolution(byUnion, byOpen);       // 分裂已经发生
+        }
+        return new WeChatResolution(byUnion.isPresent() ? byUnion : byOpen, Optional.empty());
+    }
+
+    /**
+     * 登进 {@code chosen},并为「同一个人名下的其它账号」开一个合并建议。
+     *
+     * <h2>一次只处理一个分裂</h2>
+     *
+     * 一次登录最多可能牵出三个账号(手机号一个、unionid 一个、openid 一个)。
+     * 但合并令牌只能给一个 —— 因为合并是<b>不可逆</b>的,一次确认只该授权一次合并。
+     * 剩下的那些不会消失:<b>合并完之后的下一次登录会把下一个分裂重新报出来。</b>
+     * <p>
+     * 这比「一次性给三个令牌让用户挨个点」更安全:后者会让用户在一个他还没看懂的
+     * 界面上连做三件不可逆的事。
+     */
+    private PendingMerge suggestMergeFor(AppUser chosen, Instant now, Optional<AppUser>... candidates) {
+        List<AppUser> others = java.util.Arrays.stream(candidates)
+                .flatMap(Optional::stream)
+                .filter(a -> !a.id().equals(chosen.id()))
+                .collect(java.util.stream.Collectors.toMap(AppUser::id, a -> a, (a, b) -> a,
+                        java.util.LinkedHashMap::new))
+                .values().stream().toList();
+        if (others.isEmpty()) {
+            return null;
+        }
+        AppUser first = others.get(0);
+        log.warn("检测到账号分裂:登入 {},建议合并 {}(共 {} 个待并){}",
+                chosen.id(), first.id(), others.size(),
+                others.size() > 1 ? " —— 一次只处理一个,合并后下次登录会报出下一个" : "");
+        return startMerge(first.id(), chosen.id(), now);
+    }
+
     private Optional<AppUser> activeByIdentity(IdentityType type, String identifier) {
         if (identifier == null || identifier.isBlank()) {
             return Optional.empty();
@@ -323,8 +364,15 @@ public class AccountService {
         }
         try {
             accounts.addIdentity(new UserIdentity(userId, type, identifier, now), null);
-        } catch (AccountStore.IdentityTakenException | IllegalStateException e) {
-            log.debug("补挂身份 {} 未成功(已属他人或已有同类):{}", type.wireName(), e.getMessage());
+        } catch (AccountStore.IdentityTakenException e) {
+            // 已属他人 —— 这是【预期内】的:分裂已经在上面被识别并给了合并建议。
+            log.debug("补挂身份 {} 未成功(已属他人)", type.wireName());
+        } catch (IllegalStateException e) {
+            // 🔴 这一类不一样:它意味着这个账号自身的身份约束被撞了(比如已经挂着另一个同类身份)。
+            // 那是数据形状上的意外,不是业务上的正常分支 —— 用 DEBUG 记等于把它藏起来,
+            // 而它的后果是【后续的分裂识别会失效】。登录仍然放行,但这一条必须能被看见。
+            log.warn("补挂身份 {} 撞上账号自身的约束,该账号的身份可能不完整:{}",
+                    type.wireName(), e.getMessage());
         }
     }
 
@@ -505,9 +553,14 @@ public class AccountService {
      * {@link UserIdentity} 上 —— 调两次会得到一个账号和一条挂在别处的身份,
      * 也就是一个<b>谁也登不进去、而且不报错</b>的账号。
      * ({@link AccountStore#create} 里那句「第一条身份必须属于这个新账号」是这条的兜底。)
+     *
+     * <p>用<b>完整</b> UUID,不截断。截到 16 个十六进制字符只有 64 位,而
+     * {@code create} 撞上重复 id 抛的是 {@code IllegalStateException} ——
+     * 那一条<b>不在 {@link #createOrJoin} 的捕获范围里</b>,会直接逃成 500。
+     * 概率极小,但省下那 16 个字符换不来任何东西。
      */
     private static String newUserId() {
-        return "u_" + UUID.randomUUID().toString().replace("-", "").substring(0, 16);
+        return "u_" + UUID.randomUUID().toString().replace("-", "");
     }
 
     // —— 结果类型 ——

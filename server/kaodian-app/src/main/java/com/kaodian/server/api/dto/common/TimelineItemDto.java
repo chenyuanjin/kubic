@@ -1,4 +1,4 @@
-package com.kaodian.server.api.dto;
+package com.kaodian.server.api.dto.common;
 
 import com.kaodian.server.collect.Touch;
 import com.kaodian.server.syllabus.Syllabus;

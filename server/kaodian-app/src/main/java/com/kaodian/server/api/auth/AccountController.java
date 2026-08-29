@@ -1,9 +1,15 @@
-package com.kaodian.server.api;
+package com.kaodian.server.api.auth;
 
-import com.kaodian.server.api.dto.AccountDto;
-import com.kaodian.server.api.dto.DeactivateResponse;
-import com.kaodian.server.api.dto.RevokeSessionRequest;
-import com.kaodian.server.api.dto.SessionDto;
+import com.kaodian.server.api.support.ApiException;
+import com.kaodian.server.api.dto.auth.AccountDto;
+import com.kaodian.server.api.support.CurrentSession;
+import com.kaodian.server.api.dto.auth.DeactivateResponse;
+import com.kaodian.server.api.dto.auth.RevokeSessionRequest;
+import com.kaodian.server.api.dto.auth.SessionDto;
+import com.kaodian.server.api.dto.auth.AccountDto;
+import com.kaodian.server.api.dto.auth.DeactivateResponse;
+import com.kaodian.server.api.dto.auth.RevokeSessionRequest;
+import com.kaodian.server.api.dto.auth.SessionDto;
 import com.kaodian.server.auth.AccessToken;
 import com.kaodian.server.auth.AccountService;
 import com.kaodian.server.auth.AppUser;

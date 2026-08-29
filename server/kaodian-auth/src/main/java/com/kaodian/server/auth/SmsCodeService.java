@@ -114,8 +114,9 @@ public class SmsCodeService {
         // 服务端却不认的码 —— 那是最难被解释的一种失败。
         // 旧码作废由 store 自己做(SmsCodeStore#issue),这里不重复一遍。
         String code = newCode();
-        store.issue(new SmsCode(phoneHmac, cipher.hmacOfOpaque(code), purpose,
-                now, now.plus(CODE_TTL), SmsCode.State.SENT, 0));
+        String codeHmac = cipher.hmacOfOpaque(code);
+        store.issue(new SmsCode(phoneHmac, codeHmac, purpose,
+                now, now.plus(CODE_TTL), SmsCode.State.SENT));
 
         // ④ 花钱
         try {
@@ -124,7 +125,12 @@ public class SmsCodeService {
             if (e.definitelyNotCharged()) {
                 // 我们自己的配置问题(签名没批、模板没审、余额不足),不该吃掉用户的日额度。
                 limiter.releaseDaily(phoneHmac, ip);
+                // 而且这条码【确定没送达】—— 用户手里不可能有它。留着它,
+                // 下一次发码时它会被挪进 superseded 槽,于是那个槽被一条用户从没见过的码占着,
+                // 真正该说「请用最新收到的那一条」的场景反而说不出来了。
+                store.discard(phoneHmac, codeHmac);
             }
+            // 🔴 「不确定」时【不清】—— 短信可能已经在路上,删掉它等于让用户即将收到的码验不过去。
             log.warn("短信发送失败 vendorCode={} definitelyNotCharged={}",
                     e.vendorCode(), e.definitelyNotCharged(), e);
             return new SendOutcome.SendFailed(e.definitelyNotCharged());
@@ -204,7 +210,6 @@ public class SmsCodeService {
             // 都读到同一个 failedCount、都写 +1 —— 计数只前进一格,
             // 而那意味着攻击者只要并发就能把「错 5 次锁定」变成「错 10 次锁定」。
             PhoneLock next = store.recordFailure(phoneHmac, now);
-            store.countAttempt(phoneHmac);
             if (next.isLockedAt(now)) {
                 return new VerifyOutcome.Locked(next.lockedUntil());
             }
@@ -214,7 +219,7 @@ public class SmsCodeService {
         // 🔴 比对 + 核销在 store 的同一把锁里(compare-and-set)。
         // 写成「上面比对通过 → 这里 update(consumed)」的话,两个并发请求会都比对通过、
         // 都核销 —— 「单次使用」就断了,而它断掉会把两条请求同时送进「查不到账号 → 建号」。
-        if (!store.consumeIfSent(phoneHmac, c.codeHmac())) {
+        if (!store.consumeIfSent(phoneHmac, c.codeHmac(), purpose)) {
             // 抢输了:这一瞬间被另一个请求核销掉了。对用户就是「已经用过了」。
             return new VerifyOutcome.NoneOutstanding();
         }

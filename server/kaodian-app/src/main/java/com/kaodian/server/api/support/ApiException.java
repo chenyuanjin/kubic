@@ -1,4 +1,4 @@
-package com.kaodian.server.api;
+package com.kaodian.server.api.support;
 
 import com.kaodian.server.syllabus.SyllabusEditException;
 import org.springframework.http.HttpStatus;
@@ -112,6 +112,25 @@ public class ApiException extends RuntimeException {
      * <p>不是转义、不是过滤 —— 只管长度。响应体是 JSON(Jackson 负责转义),
      * 日志里也只有这一串;这里要挡的是<b>体量</b>,不是字符。
      */
+    /**
+     * 「你传的这个取值我不认识」—— <b>回显必须过 {@link #echo} 截断</b>。
+     *
+     * <h2>为什么不能直接把 {@code e.getMessage()} 甩回去</h2>
+     *
+     * 那些 {@code ofWireName} 抛的消息里<b>带着用户原样输入的那个串</b>,而它没有长度上限。
+     * {@code {"purpose":"<10KB 文本>"}} 会让那 10KB 整段回到响应体里 ——
+     * 而这个仓库早就有一条针对它的纪律({@link #echo} + {@code
+     * SyllabusAdminApiTest#rejectionMessagesDoNotEchoUnboundedInput}),
+     * 只是鉴权这一侧当初没有接上。
+     * <p>
+     * 🔴 更要紧的是<b>这个产品的输入里可能是一整段题干</b>(01 §2.2 不碰内容)——
+     * 原样回显等于让它出现在响应体和访问日志里。
+     */
+    public static ApiException unknownValue(String code, String what, String userInput) {
+        return new ApiException(HttpStatus.BAD_REQUEST, code,
+                "不认识的" + what + ":" + echo(userInput));
+    }
+
     private static String echo(String userInput) {
         if (userInput == null) {
             return "(空)";

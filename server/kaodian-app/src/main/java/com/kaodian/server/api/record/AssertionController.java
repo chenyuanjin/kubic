@@ -1,9 +1,15 @@
-package com.kaodian.server.api;
+package com.kaodian.server.api.record;
 
-import com.kaodian.server.api.dto.AssertionRequest;
-import com.kaodian.server.api.dto.AssertionResponse;
-import com.kaodian.server.api.dto.NodeDetailDto;
-import com.kaodian.server.api.dto.SummaryDto;
+import com.kaodian.server.api.support.ApiException;
+import com.kaodian.server.api.dto.record.AssertionRequest;
+import com.kaodian.server.api.dto.record.AssertionResponse;
+import com.kaodian.server.api.dto.common.NodeDetailDto;
+import com.kaodian.server.api.dto.common.SummaryDto;
+import com.kaodian.server.coverage.CoverageReader;
+import com.kaodian.server.api.dto.record.AssertionRequest;
+import com.kaodian.server.api.dto.record.AssertionResponse;
+import com.kaodian.server.api.dto.common.NodeDetailDto;
+import com.kaodian.server.api.dto.common.SummaryDto;
 import com.kaodian.server.collect.AssertionStore;
 import com.kaodian.server.collect.UserAssertion;
 import com.kaodian.server.coverage.CoverageService.NodeCoverage;

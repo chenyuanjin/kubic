@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>com.kaodian</groupId>
+		<artifactId>kaodian-server</artifactId>
+		<version>0.0.1-SNAPSHOT</version>
+	</parent>
+	<artifactId>kaodian-app</artifactId>
+	<name>kaodian-app</name>
+	<description>HTTP 契约层 + 启动类 —— 唯一产出可执行 jar 的模块</description>
+
+	<dependencies>
+		<dependency>
+			<groupId>com.kaodian</groupId>
+			<artifactId>kaodian-domain</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>com.kaodian</groupId>
+			<artifactId>kaodian-auth</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>com.kaodian</groupId>
+			<artifactId>kaodian-agent</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-webmvc</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-validation</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-json</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-webmvc-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<!-- domain 的两个内存版存储替身(见 kaodian-domain/pom.xml 里那段注释)。 -->
+		<dependency>
+			<groupId>com.kaodian</groupId>
+			<artifactId>kaodian-domain</artifactId>
+			<type>test-jar</type>
+			<scope>test</scope>
+		</dependency>
+	</dependencies>
+
+	<build>
+		<plugins>
+			<!-- 可执行 jar 只在这里打。四个模块里只有它有 main。 -->
+			<plugin>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-maven-plugin</artifactId>
+			</plugin>
+		</plugins>
+	</build>
+</project>

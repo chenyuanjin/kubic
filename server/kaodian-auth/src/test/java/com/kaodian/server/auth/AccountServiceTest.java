@@ -99,6 +99,11 @@ class AccountServiceTest {
         service.confirmMerge(b, taken.pending().token());
 
         assertFalse(accounts.findById(a).orElseThrow().isActive(), "被并走的账号应当已注销");
+        // 光断言「已注销」不够:merge() 还要把 identity 摘干净。
+        // 漏摘的话那个手机号既登不回来、也永远给不了别人 —— 而运营商是会回收号码的。
+        assertTrue(accounts.identitiesOf(a).isEmpty(), "被并走账号的身份必须已全部摘掉");
+        assertEquals(b, accounts.findByIdentity(IdentityType.PHONE, cipher.hmacOf(PHONE_A))
+                .orElseThrow().id(), "手机号应当已改挂到留下来那个账号");
         assertEquals(2, service.totalSignups(),
                 "从 app_user 数 count(*) 的话这里会变成 1 —— 一个只会单调增长的指标开始往回走");
     }
@@ -202,6 +207,41 @@ class AccountServiceTest {
         assertEquals(p1.fromLabel(), p2.fromLabel());
         assertEquals("138****8000", p1.fromLabel());
         assertTrue(accounts.mergeLogs().isEmpty());
+    }
+
+    @Test
+    @DisplayName("🔴 两边都绑了手机号:合并会丢弃来源那个号,而且必须留下痕迹")
+    void mergeDropsSourcePhoneWhenTargetAlreadyHasOne() {
+        // A、B 各绑一个手机号,再用微信把它们牵到一起
+        String a = service.loginByPhone(passed(PHONE_A), "A的手机", null).user().id();
+        String b = service.loginByPhone(passed(PHONE_B), "B的手机", null).user().id();
+        assertInstanceOf(AccountService.BindResult.Bound.class,
+                service.bind(a, IdentityType.WX_UNION, "u_same", null));
+
+        // B 想绑同一个微信 → 已属 A → 合并建议
+        var taken = assertInstanceOf(AccountService.BindResult.TakenByAnother.class,
+                service.bind(b, IdentityType.WX_UNION, "u_same", null));
+        service.confirmMerge(b, taken.pending().token());
+
+        // A 被并走了
+        assertFalse(accounts.findById(a).orElseThrow().isActive());
+        assertTrue(accounts.identitiesOf(a).isEmpty(), "被并走账号的身份必须全部摘掉");
+
+        // 微信身份改挂到了 B
+        assertEquals(b, accounts.findByIdentity(IdentityType.WX_UNION, "u_same").orElseThrow().id());
+
+        // 🔴 而 A 的手机号【被丢弃了】—— B 已经有自己的号,覆盖它会让 B 的手机号
+        // 在用户毫不知情时换成另一个。丢弃是两害相权,但代价必须是可见的:
+        // 那个号从此不指向任何账号,用户再用它登录会被当成全新注册。
+        assertTrue(accounts.findByIdentity(IdentityType.PHONE, cipher.hmacOf(PHONE_A)).isEmpty(),
+                "A 的手机号不再指向任何账号");
+        assertEquals(b, accounts.findByIdentity(IdentityType.PHONE, cipher.hmacOf(PHONE_B))
+                .orElseThrow().id(), "B 自己的手机号不能被覆盖掉");
+
+        // 用 A 的号再登录 = 一次全新注册(而不是登回那个已注销的账号)
+        var again = service.loginByPhone(passed(PHONE_A), "A又来了", null);
+        assertTrue(again.isNewAccount());
+        assertNotEquals(a, again.user().id());
     }
 
     // —— 注销 ——

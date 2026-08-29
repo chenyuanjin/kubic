@@ -1,4 +1,4 @@
-package com.kaodian.server.api;
+package com.kaodian.server.config;
 
 import com.kaodian.server.collect.CandidateRecall;
 import com.kaodian.server.collect.TouchLedger;
@@ -22,7 +22,13 @@ import java.time.Clock;
  * {@code coverage} 包应该能在没有容器的情况下被直接 new 出来测试
  * ({@code CoverageServiceTest} 现在就是这么做的)。
  * <p>
- * 所以装配这件事留在最外层的 {@code api} 包里 —— <b>谁组装,谁依赖框架</b>。
+ * 所以装配这件事集中在这一个 {@code config} 包里 —— <b>谁组装,谁依赖框架</b>。
+ * <p>
+ * <b>2026-08-28 从 {@code api.ApiBeans} 搬到 kaodian-domain。</b>「谁组装」这句话没变,
+ * 变的是「最外层」指哪里:原先只有一个模块时,最外层就是 {@code api};
+ * 现在 kaodian-agent 也要用这些领域对象,而它不依赖 kaodian-app ——
+ * 装配点留在 app 里的话,agent 就得自己再 new 一个 CoverageService,
+ * 于是全进程有了两个差集服务。<b>领域对象的装配点必须在所有使用方的上游</b>。
  *
  * <h2>🔴 这里<b>没有</b>一个 {@code Syllabus} bean,这是有意的</h2>
  *
@@ -32,11 +38,11 @@ import java.time.Clock;
  * <p>
  * 所以全进程只有一个骨架来源:{@code FileSyllabusStore}(它是 {@code @Component})。
  * 需要读树的地方一律注入 {@code SyllabusSource},每次现问。
- * <b>两处持有同一棵树就一定会持有两棵不同的树</b> —— 与 {@link CoverageReader}
+ * <b>两处持有同一棵树就一定会持有两棵不同的树</b> —— 与 {@link com.kaodian.server.coverage.CoverageReader}
  * 开头那句「两处算同一个数就一定会算出两个数」是同一条。
  */
 @Configuration
-public class ApiBeans {
+public class DomainBeans {
 
     /** 差集服务。无状态,单例。 */
     @Bean

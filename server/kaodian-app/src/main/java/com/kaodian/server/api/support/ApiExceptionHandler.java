@@ -1,7 +1,9 @@
-package com.kaodian.server.api;
+package com.kaodian.server.api.support;
 
-import com.kaodian.server.api.dto.ApiError;
-import com.kaodian.server.api.dto.UnknownFieldException;
+import com.kaodian.server.api.dto.common.ApiError;
+import com.kaodian.server.api.dto.common.UnknownFieldException;
+import com.kaodian.server.api.dto.common.ApiError;
+import com.kaodian.server.api.dto.common.UnknownFieldException;
 import com.kaodian.server.syllabus.SyllabusDataException;
 import com.kaodian.server.syllabus.SyllabusEditException;
 import org.slf4j.Logger;

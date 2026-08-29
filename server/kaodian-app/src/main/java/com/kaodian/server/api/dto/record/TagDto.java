@@ -1,4 +1,4 @@
-package com.kaodian.server.api.dto;
+package com.kaodian.server.api.dto.record;
 
 import com.kaodian.server.collect.RecordTag;
 import com.kaodian.server.syllabus.Syllabus;

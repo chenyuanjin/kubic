@@ -1,4 +1,4 @@
-package com.kaodian.server.api;
+package com.kaodian.server.api.support;
 
 import com.kaodian.server.auth.AccountService;
 import com.kaodian.server.auth.AccountStore;
@@ -32,7 +32,7 @@ import java.time.Clock;
 /**
  * 鉴权这一层的装配点 —— <b>谁组装,谁依赖框架</b>。
  *
- * <p>与 {@link ApiBeans} 同一形态:{@code auth} 包里的领域类
+ * <p>与 {@link com.kaodian.server.config.DomainBeans} 同一形态:{@code auth} 包里的领域类
  * ({@code TokenService} / {@code SmsCodeService} / {@code AccountService})
  * 都不认识 Spring,能在没有容器的情况下直接 new 出来测试。
  *

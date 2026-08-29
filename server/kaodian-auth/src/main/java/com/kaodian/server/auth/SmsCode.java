@@ -10,7 +10,7 @@ import java.time.Instant;
  * 六位数字被哈希后仍然只有 10⁶ 种可能,离线爆破一瞬间就完 —— 所以用<b>带密钥的</b>
  * HMAC({@link PhoneCipher#hmacOfOpaque})。没有密钥就爆不动。
  * <p>
- * 这一层防的不是暴力猜码(那是 {@code attempts} 与锁定管的),而是
+ * 这一层防的不是暴力猜码(那是 {@link PhoneLock} 的失败计数与锁定管的),而是
  * <b>「数据文件被拷走的那五分钟里,正在登录的人被顶掉」</b>。
  *
  * @param phoneHmac 哪个号的。与 {@link UserIdentity#identifier} 同一把哈希,于是能直接对上账号
@@ -19,7 +19,6 @@ import java.time.Instant;
  * @param issuedAt  发出时刻
  * @param expiresAt 过期时刻,发出后 5 分钟
  * @param state     此刻的状态
- * @param attempts  这条码上错了几次
  */
 public record SmsCode(
         String phoneHmac,
@@ -27,8 +26,7 @@ public record SmsCode(
         SmsPurpose purpose,
         Instant issuedAt,
         Instant expiresAt,
-        State state,
-        int attempts
+        State state
 ) {
 
     /**
@@ -61,9 +59,6 @@ public record SmsCode(
         if (issuedAt == null || expiresAt == null) {
             throw new IllegalArgumentException("验证码必须有时间");
         }
-        if (attempts < 0) {
-            throw new IllegalArgumentException("错误次数不能为负");
-        }
     }
 
     /**
@@ -80,14 +75,11 @@ public record SmsCode(
     }
 
     public SmsCode consumed() {
-        return new SmsCode(phoneHmac, codeHmac, purpose, issuedAt, expiresAt, State.CONSUMED, attempts);
+        return new SmsCode(phoneHmac, codeHmac, purpose, issuedAt, expiresAt, State.CONSUMED);
     }
 
     public SmsCode superseded() {
-        return new SmsCode(phoneHmac, codeHmac, purpose, issuedAt, expiresAt, State.SUPERSEDED, attempts);
+        return new SmsCode(phoneHmac, codeHmac, purpose, issuedAt, expiresAt, State.SUPERSEDED);
     }
 
-    public SmsCode withOneMoreAttempt() {
-        return new SmsCode(phoneHmac, codeHmac, purpose, issuedAt, expiresAt, state, attempts + 1);
-    }
 }

@@ -1,5 +1,7 @@
-package com.kaodian.server.api.dto;
+package com.kaodian.server.api.dto.record;
 
+import com.kaodian.server.api.dto.common.ApiError;
+import com.kaodian.server.api.dto.common.TimelineItemDto;
 import com.kaodian.server.collect.Touch;
 import jakarta.validation.constraints.Size;
 

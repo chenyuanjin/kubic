@@ -1,10 +1,15 @@
-package com.kaodian.server.api;
+package com.kaodian.server.api.insight;
 
-import com.kaodian.server.api.dto.ExportResponse;
-import com.kaodian.server.api.dto.NodeDetailDto;
-import com.kaodian.server.api.dto.StateCountDto;
-import com.kaodian.server.api.dto.SyllabusNodeDto;
-import com.kaodian.server.api.dto.TimelineItemDto;
+import com.kaodian.server.api.dto.insight.ExportResponse;
+import com.kaodian.server.api.dto.common.NodeDetailDto;
+import com.kaodian.server.api.dto.insight.StateCountDto;
+import com.kaodian.server.api.dto.common.SyllabusNodeDto;
+import com.kaodian.server.api.dto.common.TimelineItemDto;
+import com.kaodian.server.api.dto.insight.ExportResponse;
+import com.kaodian.server.api.dto.common.NodeDetailDto;
+import com.kaodian.server.api.dto.insight.StateCountDto;
+import com.kaodian.server.api.dto.common.SyllabusNodeDto;
+import com.kaodian.server.api.dto.common.TimelineItemDto;
 
 import java.util.ArrayList;
 import java.util.List;

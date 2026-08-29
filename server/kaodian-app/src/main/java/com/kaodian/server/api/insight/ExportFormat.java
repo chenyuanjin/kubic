@@ -1,5 +1,6 @@
-package com.kaodian.server.api;
+package com.kaodian.server.api.insight;
 
+import com.kaodian.server.api.support.ApiException;
 import org.springframework.http.MediaType;
 
 /**

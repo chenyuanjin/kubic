@@ -60,6 +60,17 @@ public class HttpWeChatClient implements WeChatClient {
 
     private final Object tokenLock = new Object();
     private String cachedToken;
+
+    /** 「该去换新的了」的时刻 = 真实过期时刻 − 安全余量。 */
+    private Instant cachedTokenRefreshAt;
+
+    /**
+     * 微信那边<b>真正</b>失效的时刻。
+     *
+     * <p>它和 {@link #cachedTokenRefreshAt} 差一个安全余量,而那段差值正是这里存在的理由:
+     * 在那 5 分钟里我们已经开始尝试换新的,但<b>手里这条其实还能用</b>。
+     * 换新的失败时回退到它,比直接把整条微信链路判死好得多。
+     */
     private Instant cachedTokenExpiresAt;
 
     /**
@@ -200,7 +211,7 @@ public class HttpWeChatClient implements WeChatClient {
     private String stableToken() throws WeChatException {
         synchronized (tokenLock) {
             Instant now = Instant.now();
-            if (cachedToken != null && cachedTokenExpiresAt != null && now.isBefore(cachedTokenExpiresAt)) {
+            if (cachedToken != null && cachedTokenRefreshAt != null && now.isBefore(cachedTokenRefreshAt)) {
                 return cachedToken;
             }
             WeChatCredentials.App app = credentials.of(WeChatEntry.MINI_PROGRAM);
@@ -209,14 +220,28 @@ public class HttpWeChatClient implements WeChatClient {
             body.put("appid", app.appId());
             body.put("secret", app.secret());
             body.put("force_refresh", false);
-            JsonNode n = postJson(API + "/cgi-bin/stable_token", body.toString());
+            JsonNode n;
+            try {
+                n = postJson(API + "/cgi-bin/stable_token", body.toString());
+            } catch (WeChatException e) {
+                // 🔴 换新的失败了 —— 但如果手里那条还没真正过期,就继续用它。
+                // 直接抛的话:提前 5 分钟开始换,而这 5 分钟里网络抖一下,
+                // 整条微信链路就在【令牌其实还有效】的情况下被判死。
+                if (cachedToken != null && cachedTokenExpiresAt != null
+                        && now.isBefore(cachedTokenExpiresAt)) {
+                    log.warn("stable_token 刷新失败,回退到尚未真正过期的缓存(还剩 {} 秒) errcode={}",
+                            java.time.Duration.between(now, cachedTokenExpiresAt).toSeconds(), e.errcode());
+                    return cachedToken;
+                }
+                throw e;
+            }
             String token = n.path("access_token").asString("");
             if (token.isEmpty()) {
                 throw new WeChatException("拿不到 access_token", n.path("errcode").asInt(-1));
             }
             cachedToken = token;
-            cachedTokenExpiresAt = now.plusSeconds(n.path("expires_in").asInt(7200))
-                    .minus(TOKEN_SAFETY_MARGIN);
+            cachedTokenExpiresAt = now.plusSeconds(n.path("expires_in").asInt(7200));
+            cachedTokenRefreshAt = cachedTokenExpiresAt.minus(TOKEN_SAFETY_MARGIN);
             return token;
         }
     }

@@ -1,7 +1,14 @@
 package com.kaodian.server.api;
 
+import com.kaodian.server.api.insight.CoverageController;
+import com.kaodian.server.api.record.RecordController;
+import com.kaodian.server.api.syllabus.SyllabusAdminController;
+import com.kaodian.server.api.syllabus.SyllabusController;
+import com.kaodian.server.api.insight.TimelineController;
+import com.kaodian.server.config.DomainBeans;
+import com.kaodian.server.coverage.CoverageReader;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
-import com.kaodian.server.api.dto.CreateNodeRequest;
+import com.kaodian.server.api.dto.syllabus.CreateNodeRequest;
 import com.kaodian.server.collect.CaptureService;
 import com.kaodian.server.collect.FileTouchStore;
 import com.kaodian.server.collect.InMemoryRecordTagStore;
@@ -71,7 +78,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         CoverageController.class,
         TimelineController.class,
         RecordController.class})
-@Import(ApiBeans.class)     // web 切片不扫 @Configuration,领域装配要显式带进来
+@Import(DomainBeans.class)     // web 切片不扫 @Configuration,领域装配要显式带进来
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class SyllabusAdminApiTest {
 

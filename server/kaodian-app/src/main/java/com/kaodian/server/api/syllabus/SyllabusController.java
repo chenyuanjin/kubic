@@ -1,8 +1,12 @@
-package com.kaodian.server.api;
+package com.kaodian.server.api.syllabus;
 
-import com.kaodian.server.api.CoverageReader.Snapshot;
-import com.kaodian.server.api.dto.NodeDetailDto;
-import com.kaodian.server.api.dto.TreeResponse;
+import com.kaodian.server.api.support.ApiException;
+import com.kaodian.server.api.dto.common.NodeDetailDto;
+import com.kaodian.server.api.dto.syllabus.TreeResponse;
+import com.kaodian.server.coverage.CoverageReader;
+import com.kaodian.server.coverage.CoverageReader.Snapshot;
+import com.kaodian.server.api.dto.common.NodeDetailDto;
+import com.kaodian.server.api.dto.syllabus.TreeResponse;
 import com.kaodian.server.coverage.CoverageService.NodeCoverage;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;

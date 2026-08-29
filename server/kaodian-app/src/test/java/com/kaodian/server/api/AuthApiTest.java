@@ -1,5 +1,12 @@
 package com.kaodian.server.api;
 
+import com.kaodian.server.api.auth.AccountController;
+import com.kaodian.server.api.support.ApiCorsConfig;
+import com.kaodian.server.api.support.ApiExceptionHandler;
+import com.kaodian.server.api.auth.AuthController;
+import com.kaodian.server.api.support.AuthWebConfig;
+import com.kaodian.server.api.support.ClientIp;
+import com.kaodian.server.api.support.CurrentSessionResolver;
 import com.kaodian.server.auth.AccountService;
 import com.kaodian.server.auth.AccountStore;
 import com.kaodian.server.auth.FileAccountStore;
@@ -42,6 +49,7 @@ import java.util.List;
 
 import static org.hamcrest.Matchers.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -484,6 +492,66 @@ class AuthApiTest {
                         .header("Origin", "http://localhost:5173")
                         .header("Access-Control-Request-Method", "DELETE"))
                 .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("🔴 回环地址不计进 IP 频控 —— 否则反代后全站共享一个 20 条/日的桶")
+    void loopbackIsNotCountedAsAnIp() {
+        // MockMvc 的 remoteAddr 默认就是 127.0.0.1,与同机反代后的线上形态一致。
+        // 修之前它会被当成一个真实 IP —— 于是所有用户挤进同一个计数格,
+        // 每天第 21 个用户再也收不到验证码。那不是防线失效,是自己 DoS 自己。
+        ClientIp dev = new ClientIp(false);
+        var req = new org.springframework.mock.web.MockHttpServletRequest();
+        req.setRemoteAddr("127.0.0.1");
+        assertEquals("", dev.of(req), "回环 = 取不到 IP,而不是一个所有人共用的 IP");
+
+        req.setRemoteAddr("::1");
+        assertEquals("", dev.of(req));
+
+        // 真实外网地址仍然照常计入
+        req.setRemoteAddr("203.0.113.9");
+        assertEquals("203.0.113.9", dev.of(req));
+    }
+
+    @Test
+    @DisplayName("🔴 X-Forwarded-For 取最右那一个 —— 最左是客户端能伪造的那个")
+    void forwardedForTakesTheRightmostHop() {
+        ClientIp trusting = new ClientIp(true);
+        var req = new org.springframework.mock.web.MockHttpServletRequest();
+        // 客户端伪造 1.2.3.4,我们自己的反代把真实地址追加在最右
+        req.addHeader("X-Forwarded-For", "1.2.3.4, 203.0.113.9");
+        assertEquals("203.0.113.9", trusting.of(req),
+                "取最左是这个头最经典的一个用反 —— 那正好取到攻击者写的那个");
+
+        // 不信任时,伪造的头一概无视
+        var req2 = new org.springframework.mock.web.MockHttpServletRequest();
+        req2.addHeader("X-Forwarded-For", "1.2.3.4");
+        req2.setRemoteAddr("203.0.113.20");
+        assertEquals("203.0.113.20", new ClientIp(false).of(req2));
+    }
+
+    @Test
+    @DisplayName("🔴 鉴权端点的错误消息不回显无界的用户输入 —— 这个产品的输入可能是一整段题干")
+    void authErrorsDoNotEchoUnboundedInput() throws Exception {
+        String pastedStem = "2023 年全国粮食总产量为 13908 亿斤,比上年增加 177 亿斤".repeat(40);
+
+        String body = mvc.perform(post("/api/auth/sms/send")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(new tools.jackson.databind.ObjectMapper().createObjectNode()
+                                .put("phone", freshPhone(30))
+                                .put("purpose", pastedStem)
+                                .put("captchaTicket", "ok")
+                                .put("captchaRandstr", "r")
+                                .toString()))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code", is("BAD_PURPOSE")))
+                .andReturn().getResponse().getContentAsString();
+
+        // 仓库既有纪律:ApiException.echo 截断到 64 字符
+        // (SyllabusAdminApiTest#rejectionMessagesDoNotEchoUnboundedInput 守的是同一条)
+        assertTrue(body.length() < pastedStem.length() / 4,
+                "响应体不该把整段输入带回来,实际长度 " + body.length());
+        assertTrue(body.contains("已截断"), "应当明确标出被截断了");
     }
 
     // —— 微信联合登录 ——

@@ -1,4 +1,7 @@
-package com.kaodian.server.api.dto;
+package com.kaodian.server.api.dto.record;
+
+import com.kaodian.server.api.dto.common.NodeDetailDto;
+import com.kaodian.server.api.dto.common.TimelineItemDto;
 
 /**
  * 记一笔之后返回的东西:落下的那条记录 + 那个考点的<b>新状态</b>。

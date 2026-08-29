@@ -1,7 +1,9 @@
-package com.kaodian.server.api;
+package com.kaodian.server.api.insight;
 
-import com.kaodian.server.api.CoverageReader.Snapshot;
-import com.kaodian.server.api.dto.ExportResponse;
+import com.kaodian.server.api.dto.insight.ExportResponse;
+import com.kaodian.server.coverage.CoverageReader;
+import com.kaodian.server.coverage.CoverageReader.Snapshot;
+import com.kaodian.server.api.dto.insight.ExportResponse;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;

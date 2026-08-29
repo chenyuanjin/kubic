@@ -1,5 +1,8 @@
 package com.kaodian.server.api;
 
+import com.kaodian.server.api.insight.ExportController;
+import com.kaodian.server.config.DomainBeans;
+import com.kaodian.server.coverage.CoverageReader;
 import com.jayway.jsonpath.JsonPath;
 import com.kaodian.server.collect.Touch;
 import com.kaodian.server.collect.TouchKind;
@@ -61,7 +64,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * 少一条、多一条、或者某一格错位,这条都会红。
  */
 @WebMvcTest(controllers = ExportController.class)
-@Import(ApiBeans.class)     // web 切片不扫 @Configuration,领域装配要显式带进来
+@Import(DomainBeans.class)     // web 切片不扫 @Configuration,领域装配要显式带进来
 class ExportApiTest {
 
     /**

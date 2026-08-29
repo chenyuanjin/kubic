@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>com.kaodian</groupId>
+		<artifactId>kaodian-server</artifactId>
+		<version>0.0.1-SNAPSHOT</version>
+	</parent>
+	<artifactId>kaodian-auth</artifactId>
+	<name>kaodian-auth</name>
+	<description>账号 / 令牌 / 短信 / 微信联合登录</description>
+
+	<!--
+		🔴 这个模块【不依赖 kaodian-domain】,而那正是重点。
+		鉴权与业务侧的 import 交集量出来是空集,单独成模块是为了让这个「空」有物理形态:
+		将来谁想在 AccountService 里读一眼覆盖率,得先加一条 Maven 依赖 —— 那一步是看得见的。
+		手机号密文、令牌哈希都在这一层,它对业务数据的可达性越小越好。
+	-->
+	<dependencies>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-json</artifactId>
+		</dependency>
+	</dependencies>
+</project>

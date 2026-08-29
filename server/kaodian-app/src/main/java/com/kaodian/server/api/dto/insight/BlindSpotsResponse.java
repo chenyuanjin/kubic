@@ -1,5 +1,6 @@
-package com.kaodian.server.api.dto;
+package com.kaodian.server.api.dto.insight;
 
+import com.kaodian.server.api.dto.common.BlindSpotDto;
 import com.kaodian.server.coverage.CoverageService.NodeCoverage;
 
 import java.util.ArrayList;

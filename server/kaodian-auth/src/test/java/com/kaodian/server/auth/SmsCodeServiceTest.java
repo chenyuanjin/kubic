@@ -336,10 +336,19 @@ class SmsCodeServiceTest {
             service.verify(PHONE, wrong, SmsPurpose.LOGIN);
         }
 
+        SmsCodeStore reloaded = new FileSmsCodeStore(dir.resolve("sms.json"));
         SmsCodeService afterRestart = new SmsCodeService(
-                new FileSmsCodeStore(dir.resolve("sms.json")), limiter, captcha, sender, cipher, clock);
+                reloaded, limiter, captcha, sender, cipher, clock);
         assertInstanceOf(SmsCodeService.VerifyOutcome.Locked.class,
                 afterRestart.verify(PHONE, wrong, SmsPurpose.LOGIN));
+
+        // 🔴 光断言「锁着」不够:锁上的那一刻 failedCount 必须归零,而这个性质也要挺过重启。
+        // 不归零的话,解锁后第一次输错会【立刻再锁 30 分钟】——
+        // 而用户完全不知道自己为什么只有一次机会。
+        PhoneLock afterLock = reloaded.lockOf(cipher.hmacOf(PHONE));
+        assertEquals(0, afterLock.failedCount(), "锁上时计数必须归零,且要挺过重启");
+        assertEquals(PhoneLock.MAX_FAILURES, afterLock.remainingAttempts(),
+                "解锁之后应当仍有满额的重试次数");
     }
 
     @Test

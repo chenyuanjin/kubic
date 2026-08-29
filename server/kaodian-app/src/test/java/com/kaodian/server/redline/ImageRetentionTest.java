@@ -61,29 +61,78 @@ class ImageRetentionTest {
     // ——————————————————— 定位源码树 ———————————————————
 
     /**
-     * {@code server/src/main/java}。
+     * 仓库里的 {@code server/} 目录。
      *
-     * <p>不写死绝对路径:Maven 从 {@code server/} 跑时 {@code user.dir} 是 {@code server/},
-     * 而从仓库根手动跑时是仓库根。两种都要认,认不出就<b>失败而不是扫 0 个文件</b> ——
-     * 一条扫不到东西的断言会永远绿,那比没有更糟。
+     * <p>不写死绝对路径:Maven 从模块目录跑时 {@code user.dir} 是 {@code server/kaodian-app/},
+     * 从 {@code server/} 跑时是 {@code server/},从仓库根手动跑时是仓库根。三种都要认,
+     * 认不出就<b>失败而不是扫 0 个文件</b> —— 一条扫不到东西的断言会永远绿,那比没有更糟。
      */
-    private static Path mainJava() {
+    private static Path serverDir() {
         Path cursor = Path.of(System.getProperty("user.dir")).toAbsolutePath().normalize();
         for (Path p = cursor; p != null; p = p.getParent()) {
             for (Path candidate : List.of(p, p.resolve("server"))) {
-                Path hit = candidate.resolve("src/main/java/com/kaodian/server");
-                if (Files.isDirectory(hit)) {
-                    return candidate.resolve("src/main/java");
+                if (Files.isDirectory(candidate.resolve("kaodian-app/src/main/java/com/kaodian/server"))) {
+                    return candidate;
                 }
             }
         }
-        throw new IllegalStateException("找不到 server/src/main/java(user.dir=" + cursor + ")");
+        throw new IllegalStateException("找不到 server/(user.dir=" + cursor + ")");
     }
 
-    /** 报错时给人看的路径:相对仓库根,形如 {@code server/src/main/java/...}。 */
+    /**
+     * 全部模块的 {@code src/main/java}。
+     *
+     * <p><b>2026-08-28 拆多模块后,由「一个根」变成「一组根」。</b>原先生效代码只在
+     * {@code server/src/main/java} 一处;现在分散在四个 {@code server/kaodian-模块名/src/main/java}。
+     * (这里不写通配符形式 —— 那个星号加斜杠会当场闭合本段 javadoc,编译期就炸。)
+     *
+     * <p>🔴 这里是<b>枚举</b>而不是<b>列举</b>:扫 {@code server/} 下所有带 {@code src/main/java}
+     * 的子目录,新加一个模块自动进扫描范围。写死四个模块名的话,第五个模块就会是一片没人看的盲区 ——
+     * 而新模块恰恰是最容易把 R-04 重新犯一次的地方(那里的代码还没人读过第二遍)。
+     * <b>断言的价值等于它扫过的范围</b>,所以范围本身不能靠人记得去维护。
+     */
+    private static List<Path> mainJavaRoots() {
+        Path server = serverDir();
+        List<Path> roots = new ArrayList<>();
+        try (Stream<Path> children = Files.list(server)) {
+            children.filter(Files::isDirectory)
+                    .map(module -> module.resolve("src/main/java"))
+                    .filter(Files::isDirectory)
+                    .sorted()
+                    .forEach(roots::add);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+        if (roots.isEmpty()) {
+            throw new IllegalStateException("在 " + server + " 下一个 src/main/java 都没找到 —— 目录结构变了?");
+        }
+        return roots;
+    }
+
+    /** 全部模块里的全部 .java。 */
+    private static List<Path> allSources() {
+        List<Path> all = new ArrayList<>();
+        for (Path root : mainJavaRoots()) {
+            all.addAll(sources(root));
+        }
+        return all;
+    }
+
+    /** 在任一模块根下解析一个包相对路径;找不到返回 null(由调用方决定这算不算失败)。 */
+    private static Path findInRoots(String relative) {
+        for (Path root : mainJavaRoots()) {
+            Path hit = root.resolve(relative);
+            if (Files.exists(hit)) {
+                return hit;
+            }
+        }
+        return null;
+    }
+
+    /** 报错时给人看的路径:相对仓库根,形如 {@code server/kaodian-domain/src/main/java/...}。 */
     private static String display(Path file) {
-        Path repoRoot = mainJava().getParent().getParent().getParent().getParent();
-        return repoRoot.relativize(file).toString();
+        Path repoRoot = serverDir().getParent();
+        return repoRoot == null ? file.toString() : repoRoot.relativize(file).toString();
     }
 
     private static List<Path> sources(Path root) {
@@ -138,11 +187,10 @@ class ImageRetentionTest {
     @Test
     @DisplayName("🔴 R-04/R-52:生效代码里不出现任何厂商图片暂存的痕迹")
     void noVendorFileStagingKeywords() {
-        Path root = mainJava();
         List<String> hits = new ArrayList<>();
         int scanned = 0;
 
-        for (Path file : sources(root)) {
+        for (Path file : allSources()) {
             scanned++;
             String[] lines = stripComments(read(file)).split("\n", -1);
             for (int i = 0; i < lines.length; i++) {
@@ -157,7 +205,8 @@ class ImageRetentionTest {
         }
 
         // 扫 0 个文件也会「通过」。这里把路径解析本身也变成断言的一部分。
-        assertTrue(scanned >= 50, "只扫到 " + scanned + " 个源文件,源码树定位坏了(root=" + root + ")");
+        // 拆多模块后还多守一件事:少扫【一整个模块】同样会让这个数掉下来。
+        assertTrue(scanned >= 50, "只扫到 " + scanned + " 个源文件,源码树定位坏了(roots=" + mainJavaRoots() + ")");
         assertTrue(hits.isEmpty(),
                 "🔴 原图绝不上云、不共享,含厂商图片暂存 API(docs/08 §四 R-04、R-52)。"
                         + "\n这条第一天不定就改不回来 —— 不要加白名单,改代码。\n" + String.join("\n", hits));
@@ -235,11 +284,10 @@ class ImageRetentionTest {
     @Test
     @DisplayName("🔴 出站域名必须在显式白名单里 —— 新增一个厂商就该被拦一次")
     void outboundHostsAreWhitelisted() {
-        Path root = mainJava();
         List<String> hits = new ArrayList<>();
         List<String> seen = new ArrayList<>();
 
-        for (Path file : sources(root)) {
+        for (Path file : allSources()) {
             String effective = stripComments(read(file));
             String[] lines = effective.split("\n", -1);
 
@@ -365,8 +413,11 @@ class ImageRetentionTest {
     @Test
     @DisplayName("🔴 tripwire:recognize 包不许把图片字节落盘、外发或打进日志(今天必然通过)")
     void recognizePackageNeverPersistsBytes() {
-        Path pkg = mainJava().resolve("com/kaodian/server/recognize");
-        assertTrue(Files.isDirectory(pkg), "recognize 包不见了 —— 是被挪走了还是路径解析坏了?" + pkg);
+        // recognize 现在住在 kaodian-domain 里。不写死是哪个模块:它将来还可能再搬一次,
+        // 而这条断言关心的是「那个包里的代码不落盘」,不是「那个包在哪个模块」。
+        Path pkg = findInRoots("com/kaodian/server/recognize");
+        assertTrue(pkg != null && Files.isDirectory(pkg),
+                "recognize 包在任何模块里都找不到 —— 是被挪走了还是路径解析坏了?");
 
         List<Path> files = sources(pkg);
         assertTrue(files.size() >= 4, "recognize 包只扫到 " + files.size() + " 个文件,不对劲");
@@ -411,11 +462,11 @@ class ImageRetentionTest {
      */
     private static final List<String> BYTE_HANDLING_CALLERS = List.of(
             // POST /records/{id}/image 与 /audio 的落点:base64 解出来的原图、multipart 读出来的音频
-            "com/kaodian/server/api/RecognitionController.java",
+            "com/kaodian/server/api/record/RecognitionController.java",
             // 图片请求体本身 —— byte[] 就在这个 record 里
-            "com/kaodian/server/api/dto/PhotoRecognitionRequest.java",
+            "com/kaodian/server/api/dto/record/PhotoRecognitionRequest.java",
             // 音频端点的答复:它的全部主张就是「里面没有转写文本」
-            "com/kaodian/server/api/dto/AudioRecognitionResponse.java",
+            "com/kaodian/server/api/dto/record/AudioRecognitionResponse.java",
             // 打标管线的调用方:material 那个 byte[] 从这里走到模型出口
             "com/kaodian/server/collect/TaggingService.java",
             // 拍照采集:image 那个 byte[] 同上
@@ -424,13 +475,13 @@ class ImageRetentionTest {
     @Test
     @DisplayName("🔴 tripwire:握着原图/音频字节的调用方,同样不许落盘、外发或打进日志")
     void byteHandlingCallersNeverPersistBytes() {
-        Path root = mainJava();
         List<String> hits = new ArrayList<>();
 
         for (String relative : BYTE_HANDLING_CALLERS) {
-            Path file = root.resolve(relative);
+            Path file = findInRoots(relative);
             // 清单腐烂的唯一防线:改名或挪走当场红,而不是少扫一个文件还照样绿。
-            assertTrue(Files.isRegularFile(file),
+            // 跨模块搬家【不】算腐烂 —— findInRoots 在所有模块里找,所以只有真的改名/删除才会红。
+            assertTrue(file != null && Files.isRegularFile(file),
                     "点名清单里的「" + relative + "」不存在了 —— 它是被改名、被挪走,还是被删了?"
                             + "\n如果那段经手字节的代码搬到了别处,把清单跟着改;"
                             + "如果它真的没了,把这一行删掉。不要留一行扫不到东西的清单。");

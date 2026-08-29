@@ -1,6 +1,8 @@
-package com.kaodian.server.api;
+package com.kaodian.server.api.support;
 
 import jakarta.servlet.http.HttpServletRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -28,9 +30,15 @@ import org.springframework.stereotype.Component;
 @Component
 public class ClientIp {
 
+    private static final Logger log = LoggerFactory.getLogger(ClientIp.class);
+
     private static final String HEADER = "X-Forwarded-For";
 
     private final boolean trustForwardedFor;
+
+    /** 只吼一次。每个请求都打一条的话,这条提示会淹没在自己的噪音里。 */
+    private final java.util.concurrent.atomic.AtomicBoolean loopbackWarned =
+            new java.util.concurrent.atomic.AtomicBoolean();
 
     public ClientIp(@Value("${kaodian.auth.trust-forwarded-for:false}") boolean trustForwardedFor) {
         this.trustForwardedFor = trustForwardedFor;
@@ -45,8 +53,14 @@ public class ClientIp {
             if (xff != null && !xff.isBlank()) {
                 String[] parts = xff.split(",");
                 String last = parts[parts.length - 1].trim();
-                if (!last.isEmpty()) {
+                // 🔴 校验格式再用。反代追加的应当是一个真实地址,拿到别的东西说明反代配错了 ——
+                // 而把「not-an-ip」这种串当成 IP 塞进频控,会在计数空间里造出一个谁也对不上的键:
+                // 频控看起来在工作,实际上每个畸形值都独占一个桶,等于没有频控。
+                if (isIpLike(last)) {
                     return last;
+                }
+                if (!last.isEmpty()) {
+                    log.warn("X-Forwarded-For 最右一段不是 IP,已忽略并回退到 remoteAddr —— 检查反代配置");
                 }
             }
         }
@@ -65,9 +79,48 @@ public class ClientIp {
         // 那才是这种部署下的正确语义:IP 维度此刻不携带任何信息,
         // 拿不到就别假装拿到了。真要恢复这道闸,把 trust-forwarded-for 打开。
         if (isLoopback(remote)) {
+            warnOnceAboutDisabledIpGate();
             return "";
         }
         return remote;
+    }
+
+    /**
+     * 🔴 把「IP 频控此刻是关着的」这件事说出来 —— <b>一次,不刷屏</b>。
+     *
+     * <p>回环 → 空串这条路把「全站共享一个 20/日 的桶」这个更糟的形态修掉了,
+     * 但它<b>没有把闸修回来</b>:闸仍然是关的,只是关得干净而不是坏得诡异。
+     * <p>
+     * 而这两种部署长得一模一样:
+     * <ul>
+     *   <li><b>本机开发</b> —— 闸关着完全正确(短信根本不真发,没有账单可刷)</li>
+     *   <li><b>线上反代但忘了置 {@code trust-forwarded-for=true}</b> —— 闸关着是<b>事故</b></li>
+     * </ul>
+     * 服务端分不出这两者(它看到的都是 {@code 127.0.0.1})。分不出就别猜 ——
+     * <b>把事实打出来,让看日志的人自己判断。</b> 这与「宁可说不知道也不要假装知道」是同一条。
+     */
+    private void warnOnceAboutDisabledIpGate() {
+        if (loopbackWarned.compareAndSet(false, true)) {
+            log.warn("请求来自回环地址而 kaodian.auth.trust-forwarded-for=false —— "
+                    + "「单 IP 20/日」这道闸当前【不生效】。"
+                    + "本机开发时这是对的;若前面有反代(线上是同机 Caddy),请置 true,"
+                    + "否则短信频控只剩单号那一维。");
+        }
+    }
+
+    /**
+     * 粗校验:是不是像个 IP。
+     *
+     * <p>用 {@link java.net.InetAddress} 会做 DNS 解析 —— 那意味着<b>请求头能让服务端发起一次
+     * 域名查询</b>,一个不该存在的外连。所以只做字面判断。
+     */
+    private static boolean isIpLike(String s) {
+        if (s == null || s.isEmpty() || s.length() > 45) {
+            return false;
+        }
+        boolean v4 = s.matches("\\d{1,3}(\\.\\d{1,3}){3}");
+        boolean v6 = s.matches("[0-9A-Fa-f:]{2,45}") && s.contains(":");
+        return v4 || v6;
     }
 
     private static boolean isLoopback(String ip) {

@@ -1,5 +1,6 @@
-package com.kaodian.server.api.dto;
+package com.kaodian.server.api.dto.syllabus;
 
+import com.kaodian.server.api.dto.common.UnknownFieldException;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;

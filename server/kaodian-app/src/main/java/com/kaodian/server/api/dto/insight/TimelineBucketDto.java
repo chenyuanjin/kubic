@@ -1,4 +1,4 @@
-package com.kaodian.server.api.dto;
+package com.kaodian.server.api.dto.insight;
 
 import java.time.LocalDate;
 import java.util.List;

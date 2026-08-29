@@ -1,5 +1,6 @@
-package com.kaodian.server.api.dto;
+package com.kaodian.server.api.dto.insight;
 
+import com.kaodian.server.api.dto.record.CreateRecordRequest;
 import jakarta.validation.constraints.Size;
 
 /**

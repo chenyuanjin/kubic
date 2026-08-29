@@ -1,4 +1,4 @@
-package com.kaodian.server.api.dto;
+package com.kaodian.server.api.dto.syllabus;
 
 import com.kaodian.server.syllabus.Syllabus;
 

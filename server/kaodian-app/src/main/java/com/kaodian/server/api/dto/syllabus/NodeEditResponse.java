@@ -1,4 +1,7 @@
-package com.kaodian.server.api.dto;
+package com.kaodian.server.api.dto.syllabus;
+
+import com.kaodian.server.api.dto.common.SummaryDto;
+import com.kaodian.server.api.dto.common.SyllabusNodeDto;
 
 /**
  * 一次考点编辑之后返回的东西:改完的那个考点 + <b>整棵树的新覆盖概览</b>。

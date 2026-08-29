@@ -36,6 +36,21 @@ public class OneTimeStateStore {
     /** 超过这个数就顺手清一次过期项。没有定时任务,也不需要。 */
     private static final int SWEEP_THRESHOLD = 512;
 
+    /**
+     * 🔴 硬上限。清过一遍之后仍然超,就<b>拒绝再签发</b>。
+     *
+     * <h2>为什么光有 sweep 不够</h2>
+     *
+     * {@code /auth/wechat/authorize-url} 是<b>不需要登录</b>的 —— 任何人都能调。
+     * 只靠 sweep 的话有两个问题:清理只清得掉<b>已过期</b>的,而 10 分钟内狂签的那些一个都清不掉;
+     * 而且 sweep 是 O(n),一旦越过阈值就<b>每次签发都扫一遍全表</b> —— 变成平方级。
+     * <p>
+     * 上限撞上时拒绝签发,而不是继续涨。代价是<b>正常用户在被攻击期间点不了微信登录</b> ——
+     * 但那好过整个进程被拖垮:前者只影响一条入口,后者影响所有人,包括正在记录的人。
+     * (「记录动作永不失败」是那条更高的线。)
+     */
+    private static final int MAX_STATES = 20_000;
+
     private final Map<String, Instant> states = new ConcurrentHashMap<>();
     private final SecureRandom random = new SecureRandom();
     private final Clock clock;
@@ -47,6 +62,11 @@ public class OneTimeStateStore {
     public String issue() {
         if (states.size() > SWEEP_THRESHOLD) {
             sweep();
+            if (states.size() >= MAX_STATES) {
+                // 清过一遍还这么多 = 有人在刷。拒绝签发,别让内存跟着涨。
+                throw new IllegalStateException(
+                        "微信授权请求过于频繁,请稍后再试(待核销的 state 已达上限 " + MAX_STATES + ")");
+            }
         }
         byte[] b = new byte[BYTES];
         random.nextBytes(b);

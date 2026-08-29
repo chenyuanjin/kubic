@@ -1,8 +1,13 @@
 package com.kaodian.server.api;
 
+import com.kaodian.server.api.record.AssertionController;
+import com.kaodian.server.api.insight.CoverageController;
+import com.kaodian.server.api.syllabus.SyllabusController;
+import com.kaodian.server.config.DomainBeans;
+import com.kaodian.server.coverage.CoverageReader;
 import com.jayway.jsonpath.JsonPath;
-import com.kaodian.server.api.dto.AssertionRequest;
-import com.kaodian.server.api.dto.UnknownFieldException;
+import com.kaodian.server.api.dto.record.AssertionRequest;
+import com.kaodian.server.api.dto.common.UnknownFieldException;
 import com.kaodian.server.collect.AssertionStore;
 import com.kaodian.server.collect.InMemoryAssertionStore;
 import com.kaodian.server.collect.InMemoryRecordTagStore;
@@ -72,7 +77,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * 报一个「你已经声明过了」的错,用户除了困惑之外什么都做不了。
  */
 @WebMvcTest(controllers = {AssertionController.class, CoverageController.class, SyllabusController.class})
-@Import(ApiBeans.class)     // web 切片不扫 @Configuration,领域装配要显式带进来
+@Import(DomainBeans.class)     // web 切片不扫 @Configuration,领域装配要显式带进来
 class AssertionApiTest {
 
     /** 一个彻头彻尾的空白考点 —— 一条记录都没有,最容易被「按一下就算碰过」。 */

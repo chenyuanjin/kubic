@@ -1,4 +1,4 @@
-package com.kaodian.server.api.dto;
+package com.kaodian.server.api.dto.auth;
 
 /**
  * 登录请求体上那两个自由文本字段的上限 —— <b>一个数,三个入口共用</b>(docs/08 §四 R-73)。

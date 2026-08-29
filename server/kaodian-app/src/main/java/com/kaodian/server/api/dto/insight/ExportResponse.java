@@ -1,5 +1,11 @@
-package com.kaodian.server.api.dto;
+package com.kaodian.server.api.dto.insight;
 
+import com.kaodian.server.api.dto.common.NodeDetailDto;
+import com.kaodian.server.api.dto.common.SubjectDto;
+import com.kaodian.server.api.dto.common.SummaryDto;
+import com.kaodian.server.api.dto.common.SyllabusNodeDto;
+import com.kaodian.server.api.dto.common.TimelineItemDto;
+import com.kaodian.server.coverage.CoverageReader;
 import com.kaodian.server.collect.Touch;
 import com.kaodian.server.coverage.CoverageService.GroupCoverage;
 import com.kaodian.server.coverage.CoverageService.Summary;

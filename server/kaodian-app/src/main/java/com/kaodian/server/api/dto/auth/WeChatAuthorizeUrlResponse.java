@@ -1,4 +1,4 @@
-package com.kaodian.server.api.dto;
+package com.kaodian.server.api.dto.auth;
 
 /**
  * 让前端跳过去的授权地址,以及配套的一次性 {@code state}。

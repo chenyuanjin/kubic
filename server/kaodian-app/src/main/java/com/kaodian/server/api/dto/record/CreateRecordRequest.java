@@ -1,5 +1,6 @@
-package com.kaodian.server.api.dto;
+package com.kaodian.server.api.dto.record;
 
+import com.kaodian.server.api.dto.common.UnknownFieldException;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.kaodian.server.collect.Touch;
 import com.kaodian.server.collect.TouchKind;

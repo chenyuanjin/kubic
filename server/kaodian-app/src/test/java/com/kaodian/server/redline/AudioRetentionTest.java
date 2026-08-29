@@ -135,7 +135,7 @@ class AudioRetentionTest {
      * 放开可见性会让别处开始引用它,而<b>被引用的常量就再也不好改了</b>。
      */
     private static long maxAudioBytes() throws Exception {
-        Class<?> controller = Class.forName("com.kaodian.server.api.RecognitionController");
+        Class<?> controller = Class.forName("com.kaodian.server.api.record.RecognitionController");
         Field field = controller.getDeclaredField("MAX_AUDIO_BYTES");
         field.setAccessible(true);
         return field.getInt(null);

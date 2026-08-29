@@ -1,5 +1,6 @@
-package com.kaodian.server.api;
+package com.kaodian.server.api.insight;
 
+import com.kaodian.server.api.support.ApiException;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.temporal.TemporalAdjusters;

@@ -11,38 +11,84 @@
 	<groupId>com.kaodian</groupId>
 	<artifactId>kaodian-server</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
+	<packaging>pom</packaging>
 	<name>kaodian-server</name>
 	<description>Kaodian - blind spot = syllabus minus behaviour</description>
-	<url/>
-	<licenses>
-		<license/>
-	</licenses>
-	<developers>
-		<developer/>
-	</developers>
-	<scm>
-		<connection/>
-		<developerConnection/>
-		<tag/>
-		<url/>
-	</scm>
+
+	<!--
+		四个模块,边界照着【真实的包依赖方向】切,不是照着分层名词切。
+		切之前量过一次(grep import com.kaodian.server.*),得到的图是无环的:
+
+		    syllabus ← 无依赖          recognize ← 无依赖
+		    collect  → syllabus, recognize
+		    coverage → collect, syllabus
+		    auth     → 无依赖(与业务侧完全不相交)
+		    api      → 以上全部
+
+		于是:
+		  domain = syllabus + recognize + collect + coverage —— 「盲区 = 骨架层 − 行为层」这条公式本身
+		  auth   = 与业务侧零交集的一整块,单独成模块正是为了让这个「零」有物理形态
+		  agent  = 新增的 agent 运行时;依赖 domain(工具要查覆盖率/时间线),【不依赖 auth】
+		  app    = web 层 + 启动类 + 配置;唯一产出可执行 jar 的模块
+
+		🔴 为什么没有 kaodian-common:抽不出来。唯一像共享基元的 AuthJsonFile 在自己的类注释里
+		写明了「刻意不下放给 collect/syllabus」——那两个包各只有一个 store,而 auth 有四个。
+		为了凑一个 common 模块去推翻那条已经写下理由的决定,是把模块数当成了目标。
+	-->
+	<modules>
+		<module>kaodian-domain</module>
+		<module>kaodian-auth</module>
+		<module>kaodian-agent</module>
+		<module>kaodian-app</module>
+	</modules>
+
 	<properties>
 		<java.version>21</java.version>
+		<!--
+			spring-ai 版本单点。docs/13 §三 的结论:2.0.1 GA 配 Boot 4.1.1,
+			【不引】spring-ai-alibaba(其 2.0.0-M1.1 在类加载期炸,R-50)。
+			DeepSeek / 百炼都提供 OpenAI 兼容端点,一个 starter 靠 base-url 覆盖两家。
+		-->
+		<spring-ai.version>2.0.1</spring-ai.version>
 	</properties>
-	<dependencies>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-validation</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-webmvc</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-json</artifactId>
-		</dependency>
 
+	<dependencyManagement>
+		<dependencies>
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-bom</artifactId>
+				<version>${spring-ai.version}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+			<dependency>
+				<groupId>com.kaodian</groupId>
+				<artifactId>kaodian-domain</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<!-- test-jar 是独立的 type,上面那条不覆盖它,要单列一条才有版本。 -->
+			<dependency>
+				<groupId>com.kaodian</groupId>
+				<artifactId>kaodian-domain</artifactId>
+				<version>${project.version}</version>
+				<type>test-jar</type>
+				<scope>test</scope>
+			</dependency>
+			<dependency>
+				<groupId>com.kaodian</groupId>
+				<artifactId>kaodian-auth</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>com.kaodian</groupId>
+				<artifactId>kaodian-agent</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
+
+	<dependencies>
+		<!-- 四个模块都要:lombok(编译期) + junit(测试)。放这里而不是各写一遍。 -->
 		<dependency>
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>
@@ -53,56 +99,31 @@
 			<artifactId>spring-boot-starter-validation-test</artifactId>
 			<scope>test</scope>
 		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-webmvc-test</artifactId>
-			<scope>test</scope>
-		</dependency>
 	</dependencies>
 
 	<build>
-		<plugins>
-			<plugin>
-				<groupId>org.springframework.boot</groupId>
-				<artifactId>spring-boot-maven-plugin</artifactId>
-			</plugin>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-compiler-plugin</artifactId>
-				<executions>
-					<execution>
-						<id>default-compile</id>
-						<phase>compile</phase>
-						<goals>
-							<goal>compile</goal>
-						</goals>
-						<configuration>
-							<annotationProcessorPaths>
-								<path>
-									<groupId>org.projectlombok</groupId>
-									<artifactId>lombok</artifactId>
-								</path>
-							</annotationProcessorPaths>
-						</configuration>
-					</execution>
-					<execution>
-						<id>default-testCompile</id>
-						<phase>test-compile</phase>
-						<goals>
-							<goal>testCompile</goal>
-						</goals>
-						<configuration>
-							<annotationProcessorPaths>
-								<path>
-									<groupId>org.projectlombok</groupId>
-									<artifactId>lombok</artifactId>
-								</path>
-							</annotationProcessorPaths>
-						</configuration>
-					</execution>
-				</executions>
-			</plugin>
-		</plugins>
+		<pluginManagement>
+			<plugins>
+				<!--
+					lombok 的 annotationProcessorPaths 配在 pluginManagement 里由四个模块继承。
+					Boot 4 的 parent 不会自动给 lombok 挂处理器路径,漏一个模块的表现是
+					该模块所有 @Data/@Builder 全部编译失败 —— 不会静默,但会浪费一次构建。
+				-->
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-compiler-plugin</artifactId>
+					<configuration>
+						<annotationProcessorPaths>
+							<path>
+								<groupId>org.projectlombok</groupId>
+								<artifactId>lombok</artifactId>
+								<version>${lombok.version}</version>
+							</path>
+						</annotationProcessorPaths>
+					</configuration>
+				</plugin>
+			</plugins>
+		</pluginManagement>
 	</build>
 
 </project>

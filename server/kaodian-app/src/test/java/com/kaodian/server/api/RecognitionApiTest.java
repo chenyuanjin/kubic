@@ -1,10 +1,13 @@
 package com.kaodian.server.api;
 
+import com.kaodian.server.api.record.RecognitionController;
+import com.kaodian.server.config.DomainBeans;
+import com.kaodian.server.coverage.CoverageReader;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
-import com.kaodian.server.api.dto.PhotoRecognitionRequest;
+import com.kaodian.server.api.dto.record.PhotoRecognitionRequest;
 import com.kaodian.server.collect.CandidateRecall;
 import com.kaodian.server.collect.InMemoryRecordTagStore;
 import com.kaodian.server.collect.RecordTag;
@@ -78,7 +81,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * 是<b>库里真的多了一行 {@code origin=auto}</b>。
  */
 @WebMvcTest(controllers = RecognitionController.class)
-@Import(ApiBeans.class)     // web 切片不扫 @Configuration,领域装配要显式带进来
+@Import(DomainBeans.class)     // web 切片不扫 @Configuration,领域装配要显式带进来
 class RecognitionApiTest {
 
     /** 这个来源名召回得出 6 个候选(见 {@code CandidateRecallTest}),所以模型真的会被调到。 */

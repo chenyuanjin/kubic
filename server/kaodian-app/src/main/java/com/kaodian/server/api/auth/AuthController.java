@@ -1,18 +1,34 @@
-package com.kaodian.server.api;
+package com.kaodian.server.api.auth;
 
-import com.kaodian.server.api.dto.BindPhoneRequest;
-import com.kaodian.server.api.dto.BindResponse;
-import com.kaodian.server.api.dto.BindWeChatRequest;
-import com.kaodian.server.api.dto.LoginResponse;
-import com.kaodian.server.api.dto.MergePreviewResponse;
-import com.kaodian.server.api.dto.MergeRequest;
-import com.kaodian.server.api.dto.RefreshResponse;
-import com.kaodian.server.api.dto.SmsSendRequest;
-import com.kaodian.server.api.dto.SmsSendResponse;
-import com.kaodian.server.api.dto.SmsVerifyRequest;
-import com.kaodian.server.api.dto.WeChatAuthorizeUrlResponse;
-import com.kaodian.server.api.dto.WeChatLoginRequest;
-import com.kaodian.server.api.dto.WeChatPhoneLoginRequest;
+import com.kaodian.server.api.support.ApiException;
+import com.kaodian.server.api.dto.auth.BindPhoneRequest;
+import com.kaodian.server.api.dto.auth.BindResponse;
+import com.kaodian.server.api.dto.auth.BindWeChatRequest;
+import com.kaodian.server.api.support.ClientIp;
+import com.kaodian.server.api.support.CurrentSession;
+import com.kaodian.server.api.dto.auth.LoginResponse;
+import com.kaodian.server.api.dto.auth.MergePreviewResponse;
+import com.kaodian.server.api.dto.auth.MergeRequest;
+import com.kaodian.server.api.dto.auth.RefreshResponse;
+import com.kaodian.server.api.dto.auth.SmsSendRequest;
+import com.kaodian.server.api.dto.auth.SmsSendResponse;
+import com.kaodian.server.api.dto.auth.SmsVerifyRequest;
+import com.kaodian.server.api.dto.auth.WeChatAuthorizeUrlResponse;
+import com.kaodian.server.api.dto.auth.WeChatLoginRequest;
+import com.kaodian.server.api.dto.auth.WeChatPhoneLoginRequest;
+import com.kaodian.server.api.dto.auth.BindPhoneRequest;
+import com.kaodian.server.api.dto.auth.BindResponse;
+import com.kaodian.server.api.dto.auth.BindWeChatRequest;
+import com.kaodian.server.api.dto.auth.LoginResponse;
+import com.kaodian.server.api.dto.auth.MergePreviewResponse;
+import com.kaodian.server.api.dto.auth.MergeRequest;
+import com.kaodian.server.api.dto.auth.RefreshResponse;
+import com.kaodian.server.api.dto.auth.SmsSendRequest;
+import com.kaodian.server.api.dto.auth.SmsSendResponse;
+import com.kaodian.server.api.dto.auth.SmsVerifyRequest;
+import com.kaodian.server.api.dto.auth.WeChatAuthorizeUrlResponse;
+import com.kaodian.server.api.dto.auth.WeChatLoginRequest;
+import com.kaodian.server.api.dto.auth.WeChatPhoneLoginRequest;
 import com.kaodian.server.auth.AccountMergeLog;
 import com.kaodian.server.auth.AccountService;
 import com.kaodian.server.auth.IdentityType;
@@ -189,7 +205,15 @@ public class AuthController {
     public WeChatAuthorizeUrlResponse authorizeUrl(@RequestParam String entry,
                                                    @RequestParam String redirectUri) {
         requireWeChatEnabled();
-        String state = states.issue();
+        String state;
+        try {
+            state = states.issue();
+        } catch (IllegalStateException e) {
+            // 429 而不是 500:这是频控,不是服务端出错。而这条端点不需要登录,
+            // 所以它是整个鉴权面上少数几个「任何人都能施压」的入口之一。
+            throw new ApiException(HttpStatus.TOO_MANY_REQUESTS, "WECHAT_AUTHORIZE_BUSY",
+                    "微信登录请求过于频繁,请稍后再试。");
+        }
         try {
             return new WeChatAuthorizeUrlResponse(
                     wechat.buildAuthorizeUrl(WeChatEntry.ofWireName(entry), redirectUri, state), state);
@@ -441,7 +465,8 @@ public class AuthController {
         try {
             return SmsPurpose.ofWireName(s);
         } catch (IllegalArgumentException e) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "BAD_PURPOSE", e.getMessage());
+            // 🔴 不能回 e.getMessage() —— 那条消息里带着用户原样输入的串,而它没有长度上限。
+            throw ApiException.unknownValue("BAD_PURPOSE", "验证码用途", s);
         }
     }
 
@@ -449,7 +474,7 @@ public class AuthController {
         try {
             return WeChatEntry.ofWireName(s);
         } catch (IllegalArgumentException e) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "WECHAT_ENTRY_INVALID", e.getMessage());
+            throw ApiException.unknownValue("WECHAT_ENTRY_INVALID", "微信入口", s);
         }
     }
 

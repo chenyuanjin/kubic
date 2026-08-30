@@ -46,7 +46,14 @@ A **decision record that has grown a working prototype**. Chinese-language Markd
 cd web && npm run lint             # oxlint
 cd web && npm run build            # tsc -b && vite build
 cd web && npm run test:boundary    # 能力边界文案扫描(R-05)
+./shell/build.sh                   # 桌面壳(macOS)。唯一允许的构建入口 —— 步骤 ①.1 校验 cargo 生效源,
+                                   # 绕过去会让依赖走公司私服(`R-111`,与 server/build.sh 拦的是同一件事)
 ```
+
+`shell/` 是 **Tauri 2 桌面壳,当前只有 macOS**:它把 `web/dist` 内嵌进二进制,自己起回环静态服务 + `/api` 反代,
+**`web/` 与 `server/` 零改动是它的约束**(`build.sh` 步骤 ③ 用 `git status` 当场校验,有 diff 就拒绝构建)。
+契约在 `docs/18`,端的完整矩阵在 `docs/19`。⚠️ **它没有 `[lib]` 目标,所以 iOS / Android 现在编不出来** ——
+Tauri 2 的移动端入口是 `lib.rs` 的 `run()`,不走 `main.rs`;移动端形态见 `docs/19` §规划 P2。
 
 `build.sh` requires `~/.m2/settings-side.xml` and refuses to run if it points at a private mirror or carries credentials. **Never bypass it.**
 
@@ -66,11 +73,10 @@ Current state (2026-08-28): the backend is **four Maven modules** with ~480 gree
 
 Read `00` before adding, moving, renumbering, or freezing any document. Its §六 is the action checklist; its §五 is the red line that forbids any template field, example, placeholder, or appendix capable of holding a question stem.
 
-Three things `00` records that are not obvious from the tree:
+Two things `00` records that are not obvious from the tree:
 
-- **Three documents live only on branches** and are invisible to a reader of the trunk — one of them (`19-多端选型与端矩阵`, on `KUBI-71`) has already overturned `10` §4.3/§4.4. See `00` §2.2.
-- **`docs/15` is a number collision** — the trunk's Agent 框架 and `KUBI-62`'s 壳技术方案 both claim it. See `00` §2.3.
-- **Which branch is the trunk is undecided** — `origin/HEAD` points at `main`, but `main` is 14 documents and 6,567 lines behind `v1`, and every `KUBI-*` branch forks from `v1`. See `00` §2.4-①.
+- **Which branch is the trunk is still undecided** 🔴 — `origin/HEAD` points at `main`, but `main` is 16 documents and 8,489 lines behind `v1`, and every `KUBI-*` branch forked from `v1`. `v1` is strictly ahead (`v1..main` is empty), so fast-forwarding `main` or repointing `origin/HEAD` are both decisions, not merges. See `00` §2.4-①. **This got sharper on 2026-08-30**: all seven `KUBI-*` branches were merged into `v1` and their refs deleted, so `v1` is now the only place that work exists — while the default branch still shows almost nothing.
+- **Two things `00` used to flag are now closed** — the `docs/15` number collision (shell design renumbered to `18`) and the three branch-only documents (all merged). The original entries are kept and marked ✅ rather than deleted; `00` §2.4 says why.
 
 **Never let the execution layer overwrite the decision layer.** `05` states it explicitly: "04 的关卡判据在这里一个字都不改." When new research contradicts a decision-layer document, record the correction downstream and annotate upstream — do not silently rewrite the original. Doc `04`'s cost table keeps its superseded ¥2,000 estimate with a pointer, exactly for this reason.
 

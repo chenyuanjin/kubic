@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this repository is
 
-A **decision record that has grown a working prototype**. Fifteen Chinese-language Markdown documents under `docs/` carry the reasoning; `server/` (Spring Boot 4.1.1 / Java 21) and `web/` (React 19 + Vite + Tailwind 4) carry the code. **The documents remain authoritative** — the code implements them, not the other way round.
+A **decision record that has grown a working prototype**. Chinese-language Markdown documents under `docs/` carry the reasoning; `server/` (Spring Boot 4.1.1 / Java 21) and `web/` (React 19 + Vite + Tailwind 4) carry the code. **The documents remain authoritative** — the code implements them, not the other way round. The document list, with each one's pipeline and the gate it serves, is `docs/00-文档规范与目录.md` — **never counted or enumerated here**.
 
 `files.zip` is a **stale backup of the original four documents only** (dated 2026-08-20). Ignore it; don't treat it as a source of truth or re-sync it unless asked.
 
@@ -60,40 +60,25 @@ Current state (2026-08-28): the backend is **four Maven modules** with ~480 gree
 
 **That last sentence is the point of the whole repository.** Everything else on this page is infrastructure around a hypothesis nobody has tested.
 
-## The fifteen documents: two layers
+## The documents
+
+🔴 **`docs/00-文档规范与目录.md` is the single source of truth for the document list.** Every document's pipeline (产品/合规/数据), the gate it serves, its layer, its status, and how staleness is judged live in `00` §二 — **and nowhere else**. This page used to carry a second copy of that list; it went stale (it said fifteen documents when there were sixteen, and `R-01…R-87` when the register had reached `R-105`). That is exactly the failure `00` exists to prevent. **Do not re-add a document table here** — add a row to `00` §二 instead.
+
+Read `00` before adding, moving, renumbering, or freezing any document. Its §六 is the action checklist; its §五 is the red line that forbids any template field, example, placeholder, or appendix capable of holding a question stem.
+
+Three things `00` records that are not obvious from the tree:
+
+- **Three documents live only on branches** and are invisible to a reader of the trunk — one of them (`19-多端选型与端矩阵`, on `KUBI-71`) has already overturned `10` §4.3/§4.4. See `00` §2.2.
+- **`docs/15` is a number collision** — the trunk's Agent 框架 and `KUBI-62`'s 壳技术方案 both claim it. See `00` §2.3.
+- **Which branch is the trunk is undecided** — `origin/HEAD` points at `main`, but `main` is 14 documents and 6,567 lines behind `v1`, and every `KUBI-*` branch forks from `v1`. See `00` §2.4-①.
 
 **Never let the execution layer overwrite the decision layer.** `05` states it explicitly: "04 的关卡判据在这里一个字都不改." When new research contradicts a decision-layer document, record the correction downstream and annotate upstream — do not silently rewrite the original. Doc `04`'s cost table keeps its superseded ¥2,000 estimate with a pointer, exactly for this reason.
-
-### Decision layer — what and why
-
-| File | Role | Consult when |
-|---|---|---|
-| `01-项目现状与决策记录.md` | Product definition, constraints, open problems, decision log | Any question about *what* is being built or *why* |
-| `02-已证伪方向与调研结论.md` | Six falsified directions with research data and cause of death | Before proposing any new direction — check it isn't already dead |
-| `03-思考模式与选择框架.md` | Selection framework + three documented reasoning blind spots | When evaluating a proposal or asked for a judgment call |
-| `04-实施路径.md` | Staged path with hard gates (关卡) and stop-loss lines | Sequencing, timeline, "what's next" |
 
 **02 exists to prevent re-proposing dead directions. 03 exists to prevent repeating the reasoning errors that produced them. 04 exists to force contact with real users instead of more product polish.** A change to 01's conclusion invalidates parts of all three.
 
 Doc 03 opens by arguing against itself ("框架能防止重复犯已犯过的错,不能帮你发现新东西"). Preserve that self-critical stance when editing — it is deliberate, not hedging.
 
-### Execution layer — how
-
-| File | Role |
-|---|---|
-| `05-执行清单.md` | Checklist form of `04`. Two blocks: 产品开发 (gate-governed) + 上线准备 (approval-governed) |
-| `06-阶段0至关卡2详细排期.md` | Week-by-week schedule to gate 2, with the workload math that decides whether stage 1 is feasible |
-| `07-数据线：骨架原料的获取与隔离.md` | The data track: acquiring syllabus raw material without becoming a piracy host |
-| `08-总路线图.md` | Parent/child todo tree across all three tracks + **the unified risk register `R-01`…`R-87`** |
-| `09-识别链路选型.md` | ASR / image-recognition vendor selection, pricing, compliance basis (as-of 2026-08) |
-| `10-技术架构与接口契约.md` | Layering, tables, interface signatures, the Step2 isolation red line (§1.3 = why `build.sh` exists) |
-| `11-商业化与额度设计.md` | Pricing and quota design (**gate 2 onward**) |
-| `12-基础数据：抓取范围与渠道.md` | 56 domains / 81 channels surveyed. Mostly a record of what **not** to scrape and why |
-| `13-后端系统设计与组件接入.md` | Call ordering, spring-ai wiring, login/SMS/WeChat gates. The layer under `10` |
-| `14-自动化交付工作流.md` | The Multica delivery pipeline: four gates, metadata contract, process norms (§九) |
-| `15-Agent框架与能力边界.md` | `kaodian-agent`: seven phases, tool levels, and **which of the three capability-boundary defenses is missing** (§四) |
-
-`08` is the aggregate view — `05`/`06`/`07` are its expansions, `09` is the evidence layer under `06`, `13` is the layer under `10`, `14` is the delivery infrastructure around all of it, and `15` documents the agent framework that grew outside the three tracks. **New risks go into `08` §四 with an `R-xx` id** (currently `R-01`…`R-87`), not into ad-hoc lists.
+`08` is the aggregate view — `05`/`06`/`07` are its expansions, `09` is the evidence layer under `06`, `13` is the layer under `10`, `14` is the delivery infrastructure around all of it. **New risks go into `08` §四 with an `R-xx` id**, not into ad-hoc lists — and the current highest id is read from `08`, never quoted here.
 
 ## Three tracks, three different clocks
 
@@ -158,6 +143,8 @@ Doc 03 §盲区二 documents the project's own failure mode: *attention flows to
 - **Unresolved items stay unresolved.** `01` §5 and `08` §四⚪ track them honestly (cold start, recording completeness, syllabus cold-start cost, 生成式 AI 登记). A plausible inference does not close one — `09` narrowed the AI-filing question but its entry still says "这是推理不是书面确认".
 
 ## Documentation conventions
+
+**Structure, numbering, source-of-truth, staleness, and the stem-field red line are all in `docs/00-文档规范与目录.md`.** What follows is style only.
 
 - **Documents are written in Chinese.** Match the surrounding register: dense, declarative, no filler.
 - Comparison tables for anything with more than two options; bold for the single load-bearing sentence in a section; `>` blockquote at the top of each file stating purpose and caveats.

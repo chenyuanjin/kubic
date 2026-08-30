@@ -464,12 +464,31 @@ export class RawImageCache {
    * 两种时长的行,那时「最早存的」和「最早该走的」不再是同一批,而该先走的显然是后者。
    */
   private async evictBeyondCap(keep: number): Promise<void> {
-    // 🔴 上限只管【活跃】那一段。归档的不参与淘汰 —— 归档就是「不自动删」的意思,
-    //    让上限去删归档,等于把刚改掉的行为从后门放回来。代价见 `R-105`(配额)。
-    const all = (await this.backend.listMeta()).filter((m) => !isArchived(m))
-    if (all.length <= keep) return
-    const doomed = [...all].sort((a, b) => a.expiresAt - b.expiresAt).slice(0, all.length - keep)
-    await this.backend.deleteMany(doomed.map((m) => m.id))
+    /* 🔴 R-106(2026-08-30 修):超出上限的也【归档】,不再 deleteMany。
+     *
+     * 上一版这里 filter 掉归档行之后对【活跃】行 deleteMany —— 本意是「别让上限
+     * 把归档删掉」,实际后果是把删除的对象整个调转了个方向:
+     *
+     *   过期的图          → 归档,永久保留
+     *   没过期但超上限的图 → 真删
+     *
+     * 用得越勤活图越容易被删,放着不管的过期图一张不走。而 8-29 决策的原话是
+     * 「到期不删、改为归档保留」——本意显然是「不要自动删用户的图」,
+     * 不是「把删除挪到另一条路上」。
+     *
+     * 所以现在整层【没有任何自动删除路径】:deleteMany 只服务于 forget/forgetAll,
+     * 也就是用户自己按的那一下。上限仍然有意义 —— 它限的是【活跃段】的条数
+     * (界面上列几张、倒计时显示几条),超出的进归档而不是进垃圾桶。
+     *
+     * 代价是归档只增不减,见 R-105(配额)。那条要等壳形态改存文件系统才根治。
+     */
+    const now = this.now()
+    const live = (await this.backend.listMeta()).filter((m) => !isArchived(m))
+    if (live.length <= keep) return
+    const overflow = [...live]
+      .sort((a, b) => a.expiresAt - b.expiresAt)
+      .slice(0, live.length - keep)
+    await this.backend.archive(overflow.map((m) => m.id), now)
   }
 }
 

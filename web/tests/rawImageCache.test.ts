@@ -369,18 +369,48 @@ test('立即删除:单张与全部,都是真删', async () => {
   assert.equal(backend.rows.size, 0)
 })
 
-test('条数上限:超了先删最早到期的那几张', async () => {
+test('🔴 R-106 条数上限:超了先【归档】最早到期的,不是删掉', async () => {
   const { backend, cache, clock } = setup({ ttlMs: 10 * HOUR, maxEntries: 3 })
 
-  const kept: string[] = []
+  const ids: string[] = []
   for (let i = 0; i < 5; i++) {
     const m = await cache.store({ blob: bytes(), label: `${i}.png` })
-    kept.push(m.id)
+    ids.push(m.id)
     clock.advance(1000) // 每张的 expiresAt 依次往后
   }
 
-  assert.equal(backend.rows.size, 3, '上限 3 就是 3')
-  assert.deepEqual([...backend.rows.keys()].sort(), kept.slice(2).sort(), '留下的应该是最后三张')
+  /* 全程时钟只走了 5 秒而 TTL 是 10 小时 —— 【一张都没过期】。
+     2026-08-30 之前这里断言 rows.size === 3,也就是两张【活图被真删】。
+     那是 8-29 改归档时的副作用:上限淘汰走的是另一条路,没跟着改。
+     现在超出上限的进归档,行还在、字节还在。 */
+  assert.equal(backend.rows.size, 5, '五行都还在 —— 上限不删行,只把超出的挪进归档')
+
+  const live = await cache.list()
+  assert.deepEqual(live.map((m) => m.id).sort(), ids.slice(2).sort(), '活跃段只剩最后三张')
+
+  const archived = await cache.listArchived()
+  assert.deepEqual(archived.map((m) => m.id).sort(), ids.slice(0, 2).sort(), '最早到期的两张进了归档')
+  for (const m of archived) assert.equal(typeof m.archivedAt, 'number')
+})
+
+test('🔴 R-106 整层不存在自动删除路径 —— deleteMany 只由用户手按触发', async () => {
+  const { backend, cache, clock } = setup({ ttlMs: HOUR, maxEntries: 2 })
+
+  // 同时制造两种「本来会被自动删」的情形:过期 + 超上限
+  const a = await cache.store({ blob: bytes(), label: 'a.png' })
+  clock.advance(2 * HOUR)                      // a 过期
+  const b = await cache.store({ blob: bytes(), label: 'b.png' })
+  const c = await cache.store({ blob: bytes(), label: 'c.png' })
+  const d = await cache.store({ blob: bytes(), label: 'd.png' })  // 触发上限淘汰
+
+  assert.equal(backend.rows.size, 4, '四行一个不少 —— 没有任何自动路径删过东西')
+  assert.equal(typeof backend.rows.get(a.id)?.archivedAt, 'number', '过期的 a 归档了')
+  assert.ok(await cache.read(a.id), '归档的仍读得出来')
+
+  // 只有用户按删才真删
+  await cache.forget(b.id)
+  assert.equal(backend.rows.size, 3, '用户按删 = 真删')
+  assert.ok(c.id && d.id)
 })
 
 /* ========================================================================== */

@@ -1,0 +1,47 @@
+{
+  "enabledPlugins": {
+    "tech-dept@ai-skills": false,
+    "live@ai-skills": false,
+    "zhibo@ai-skills": false,
+    "funny-share@ai-skills": false
+  },
+  "permissions": {
+    "deny": [
+      "Skill(dreamina)",
+      "Skill(fanqie-publish)",
+      "Skill(inkos)",
+      "Skill(remotion-best-practices)",
+      "Skill(skill-creator)",
+      "Skill(finance-blogger-digest)",
+      "Skill(finance-blogger-video)",
+      "Skill(finance-blogger-watch)",
+      "Skill(finance-blogger-youtube)",
+      "Skill(finance-daily)",
+      "Skill(finance-daily-v2)",
+      "Skill(finance-screener)",
+      "Skill(finance-stock-deep)",
+      "Skill(finance-weekly)",
+      "Skill(tech-dept:auto-bug-analysis)",
+      "Skill(tech-dept:doc-management)",
+      "Skill(tech-dept:doc-skill-writing)",
+      "Skill(tech-dept:fenbi-create-git-tag)",
+      "Skill(tech-dept:fenbi-design-doc)",
+      "Skill(tech-dept:fenbi-dev-plan-tracker)",
+      "Skill(tech-dept:fenbi-gerrit-submit)",
+      "Skill(tech-dept:fenbi-gitlab-workflow)",
+      "Skill(tech-dept:kbase-publish)",
+      "Skill(tech-dept:md-to-docx)",
+      "Skill(tech-dept:mermaid-to-image)",
+      "Skill(tech-dept:project-doc-init)",
+      "Skill(tech-dept:tori-test-deploy)",
+      "Skill(live:fenbi-gitlab-tori-migrate)",
+      "Skill(live:fenbi-live-coding-standard)",
+      "Skill(live:fenbi-live-jdk21-upgrade)",
+      "Skill(live:fenbi-live-troubleshoot)",
+      "Skill(live:fenbi-sentry-upgrade)",
+      "Skill(zhibo:fenbi-research-report)",
+      "Skill(funny-share:codex-task-cli-runtime)",
+      "Skill(funny-share:opencode-cli-runtime)"
+    ]
+  }
+}

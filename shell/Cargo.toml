@@ -1,0 +1,47 @@
+# 壳 —— 一个 crate,三端共用(docs/15 §4.1)。
+#
+# 依赖清单本身就是一条边界(docs/15 §六):
+#   · 不引任何模型 SDK       —— 调模型只允许在 server 的 recognize 包里(docs/13 §二)
+#   · 不引任何崩溃上报 / 遥测 —— 它会把数据送出这台机器,而红线的原话是「只存在他自己的机器上」
+# 这两条由 build.sh 步骤 ① 的依赖黑名单在构建期扫 Cargo.lock,不靠这段注释。
+#
+# 还有一条【故意不由脚本兜底】:
+#   · 现在整棵依赖树里没有任何 TLS 栈(rustls / native-tls / openssl / ring 一个都没有,
+#     `grep -E '^name = "(rustls|native-tls|openssl|ring)"' Cargo.lock` 为空)。
+#     回环段不做本地 TLS(docs/15 §3.6),线上上游那一段还没到(见 README「与契约不一致的地方」)。
+#     引 TLS 是一次要回 docs/15 改文档的决定,不是顺手加一行依赖。
+#     不设黑名单拦死它,是因为拦死之后下一个人会去绕过脚本,而不是回去改文档。
+[package]
+name = "kaodian-shell"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.77"
+description = "考点盲区 · 壳"
+publish = false
+
+[lib]
+# 移动端(tauri android/ios)把整个应用当成一个 cdylib 加载,
+# 桌面端走 src/main.rs。两条入口共用同一个 run(),不是两份装配。
+name = "kaodian_shell_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tokio = { version = "1", default-features = false, features = ["rt-multi-thread", "net", "macros", "io-util", "time", "sync"] }
+hyper = { version = "1", default-features = false, features = ["http1", "server", "client"] }
+hyper-util = { version = "0.1", default-features = false, features = ["tokio", "server", "client", "client-legacy", "http1"] }
+http-body-util = "0.1"
+bytes = "1"
+include_dir = "0.7"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[features]
+# 见 docs/15 §2.3:beforeBuildCommand 留空,产物由 build.sh 保证已经构建好。
+default = []
+
+[profile.release]
+strip = true

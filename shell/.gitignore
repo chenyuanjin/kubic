@@ -1,0 +1,8 @@
+# tauri android/ios init 的生成物。不进仓库(docs/15 §2.4)——
+# 它是从 tauri.conf.json 推出来的,进了仓库就有了第二份事实,
+# 而两份事实迟早会说不一样的话。重新生成:./build.sh android / ios
+/gen/
+/target/
+
+# 图标由 ./scripts/make-icons.sh 从 web/public/favicon.svg 生成,同上:不进仓库。
+/icons/

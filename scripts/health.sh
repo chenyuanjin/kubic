@@ -21,7 +21,10 @@ STATE_FILE="${TMPDIR:-/tmp}/kaodian-health-last.txt"
 BUF=""
 
 say(){ [[ $TERSE == 0 ]] && printf '  %s\n' "$*"; }
-alert(){ BUF="${BUF}⚠ $*"$'\n'; bad=1; }
+# $1=种类(去重键) 其余=正文
+# $1=种类(去重键) 其余=正文。分隔符用真制表符($'\t'),
+# 双引号里的 \t 是字面量两个字符,bash 不解释 —— 踩过。
+alert(){ local k="$1"; shift; BUF="${BUF}${k}"$'\t'"⚠ $*"$'\n'; bad=1; }
 
 # ① 本地 vs 远端分叉 —— 8-29 攒了 20 个未推提交,所有 agent 在不存在的仓库上工作
 git fetch origin -q 2>/dev/null
@@ -29,15 +32,15 @@ B=$(git branch --show-current)
 ahead=$(git rev-list --count "origin/$B..$B" 2>/dev/null || echo '?')
 behind=$(git rev-list --count "$B..origin/$B" 2>/dev/null || echo '?')
 if [[ "$ahead" == "0" && "$behind" == "0" ]]; then say "git $B 与 origin 同步"
-else alert "git $B 领先 origin $ahead 个、落后 $behind 个 —— agent 会在错误基线上工作"; fi
+else alert sync "git $B 领先 origin $ahead 个、落后 $behind 个 —— agent 会在错误基线上工作"; fi
 
 # ② 未提交改动堆积
 dirty=$(git status --porcelain | wc -l | tr -d ' ')
-[[ "$dirty" -gt 20 ]] && alert "工作区 $dirty 个未提交改动" || say "工作区 $dirty 个未提交改动"
+[[ "$dirty" -gt 20 ]] && alert dirty "工作区 $dirty 个未提交改动" || say "工作区 $dirty 个未提交改动"
 
 # ③ 带宽被占 —— Android SDK 下载曾把 GitHub 拖到 5.8s,影响所有人
 hog=$(ps aux | grep -iE "sdkmanager|gradle.*download" | grep -v grep | wc -l | tr -d ' ')
-[[ "$hog" -gt 0 ]] && alert "有 $hog 个疑似占带宽的下载进程在跑" || say "无占带宽进程"
+[[ "$hog" -gt 0 ]] && alert hog "有 $hog 个疑似占带宽的下载进程在跑" || say "无占带宽进程"
 # 慢要分辨是【本机带宽被占】还是【到 GitHub 的线路劣化】——处置完全不同:
 # 前者杀进程,后者只能等或换路。2026-08-30 误报过一次「疑似带宽被占」,
 # 实测 github 12s 而 api.github.com / npm / 百度都 1-3s,是 GitHub 专属劣化。
@@ -45,9 +48,9 @@ gh_t=$(curl -s -o /dev/null -w '%{time_total}' -m 25 https://github.com 2>/dev/n
 if awk -v t="$gh_t" 'BEGIN{exit !(t>8)}'; then
   ref_t=$(curl -s -o /dev/null -w '%{time_total}' -m 15 https://www.baidu.com 2>/dev/null || echo 99)
   if awk -v r="$ref_t" 'BEGIN{exit !(r>5)}'; then
-    alert "整体网络慢:github ${gh_t}s / 参照 ${ref_t}s —— 查本机是否有下载占带宽"
+    alert net "整体网络慢:github ${gh_t}s / 参照 ${ref_t}s —— 查本机是否有下载占带宽"
   else
-    alert "GitHub 线路劣化:github ${gh_t}s 而参照点 ${ref_t}s 正常 —— 非本机问题,git 操作会很慢"
+    alert net "GitHub 线路劣化:github ${gh_t}s 而参照点 ${ref_t}s 正常 —— 非本机问题,git 操作会很慢"
   fi
 else say "GitHub ${gh_t}s"; fi
 
@@ -55,11 +58,11 @@ else say "GitHub ${gh_t}s"; fi
 if curl -s -m 8 http://127.0.0.1:20226/health 2>/dev/null | grep -q '"status":"running"'; then
   running=$(curl -s -m 8 http://127.0.0.1:20226/health | python3 -c "import sys,json;print(json.load(sys.stdin).get('running_task_count',0))" 2>/dev/null)
   say "multica 守护进程 running,在跑任务 $running"
-else alert "multica 守护进程不可达"; fi
+else alert daemon "multica 守护进程不可达"; fi
 # 认证:重试一次再判,且看【实际能力】不看状态文案 ——
 # 单次网络抖动不该报成「认证失效」(2026-08-30 误报一次)
 if [[ ! -x "$MULTICA" ]]; then
-  alert "找不到 multica 可执行文件($MULTICA)—— 这是【检查工具缺失】,不是认证问题"
+  alert tool "找不到 multica 可执行文件($MULTICA)—— 这是【检查工具缺失】,不是认证问题"
 else
   auth_ok=0; auth_out=""
   for _ in 1 2; do
@@ -69,9 +72,9 @@ else
   done
   if [[ $auth_ok == 1 ]]; then say "multica 已认证"
   elif printf '%s' "$auth_out" | grep -qi "invalid token\|expired\|401"; then
-    alert "multica 认证【确实失效】:$(printf '%s' "$auth_out" | head -1)"
+    alert auth "multica 认证【确实失效】:$(printf '%s' "$auth_out" | head -1)"
   else
-    alert "multica auth 读不出用户(非典型失败,原样):$(printf '%s' "$auth_out" | head -1)"
+    alert auth "multica auth 读不出用户(非典型失败,原样):$(printf '%s' "$auth_out" | head -1)"
   fi
 fi
 
@@ -93,8 +96,8 @@ except Exception: print(-1); raise SystemExit
 rows=d if isinstance(d,list) else next((v for v in d.values() if isinstance(v,list)),[])
 print(sum(1 for r in rows if r.get('status')=='blocked'))" 2>/dev/null || echo -1)
 fi
-if [[ "$blocked" == "-1" ]]; then alert "读不到议题列表(已重试)"
-elif [[ "$blocked" -gt 3 ]]; then alert "$blocked 条议题 blocked —— 有人在等人裁"
+if [[ "$blocked" == "-1" ]]; then alert issue "读不到议题列表(已重试)"
+elif [[ "$blocked" -gt 3 ]]; then alert issue "$blocked 条议题 blocked —— 有人在等人裁"
 else say "blocked 议题 $blocked 条"; fi
 
 # ⑥ 闸门 —— 只推可运行的代码,先确认它还能跑
@@ -104,32 +107,46 @@ else say "blocked 议题 $blocked 条"; fi
 NPM="$(command -v npm || true)"
 gate(){ # $1=脚本名 $2=人话 $3=红线号
   if [[ -z "$NPM" ]]; then
-    alert "跑不了 $2:找不到 npm —— 这是【检查环境缺失】,不是 $3 失守"; return
+    alert "gate-$3" "跑不了 $2:找不到 npm —— 这是【检查环境缺失】,不是 $3 失守"; return
   fi
   local out rc
   out=$(cd web && "$NPM" run "$1" 2>&1); rc=$?
   if [[ $rc == 0 ]]; then say "$2 通过"; return; fi
   if printf '%s' "$out" | grep -qiE "command not found|ENOENT|Missing script|cannot find module"; then
-    alert "跑不了 $2(环境问题,非 $3 失守):$(printf '%s' "$out" | grep -iE 'command not found|ENOENT|Missing script|cannot find module' | head -1)"
+    alert "gate-$3" "跑不了 $2(环境问题,非 $3 失守):$(printf '%s' "$out" | grep -iE 'command not found|ENOENT|Missing script|cannot find module' | head -1)"
   else
-    alert "$2【失败】—— $3 失守:$(printf '%s' "$out" | tail -3 | tr '\n' ' ' | cut -c1-160)"
+    alert "gate-$3" "$2【失败】—— $3 失守:$(printf '%s' "$out" | tail -3 | tr '\n' ' ' | cut -c1-160)"
   fi
 }
 gate test:boundary "能力边界扫描" "R-05"
 gate test:retention "原图留存测试" "R-04"
 
-# 输出与去重
+# 输出与去重 —— 按种类各自去重。
+# 整体指纹去重有缺陷:某条在阈值上下抖动时,告警集合在 {a} 与 {a,b} 之间来回,
+# 每次都算「新状态」,那条稳定的告警被反复重播。按种类比对才不抖。
+# 实现注意两点(都踩过):
+#   · macOS 自带 bash 3.2 没有 declare -A,用文件 + comm
+#   · 管道会开子 shell,while 里读不到外层变量 —— 先把 BUF 落到临时文件再处理
+BUFF="$(mktemp)"; NOW="$(mktemp)"
+trap 'rm -f "$BUFF" "$NOW"' EXIT
+printf '%s' "$BUF" > "$BUFF"
+
 if [[ $TERSE == 1 ]]; then
-  # 用「告警指纹」比对:数字会变(响应秒数),所以剥掉数字再比
-  fp=$(printf '%s' "$BUF" | sed -E 's/[0-9]+([.][0-9]+)?//g')
-  last=$(cat "$STATE_FILE" 2>/dev/null || true)
-  if [[ "$fp" != "$last" ]]; then
-    printf '%s' "$BUF"
-    [[ -z "$BUF" && -n "$last" ]] && echo "✓ 之前的告警已消失,恢复正常"
-    printf '%s' "$fp" > "$STATE_FILE"
+  awk -F'\t' 'NF>1{gsub(/[0-9]+(\.[0-9]+)?/,"",$2); print $1"\t"$2}' "$BUFF" | sort -u > "$NOW"
+  [[ -f "$STATE_FILE" ]] || : > "$STATE_FILE"
+  changed="$(comm -23 "$NOW" <(sort -u "$STATE_FILE") | cut -f1)"
+  if [[ -n "$changed" ]]; then
+    while IFS=$'\t' read -r k line; do
+      [[ -n "$k" ]] && printf '%s\n' "$changed" | grep -qx -- "$k" && printf '%s\n' "$line"
+    done < "$BUFF"
   fi
+  gone="$(comm -13 <(cut -f1 "$NOW" | sort -u) <(cut -f1 "$STATE_FILE" | sort -u))"
+  [[ -n "$gone" ]] && while read -r k; do
+    [[ -n "$k" ]] && echo "✓ 已恢复正常:$k"
+  done <<< "$gone"
+  cp "$NOW" "$STATE_FILE"
 else
-  printf '%s' "$BUF"
+  cut -f2- "$BUFF"
   [[ $bad == 0 ]] && echo "  ✓ 全部正常"
 fi
 exit $bad

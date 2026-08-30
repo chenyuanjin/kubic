@@ -1,0 +1,716 @@
+<title>九端跨平台选型手册</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap">
+
+<style>
+:root{
+  --bg:#F2F5F5;
+  --surface:#FFFFFF;
+  --surface-2:#E9EEEE;
+  --line:#D2DBDB;
+  --line-soft:#E3EAEA;
+  --ink:#0F1A1C;
+  --ink-2:#3B4A4D;
+  --ink-3:#6B7A7D;
+  --accent:#0B6E68;
+  --accent-soft:#DCEFEC;
+  --ok:#2F6B36;
+  --ok-soft:#DFEEDF;
+  --warn:#8A5A00;
+  --warn-soft:#F6E9CE;
+  --bad:#A32720;
+  --bad-soft:#F6DFDD;
+  --anti:#96234F;
+  --grid:rgba(15,26,28,.07);
+
+  --f-display:"Archivo","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+  --f-body:"PingFang SC","Hiragino Sans GB","Source Han Sans SC","Noto Sans SC","Microsoft YaHei",-apple-system,system-ui,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0B1213;
+    --surface:#121B1D;
+    --surface-2:#182325;
+    --line:#2A3739;
+    --line-soft:#1E2A2C;
+    --ink:#E4EDEE;
+    --ink-2:#AEBDBF;
+    --ink-3:#7C8B8D;
+    --accent:#3FCFBF;
+    --accent-soft:#0F2E2B;
+    --ok:#79C97F;
+    --ok-soft:#162C19;
+    --warn:#DCA83F;
+    --warn-soft:#2E2311;
+    --bad:#E8756B;
+    --bad-soft:#331917;
+    --anti:#E8749F;
+    --grid:rgba(228,237,238,.06);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0B1213;
+  --surface:#121B1D;
+  --surface-2:#182325;
+  --line:#2A3739;
+  --line-soft:#1E2A2C;
+  --ink:#E4EDEE;
+  --ink-2:#AEBDBF;
+  --ink-3:#7C8B8D;
+  --accent:#3FCFBF;
+  --accent-soft:#0F2E2B;
+  --ok:#79C97F;
+  --ok-soft:#162C19;
+  --warn:#DCA83F;
+  --warn-soft:#2E2311;
+  --bad:#E8756B;
+  --bad-soft:#331917;
+  --anti:#E8749F;
+  --grid:rgba(228,237,238,.06);
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--ink);
+  font-family:var(--f-body);
+  font-size:15.5px;
+  line-height:1.75;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1180px;margin:0 auto;padding:0 24px 120px}
+
+/* ---------- masthead ---------- */
+.mast{
+  border-bottom:1px solid var(--line);
+  padding:56px 0 28px;
+  margin-bottom:44px;
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:28px 28px;
+  background-position:0 -1px;
+}
+.mast-inner{max-width:1180px;margin:0 auto;padding:0 24px}
+.eyebrow{
+  font-family:var(--f-mono);font-size:11px;font-weight:500;
+  letter-spacing:.16em;text-transform:uppercase;color:var(--accent);
+  display:flex;gap:14px;flex-wrap:wrap;align-items:center;
+}
+.eyebrow span{color:var(--ink-3)}
+h1{
+  font-family:var(--f-display);font-weight:700;
+  font-size:clamp(34px,5.2vw,58px);line-height:1.05;letter-spacing:-.02em;
+  margin:16px 0 14px;text-wrap:balance;
+}
+.dek{font-size:17px;color:var(--ink-2);max-width:62ch;margin:0}
+.targets{display:flex;flex-wrap:wrap;gap:6px;margin-top:26px}
+.targets b{
+  font-family:var(--f-mono);font-size:11px;font-weight:500;letter-spacing:.04em;
+  padding:4px 9px;border:1px solid var(--line);border-radius:2px;
+  color:var(--ink-2);background:var(--surface);
+}
+
+/* ---------- layout ---------- */
+.cols{display:grid;grid-template-columns:186px minmax(0,1fr);gap:56px;align-items:start}
+@media(max-width:900px){.cols{grid-template-columns:1fr;gap:0}nav.toc{display:none}}
+
+nav.toc{position:sticky;top:24px;font-family:var(--f-mono);font-size:11.5px;line-height:1.5}
+nav.toc div{color:var(--ink-3);letter-spacing:.14em;text-transform:uppercase;font-size:10px;margin-bottom:12px}
+nav.toc a{
+  display:grid;grid-template-columns:22px 1fr;gap:4px;
+  color:var(--ink-2);text-decoration:none;padding:5px 0;
+  border-top:1px solid var(--line-soft);
+}
+nav.toc a:hover,nav.toc a:focus-visible{color:var(--accent)}
+nav.toc a i{font-style:normal;color:var(--ink-3)}
+
+/* ---------- sections ---------- */
+section{margin-bottom:72px;scroll-margin-top:20px}
+h2{
+  font-family:var(--f-display);font-weight:700;font-size:26px;letter-spacing:-.01em;
+  margin:0 0 6px;display:flex;align-items:baseline;gap:12px;text-wrap:balance;
+}
+h2 i{font-family:var(--f-mono);font-style:normal;font-size:12px;font-weight:500;color:var(--accent);letter-spacing:.08em}
+.sub{color:var(--ink-3);font-size:14px;margin:0 0 26px;padding-bottom:14px;border-bottom:1px solid var(--line)}
+h3{font-family:var(--f-display);font-weight:600;font-size:17.5px;margin:36px 0 10px;letter-spacing:-.005em}
+h4{font-family:var(--f-mono);font-weight:700;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);margin:26px 0 8px}
+p{margin:0 0 14px;max-width:74ch}
+a{color:var(--accent)}
+strong{font-weight:600;color:var(--ink)}
+code{font-family:var(--f-mono);font-size:.87em;background:var(--surface-2);padding:1px 5px;border-radius:2px;color:var(--ink-2)}
+
+ul{margin:0 0 16px;padding-left:20px;max-width:74ch}
+li{margin-bottom:7px}
+li::marker{color:var(--accent)}
+
+/* ---------- verdict chips ---------- */
+.chip{
+  font-family:var(--f-mono);font-size:10.5px;font-weight:700;letter-spacing:.09em;
+  text-transform:uppercase;padding:3px 8px;border-radius:2px;white-space:nowrap;
+  display:inline-block;vertical-align:middle;
+}
+.c-ok{background:var(--ok-soft);color:var(--ok)}
+.c-warn{background:var(--warn-soft);color:var(--warn)}
+.c-bad{background:var(--bad-soft);color:var(--bad)}
+.c-acc{background:var(--accent-soft);color:var(--accent)}
+
+/* ---------- datasheet cards ---------- */
+.sheet{
+  background:var(--surface);border:1px solid var(--line);border-radius:3px;
+  padding:20px 22px;margin-bottom:14px;
+}
+.sheet-head{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:4px}
+.sheet-head h3{margin:0;font-size:19px}
+.ver{font-family:var(--f-mono);font-size:11.5px;color:var(--ink-3)}
+.verdict{
+  font-family:var(--f-mono);font-size:12.5px;line-height:1.6;color:var(--ink-2);
+  border-left:2px solid var(--accent);padding-left:12px;margin:12px 0 14px;
+}
+.sheet p{font-size:14.5px;margin-bottom:10px}
+.sheet ul{font-size:14.5px}
+
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:1px;background:var(--line-soft);border:1px solid var(--line-soft);margin:14px 0}
+.facts div{background:var(--surface);padding:9px 11px}
+.facts dt{font-family:var(--f-mono);font-size:9.5px;letter-spacing:.11em;text-transform:uppercase;color:var(--ink-3);margin-bottom:3px}
+.facts dd{margin:0;font-size:13px;line-height:1.45;color:var(--ink)}
+
+/* ---------- coverage dots ---------- */
+.cov{display:flex;gap:3px;align-items:center;flex-wrap:wrap;margin:10px 0 2px}
+.cov b{
+  font-family:var(--f-mono);font-size:9px;font-weight:500;letter-spacing:.02em;
+  width:34px;height:20px;display:grid;place-items:center;border-radius:2px;
+  border:1px solid var(--line);color:var(--ink-3);background:var(--surface-2);
+}
+.cov b.y{background:var(--accent);border-color:var(--accent);color:var(--bg)}
+.cov b.h{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
+.cov b.n{opacity:.42}
+.cov-key{font-family:var(--f-mono);font-size:10.5px;color:var(--ink-3);margin-left:6px}
+
+/* ---------- tables ---------- */
+.scroll{overflow-x:auto;border:1px solid var(--line);border-radius:3px;margin:18px 0 22px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:13.2px;min-width:660px}
+th,td{padding:9px 12px;text-align:left;vertical-align:top;border-bottom:1px solid var(--line-soft)}
+thead th{
+  font-family:var(--f-mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--ink-3);font-weight:500;background:var(--surface-2);white-space:nowrap;
+  position:sticky;top:0;
+}
+tbody tr:last-child td{border-bottom:none}
+td:first-child{font-weight:600;white-space:nowrap}
+.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-size:12.5px}
+table.matrix td:not(:first-child){text-align:center;font-family:var(--f-mono);font-size:12px}
+.y{color:var(--accent);font-weight:700}
+.h{color:var(--warn)}
+.n{color:var(--ink-3);opacity:.5}
+
+/* ---------- callouts ---------- */
+.note{
+  border:1px solid var(--line);border-left:3px solid var(--accent);
+  background:var(--surface);padding:14px 18px;margin:20px 0;border-radius:0 3px 3px 0;
+}
+.note.anti{border-left-color:var(--anti)}
+.note.warnx{border-left-color:var(--warn)}
+.note p:last-child{margin-bottom:0}
+.note h4{margin-top:0}
+
+.quote{
+  font-family:var(--f-mono);font-size:13px;line-height:1.65;color:var(--ink-2);
+  border-left:2px solid var(--line);padding-left:14px;margin:14px 0;max-width:70ch;
+}
+.quote cite{display:block;font-style:normal;font-size:11px;color:var(--ink-3);margin-top:6px}
+
+/* ---------- combo cards ---------- */
+.combos{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px;margin:20px 0}
+.combo{background:var(--surface);border:1px solid var(--line);border-radius:3px;padding:18px 20px}
+.combo h3{margin:0 0 4px;font-size:16px}
+.combo .who{font-family:var(--f-mono);font-size:11px;color:var(--ink-3);margin-bottom:12px;letter-spacing:.02em}
+.stackrow{display:grid;grid-template-columns:58px 1fr;gap:8px;font-size:13px;padding:6px 0;border-top:1px solid var(--line-soft)}
+.stackrow em{font-family:var(--f-mono);font-style:normal;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);padding-top:3px}
+
+/* ---------- hard boundary list ---------- */
+.hard{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:1px;background:var(--line-soft);border:1px solid var(--line-soft);margin:20px 0}
+.hard div{background:var(--surface);padding:14px 16px}
+.hard h4{margin:0 0 5px;color:var(--anti)}
+.hard p{font-size:13.5px;margin:0;color:var(--ink-2)}
+
+footer{border-top:1px solid var(--line);margin-top:20px;padding-top:24px;font-family:var(--f-mono);font-size:11.5px;color:var(--ink-3);line-height:1.7}
+footer a{color:var(--ink-3)}
+a:focus-visible,b:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}}
+</style>
+
+<div class="mast">
+  <div class="mast-inner">
+    <div class="eyebrow">技术选型调研 <span>2026-08-30</span> <span>Windows · Linux · macOS · Web · Android · iOS · 鸿蒙 · 小程序 · H5</span></div>
+    <h1>九端跨平台选型手册</h1>
+    <p class="dek">九个交付目标，没有任何一个框架能全覆盖。这份手册按「共享什么」而不是「用哪个框架」来组织，并明确标出哪些地方跨端会直接伤害体验——那些地方应该写原生。</p>
+    <div class="targets">
+      <b>Windows</b><b>Linux</b><b>macOS</b><b>Web</b><b>Android</b><b>iOS</b><b>HarmonyOS</b><b>小程序</b><b>H5</b>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+<div class="cols">
+
+<nav class="toc">
+  <div>目录</div>
+  <a href="#s0"><i>00</i><span>三条结论</span></a>
+  <a href="#s1"><i>01</i><span>先分清三种跨端</span></a>
+  <a href="#s2"><i>02</i><span>桌面 + Web</span></a>
+  <a href="#s3"><i>03</i><span>Android / iOS</span></a>
+  <a href="#s4"><i>04</i><span>鸿蒙</span></a>
+  <a href="#s5"><i>05</i><span>小程序 + H5</span></a>
+  <a href="#s6"><i>06</i><span>九端覆盖矩阵</span></a>
+  <a href="#s7"><i>07</i><span>四套组合</span></a>
+  <a href="#s8"><i>08</i><span>不要跨端的地方</span></a>
+  <a href="#s9"><i>09</i><span>排雷与数据缺口</span></a>
+</nav>
+
+<main>
+
+<!-- ============ 00 ============ -->
+<section id="s0">
+  <h2><i>00</i>三条结论</h2>
+  <p class="sub">如果只看一屏，看这里。</p>
+
+  <div class="sheet">
+    <div class="sheet-head"><h3>一 · 九端没有单一答案，最少要两套栈</h3></div>
+    <p>桌面三端 + Web 是一个技术域（WebView / 自绘 / 原生控件），移动 + 鸿蒙是第二个域，小程序是第三个<strong>被沙箱隔离的</strong>域。小程序不交出渲染树、不交出 JS 引擎句柄、禁止 <code>eval</code>、逻辑层没有 <code>document</code>——这四条决定了 <strong>React Native 和 Flutter 在物理上编译不到小程序</strong>。任何号称「一套代码九端」的方案，要么在小程序端换了另一套运行时，要么在骗你。</p>
+  </div>
+
+  <div class="sheet">
+    <div class="sheet-head"><h3>二 · 2026 年最大的选型变量是治理，不是性能</h3></div>
+    <p>三大框架的归属在过去 18 个月同时重构了：React Native <strong>已不归 Meta</strong>，转入 Linux Foundation 托管的 React Foundation（八家白金创始成员含微软、亚马逊、<strong>华为</strong>）；Flutter Desktop 的 lead maintainer <strong>由 Google 交给了 Canonical</strong>；Material/Cupertino 正被拆出 Flutter SDK。做五年期押注时，这比任何 benchmark 都重要。</p>
+  </div>
+
+  <div class="sheet">
+    <div class="sheet-head"><h3>三 · 「100% 跨端」应当是反目标</h3></div>
+    <p>这句话出自把全部 App 迁到 React Native 的 Shopify 自己。桌面小组件、Live Activity、Apple Watch、App Intents、后台长任务、持续 BLE、端上 AI 模型——这些在所有跨端方案里都必须写原生。正确的问法是 native <strong>and</strong> cross-platform，不是 native <strong>or</strong> cross-platform。</p>
+    <div class="quote">“100% React Native should be an anti-goal.”<cite>Shopify Engineering，2025-01，全量迁移 RN 五年复盘</cite></div>
+  </div>
+</section>
+
+<!-- ============ 01 ============ -->
+<section id="s1">
+  <h2><i>01</i>先分清三种「跨端」</h2>
+  <p class="sub">同一个词指着三件成本、风险、体验上限完全不同的事。混谈是选型翻车的头号原因。</p>
+
+  <div class="scroll">
+  <table>
+    <thead><tr><th>路线</th><th>做法</th><th>体验上限</th><th>典型代表</th><th>风险结构</th></tr></thead>
+    <tbody>
+      <tr><td>只共享逻辑</td><td>网络 / 数据 / 状态 / 加密跨端，UI 各写各的</td><td class="y">= 原生</td><td>KMP、Rust+UniFFI、C++</td><td>最低。Google 官方只背书这一档</td></tr>
+      <tr><td>映射原生控件</td><td>跨端框架描述 UI，最终 mount 到系统组件</td><td>接近原生，<strong>系统换皮自动跟随</strong></td><td>React Native、Lynx、.NET MAUI</td><td>中。受制于两端控件差异</td></tr>
+      <tr><td>自绘</td><td>自带渲染引擎把界面画到一块画布上</td><td>像素级一致，但<strong>永远在追系统设计语言</strong></td><td>Flutter、Compose MP、Avalonia、Qt</td><td>中高。iOS 设计语言是结构性债</td></tr>
+      <tr><td>WebView 容器</td><td>系统 WebView 跑 Web 应用 + 原生桥</td><td>受 WebView 能力硬顶</td><td>Capacitor、Tauri、Electron</td><td>低（技术）/ 高（体验天花板）</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="note warnx">
+    <h4>2026 年新出现的结构性差距</h4>
+    <p>自绘路线跟不上 Apple 年度设计语言，<strong>这一次是两家厂商在官方材料里同时承认的</strong>。Flutter 2026 Q2 官方调查里 Cupertino widgets 满意度 <span class="num">61%</span>，全项最低、跌幅最大；Google 原文承认 “Flutter's promise of native-feeling apps hadn't kept pace specifically for iOS-style design”，Liquid Glass 要等 Material/Cupertino 解耦完成后才能开始追。JetBrains 的官方文档更直接：要在 Compose Multiplatform 里用上 Liquid Glass，<strong>“you need a native SwiftUI shell”</strong>——Compose 侧渲染不出来。</p>
+    <p>映射原生控件的路线（RN / Lynx / MAUI）在这一点上结构性占优：它们的 <code>TabView</code>、<code>NavigationStack</code>、toolbar 本身就是系统组件。</p>
+  </div>
+</section>
+
+<!-- ============ 02 ============ -->
+<section id="s2">
+  <h2><i>02</i>桌面三端 + Web</h2>
+  <p class="sub">Windows / Linux / macOS 的真实分歧点是 Linux，以及「要不要 Web」。</p>
+
+  <div class="sheet">
+    <div class="sheet-head"><h3>Electron</h3><span class="ver">v44 · Chromium M152 / Node 24</span><span class="chip c-ok">三端一致的默认答案</span></div>
+    <div class="cov"><b class="y">Win</b><b class="y">Lin</b><b class="y">mac</b><b class="h">Web</b><b class="n">And</b><b class="n">iOS</b><b class="n">鸿蒙</b><b class="n">小程序</b><b class="n">H5</b><span class="cov-key">前端代码可复用到 Web，外壳不可</span></div>
+    <p>自带 Chromium，所以三端渲染<strong>完全一致</strong>——这是它唯一但极其值钱的卖点，也是设计工具、富文本编辑器、协作白板离不开它的原因。VS Code、Slack、Discord、Notion、Figma 桌面版、Claude 桌面版都是它。</p>
+    <p><strong>最被低估的长期成本</strong>：8 周一个大版本、只跟 Chromium 双数版本、<strong>只有最新 3 个 major 有安全支持</strong>。等于每年必须做 6 次 Chromium 大版本升级回归，否则 8 个月内就跑在无安全补丁的 Chromium 上。团队要为此常备人力。</p>
+    <div class="verdict">别用于：多窗口/多实例工具（每个实例是一整套 Chromium，内存线性叠加）、低配老旧终端（工厂 / POS / 车载）、体积敏感的内网批量分发。</div>
+  </div>
+
+  <div class="sheet">
+    <div class="sheet-head"><h3>Tauri</h3><span class="ver">2.11.5 · 2026-07</span><span class="chip c-warn">Windows/macOS 优先时才选</span></div>
+    <div class="cov"><b class="y">Win</b><b class="h">Lin</b><b class="y">mac</b><b class="h">Web</b><b class="h">And</b><b class="h">iOS</b><b class="n">鸿蒙</b><b class="n">小程序</b><b class="n">H5</b></div>
+    <p>体积和内存确实是 Electron 的零头（3–15 MB vs 80–200 MB 量级），Rust 后端的能力/权限模型（capability + permission + scope）比 Electron 的 <code>contextIsolation</code> 细得多。但代价全部集中在一个地方：<strong>它用系统 WebView</strong>。</p>
+    <h4>Linux 是它的阿喀琉斯之踵</h4>
+    <p>以下全部来自 Tauri 官方调试文档，不是社区传闻：NVIDIA + WebKitGTK 的 DMABUF 渲染器冲突会导致<strong>白屏、resize 闪烁、无错误信息直接崩溃</strong>；变通手段要逐级降级到 <code>WEBKIT_DISABLE_COMPOSITING_MODE=1</code>（等于关掉整个加速合成）。最致命的是<strong>静默失败</strong>——WebGL2 context 创建会成功但可能落到软件光栅化，而 WebKitGTK 出于指纹防护把 <code>WEBGL_debug_renderer_info</code> 一律伪装成 <code>Apple GPU</code>，<strong>你在前端根本无法探测自己是不是在软件渲染</strong>。用户报「卡」，你在支持工单里无法诊断。</p>
+    <p>macOS 侧的隐性约束：WKWebView 跟随 OS 更新，<strong>你的 CSS/JS 特性下限 = 你支持的最老 macOS</strong>。</p>
+    <div class="verdict">别用于：Linux 是主要平台且 UI 有 WebGL/Canvas 重负载（终端、编辑器、地图、实时图表）；需要三端像素级一致的产品；必须支持较老 macOS；团队不愿投入 Rust。</div>
+  </div>
+
+  <div class="sheet">
+    <div class="sheet-head"><h3>Flutter Desktop</h3><span class="ver">3.47 · 2026-08-12</span><span class="chip c-warn">移动端的延伸，不是桌面首选</span></div>
+    <div class="cov"><b class="y">Win</b><b class="y">Lin</b><b class="y">mac</b><b class="h">Web</b><b class="y">And</b><b class="y">iOS</b><b class="h">鸿蒙</b><b class="n">小程序</b><b class="n">H5</b></div>
+    <p>3.47 起 <strong>Impeller 在桌面三端成为默认渲染器</strong>（macOS Metal，Win/Linux Vulkan），Skia 的 opt-out 开关官方明说「未来版本移除」；桌面新增 SDF 文本渲染，针对低 PPI 屏优化清晰度。</p>
+    <h4>治理层面必须知道的一条</h4>
+    <p>Google 在 I/O 2026 确认 <strong>Canonical 成为 Flutter Desktop 的 lead maintainer 与 strategic steward</strong>。正面看是有了专职团队（Ubuntu App Center / Firmware Updater / Security Center 都是 Flutter 写的）；负面看是<strong>桌面端路线图不再由 Google 决定</strong>。Windows-first 的商业桌面软件需要评估这一点。</p>
+    <div class="verdict">别用于：有强制无障碍合规要求（桌面走 MSAA，是明确短板）；需要成熟多窗口/停靠面板（API 仍 experimental）；CJK 输入法是核心交互（3.47 还在修 Windows 韩文光标定位这种基础问题）；<strong>纯桌面、无移动端计划的项目</strong>。</div>
+  </div>
+
+  <div class="sheet">
+    <div class="sheet-head"><h3>Avalonia · Uno · .NET MAUI</h3><span class="ver">Avalonia 12 / Uno 6.6 / MAUI 10</span><span class="chip c-acc">只在已有 .NET 团队时考虑</span></div>
+    <p><strong>Avalonia 12</strong>（2026-04）是 .NET 跨平台 UI 的事实标准，全自绘 SkiaSharp。它做了一件别人没做的事：<strong>Linux 原生无障碍（AT-SPI2）后端，.NET 生态首个</strong>。对政企 / 医疗 / 教育的 Linux 采购这是硬指标，目前没有别的 .NET 框架能满足。12.0 还默认开启 compiled bindings、WebView 组件从商业版开源。Wayland 仍在私测。</p>
+    <p><strong>Uno 6.6</strong> 的路线是「写 WinUI 跑遍所有平台」，对存量 UWP/WinUI/WPF 资产是最短迁移路径，且 <strong>WASM 是一等公民</strong>。6.6 补上了两块关键短板：Skia 自绘下的读屏（Windows/macOS/WASM 已可用，<strong>Linux 仅在计划中</strong>）和<strong>全端完整 IME composition</strong>——这是自绘阵营在中日韩输入上的关键补完。五端 Native AOT 冷启动实测：Windows <span class="num">1.605s → 0.824s</span>，Linux <span class="num">0.870s → 0.350s</span>。</p>
+    <p><strong>.NET MAUI</strong> 要说实话：采用率有限，社区一致观察是开发者受困于 bug 与更新缓慢，微软自己也几乎不用它；Linux 桌面官方立场是 <strong>not planned</strong>；<strong>无 LTS 版本</strong>。反而是 Avalonia 在 2026 年 3 月给 MAUI 做了个后端来补 Linux 和 WASM，微软未背书。</p>
+    <div class="verdict">新启动的跨平台桌面项目不要选 .NET MAUI。.NET 团队做桌面优先选 Avalonia；有 WinUI 存量且 Web 是一等目标选 Uno。</div>
+  </div>
+
+  <div class="sheet">
+    <div class="sheet-head"><h3>Qt</h3><span class="ver">6.11 / 6.12 (2026-09)</span><span class="chip c-acc">工业、医疗、汽车的既定答案</span></div>
+    <p>生产验证时长最长、领域最重的一个：Maya、DaVinci Resolve、Telegram Desktop、KDE、大量汽车 IVI 与工业 HMI。RHI 抽象层给到 D3D/Metal/Vulkan/OpenGL 的完整控制，6.11 甚至给 QML 加了用户自定义 render pass 的 API——跨平台框架里独一份的底层控制力。</p>
+    <p><strong>授权是第一道闸门，两个陷阱</strong>：部分模块<strong>只提供 GPL</strong>，用了就要 GPL 整个应用；<strong>同一应用内不允许混用开源与商业许可</strong>。LGPLv3 要求动态链接且允许用户替换 Qt 库——嵌入式场景常常做不到。</p>
+    <div class="verdict">别用于：前端技术栈团队（招聘池完全不同）；需要快速迭代的消费级应用；只是想要一个漂亮的现代 UI（你在为用不到的 90% 付钱）。</div>
+  </div>
+
+  <h3>Web 复用：谁能真的一套代码同时出桌面和 Web</h3>
+  <div class="scroll">
+  <table>
+    <thead><tr><th>等级</th><th>框架</th><th>真实成本</th></tr></thead>
+    <tbody>
+      <tr><td class="y">天然复用</td><td>Tauri / Wails / Electron 渲染层 / Dioxus</td><td>前端本来就是 Web。成本在<strong>能力抽象层</strong>：文件系统、托盘、原生菜单在 Web 端不存在，必须设计 capability 抽象与降级</td></tr>
+      <tr><td class="h">能出但有约束</td><td>Flutter Web / Compose Wasm / Avalonia WASM / Uno WASM / Qt WASM</td><td>都是「把应用画到 canvas」，见下方共同硬伤</td></tr>
+      <tr><td class="n">不行</td><td>.NET MAUI（除非套 Avalonia 后端）</td><td>—</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="note warnx">
+    <h4>Flutter Web 的 Wasm 路径被严重误传</h4>
+    <p>官方文档自己写明：<strong>Firefox 120+ 虽支持 WasmGC 但有已知 bug 阻塞 Flutter Wasm 渲染器</strong>（bugzilla #1788206）；<strong>Safari 同样有阻塞 bug</strong>（webkit #267291）；<strong>iOS 上任何浏览器都跑不了 Flutter Wasm</strong>（强制 WebKit）。结论是 2026 年 8 月 Flutter 的 Wasm 渲染路径<strong>实际只在 Chromium 系桌面浏览器生效</strong>，其余一律回退 JS + CanvasKit（+1.5 MB）。Flutter 官方自己也承认博客这类文本密集内容更适合 DOM 模型，并推荐用 Jaspr——flutter.dev 官网自己就是 Jaspr 建的。</p>
+  </div>
+
+  <p><strong>所有 canvas 类 Web 方案的共同硬伤</strong>：SEO 为零；无障碍是硬仗；首屏体积远大于同等 Web 应用；浏览器原生交互（Ctrl+F 查找、翻译、密码管理器自动填充、文本选择、阅读模式）统统要框架自己重新实现，且往往不完整。<strong>Uno 是少数明确解决了 WASM 读屏的</strong>。</p>
+</section>
+
+<!-- ============ 03 ============ -->
+<section id="s3">
+  <h2><i>03</i>Android / iOS</h2>
+  <p class="sub">这是生态最成熟、也是「共享层怎么切」最值得推敲的一域。</p>
+
+  <div class="sheet">
+    <div class="sheet-head"><h3>Flutter</h3><span class="ver">3.47 / Dart 3.13 · 2026-08-12</span><span class="chip c-ok">自绘阵营的成熟选择</span></div>
+    <div class="facts">
+      <div><dt>渲染</dt><dd>Impeller：iOS <strong>唯一</strong>（无法切回 Skia）；Android API 29+ 默认，低版本回落 OpenGL；桌面 3.47 起默认；Web 仍 Skia</dd></div>
+      <div><dt>官方满意度</dt><dd>总体 93% top-2；信任 Flutter 83%，<strong>信任 Google 仅 62%</strong></dd></div>
+      <div><dt>最弱项</dt><dd>Cupertino widgets <strong>61%</strong>，全项最低且跌幅最大</dd></div>
+      <div><dt>体积数据</dt><dd><strong>官方停在 2021-03</strong>，无 2024–26 任何官方数字</dd></div>
+    </div>
+    <p><strong>2026 下半年启动项目必须排期的破坏性变更</strong>：Material/Cupertino 拆出 SDK（核心 SDK 内旧库 <strong>11 月正式弃用</strong>，全生态迁移）；iOS 最低版本 13→15、macOS 10.15→12；<strong>iOS 27 SDK 强制 UIScene 生命周期</strong>，自定义 <code>AppDelegate</code> 或 legacy lifecycle 插件必须手工迁移，否则启动即失败；SwiftPM 自 3.44 起为默认，CocoaPods 进入维护模式；Intel Mac 已停自动化测试。</p>
+    <p><strong>好消息</strong>：原生互操作 2026 年确实变好了。3.38 起 <code>--template=package_ffi</code> + build hooks 让原生构建<strong>不再需要任何 OS 特定构建文件</strong>（无 CMakeLists / podspec / build.gradle）。但 Swift 仍需 <code>@objc</code> + ObjC 头绕一圈，且 <strong>Dart isolate 不绑定线程</strong>（VM 可能无预警换线程）是真实的坑。</p>
+    <div class="verdict">别用于：必须第一时间跟进 Apple 年度设计语言的品牌型消费 App；Widget / Live Activity / watchOS 独立 UI；需要 3D（官方 FAQ 明说不支持 OpenGL ES）；需要 ABI 兼容性（官方明说 not a current goal）。</div>
+  </div>
+
+  <div class="sheet">
+    <div class="sheet-head"><h3>React Native + Expo</h3><span class="ver">0.87 / Expo SDK 57 · 2026-08</span><span class="chip c-ok">招聘与生态最优</span></div>
+    <p><strong>New Architecture 已经不是「默认」而是「唯一」</strong>——这是需要纠正的关键点。0.76 是 by default，<strong>0.82 是第一个完全跑在 New Architecture 上的版本</strong>，0.84 起 iOS 构建默认不含 legacy 代码，0.87 移除 <code>useTurboModules</code> flag。仍在讨论「要不要迁 New Arch」的项目，实际讨论的是「要不要升级 RN」。</p>
+    <p><strong>Expo 已是文档层面的事实标准</strong>：RN 官方 Get Started 页原文推荐 Expo，新项目唯一文档化路径是 <code>npx create-expo-app@latest</code>；自 0.80 起每篇 release blog 都有 Expo 工程师联合署名。</p>
+    <div class="note warnx" style="margin:16px 0">
+      <h4>2026 年真实发生的生产回归</h4>
+      <p>Hermes V1 自 0.84 起为默认引擎，但在 Expo SDK 56/57 引入两个回归：导入 <code>react-native-worklets</code> 或 <code>reanimated</code> 的 App 内存占用 “drastically increase”（expo#46519）；开发期启动变慢（expo#48298）。<strong>动画/手势库是 RN 生态最核心的依赖，这类回归爆炸半径很大。</strong>都在 8 月修复。</p>
+    </div>
+    <p><strong>React Server Components 不是生产选项</strong>：Expo 官方自己写 “Production deployment is limited and not recommended yet”，且 EAS Update（OTA）不支持 RSC、<code>StyleSheet.create</code> 与 <code>Platform.OS</code> 在原生端不可用、Hermes 上嵌套 Server Function 不支持、full RSC 模式下 <code>Stack</code>/<code>Tabs</code>/<code>Drawer</code> 全部不支持。</p>
+    <p>唯一可信的生产性能数据来自 Shopify（全量 RN）：<strong>screen load &lt; 500 ms (P75)、crash-free session &gt; 99.9%</strong>。</p>
+    <div class="verdict">别用于：供应链攻击面必须最小的场景（金融/加密/政企——Shopify 自己把这列为主要负面经验）；团队里没有任何原生工程师（Shopify 原文：“Native devs are crucial”）；后台长任务 / 持续 BLE / 端上 AI / Apple Watch / App Intents；无法承受每年 6 次版本升级节奏。</div>
+  </div>
+
+  <div class="sheet">
+    <div class="sheet-head"><h3>Kotlin Multiplatform（只共享逻辑）</h3><span class="ver">Kotlin 2.4.10</span><span class="chip c-ok">风险最低的一档，已被巨头验证</span></div>
+    <p>Google 的官方措辞值得逐字读：<strong>“officially supported by Google for sharing business logic between Android and iOS”</strong>，而 CMP 被表述为 JetBrains 的东西、“can also”。这个定位从 2024 年 I/O 至今没变。</p>
+    <p>工程承诺是实的：Jetpack 的 KMP 支持中 <strong>iOS 与 Android/JVM 同列 Tier 1</strong>（CI 全量设备端测试、跟踪源码与二进制兼容性）；Android 团队自建了 iOS 支持的 annotation / collection / datastore / lifecycle / viewModel / paging / <strong>room</strong> / savedstate / sqlite；Room 3.0 是围绕 KMP 重构的大版本。</p>
+    <p>生产名单：Google Workspace、Booking.com、Duolingo、Forbes、X、McDonald's、百度 Wonder、Philo。</p>
+    <h4>生态缺口（最容易忽略）</h4>
+    <ul>
+      <li><strong>Firebase 无官方 KMP SDK</strong>，只能用社区 GitLive</li>
+      <li><strong>Dagger 完全无 KMP</strong>；DataStore 只有 Preferences 没有 Proto</li>
+      <li>Room KMP <strong>无预打包数据库</strong>，非 Android 平台 DAO 必须是 <code>suspend</code></li>
+      <li>Apple 目标的最终二进制<strong>只能在 macOS 主机构建</strong>——CI 无 macOS runner 是结构性成本，无解</li>
+      <li>Xcode 里<strong>没有 Kotlin 语言支持</strong>，调试靠非官方 LLDB 插件（JetBrains 已把这列为 2026-08 路线图重点，等于官方承认）</li>
+    </ul>
+  </div>
+
+  <div class="sheet">
+    <div class="sheet-head"><h3>Compose Multiplatform（连 UI 一起共享）</h3><span class="ver">1.12.0 · 2026-08-25</span><span class="chip c-warn">中文 App 要专门验证输入法</span></div>
+    <p><strong>「CMP iOS 已 Stable」是半个事实</strong>：核心 Runtime/UI/Foundation 是 1.12.0 stable，但 <strong>Material3 是 1.12.0-alpha03、Navigation 是 2.10.0-alpha02</strong>。设计系统与官方导航库在 CMP 侧仍是 alpha，社区导航库同样滞后。<strong>导航是 CMP 生态最不成熟的一块。</strong></p>
+    <h4>对中文 App 最关键的几条（YouTrack 可核实，全部 Open）</h4>
+    <ul>
+      <li><strong>CMP-2092</strong>：中文输入时无法直接删除最后一个字符（长期 Open）</li>
+      <li><strong>CMP-10706</strong>：CJK 文字选择行为与 iOS 原生不一致（Major）</li>
+      <li><strong>CMP-10600</strong>：交互式收起键盘（向下拖列表关键盘）<strong>完全不支持</strong>（Major）</li>
+      <li><strong>CMP-3141</strong>：无 warm-up API，自 2023-05 Open 至今——这直接否定了「在大型原生 App 里插一两个 Compose 页面」这个用法</li>
+      <li><strong>CMP-10695</strong>（2026-08-25 新报，Major）：<code>SecureTextField</code> 把密码明文暴露给 VoiceOver</li>
+    </ul>
+    <p>原生文本输入（NITI）1.11 引入，到 1.12 <strong>仍是实验性 opt-in</strong>，官方原话是「现有的 Compose 文本输入仍是 stable choice」，默认化无排期。</p>
+    <div class="note" style="margin:16px 0">
+      <h4>但它有一个别人没有的风险结构优势</h4>
+      <p><strong>CMP 的降级路径是渐进的。</strong><code>expect/actual</code> 允许把任意一屏换成原生 SwiftUI/UIKit view，同时保留同一份 KMP 数据层。<strong>选错不等于重写，只需按需替换 iOS UI 层</strong>——这是相对 Flutter/RN 的核心差异。Sony（Sound Connect）迁移时就准备了退回 SwiftUI 的方案，只是没用上。</p>
+    </div>
+    <div class="verdict">技术上不可能：Widget / Live Activity / App Clip / watchOS UI（YouTrack 里连 feature request 都没有）。别用于：中文输入是核心交互（IM、笔记）；无障碍是硬合规；iOS 主导而 Android 是附属端的团队——共享 UI 的收益模型建立在「Android 侧已经是 Jetpack Compose」之上，反向不成立。</div>
+  </div>
+
+  <div class="sheet">
+    <div class="sheet-head"><h3>Capacitor / Ionic</h3><span class="ver">8.5</span><span class="chip c-acc">工具型 App 的最优解</span></div>
+    <p>被低估也被高估。<strong>够用且是最优解的场景</strong>：企业内部工具 / B2B 后台移动端、内容型 App、表单密集型（保险、医疗问卷、现场巡检、工单）、已有 Web 应用要上架、需高频热更新的运营型产品。</p>
+    <p><strong>结构性天花板（不是调优能解决的）</strong>：iOS 上 rAF / canvas / WebGL <strong>硬顶 60 fps</strong>（WebKit bug 294338，一年多无人认领）；全异步 JSON 桥，<strong>无同步原生调用</strong>，大 blob 绝不能走桥；JS bundle 500 KB–5 MB，低端机 5 MB 约等于 5 秒启动。</p>
+    <div class="verdict">别用于：手写笔 / 绘图 / 白板；游戏与实时 canvas/WebGL；JS 驱动的物理动画与手势跟手交互；万级 item 的复杂列表（DOM 虚拟化打不过 RecyclerView / UICollectionView）；AR / 实时音视频处理 / 连续 BLE。</div>
+  </div>
+
+  <div class="sheet">
+    <div class="sheet-head"><h3>Lynx（字节）</h3><span class="ver">4.0</span><span class="chip c-bad">只适合当动态化容器</span></div>
+    <p>需要纠正一个常见误传：<strong>Lynx 移动端是映射原生控件，不是自绘</strong>（只有桌面端 Clay 是自绘）。双线程架构 + IFR 让首屏有真实的架构优势。</p>
+    <p>但：插件 Autolink 到 3.9 才有、生态几乎为零、<code>@lynx-js/react</code> 仍是 0.x、lynx-ui 是 headless、<strong>字节以外无任何可核实的生产案例</strong>、单一厂商无公开支持策略。</p>
+    <div class="verdict">唯一被验证的形态是<strong>已有原生 App 内的动态化容器</strong>（TikTok 的用法）：活动页、电商店铺页、搜索面板，要求首屏极快、发版频繁、UI 高度定制。如果你的问题恰好是这个，值得做 POC。做主干不要碰。</div>
+  </div>
+</section>
+
+<!-- ============ 04 ============ -->
+<section id="s4">
+  <h2><i>04</i>鸿蒙</h2>
+  <p class="sub">这是九端里唯一「跨端方案能不能少写点」需要单独回答的一端。</p>
+
+  <p>先给出直接答案，分三种问法：</p>
+  <div class="scroll">
+  <table>
+    <thead><tr><th>你的问题</th><th>答案</th></tr></thead>
+    <tbody>
+      <tr><td>一套代码从零覆盖三端、做重交互 App 主干</td><td class="n"><strong>不存在。</strong>ArkUI-X 不成熟且方向是反的；uni-app x 最接近，但官方文档自己写着「降低期望、别用双端标准验收」</td></tr>
+      <tr><td>已有 Flutter / RN / Taro / H5 存量，能不能少写点</td><td class="y"><strong>能，这是当前最靠谱的路径。</strong>别指望零成本，指望 30%–70% 复用率</td></tr>
+      <tr><td>工具类 / 企业应用 / 信息展示类</td><td class="y"><strong>Capacitor / Cordova 完全够用。</strong>前端团队直接开工</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>四条路线的成熟度</h3>
+  <div class="scroll">
+  <table>
+    <thead><tr><th>方案</th><th>维护方</th><th>评级</th><th>关键事实</th></tr></thead>
+    <tbody>
+      <tr><td>ArkTS + ArkUI 原生</td><td>华为</td><td class="y">A</td><td>唯一满配路径。一多、实况窗、卡片、意图框架、分布式流转只有原生能拿到</td></tr>
+      <tr><td>RNOH</td><td><strong>华为 + Software Mansion</strong></td><td class="h">B</td><td>不是野生项目。Software Mansion 是 Reanimated / Gesture Handler 的作者，从零实现了 OpenHarmony 版 TurboModule。走 ArkUI <strong>C-API</strong> 而非 ArkTS。生产案例：小红书、携程、YY。计划适配 368 个三方库，已适配 205 个</td></tr>
+      <tr><td>Flutter-OH</td><td>OpenHarmony 社区 SIG</td><td class="h">B</td><td>2026 年跟版滞后从 7 个月压到 <strong>4 个月</strong>；规划 200+ 高优先级三方库鸿蒙化。<strong>官方自认</strong>内存占用偏高、负载高于其他框架</td></tr>
+      <tr><td>ArkUI-X</td><td>华为</td><td class="n">C</td><td><strong>主线自 2026-01 起 7 个多月无新 Release</strong>；且它解决的是「已有鸿蒙原生想复用到 Android/iOS」，<strong>方向与多数团队需求相反</strong>；无可信商业生产案例</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="note anti">
+    <h4>大厂的做法收敛到了同一个答案</h4>
+    <p><strong>没有一家旗舰 App 是纯跨端做的。</strong>微信是完全原生重写（295 天）；企业微信一年百万行代码；小红书是 <strong>ArkTS 原生底座 + 自研一多框架 + RNOH + 自研播放器</strong>的混合架构，约 200 万行代码；京东用 Taro 编译到鸿蒙原生并把运行时下沉 C++（首页 <span class="num">1062 ms</span>，比纯 ArkTS 版快 23.9%；商详 <span class="num">560 ms</span>，快 74.2%）；美团是 Rust 底层逻辑 + RN 容器 + ArkUI 原生 UI。</p>
+    <p>正确姿势不是「选一个跨端框架代替重写」，而是 <strong>UI 主干认命做原生，逻辑层（C++ / Rust / KMP / JS）尽可能复用，动态化业务用跨端容器承载</strong>。</p>
+  </div>
+
+  <h3>两个必须知道的工程坑</h3>
+  <ul>
+    <li><strong>ArkTS 的 GC 与 V8 不同，很容易内存泄漏。</strong>小红书和 uni-app x 官方文档独立提到同一件事。必须在项目早期就把 DevEco 内存分析工具接进流程。</li>
+    <li><strong>Worker 不能跨 HAP/HSP 调用</strong>；Sendable 有传染性；TaskPool 任务超 3 分钟被系统自动回收；<code>LazyForEach</code> 忘指定 key、空 callback 堆积、大对象 <code>JSON.stringify</code>、Image <code>syncLoad</code> 网络资源都是实测出的性能热点。Code Linter <strong>不能挂 Git pre-hook</strong>，本地提交仍需手动跑脚本。</li>
+  </ul>
+</section>
+
+<!-- ============ 05 ============ -->
+<section id="s5">
+  <h2><i>05</i>小程序 + H5</h2>
+  <p class="sub">被沙箱物理隔离的一域。这里的约束是「不能」，不是「不好」。</p>
+
+  <div class="note anti">
+    <h4>为什么 RN / Flutter 到不了小程序</h4>
+    <p>小程序是<strong>不交出渲染树、不交出 JS 引擎句柄、不执行原生二进制、禁止动态执行代码</strong>的沙箱。四条禁令都有官方原文：<code>eval</code> / <code>new Function</code> 禁令；逻辑层无 <code>window</code>/<code>document</code>（<strong>无法同步测量</strong>）；视图层不跑开发者 JS；<code>WXWebAssembly.instantiate</code> 的 path 必须是代码包内路径，不能从 ArrayBuffer 实例化。</p>
+    <p>RN 的 Fabric 靠 <strong>JSI 拿 C++ Runtime 指针</strong>，Mount 落到平台原生 View，Yoga 需要宿主<strong>同步</strong>测文本——四条小程序全无。Flutter 侧：CanvasKit +1.5 MB / skwasm +1.1 MB，<strong>光引擎就吃掉微信 2 MB 主包的四分之三</strong>。</p>
+  </div>
+
+  <h3>两条 2026 年的重要变化</h3>
+
+  <div class="sheet">
+    <div class="sheet-head"><h3>uni-app x 战略掉头：蒸汽模式</h3><span class="chip c-warn">性能亮眼，生产验证水位是问号</span></div>
+    <p>DCloud <strong>放弃了「UTS 编译成 Kotlin/Swift/ArkTS」作为主线</strong>，改成 JS/TS 驱动 + 自研原生 UI 框架：<code>template</code>/<code>style</code> 直接编译为 C 代码，走原生渲染管线但几乎不用系统组件。官方解释是蒸汽引擎把跨语言通信折损压到 5% 以内，而渲染快出 2–3 倍，于是换回 JS 以换取动态性、生态和 AI 友好度。</p>
+    <p>官方 benchmark（DCloud 自测，但<strong>原生对照源码全部开源可复现</strong>）：4050 个 view+text 创建，Android Fold4 上原生 View <span class="num">461.8 ms</span> / Compose <span class="num">625.8 ms</span> vs 蒸汽 <span class="num">229.2 ms</span>；死亡长列表平均帧率 Android 原生 View <span class="num">45.35</span> vs 蒸汽 <span class="num">109</span>。</p>
+    <p><strong>代价清单</strong>：仅组合式 API、不支持 mixin；CSS 运行时<strong>不支持关系选择器</strong>（必须 BEM）；样式隔离策略 2.0 要求三方组件适配；<code>list-view</code> 复用规则严苛；<strong>打包后目前不能热更新</strong>。</p>
+    <p><strong>最大的问号</strong>：DCloud 官方原文——「由于 uni-app x 没有运行时数据采集，所以 DCloud 并不知道哪些开发者在真实使用 uni-app x」。公开案例约 100 条，全是工具 / OA / 教育 / 政务 / 物联网中小 App，<strong>明确标注蒸汽模式的只有 2 个</strong>。对比 Taro 拿京东 App 核心购物链路做背书，验证强度不在一个量级。</p>
+  </div>
+
+  <div class="sheet">
+    <div class="sheet-head"><h3>Taro 4.2.1</h3><span class="chip c-warn">React 栈唯一选择，但 RN 端已冻结</span></div>
+    <p>需要纠正两点：<strong>不存在 Taro 5.x</strong>；<strong>Taro 4.x 并没有推翻 Taro 3 的重运行时架构</strong>，小程序端仍是「逻辑层模拟 DOM/BOM → 虚拟 DOM 序列化 → setData」。4.x 的全部架构投入都在鸿蒙 C-API 上——想要小程序端性能，Taro 4 相对 Taro 3 没有质变。</p>
+    <p><strong>RN 端按不可用处理</strong>：<code>rn-runner@4.2.1</code> peerDeps 钉死 <code>react-native ^0.73.1 / expo ~50</code>（社区已 0.87）；RN 0.76 适配 2024-11 就在 canary 至今没进 beta；<strong>官方模板第一条命令就跑不通</strong>（issue #19486，0 回复）。</p>
+    <p>React 版本停在 <strong>^18</strong>（无 19）。Vite 模式是鸿蒙的入场券但不是小程序端推荐项——采用率约 20%，且 Taro 的 Vite 锁在 <code>vite ^4 + rollup 3</code>（2023 年工具链）。</p>
+  </div>
+
+  <h4>其他方案存活状态（实测 GitHub / npm）</h4>
+  <div class="scroll">
+  <table>
+    <thead><tr><th>项目</th><th>判定</th><th>最后动作</th></tr></thead>
+    <tbody>
+      <tr><td>Mpx（滴滴）</td><td class="y">活跃</td><td>2026-08-28 push / 2.11.1。编译期增强 + MobX 依赖收集，按路径增量 setData。<strong>但核心维护高度集中于一人</strong></td></tr>
+      <tr><td>kbone</td><td class="h">事实冻结</td><td>npm 停在 2023-04</td></tr>
+      <tr><td>Remax</td><td class="n">已归档</td><td>2024-03-07</td></tr>
+      <tr><td>Chameleon</td><td class="n">已归档</td><td>2026-04-15</td></tr>
+      <tr><td>Rax</td><td class="n">事实死亡</td><td>npm 停在 2023-01</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>微信 Skyline 与一个最容易踩的坑</h3>
+  <p>引擎 1.4.22（2026-08-26），月度更新，已 GA。架构不是移除双线程，而是「AppService 线程建树 ↔ 渲染线程无 JS」，收益是消掉 JSBridge 序列化、内置组件下沉原生、<strong><code>setData</code> 不再有通信和序列化开销</strong>。官方数据首屏 −66%、内存单页 −35%。</p>
+  <div class="note warnx">
+    <p>官方加粗原文：<strong>「由于 Skyline 默认接入 We 分析的 AB 实验，未配置的情况下，页面渲染仍为 WebView 引擎」</strong>，且「AB 实验流量 100% 并不代表全量，而是 Skyline 和 WebView <strong>各 50%</strong>」。需要显式 <code>disableABTest: true</code>。很多团队以为自己在用 Skyline，其实一半流量没有。</p>
+  </div>
+  <p><strong>兼容性代价很重</strong>：无 inline 布局、无 BFC、<code>overflow:scroll</code> 不支持、无 sticky、无属性选择器、z-index 仅兄弟、<code>web-view</code>/<code>movable-view</code>/<code>editor</code> 不支持、只能自定义导航、动画手势必须 worklet。</p>
+
+  <h3>H5 的能力边界</h3>
+  <div class="note anti">
+    <h4>对选型影响最大的一条</h4>
+    <p><strong>iOS 的 WKWebView 里 Service Worker 完全不可用</strong>，连带 Web Push 也不可用，存储配额只有磁盘 ~15%（浏览器 / 主屏 web app 是 ~60%）。<strong>「H5 在浏览器里」和「H5 在你自己 App 的 WebView 里」在 iOS 上是能力完全不同的两个东西。</strong></p>
+  </div>
+  <ul>
+    <li><strong>Web Bluetooth / NFC / USB / Serial / HID</strong>：WebKit 书面列入「<strong>决定不实现</strong>」清单——不是「暂时没有」</li>
+    <li><strong>后台同步 / 周期同步 / Background Fetch / 后台定位</strong>：iOS 全部为零</li>
+    <li>ITP 7 天清除仍在（清 IndexedDB / localStorage / SW cache），但<strong>主屏幕 web app 豁免</strong>——这是 iOS 上做离线 H5 的唯一可靠路径</li>
+    <li>能用的：WebGPU（iOS Safari 26 起默认）、WebGL2 / Wasm threads / SIMD、Wasm GC、WebCodecs、OPFS、WebAuthn</li>
+    <li>2025 Web Almanac：移动端 <strong>INP good 仅 77%，桌面 97%</strong>；Top-1000 站点 INP 只有 63%。<strong>越像 App 的站点越差</strong>——这 20 个百分点正是小程序和 Skyline 绕开的那一层</li>
+  </ul>
+</section>
+
+<!-- ============ 06 ============ -->
+<section id="s6">
+  <h2><i>06</i>九端覆盖矩阵</h2>
+  <p class="sub"><span class="y">●</span> 一等公民 &nbsp;·&nbsp; <span class="h">◐</span> 能用有约束 &nbsp;·&nbsp; <span class="n">○</span> 不支持</p>
+
+  <div class="scroll">
+  <table class="matrix">
+    <thead><tr><th>框架</th><th>Win</th><th>Linux</th><th>macOS</th><th>Web</th><th>Android</th><th>iOS</th><th>鸿蒙</th><th>小程序</th><th>H5</th></tr></thead>
+    <tbody>
+      <tr><td>Flutter</td><td class="y">●</td><td class="y">●</td><td class="y">●</td><td class="h">◐</td><td class="y">●</td><td class="y">●</td><td class="h">◐</td><td class="n">○</td><td class="h">◐</td></tr>
+      <tr><td>React Native</td><td class="h">◐</td><td class="n">○</td><td class="h">◐</td><td class="h">◐</td><td class="y">●</td><td class="y">●</td><td class="h">◐</td><td class="n">○</td><td class="n">○</td></tr>
+      <tr><td>KMP（仅逻辑）</td><td class="y">●</td><td class="y">●</td><td class="y">●</td><td class="h">◐</td><td class="y">●</td><td class="y">●</td><td class="h">◐</td><td class="n">○</td><td class="h">◐</td></tr>
+      <tr><td>Compose MP</td><td class="y">●</td><td class="y">●</td><td class="y">●</td><td class="h">◐</td><td class="y">●</td><td class="h">◐</td><td class="h">◐</td><td class="n">○</td><td class="n">○</td></tr>
+      <tr><td>Electron</td><td class="y">●</td><td class="y">●</td><td class="y">●</td><td class="h">◐</td><td class="n">○</td><td class="n">○</td><td class="h">◐</td><td class="n">○</td><td class="n">○</td></tr>
+      <tr><td>Tauri</td><td class="y">●</td><td class="h">◐</td><td class="y">●</td><td class="h">◐</td><td class="h">◐</td><td class="h">◐</td><td class="n">○</td><td class="n">○</td><td class="n">○</td></tr>
+      <tr><td>Capacitor</td><td class="h">◐</td><td class="h">◐</td><td class="h">◐</td><td class="y">●</td><td class="y">●</td><td class="y">●</td><td class="y">●</td><td class="n">○</td><td class="y">●</td></tr>
+      <tr><td>uni-app x</td><td class="n">○</td><td class="n">○</td><td class="n">○</td><td class="y">●</td><td class="y">●</td><td class="y">●</td><td class="y">●</td><td class="h">◐</td><td class="y">●</td></tr>
+      <tr><td>Taro</td><td class="n">○</td><td class="n">○</td><td class="n">○</td><td class="y">●</td><td class="n">○</td><td class="n">○</td><td class="y">●</td><td class="y">●</td><td class="y">●</td></tr>
+      <tr><td>Qt</td><td class="y">●</td><td class="y">●</td><td class="y">●</td><td class="h">◐</td><td class="h">◐</td><td class="h">◐</td><td class="h">◐</td><td class="n">○</td><td class="n">○</td></tr>
+      <tr><td>Avalonia</td><td class="y">●</td><td class="y">●</td><td class="y">●</td><td class="h">◐</td><td class="h">◐</td><td class="h">◐</td><td class="n">○</td><td class="n">○</td><td class="n">○</td></tr>
+      <tr><td>Uno</td><td class="y">●</td><td class="y">●</td><td class="y">●</td><td class="y">●</td><td class="h">◐</td><td class="h">◐</td><td class="n">○</td><td class="n">○</td><td class="n">○</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p style="font-size:13px;color:var(--ink-3)">注：Taro 的 Android/iOS 列标为不支持，是因为其 RN 通道 peerDeps 钉死在 <code>react-native ^0.73</code> 且官方模板跑不通，按不可用处理。Capacitor 的桌面三端经 Electron 承载。uni-app x 的小程序列标 ◐，因官方文档对支付宝、抖音的支持状态口径矛盾。</p>
+</section>
+
+<!-- ============ 07 ============ -->
+<section id="s7">
+  <h2><i>07</i>四套可落地的组合</h2>
+  <p class="sub">按起点而不是按理想选。每一套都标出了它的放弃项。</p>
+
+  <div class="combos">
+    <div class="combo">
+      <h3>A · 内容 / 交易型消费 App</h3>
+      <div class="who">要 Android + iOS + 鸿蒙 + 小程序 + H5，桌面可选</div>
+      <div class="stackrow"><em>移动</em><span>React Native + Expo（映射原生控件，跟得上 iOS 设计语言）</span></div>
+      <div class="stackrow"><em>鸿蒙</em><span>RNOH（华为 + Software Mansion，有小红书/携程生产背书）</span></div>
+      <div class="stackrow"><em>小程序</em><span>Taro（React 栈唯一选择）或原生小程序 + Skyline</span></div>
+      <div class="stackrow"><em>H5</em><span>Taro H5 输出</span></div>
+      <div class="stackrow"><em>桌面</em><span>Electron 或 RN Windows/macOS（后者落后主干 6 个 minor，慎用）</span></div>
+      <div class="stackrow"><em>放弃</em><span>UI 代码在小程序与 App 之间不复用，只复用 React 心智与部分逻辑</span></div>
+    </div>
+
+    <div class="combo">
+      <h3>B · 工具 / 企业 / B2B</h3>
+      <div class="who">表单密集、内部分发、迭代快、体验要求「不难用」而非「惊艳」</div>
+      <div class="stackrow"><em>全端</em><span>Capacitor + 一套 Web 前端</span></div>
+      <div class="stackrow"><em>鸿蒙</em><span>Capacitor 鸿蒙版（已适配 14 个官方 + 62 个三方插件）</span></div>
+      <div class="stackrow"><em>桌面</em><span>Electron（同一前端）或 Tauri（Windows/macOS 为主时）</span></div>
+      <div class="stackrow"><em>小程序</em><span>Taro 或 uni-app，另写一套</span></div>
+      <div class="stackrow"><em>放弃</em><span>动画流畅度、万级长列表、手写笔、连续 BLE。这些换来的是最低的人力与最快的迭代</span></div>
+    </div>
+
+    <div class="combo">
+      <h3>C · 已有 Android 团队，要低风险上 iOS</h3>
+      <div class="who">Android 侧已是 Jetpack Compose</div>
+      <div class="stackrow"><em>逻辑</em><span>KMP（Google 官方唯一背书的用法，Jetpack 里 iOS 是 Tier 1）</span></div>
+      <div class="stackrow"><em>UI</em><span>先各写各的；再逐屏评估要不要上 CMP</span></div>
+      <div class="stackrow"><em>桌面</em><span>Compose MP Desktop（复用同一套 UI）</span></div>
+      <div class="stackrow"><em>方法</em><span>抄 Booking.com 的 exit ramp：由 <strong>iOS 工程师</strong>定义验收标准（DX、部署、二进制体积、启动性能、调试、crash symbolication），写明达不到就用 Swift 重写，消除沉没成本压力</span></div>
+      <div class="stackrow"><em>放弃</em><span>CI 必须有 macOS runner；Firebase 官方 SDK 与 Dagger 没有 KMP 版</span></div>
+    </div>
+
+    <div class="combo">
+      <h3>D · 桌面为主，移动是附属</h3>
+      <div class="who">生产力工具、专业软件、内部平台</div>
+      <div class="stackrow"><em>Web 栈</em><span>Electron（要三端一致）/ Tauri（Windows+macOS，且无 WebGL 重负载）</span></div>
+      <div class="stackrow"><em>.NET 栈</em><span>Avalonia 12（唯一有 Linux AT-SPI2 无障碍的 .NET 框架）</span></div>
+      <div class="stackrow"><em>C++ 栈</em><span>Qt（先过授权闸门）</span></div>
+      <div class="stackrow"><em>移动</em><span>Capacitor 复用同一前端，或直接不做</span></div>
+      <div class="stackrow"><em>不要</em><span>为了「以后可能要移动端」而现在选 Flutter Desktop——它的桌面分支现由 Canonical 托管，纯桌面项目在为移动优先框架买单</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 08 ============ -->
+<section id="s8">
+  <h2><i>08</i>不要强行跨端的地方</h2>
+  <p class="sub">这些不是「跨端做得差一点」，而是所有跨端方案共同的硬边界。规划时直接划给原生。</p>
+
+  <div class="hard">
+    <div><h4>系统 UI 扩展</h4><p>桌面小组件、Live Activity、锁屏组件、Apple Watch 独立 UI、App Clip、分享扩展、App Intents、Siri Shortcuts。<strong>CMP 在技术上不可能</strong>，Flutter / RN 官方文档都承认要写原生。</p></div>
+    <div><h4>后台长任务</h4><p>后台定位、运动追踪、IM 保活、持续 BLE 连接。Sony 就是因为 BLE 后台执行不达标而放弃 RN。</p></div>
+    <div><h4>设备直连</h4><p>蓝牙 / NFC / USB / 串口。iOS 的 H5 侧<strong>零可能</strong>——WebKit 已书面「决定不实现」。必须封成原生插件。</p></div>
+    <div><h4>高帧率交互</h4><p>手写笔、绘图、白板、剪辑、游戏、图形编辑器。Capacitor 在 iOS 上 rAF 硬顶 60 fps 且 WebKit bug 一年无人认领。</p></div>
+    <div><h4>中文输入密集</h4><p>IM、笔记、输入法。CMP 有三个 Open 的 Major 缺陷（删末字符、CJK 选择、交互式收键盘）；Flutter 也仍在修输入法长尾。<strong>这一项必须在 POC 阶段亲手实测</strong>。</p></div>
+    <div><h4>无障碍硬合规</h4><p>政企 / 金融 / 医疗 / 教育采购。自绘路线在桌面走 MSAA、在 Web 走 canvas，都是明确短板。<strong>.NET 侧只有 Avalonia 12 做了 Linux AT-SPI2。</strong></p></div>
+    <div><h4>端上 AI / 2D-3D 扫描</h4><p>Shopify 在全量迁 RN 之后仍把这些明确列在「必须原生」清单里。</p></div>
+    <div><h4>跟系统设计语言走的品牌 App</h4><p>要在 Liquid Glass 发布当季就跟上，自绘路线做不到——JetBrains 官方说要「native SwiftUI shell」，Google 说 Cupertino 要等解耦完成才能追。</p></div>
+  </div>
+
+  <p><strong>推荐的分层结构</strong>（京东、小红书、美团、mPaaS 几边独立收敛到同一形态）：骨架与能力层原生——启动、路由、账号、支付、推送、音视频、设备能力、监控；业务页面跨端——占页面数和迭代量的约 80%；性能敏感页在同框架内走特殊路径。</p>
+</section>
+
+<!-- ============ 09 ============ -->
+<section id="s9">
+  <h2><i>09</i>排雷与数据缺口</h2>
+  <p class="sub">这个领域的中文与英文内容里，过期案例和 AI 生成的伪数据都很密集。以下是本次调研中被证伪或需降级的说法。</p>
+
+  <div class="scroll">
+  <table>
+    <thead><tr><th>常见说法</th><th>判定</th></tr></thead>
+    <tbody>
+      <tr><td>Airbnb 案例证明跨端不行</td><td><strong>降级。</strong>范围只有 220 屏（原生侧代码量约是其 10 倍），且 Airbnb 官方在 2026-07 给五篇 Sunsetting 文章顶部<strong>全部加了声明</strong>，大意是「如果这些文章被单独援引作为不要用 RN 的理由，请自行做更多研究」</td></tr>
+      <tr><td>Marriott 从 RN 转回原生</td><td><strong>证伪。</strong>无任何一手来源，SEO 传说</td></tr>
+      <tr><td>Udacity 整个 App 弃 RN</td><td><strong>失真。</strong>只有 2 个功能 + 2 个原型，移除原因是功能本身要下线，<strong>没有用任何东西替换</strong></td></tr>
+      <tr><td>有公司放弃 Flutter 回归原生</td><td><strong>三年窗口内穷尽检索，一例都没找到。</strong>HN 全站相关查询 0 条</td></tr>
+      <tr><td>BMW / eBay / 闲鱼 / 字节是 Flutter 活案例</td><td><strong>过期。</strong>官方 showcase 上这些页面内容全部停留在 2021 年。既不是撤退证据，也不能当现状证据</td></tr>
+      <tr><td>Netflix / DoorDash 用 KMP</td><td><strong>过期 / 错误。</strong>Netflix 一手来源是 2020-10；DoorDash 那条是<strong>后端服务用 Kotlin</strong></td></tr>
+      <tr><td>Lynx 是自绘引擎</td><td><strong>错误。</strong>移动端映射原生控件，只有桌面 Clay 是自绘</td></tr>
+      <tr><td>「RN 0.74 让 Bridgeless 成为默认」</td><td><strong>不准确。</strong>0.74 是 ship（opt-in），0.76 才 by default，0.82 才 only</td></tr>
+      <tr><td>Tauri 比 Electron 内存低 58–75% 之类的具体数字</td><td><strong>不可引用。</strong>来源多为内容农场，引用的基准套件无法验证存在</td></tr>
+      <tr><td>小程序 setData 有 1024 KB 上限</td><td><strong>已过期。</strong>现行文档中找不到；官方口径已改为「组件 Shadow 树总节点量的影响大于数据量」</td></tr>
+      <tr><td>「符合 W3C MiniApp 标准」是加分项</td><td><strong>不再是。</strong>W3C MiniApps 工作组已于 2026-08-26 关闭，全部规范 Retired，原因是「no vendor has started to implement it yet」</td></tr>
+      <tr><td>ArkUI-X 有大厂生产主干案例</td><td><strong>未找到任何可信案例。</strong>搜到的描述来源不可追溯，疑似 AI 生成</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="note warnx">
+    <h4>最重要的负面发现：没有可信的跨框架性能实测</h4>
+    <p><strong>2024–2026 年间不存在可信、可复现、独立发布的跨框架性能对比</strong>（滚动 FPS / jank / 冷启动 / 内存）。Flutter 的官方包体积数字<strong>停在 2021 年 3 月</strong>；RN 和 Capacitor 官方从不公布；CMP 唯一的「+9 MB」是 2025-05 的一个 demo，承诺发布的方法论至今未见，而 CMP-3632「减少 iOS 二进制体积」仍是 Open 状态。</p>
+    <p>唯一正确的做法是：<strong>用你自己的真实应用，在你的目标硬件上，各出一个 PoC 实测。</strong>Hello World 的对比对选型毫无价值。</p>
+  </div>
+
+  <h4>本次调研明确未覆盖的盲区</h4>
+  <ul>
+    <li>Reddit 全站、web.archive.org、微信公众号（闲鱼技术、字节跳动技术团队等中国大厂主发布渠道）、B 站与 YouTube 会议演讲</li>
+    <li>鸿蒙 2026 Q2 市场份额（只取到 Q1：中国 19%、全球 5%）</li>
+    <li>抖音、支付宝、美团鸿蒙版的完整技术栈（只有会议议程和媒体报道，无第一方技术长文）</li>
+    <li>百度智能小程序的存续状态与包体积上限（文档站为 SPA 空壳，多次抓取超时）</li>
+    <li>Lynx 在字节以外的任何生产案例</li>
+  </ul>
+</section>
+
+<footer>
+  调研时间 2026-08-30 · 版本与状态以各框架官方文档为准，本文档中的版本号会随时间失效<br>
+  主要一手来源：docs.flutter.dev · flutter.dev/blog · reactnative.dev · kotlinlang.org · blog.jetbrains.com/kotlin · developer.android.com · v2.tauri.app · electronjs.org · avaloniaui.net · platform.uno · doc.qt.io · docs.taro.zone · doc.dcloud.net.cn · developers.weixin.qq.com · gitee.com/openharmony-sig · swmansion.com/blog · shopify.engineering
+</footer>
+
+</main>
+</div>
+</div>

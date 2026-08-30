@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>考点答题卡 · 完整设计稿</title>
+<link rel="stylesheet" href="tokens.css">
+<style>
+body{background:var(--paper);color:var(--ink)}
+.wrap{max-width:1120px;margin:0 auto;padding:0 40px}
+/* 报头 */
+.hero{padding:52px 0 0}
+.hero .kicker{font-family:var(--mono);font-size:10.5px;letter-spacing:.26em;text-transform:uppercase;
+  color:var(--seal);margin-bottom:16px}
+.hero h1{font-family:var(--song);font-size:52px;font-weight:700;letter-spacing:.1em;margin:0;line-height:1.15}
+.hero .lede{font-size:15px;color:var(--graphite);line-height:2;margin-top:18px;max-width:720px}
+.hero .lede b{font-weight:600;color:var(--ink)}
+.bigrule{border-bottom:3px double var(--ink);margin-top:26px}
+.thinrule{border-bottom:1px solid var(--line);margin:0}
+/* 差集 */
+.eq{display:flex;align-items:stretch;gap:0;margin-top:32px;border:1px solid var(--line);
+  background:var(--paper-2)}
+.eq .b{flex:1;padding:20px 22px;border-right:1px solid var(--line)}
+.eq .b:last-child{border-right:none}
+.eq .b.g{background:var(--seal-soft)}
+.eq .k{font-family:var(--mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--mist)}
+.eq .v{font-family:var(--song);font-size:44px;font-weight:700;line-height:1;margin-top:9px}
+.eq .d{font-size:11.5px;color:var(--mist);margin-top:7px;line-height:1.6}
+.eq .op{display:flex;align-items:center;padding:0 20px;font-family:var(--song);
+  font-size:26px;color:var(--mist);border-right:1px solid var(--line)}
+/* 章节 */
+.sec{padding:44px 0}
+.sec-t{font-family:var(--song);font-size:24px;font-weight:700;letter-spacing:.05em;margin:0}
+.sec-d{font-size:13.5px;color:var(--graphite);line-height:2;margin-top:12px;max-width:800px}
+.sec-d b{color:var(--ink)}
+.h3{font-family:var(--song);font-size:16px;font-weight:700;letter-spacing:.05em;margin:32px 0 12px}
+/* 三端 */
+.plat{display:flex;gap:0;margin-top:26px;border:1px solid var(--line);background:var(--paper-2)}
+.pc{flex:1;padding:20px 22px;border-right:1px solid var(--line)}
+.pc:last-child{border-right:none}
+.pc-t{font-family:var(--song);font-size:17px;font-weight:700;letter-spacing:.05em}
+.pc-r{font-family:var(--mono);font-size:10px;letter-spacing:.14em;color:var(--seal);
+  text-transform:uppercase;margin-top:5px}
+.pc-d{font-size:11.5px;color:var(--graphite);line-height:1.8;margin-top:10px;
+  border-top:1px solid var(--line);padding-top:10px}
+.sr{display:flex;align-items:baseline;gap:9px;padding:5px 0;font-size:12.5px}
+.sr .id{font-family:var(--mono);font-size:10px;color:var(--seal);width:22px;flex:none}
+.pc-f{font-size:11px;color:var(--mist);line-height:1.75;margin-top:11px;
+  border-top:1px solid var(--line);padding-top:10px}
+/* 表 */
+table{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:18px}
+th{text-align:left;font-family:var(--mono);font-size:9.5px;font-weight:400;color:var(--mist);
+  letter-spacing:.14em;text-transform:uppercase;padding:0 12px 8px;border-bottom:2px solid var(--ink)}
+td{padding:12px;border-bottom:1px solid var(--line);vertical-align:top;line-height:1.75}
+td.src{font-family:var(--mono);font-size:10.5px;color:var(--seal);white-space:nowrap}
+td b{font-weight:600}
+/* 流程 */
+.flow{display:flex;margin-top:22px;border:1px solid var(--line);background:var(--paper-2)}
+.fs{flex:1;padding:16px 17px;border-right:1px solid var(--line)}
+.fs:last-child{border-right:none}
+.fs .n{font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;color:var(--seal)}
+.fs .t{font-family:var(--song);font-size:15px;font-weight:700;margin-top:7px;letter-spacing:.04em}
+.fs .d{font-size:11.5px;color:var(--graphite);line-height:1.75;margin-top:7px}
+.fs .w{font-family:var(--mono);font-size:10px;color:var(--mist);margin-top:9px}
+/* 不做清单 */
+.nots{display:flex;flex-wrap:wrap;gap:0;margin-top:20px;border-top:1px solid var(--line)}
+.nt{width:50%;padding:13px 0;border-bottom:1px solid var(--line);display:flex;gap:11px;
+  padding-right:26px}
+.nt .x{font-family:var(--mono);color:var(--seal);font-size:13px;flex:none;line-height:1.5}
+.nt .h{font-size:13px;font-weight:600}
+.nt .p{font-size:11.5px;color:var(--mist);line-height:1.7;margin-top:4px}
+/* 警告 */
+.warn{border:1px solid var(--seal);background:var(--seal-soft);padding:22px 24px;margin-top:24px}
+.warn .h{font-family:var(--song);font-size:17px;font-weight:700;color:var(--seal);letter-spacing:.04em}
+.warn .p{font-size:13px;color:#8A3A33;line-height:2;margin-top:12px}
+.warn .p b{font-weight:700}
+/* 入口 */
+.links{display:flex;gap:0;margin-top:22px;border:1px solid var(--line)}
+.lk{flex:1;padding:22px 24px;border-right:1px solid var(--line);text-decoration:none;color:inherit;
+  background:var(--paper-2)}
+.lk:last-child{border-right:none}
+.lk .a{font-family:var(--mono);font-size:10px;letter-spacing:.16em;color:var(--seal)}
+.lk .b{font-family:var(--song);font-size:19px;font-weight:700;margin-top:9px;letter-spacing:.05em}
+.lk .c{font-size:11.5px;color:var(--graphite);line-height:1.8;margin-top:9px}
+.lk .d{font-family:var(--mono);font-size:10px;color:var(--mist);margin-top:12px}
+.sw{display:flex;flex-wrap:wrap;gap:0;margin-top:18px;border:1px solid var(--line)}
+.swc{width:25%;padding:13px 15px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);
+  display:flex;align-items:center;gap:11px;background:var(--paper-2)}
+.swc .cn{font-size:12.5px;font-weight:600}
+.swc .cd{font-family:var(--mono);font-size:10px;color:var(--mist);margin-top:2px}
+.fin{font-size:11px;color:var(--mist);line-height:1.9;border-top:1px solid var(--line);
+  padding:16px 0 60px;margin-top:34px}
+</style></head><body>
+
+<div class="wrap">
+  <div class="hero">
+    <div class="kicker">跨来源学习记录工具 · 完整设计稿 · 2026-08-21</div>
+    <h1>考点答题卡</h1>
+    <div class="lede">
+      你在哪儿学的不重要,重要的是考点覆盖到没有。<br>
+      面向公考与考研备考人群的跨来源学习记录工具。覆盖<b>小程序采集端、iPad 核心场景端、网页分析端</b>
+      三个形态,共 <b>20 个界面</b>。示例状态与 <span class="mono">kaodian-demo.html</span> 逐格一致,
+      每一屏都能回溯到 <span class="mono">docs/01–04</span> 里的一条具体约束。
+    </div>
+    <div class="bigrule"></div>
+    <div class="eq">
+      <div class="b"><div class="k">骨架层</div><div class="v">18</div>
+        <div class="d">考点全集<br>由公开真题聚类反推</div></div>
+      <div class="op">−</div>
+      <div class="b"><div class="k">行为层</div><div class="v">8</div>
+        <div class="d">你实际碰过的<br>采集所得</div></div>
+      <div class="op">=</div>
+      <div class="b g"><div class="k" style="color:var(--seal)">空白</div>
+        <div class="v" style="color:var(--seal)">10</div>
+        <div class="d" style="color:#8A3A33">产品的全部输出<br>也是唯一的产出指标</div></div>
+      <div class="b" style="flex:1.4;background:var(--paper)">
+        <div class="k">涂满的是碰过的,空心的是没碰过的</div>
+        <div style="display:flex;flex-wrap:wrap;gap:9px 7px;margin-top:14px;max-width:230px">
+          <span class="dot solid">12</span><span class="dot weak">8</span><span class="dot stale"></span>
+          <span class="dot untouched"></span><span class="dot stale"></span><span class="dot untouched"></span>
+          <span class="dot solid">9</span><span class="dot solid">5</span><span class="dot untouched"></span>
+          <span class="dot untouched"></span><span class="dot untouched"></span><span class="dot untouched"></span>
+          <span class="dot untouched"></span><span class="dot untouched"></span><span class="dot untouched"></span>
+          <span class="dot untouched"></span><span class="dot weak">6</span><span class="dot seen"></span>
+        </div>
+        <div class="d" style="margin-top:12px">对话层不参与这个运算。<br>它只负责留住用户,以及给行为层供料。</div></div>
+    </div>
+  </div>
+
+  <div class="sec"><div class="thinrule"></div>
+    <div style="padding-top:36px">
+      <div class="sec-t">三端分工</div>
+      <div class="sec-d">
+        这不是同一个产品的三个尺寸,而是<b>一条采集—诊断链路被切成三段</b>。
+        §2.4 把 Web 定为主形态、推翻了微信小程序,理由是核心场景在 iPad 与 PC 上。
+        本方案没有推翻这条结论 —— 小程序<b>只做采集入口,不做分析</b>,
+        所以 §2.4 那句「小程序在复盘场景上体验是残的」依然成立,<b>§7 决策记录不需要改</b>。
+      </div>
+      <div class="plat">
+        <div class="pc">
+          <div class="pc-t">微信小程序</div><div class="pc-r">采集端 · M1–M8</div>
+          <div class="pc-d">随身、随时、零启动成本。承担 §2.3 定为第一优先级的语音与拍照录入,不承担任何分析职责。</div>
+          <div style="margin-top:11px">
+            <div class="sr"><span class="id">M1</span><span>登录 · 微信授权 + 手机号</span></div>
+            <div class="sr"><span class="id">M2</span><span>手机号登录 · 验证码</span></div>
+            <div class="sr"><span class="id">M3</span><span>首页 · 覆盖度 + 记一笔</span></div>
+            <div class="sr"><span class="id">M4</span><span>按住说一句 · 录制中</span></div>
+            <div class="sr"><span class="id">M5</span><span>拍一张 · OCR 提取</span></div>
+            <div class="sr"><span class="id">M6</span><span>认出什么 · 宁缺毋滥</span></div>
+            <div class="sr"><span class="id">M7</span><span>记录 · 跨来源流水</span></div>
+            <div class="sr"><span class="id">M8</span><span>我的 · 边界与出口</span></div></div>
+          <div class="pc-f">盲区诊断在这里<b>只有入口,没有实现</b> —— 点击跳网页端。这是刻意的形态克制。</div></div>
+        <div class="pc">
+          <div class="pc-t">iPad</div><div class="pc-r">核心场景 · P1–P5</div>
+          <div class="pc-d">§2.4 点名的第一场景:边看网课边截图。横屏做分屏采集与复盘,竖屏做纸质笔记拍照。触控区域按 44pt 下限重制。</div>
+          <div style="margin-top:11px">
+            <div class="sr"><span class="id">P1</span><span>Split View 分屏采集</span></div>
+            <div class="sr"><span class="id">P2</span><span>Slide Over 语音浮层</span></div>
+            <div class="sr"><span class="id">P3</span><span>答题卡 + 详情 · 触控双栏</span></div>
+            <div class="sr"><span class="id">P4</span><span>周日复盘 · 通栏</span></div>
+            <div class="sr"><span class="id">P5</span><span>纸质笔记拍照 · 竖屏</span></div></div>
+          <div class="pc-f">唯一同时承担采集与分析的一端,也是唯一能在一块屏上完成闭环的一端。</div></div>
+        <div class="pc">
+          <div class="pc-t">网页端</div><div class="pc-r">分析端 · W1–W7</div>
+          <div class="pc-d">骨架树、差集、空白清单、数据开放。排版取自报纸而非后台:报头、栏目条、通栏、分隔线,没有侧边栏。</div>
+          <div style="margin-top:11px">
+            <div class="sr"><span class="id">W1</span><span>登录 · 扫码 + 手机号</span></div>
+            <div class="sr"><span class="id">W2</span><span>答题卡 · 落地页就是那张卡</span></div>
+            <div class="sr"><span class="id">W3</span><span>考点导图 · 整块空白</span></div>
+            <div class="sr"><span class="id">W4</span><span>考点详情 · 四统计字段</span></div>
+            <div class="sr"><span class="id">W5</span><span>来源分布 + 记录流水</span></div>
+            <div class="sr"><span class="id">W6</span><span>问 AI 时带上的东西 + 导出</span></div>
+            <div class="sr"><span class="id">W7</span><span>MCP / CLI 只读接入</span></div></div>
+          <div class="pc-f">W7 的篇幅被刻意压到最低 —— §2.6 明确 MCP 是营销资产不是收入线,投入不超过两成。</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sec" style="padding-top:0"><div class="thinrule"></div>
+    <div style="padding-top:36px">
+      <div class="sec-t">一条主链路,跨三端</div>
+      <div class="sec-d">
+        示例数据在三端之间是连续的:P5 的一次纸质笔记拍照,把「倍数与比较」从 0/3 推到 3/3,
+        这个变化同时出现在 P1 底部的实时反馈条、W2 的答题卡墙和 W3 的冷枝警告上。
+        <b>三端共用同一份状态,不是三套各自好看的示意图。</b>
+      </div>
+      <div class="flow">
+        <div class="fs"><div class="n">01 · 采集</div><div class="t">留下痕迹</div>
+          <div class="d">语音 / 截图 / 拍照 / 记做题。用户不需要判断「这条该放哪儿」。</div>
+          <div class="w">M4 M5 · P1 P2 P5</div></div>
+        <div class="fs"><div class="n">02 · 打标</div><div class="t">自动归类</div>
+          <div class="d">抽文字 → 匹配考点。认不出就丢弃,不硬归类。</div>
+          <div class="w">M6 · P5</div></div>
+        <div class="fs"><div class="n">03 · 挂树</div><div class="t">写入行为层</div>
+          <div class="d">挂到三层树的考点节点,只记来源名称与时间。</div>
+          <div class="w">M7 · W5</div></div>
+        <div class="fs"><div class="n">04 · 差集</div><div class="t">算出空白</div>
+          <div class="d">骨架层 − 行为层。整块空白的枝干单独标红。</div>
+          <div class="w">W2 W3 · P3 P4</div></div>
+        <div class="fs"><div class="n">05 · 交出去</div><div class="t">带走 / 粘给模型</div>
+          <div class="d">上下文块 + 完整导出 + 只读 MCP。学科判断在产品之外。</div>
+          <div class="w">W6 W7 · M8</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sec" style="padding-top:0"><div class="thinrule"></div>
+    <div style="padding-top:36px">
+      <div class="sec-t">约束追溯表</div>
+      <div class="sec-d">
+        这些是 <span class="mono">docs/01</span> §2.2 与 §7 中标注「不改变」的 settled decision。
+        评审这份稿子的方式不是「好不好看」,而是<b>每一条约束能否在界面上被指出来</b>。
+      </div>
+      <table>
+        <thead><tr><th style="width:112px">约束</th><th style="width:72px">出处</th>
+          <th>设计上如何落地</th><th style="width:132px">对应屏</th></tr></thead>
+        <tbody>
+          <tr><td><b>能力边界</b><br><span style="font-size:11px;color:var(--mist)">不判断对错</span></td>
+            <td class="src">01 §2.2</td>
+            <td>21 屏里没有一处「你错了」「建议先学 X」。正确率 50% 这个数<b>是用户自己在「记做题」里填的</b>,不是产品判出来的 —— 记录用户报告的数字属于「几次」,判断答案对错才属于「对不对」。P4「最久没碰」只按时间排,<b>刻意不做遗忘曲线</b>。</td>
+            <td class="src">W4 P3 P4</td></tr>
+          <tr><td><b>不做教研</b></td><td class="src">01 §2.2</td>
+            <td>W6「问 AI 时带上的东西」把这条边界<b>变成了功能而不是免责声明</b>:产品把你的画像拼成一段上下文,你粘进豆包或 DeepSeek。产品不回答问题,只负责让模型知道你是谁、学到哪了。</td>
+            <td class="src">W6 M8</td></tr>
+          <tr><td><b>不碰内容</b></td><td class="src">01 §2.2</td>
+            <td>流水表只有四列:时间、来源名称、方式、考点。<b>没有「内容」这一列,连预留位都没有。</b>P1 左侧第三方课程区域标注「本工具不抓取、不转录、不存储此区域的任何内容」。</td>
+            <td class="src">W5 M7 P1</td></tr>
+          <tr><td><b>图片留存红线</b><br><span style="font-size:11px;color:var(--mist)">第一天不定就改不回来</span></td>
+            <td class="src">01 §2.3</td>
+            <td>三处:① M1 登录<b>勾选同意那一行</b>就写明,不埋进隐私政策;② M5/P5 原图角上常驻 <span class="mono">原图 6d 23h 后删除</span>;③ 印章红块给出「立即删除原图」并写出理由 —— 否则产品会变成盗版课件的托管方。</td>
+            <td class="src">M1 M5 P5</td></tr>
+          <tr><td><b>宁缺毋滥</b></td><td class="src">01 §2.2</td>
+            <td>「没认出来的」独立成区、<b>默认不勾选</b>,并写出后果。被丢弃的记录在流水里<b>保留可见但置灰</b>,不计入覆盖度 —— 让用户看见系统丢了什么,比悄悄丢掉更能建立对数字的信任。</td>
+            <td class="src">M6 P5 W5</td></tr>
+          <tr><td><b>形态</b><br><span style="font-size:11px;color:var(--mist)">Web 主,小程序已推翻</span></td>
+            <td class="src">01 §2.4 / §7</td>
+            <td>小程序被限定为<b>纯采集入口</b>,盲区诊断在其中只有入口没有实现。§2.4 的原判断因此未被触碰,<b>决策记录不需要改</b>。</td>
+            <td class="src">M3 M8</td></tr>
+          <tr><td><b>三层树</b><br><span style="font-size:11px;color:var(--mist)">不做第四层</span></td>
+            <td class="src">01 §2.5</td>
+            <td>模块 → 题型 → 考点,到此为止。整块空白的枝干<b>连接线变印章红</b>并加一行警告 —— 扁平列表只能说「漏了两个点」,树能说「漏了一整类」。</td>
+            <td class="src">W3 W2 P3</td></tr>
+          <tr><td><b>四个统计字段</b></td><td class="src">01 §2.5</td>
+            <td>近五年出现次数 / 出现过的省份 / 最近一次出现年份 / 平均每套卷题量,在 W4 与 P3 常驻不折叠。四个都是纯统计,没有一个需要学科判断 —— 这是「不做教研」守得住的技术前提。</td>
+            <td class="src">W4 P3</td></tr>
+          <tr><td><b>数据开放</b></td><td class="src">01 §2.2</td>
+            <td>W6 三种格式并列,下载前可见 Markdown 原文。并列一张「导出里有 / 导出里没有」对照 —— 没有的那栏全是内容类,<b>因为压根就没存</b>。</td>
+            <td class="src">W6 M8</td></tr>
+          <tr><td><b>MCP 只读</b></td><td class="src">01 §2.6</td>
+            <td>可以 / 不可以两栏对照。令牌前缀 <span class="mono">kd_ro_</span> 把只读写进凭证本身。整屏只有两栏五个工具名 —— <b>刻意的欠设计</b>,两成精力就该占两成篇幅。</td>
+            <td class="src">W7</td></tr>
+          <tr><td><b>录入完整度</b><br><span style="font-size:11px;color:var(--mist)">已知未解决</span></td>
+            <td class="src">01 §5.2</td>
+            <td>demo 的引导问卷第三问「哪些你已经学过」被保留:<b>先让用户标出来,免得后面误判成没碰过。</b>这比在诊断页放一段免责声明更接近解法 —— 它减少误判,而不是解释误判。</td>
+            <td class="src">M1 W2</td></tr>
+          <tr><td><b>北极星</b><br><span style="font-size:11px;color:var(--mist)">主动查看盲区的人数</span></td>
+            <td class="src">04 总览</td>
+            <td>登录后第一屏直接是整张答题卡,不是欢迎语、不是学习时长、不是打卡。P1 底部在每次采集后<b>立刻回一次空白反馈</b> —— 把北极星做进采集回路,而不是做进报表。</td>
+            <td class="src">W2 P1 M3</td></tr>
+        </tbody></table>
+    </div>
+  </div>
+
+  <div class="sec" style="padding-top:0"><div class="thinrule"></div>
+    <div style="padding-top:36px">
+      <div class="sec-t">刻意不做的东西</div>
+      <div class="sec-d">
+        稿子里没有这些,不是来不及画,而是画了就违约。
+        <b>它们是同类产品的标配,也正是这个产品用来换取立足点的东西。</b>
+      </div>
+      <div class="nots">
+        <div class="nt"><span class="x">✕</span><div><div class="h">得分 / 排名 / 判题</div>
+          <div class="p">需要判断对不对,触碰 §2.2 能力边界。产品不做题、不判题,所以也没有分数可显示。</div></div></div>
+        <div class="nt"><span class="x">✕</span><div><div class="h">知识点讲解 / 解题思路</div>
+          <div class="p">§2.2 不做教研。这条边界被文档称为「所有优势的来源」,出口指向导出与外接模型。</div></div></div>
+        <div class="nt"><span class="x">✕</span><div><div class="h">课程内容 / 课件库 / 讲义</div>
+          <div class="p">§2.2 不碰内容。数据模型里没有内容字段。这条边界让跨机构聚合在合规上成立。</div></div></div>
+        <div class="nt"><span class="x">✕</span><div><div class="h">原图云相册 / 笔记分享 / 社区</div>
+          <div class="p">§2.3 红线。任何形式的共享都会让产品变成盗版课件托管方,文档注明这条改不回来。</div></div></div>
+        <div class="nt"><span class="x">✕</span><div><div class="h">艾宾浩斯复习提醒</div>
+          <div class="p">遗忘曲线要求判断掌握程度。P4 只呈现「多久前」。边界松一次,后面每个功能都会想松。</div></div></div>
+        <div class="nt"><span class="x">✕</span><div><div class="h">连续打卡 / 学习时长 / 徽章</div>
+          <div class="p">北极星是主动查看盲区的人数,不是 DAU。这类指标会把注意力从缺口引开。</div></div></div>
+        <div class="nt"><span class="x">✕</span><div><div class="h">MCP 写入 / 代采集接口</div>
+          <div class="p">§2.6:开放的是读,不是写入和采集。写入一旦开放,采集端这个付费理由立刻消失。</div></div></div>
+        <div class="nt"><span class="x">✕</span><div><div class="h">第二个科目 / 第二套骨架</div>
+          <div class="p">§5.4:两套骨架同时冷启动,对 2-3 人是灾难。全稿只有资料分析一个模块,18 个考点。</div></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sec" style="padding-top:0"><div class="thinrule"></div>
+    <div style="padding-top:36px">
+      <div class="sec-t">设计语言</div>
+      <div class="sec-d">
+        语言承自 <span class="mono">kaodian-demo.html</span>:纸、墨、印章红、宋体标题、2px 直角。
+        <b>没有蓝色主色,没有 emoji 图标,没有阴影,没有大圆角,没有侧边栏后台骨架。</b>
+      </div>
+      <div class="h3">签名视觉:答题卡涂格</div>
+      <div class="sec-d" style="margin-top:0">
+        考点不用标签或进度条表示,用<b>涂格</b> —— 每个备考的人都盯着这种卡看过几百个小时。
+        六种状态直接对应涂的程度,空心圈就是空白,一眼能数出来。
+      </div>
+      <div style="display:flex;gap:26px;margin-top:18px;border:1px solid var(--line);
+           background:var(--paper-2);padding:18px 20px;flex-wrap:wrap">
+        <div class="bub"><span class="dot lg untouched"></span><span class="lab">未触达</span></div>
+        <div class="bub"><span class="dot lg seen"></span><span class="lab">仅接触</span></div>
+        <div class="bub"><span class="dot lg stale"></span><span class="lab">久未复习</span></div>
+        <div class="bub"><span class="dot lg weak">8</span><span class="lab">练过但弱</span></div>
+        <div class="bub"><span class="dot lg solid">12</span><span class="lab">练过且稳</span></div>
+        <div class="bub"><span class="dot lg mastered"></span><span class="lab">已掌握(自述)</span></div>
+        <div style="flex:1;min-width:280px;font-size:12px;color:var(--graphite);line-height:1.95;
+             border-left:1px solid var(--line);padding-left:22px">
+          圈里的数字是练过的题数。<br>
+          <b>「已掌握」压到最轻的一档</b> —— §5.2 明说这个按钮是补丁不是解法,
+          它是用户声明而不是采集到的事实,所以既不改变涂格颜色,也不计入覆盖度。</div>
+      </div>
+      <div class="h3">色板</div>
+      <div class="sw">
+        <div class="swc"><span class="dot sm" style="background:#E9EBE5;border-color:#C9CDC4"></span>
+          <div><div class="cn">纸</div><div class="cd">#E9EBE5</div></div></div>
+        <div class="swc"><span class="dot sm" style="background:#14171A;border-color:#14171A"></span>
+          <div><div class="cn">墨</div><div class="cd">#14171A</div></div></div>
+        <div class="swc"><span class="dot sm" style="background:#3A4046;border-color:#3A4046"></span>
+          <div><div class="cn">石墨 · 练过且稳</div><div class="cd">#3A4046</div></div></div>
+        <div class="swc"><span class="dot sm" style="background:#C0332B;border-color:#C0332B"></span>
+          <div><div class="cn">印章红</div><div class="cd">#C0332B</div></div></div>
+        <div class="swc" style="border-bottom:none"><span class="dot sm" style="background:#8C948F;border-color:#8C948F"></span>
+          <div><div class="cn">雾 · 久未复习</div><div class="cd">#8C948F</div></div></div>
+        <div class="swc" style="border-bottom:none"><span class="dot sm" style="background:#C9CDC4;border-color:#C9CDC4"></span>
+          <div><div class="cn">描边</div><div class="cd">#C9CDC4</div></div></div>
+        <div class="swc" style="border-bottom:none"><span class="dot sm" style="background:#07C160;border-color:#07C160"></span>
+          <div><div class="cn">微信绿</div><div class="cd">仅授权按钮</div></div></div>
+        <div class="swc" style="border-bottom:none;border-right:none">
+          <div style="font-size:11.5px;color:var(--mist);line-height:1.7">
+            <b style="color:var(--graphite)">全稿只有一个强调色。</b><br>没有绿色代表「好」。</div></div>
+      </div>
+      <div class="sec-d">
+        一条反常规的决定:<b>印章红同时用于「练过但弱」和「整块空白」</b>。
+        在常规仪表盘里这两件事一个是警告一个是缺失,颜色应该分开;
+        但在这个产品里它们是同一类信息 —— <b>该回头看的地方</b>。
+        盲区不是错误状态,是这个产品唯一的输出。
+      </div>
+      <div class="h3">字体与几何</div>
+      <div class="sec-d" style="margin-top:0">
+        标题与大数字用<b>宋体</b>(Songti SC),正文用苹方,元信息与数字用等宽。
+        圆角全站统一 <span class="mono">2px</span>,近乎直角。分隔靠 1px 描边和底色差,不靠阴影。
+        版式取向是<b>信息密度优先</b> —— §5.3 的目标用户手里已经有 Notion 和 Obsidian,
+        一屏能看见多少真实数据比视觉呼吸感更重要。
+      </div>
+    </div>
+  </div>
+
+  <div class="sec" style="padding-top:0"><div class="thinrule"></div>
+    <div style="padding-top:36px">
+      <div class="sec-t">这份稿子在实施路径上的位置</div>
+      <div class="warn">
+        <div class="h">这份稿子跑在关卡 0 前面。这一点写在封面上,不等评审时才发现。</div>
+        <div class="p">
+          <span class="mono">docs/04</span> 阶段 0 的原文是:<b>「不做界面,不做账号,不做数据库设计」</b>。
+          而这份稿子恰好做了界面和账号。<br>
+          <span class="mono">docs/03</span> §盲区二 描述的正是这个动作:<b>注意力单向流向可执行的部分</b> ——
+          问题被识别后,人会自然流向「能动手做的部分」,而不是「最不确定的部分」。
+          文档已经记录过一次后果:打磨了好几轮 demo,而一个真实用户都还没接触过。<br><br>
+          所以这份稿子的正确用途只有两个:<br>
+          <b>①</b> 阶段 0 自用采集工具的界面参考 —— <b>只取 M4、M5、P2 三屏</b>,其余先不实现;<br>
+          <b>②</b> 阶段 2 找到 10 个真实用户后的沟通物料。<br><br>
+          <b>它不构成开工许可。</b>关卡 0 的判据没变:两周内平均每天 ≥3 条,且「懒得记」次数持续下降。
+          这个判据只能靠自己用两周得到,画多少屏都换不来。
+        </div>
+      </div>
+      <div class="h3">下一步仍然是文档里那一条,没有变</div>
+      <table>
+        <thead><tr><th style="width:140px">阶段</th><th style="width:96px">周次</th><th>唯一目标</th>
+          <th style="width:220px">关卡问的问题</th></tr></thead>
+        <tbody>
+          <tr style="background:var(--seal-soft)"><td><b>0 · 地基自检</b></td><td class="src">第 1–2 周</td>
+            <td><b>验证采集摩擦</b> —— 只要能录语音转文字、能拍照 OCR、能存下来。存到本地文件夹都行。</td>
+            <td><b>我自己愿意持续用吗?</b></td></tr>
+          <tr><td>1 · 骨架与单人闭环</td><td class="src">第 3–8 周</td>
+            <td>差集能算出来。公考 · 资料分析单模块冷启动。</td><td>诊断对我自己准不准?</td></tr>
+          <tr><td>2 · 第一批外部用户</td><td class="src">第 9–14 周</td>
+            <td>10 个真实用户 —— 项目第一次接触真实用户。</td>
+            <td>别人会不会看盲区?<span style="color:var(--mist)">(&gt;30% 点进去)</span></td></tr>
+          <tr><td>3 · 分发验证</td><td class="src">第 12–20 周</td>
+            <td>陌生人自己找上门。这是唯一贯穿始终没被解决过的问题。</td><td>零成本能获客吗?</td></tr>
+        </tbody></table>
+      <div class="sec-d">
+        还有一件这份稿子<b>不能替代</b>的事,列在 <span class="mono">docs/04</span> 阶段 0 的阻塞项里:
+        <b>生成式 AI 服务备案要求</b>。语音转写与 OCR 打标都属于面向公众提供的生成式能力,
+        文档原话是「查清楚再动手,别做完卡在审核」。这一项在 <span class="mono">docs/01</span> §5.5 仍是待查状态,
+        <b>本设计稿没有、也无法关闭它</b>。
+      </div>
+    </div>
+  </div>
+
+  <div class="sec" style="padding-top:0"><div class="thinrule"></div>
+    <div style="padding-top:36px">
+      <div class="sec-t">进入设计稿</div>
+      <div class="links">
+        <a class="lk" href="miniprogram.html">
+          <div class="a">01 · MINIPROGRAM</div>
+          <div class="b">微信小程序 · 采集端</div>
+          <div class="c">8 屏 · 375×812<br>双通道登录、语音、拍照 OCR、宁缺毋滥确认、跨来源流水</div>
+          <div class="d">M1 – M8</div></a>
+        <a class="lk" href="pad.html">
+          <div class="a">03 · PAD</div>
+          <div class="b">iPad · 核心场景端</div>
+          <div class="c">5 屏 · 1194×834 横屏 / 834×1112 竖屏<br>分屏采集、浮层速记、触控答题卡、周日复盘</div>
+          <div class="d">P1 – P5</div></a>
+        <a class="lk" href="desktop.html">
+          <div class="a">02 · DESKTOP</div>
+          <div class="b">网页端 · 分析端</div>
+          <div class="c">7 屏 · 1440 宽<br>答题卡墙、考点导图、四统计字段、上下文块、导出、只读接口</div>
+          <div class="d">W1 – W7</div></a>
+      </div>
+      <div class="fin">
+        设计令牌见 <span class="mono">tokens.css</span> · 屏幕清单与约束追溯见 <span class="mono">README.md</span><br>
+        示例数据为演示用途,考点频次是占位数字,不代表真实统计。骨架层取 <span class="mono">docs/04</span> §1.1 推荐的起步模块:公考 · 资料分析。<br>
+        考点标签为本稿自行命名,<b>不沿用任何机构的既有体系与措辞</b> —— 对应 <span class="mono">docs/04</span> §1.2 的合规要求。
+      </div>
+    </div>
+  </div>
+</div>
+</body></html>

@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>考点盲区 · iPad · 风格 A</title>
+<link rel="stylesheet" href="tokens.css">
+<style>
+/* ────────────────────────────────────────────────────────────
+   页面专属:只补「排布」。颜色字体一律走 tokens.css 变量。
+   iPad 稿的存在理由是 iPad 独有能力,不是把 H5 放大 ——
+   分屏 / 拖放 / Pencil / Slide Over / 妙控键盘,H5 一个都拿不到。
+   ──────────────────────────────────────────────────────────── */
+.col{display:flex;flex-direction:column;min-height:0}
+.f1{flex:1;min-height:0;overflow:hidden}
+.rw{display:flex;align-items:center;gap:9px}
+.sp{flex:1}
+.hb{border-bottom:1px solid var(--hair)}
+.ht{border-top:1px solid var(--hair)}
+.vs{width:1px;background:var(--hair);flex:none;align-self:stretch}
+.s10{font-size:10.5px}.s11{font-size:11px}.s12{font-size:12px}.s13{font-size:13px}.s15{font-size:15px}
+.pd{padding:14px}
+.wt{width:44px;text-align:right}
+.wt2{width:62px;text-align:right}
+.ix{width:20px;flex:none;font-family:var(--mono);font-size:10.5px;color:var(--t3);text-align:right}
+
+/* 分屏:iPad 的 Split View。两个 App 并排,中间是系统分隔条 */
+.split{display:flex;height:100%;min-height:0}
+.spdiv{width:10px;flex:none;background:#000;position:relative}
+.spdiv:after{content:"";position:absolute;left:3px;top:50%;width:4px;height:44px;
+  margin-top:-22px;border-radius:2px;background:#3A3E44}
+.foreign{background:#17181B;display:flex;flex-direction:column;min-width:0}
+.foreign .fbar{height:30px;flex:none;display:flex;align-items:center;padding:0 12px;
+  background:#1E2024;border-bottom:1px solid #26282C;font-size:11px;color:var(--t3)}
+
+/* 视频占位 —— 纯 CSS,不放任何课程内容 */
+.video{flex:1;background:#0B0C0E;position:relative;display:flex;align-items:center;justify-content:center}
+.video .ply{width:52px;height:52px;border:1px solid var(--t3);border-radius:50%;position:relative}
+.video .ply:after{content:"";position:absolute;left:20px;top:16px;border-style:solid;
+  border-width:10px 0 10px 15px;border-color:transparent transparent transparent var(--t3)}
+.video .tb{position:absolute;left:0;right:0;bottom:0;height:34px;display:flex;align-items:center;
+  gap:10px;padding:0 12px;background:rgba(0,0,0,.45);font-family:var(--mono);font-size:10.5px;color:var(--t2)}
+.video .tb .bar{flex:1;height:2px;background:#2E3137;position:relative}
+.video .tb .bar i{position:absolute;left:0;top:0;bottom:0;width:47%;background:var(--t2);display:block}
+
+/* 截屏缩略图 —— iPad 截屏后左下角那一张 */
+.shot{width:118px;height:88px;border:1px solid var(--hair2);border-radius:3px;background:var(--bg3);
+  position:relative;overflow:hidden;flex:none}
+.shot .ln{position:absolute;left:9px;right:9px;height:2px;background:#2A2D32;display:block}
+.shot .tagx{position:absolute;right:5px;bottom:5px;font-family:var(--mono);font-size:9px;color:var(--t3)}
+
+/* 拖放落点 */
+.drop{border:1px dashed var(--acid);border-radius:3px;background:rgba(201,242,77,.05);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;
+  color:var(--acid);font-size:12px}
+
+/* Slide Over:悬浮在别的 App 之上的窄窗 */
+.slide{position:absolute;right:16px;top:52px;bottom:52px;width:330px;
+  background:var(--bg);border:1px solid var(--hair2);border-radius:10px;overflow:hidden;
+  display:flex;flex-direction:column;z-index:8}
+.slide .grab{height:18px;flex:none;display:flex;align-items:center;justify-content:center}
+.slide .grab i{width:38px;height:4px;border-radius:2px;background:#3A3E44;display:block}
+
+/* Pencil 圈选 */
+.circ{position:absolute;border:2px solid var(--acid);border-radius:48% 52% 45% 55%;
+  transform:rotate(-3deg);pointer-events:none}
+
+/* 妙控键盘:画在设备外壳下面的一条 */
+.mkb{width:1194px;height:34px;background:#141518;border:1px solid #26282C;border-top:none;
+  border-radius:0 0 10px 10px;display:flex;align-items:center;justify-content:center;gap:26px;
+  font-family:var(--mono);font-size:10px;color:var(--t3)}
+
+/* 四统计字段 */
+.st4{display:flex}
+.st4>div{flex:1;padding:10px 0 11px}
+.st4 u{display:block;text-decoration:none;font-family:var(--mono);font-size:9.5px;
+  letter-spacing:.09em;color:var(--t3);margin-bottom:5px}
+.st4 b{font-family:var(--mono);font-size:17px;font-weight:500;color:var(--tx);letter-spacing:-.02em}
+.st4 b s{text-decoration:none;font-size:10px;color:var(--t3);margin-left:2px}
+
+/* 二维码占位 —— CSS 绘制,零图片零 emoji */
+.qr{width:168px;height:168px;flex:none;border:1px solid var(--hair);background:var(--bg3);position:relative}
+.qr .m{position:absolute;inset:13px;opacity:.42;
+  background:repeating-conic-gradient(var(--t2) 0% 25%,transparent 0% 50%) 0 0/13px 13px}
+.qr b{position:absolute;width:36px;height:36px;border:6px solid var(--tx);background:var(--bg3)}
+.qr b.tl{left:13px;top:13px} .qr b.tr{right:13px;top:13px} .qr b.bl{left:13px;bottom:13px}
+
+/* 定价分栏:密集行,不是卡片 */
+.prow{display:flex;border-bottom:1px solid var(--hair)}
+.prow>div{flex:1;padding:10px 14px;border-right:1px solid var(--hair)}
+.prow>div:last-child{border-right:none}
+.prow .pn{font-size:12px;color:var(--t2)}
+.prow .pv{font-family:var(--mono);font-size:13px;color:var(--tx);margin-top:3px}
+
+/* 勾选框(tokens.css 未收录,各稿自行声明) */
+.ck{width:15px;height:15px;flex:none;border:1px solid var(--hair2);border-radius:2px;position:relative}
+.ck.on{border-color:var(--tx)}
+.ck.on:after{content:"";position:absolute;left:5px;top:1px;width:3px;height:8px;
+  border:solid var(--tx);border-width:0 1.5px 1.5px 0;transform:rotate(42deg)}
+</style>
+</head>
+<body>
+<div class="deck">
+
+<div class="dhd">
+  <h1>考点盲区 · iPad · 风格 A「极客暗色 · 命令条驱动」</h1>
+  <p>
+    <b style="color:#D4D4D8">iPad 是这个产品被点名的核心场景</b>——「边看网课边截图」。原先它只是 H5 稿里的两个断点(H11 / H12),这一份把它独立出来。<br>
+    <b style="color:#D4D4D8">独立的理由不是屏幕更大,是 iPad 有 H5 拿不到的能力</b>:<span class="m">分屏 Split View · 跨 App 拖放 · Apple Pencil · Slide Over 悬浮 · 妙控键盘</span>。<br>
+    只把手机稿放大填满,这一份就没有存在必要——所以每一屏都必须回答「这件事在手机上做不到」。<br>
+    <b style="color:#D4D4D8">P7 – P13 是本轮补齐的那半边</b>:登录、首次进入、考点详情、出口、定价支付、会员订单、设置 —— 此前 iPad 稿只有 iPad 独有能力,
+    而登录/订单/设置这半边整个缺席,与其余四端不对等。这半边不追求「iPad 独有」,追求的是<b style="color:#D4D4D8">与其余各端同一套骨架、同一份数据</b>。<br>
+    <b style="color:#D4D4D8">这一份画的是 iPad 上的响应式 Web / PWA,不是上架 App Store 的原生应用。</b>
+    分屏、拖放、Pencil、Slide Over、妙控键盘都是 <b style="color:#D4D4D8">iPadOS 给到浏览器与已安装 PWA 的系统能力</b>,不需要原生壳。<br>
+    这条要写明,否则 P7 的登录会被拿去对照 App Store 的规则——<span style="color:#FF6B5A">那些规则只约束 app 稿,不约束这一份</span>(原生 App 的登录见 app 稿 A7)。<br>
+    横屏 <span class="m">1194×834</span>,竖屏 <span class="m">834×1112</span>。数据固定为 <span class="m">山东省考 · 行测 · 资料分析:18 个考点 / 8 个有记录 / 覆盖 44% / 10 个空白 / 2 组整块空白</span>,与其余各端逐字一致。
+  </p>
+</div>
+
+<div class="sec"><h2>一 · 边看课边记</h2><span class="sub">P1 – P3 · 采集摩擦最低的那一屏,产品的全部赌注</span></div>
+<div class="grid">
+
+<div class="cell">
+  <div class="cap"><span class="cap-n">P1</span><span class="cap-t">分屏 · 课在左,记在右</span></div>
+  <div class="cap-d">Split View。课在人家的 App 里放着,这边只记来源名和时间。</div>
+  <div class="dev pad-l app col">
+    <div class="split">
+      <div class="foreign" style="width:660px">
+        <div class="fbar"><span>粉笔</span><span class="sp"></span><span class="mono">外部 App · 我们不碰它的内容</span></div>
+        <div class="video">
+          <div class="ply"></div>
+          <div class="tb"><span>24:18</span><span class="bar"><i></i></span><span>51:02</span><span>1.5×</span></div>
+        </div>
+      </div>
+      <div class="spdiv"></div>
+      <div class="col f1" style="min-width:0">
+        <div class="cmd">
+          <span class="ic"></span>
+          <span class="scope">考点 <span class="sep">/</span> <b>资料分析</b></span>
+          <span class="sp"></span><span class="kbd on">空格 说一句</span>
+        </div>
+        <div class="pd hb">
+          <div class="lbl">正在记的来源</div>
+          <div class="s15">粉笔 · 资料分析系统班 L12</div>
+          <div class="rw" style="margin-top:8px">
+            <span class="tag">进入 24:18</span>
+            <span class="t3 s11">来源名与时间戳,没有第三个字段</span>
+          </div>
+        </div>
+        <div class="grp">这节课已经挂上的<span class="r">2 条</span></div>
+        <div class="row lg"><i class="sd stable"></i><span class="nm">增长率计算<i style="display:block;font-style:normal;font-size:11px;color:var(--t3);margin-top:1px">语音记 · 09:12</i></span><span class="kbd">⌘Z</span></div>
+        <div class="row lg"><i class="sd weak"></i><span class="nm">增长量计算<i style="display:block;font-style:normal;font-size:11px;color:var(--t3);margin-top:1px">记做题 12/10 · 09:40</i></span><span class="kbd">⌘Z</span></div>
+        <div class="pd">
+          <div class="note"><b>按住空格说一句,视频不暂停。</b><br>暂停一次的代价不是几秒钟,是<span class="rl">用户下次会选择「等会儿再记」</span>——而等会儿就是不记。</div>
+        </div>
+        <div class="f1"></div>
+        <div class="ht pd">
+          <div class="rw">
+            <button class="btn p" style="flex:1;justify-content:center">按住说一句</button>
+            <button class="btn">截屏记</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="ann"><b>这一屏是整个产品赌注最集中的地方。</b>doc 01 §2.4 推翻小程序方案,给出的唯一理由就是「iPad 上边看网课边截图」这个场景在小程序上是残的。<br>左边那个窗口刻意画得**什么内容都没有**——一个播放按钮、一条进度条、一句「外部 App · 我们不碰它的内容」。<span class="rl">课在人家那儿放着,这边只记来源名和时间戳</span>,结构上就没有装课程内容的地方。<br><b>「记一笔时视频不暂停」是这一屏的功能定义,不是优化项。</b>暂停一次的代价不是几秒,是用户下次会选「等会儿再记」,而等会儿就是不记——那正好击穿关卡 0 的判据(日均 ≥3 条、「懒得记」次数下降)。</div>
+</div>
+
+<div class="cell">
+  <div class="cap"><span class="cap-n">P2</span><span class="cap-t">截屏拖进来就入队</span></div>
+  <div class="cap-d">iPad 截屏后左下角那张缩略图,直接拖过来。跨 App 拖放,H5 拿不到。</div>
+  <div class="dev pad-l app col" style="position:relative">
+    <div class="split">
+      <div class="foreign" style="width:660px">
+        <div class="fbar"><span>粉笔</span><span class="sp"></span><span class="mono">刚按了 电源 + 音量上</span></div>
+        <div class="video">
+          <div class="ply"></div>
+          <div class="tb"><span>26:41</span><span class="bar"><i></i></span><span>51:02</span><span>1.5×</span></div>
+        </div>
+        <div style="position:absolute;left:16px;bottom:16px;z-index:9">
+          <div class="shot">
+            <i class="ln" style="top:14px"></i><i class="ln" style="top:24px;right:38px"></i>
+            <i class="ln" style="top:40px"></i><i class="ln" style="top:50px;right:52px"></i>
+            <i class="ln" style="top:66px;right:28px"></i>
+            <span class="tagx">截屏</span>
+          </div>
+          <div class="t3 s10 mono" style="margin-top:5px;text-align:center">拖我</div>
+        </div>
+      </div>
+      <div class="spdiv"></div>
+      <div class="col f1" style="min-width:0">
+        <div class="cmd">
+          <span class="ic"></span>
+          <span class="scope">考点 <span class="sep">/</span> <b>资料分析</b></span>
+          <span class="sp"></span><span class="kbd">⌥S</span>
+        </div>
+        <div class="pd" style="flex:1;display:flex;flex-direction:column;gap:12px">
+          <div class="drop" style="flex:1;min-height:0">
+            <span style="font-size:22px;line-height:1">＋</span>
+            <span>松手就入队</span>
+            <span class="t3 s11">来源自动填「粉笔 · 资料分析系统班 L12」</span>
+          </div>
+          <div class="note w"><b>原图到这里为止。</b><br>识别完抽出文字与考点,<span class="rl">原图只在本机短期缓存,不进云、不共享</span>。<br>连一个「上传中」的进度条都没有,因为根本没有上传这一步。</div>
+        </div>
+        <div class="grp">今天入队的<span class="r">3 条 · 全部已识别</span></div>
+        <div class="row"><i class="sd stable"></i><span class="nm">增长率计算</span><span class="c t3 s11">09:12</span></div>
+        <div class="row"><i class="sd weak"></i><span class="nm">增长量计算</span><span class="c t3 s11">09:40</span></div>
+        <div class="row"><i class="sd touch"></i><span class="nm">比重变化</span><span class="c t3 s11">10:03</span></div>
+        <div class="ht pd">
+          <div class="t3 s11">拖放是 iPad 的系统能力。<b>网页版做不到「从别的 App 拖一张图过来」</b>——这是这一份稿子存在的理由之一。</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="ann"><b>这一屏回答「为什么 iPad 要有独立设计」。</b>跨 App 拖放是系统能力,H5 拿不到,小程序更拿不到——用户在网页版里只能「截屏 → 存相册 → 打开我们 → 选照片 → 找到刚才那张」,五步。这里是一步。<br><span class="rl">采集摩擦就是这个产品的命</span>,关卡 0 的两个数(日均记几条、「懒得记」几次)量的正是它。五步变一步不是体验优化,是判据本身。<br>右边刻意<b>没有「上传中」进度条</b>:不是把它藏起来,是根本没有上传这一步。原图识别完就在本机删,不进云、不共享——这条第一天不定,后面改不回来。</div>
+</div>
+
+<div class="cell">
+  <div class="cap"><span class="cap-n">P3</span><span class="cap-t">Apple Pencil 圈一道题</span></div>
+  <div class="cap-d">整页截屏里只要一道题。圈出来的范围就是送进识别的范围。</div>
+  <div class="dev pad-l app col">
+    <div class="cmd lg">
+      <span class="ic"></span>
+      <span class="scope">拍照记 <span class="sep">/</span> <b>圈选</b></span>
+      <span class="sep">·</span>
+      <span class="ph2">用 Pencil 圈住要记的那道题,圈外的不送出去</span>
+      <span class="kbd on">↵ 识别</span><span class="kbd">esc</span>
+    </div>
+    <div class="fx" style="display:flex;flex:1;min-height:0">
+      <div class="col" style="width:720px;border-right:1px solid var(--hair);position:relative;background:var(--bg3)">
+        <div style="position:absolute;inset:26px;display:flex;flex-direction:column;gap:13px">
+          <i class="ln" style="height:2px;background:#2A2D32;display:block"></i>
+          <i class="ln" style="height:2px;background:#2A2D32;display:block;width:72%"></i>
+          <div style="height:9px"></div>
+          <i class="ln" style="height:2px;background:#33373D;display:block"></i>
+          <i class="ln" style="height:2px;background:#33373D;display:block;width:88%"></i>
+          <i class="ln" style="height:2px;background:#33373D;display:block;width:64%"></i>
+          <div style="height:9px"></div>
+          <i class="ln" style="height:2px;background:#2A2D32;display:block;width:80%"></i>
+          <i class="ln" style="height:2px;background:#2A2D32;display:block"></i>
+          <i class="ln" style="height:2px;background:#2A2D32;display:block;width:56%"></i>
+        </div>
+        <div class="circ" style="left:20px;top:104px;right:34px;height:132px"></div>
+        <div style="position:absolute;left:24px;bottom:18px" class="tag on">圈中 1 道</div>
+      </div>
+      <div class="col f1">
+        <div class="grp">圈出来的范围决定了什么</div>
+        <div class="row"><span class="nm">送进识别的</span><span class="t2 s12">只有圈内</span></div>
+        <div class="row"><span class="nm">圈外的</span><span class="t2 s12">不出这台设备</span></div>
+        <div class="row"><span class="nm">整页里的其他题</span><span class="t2 s12">不会被顺带记上</span></div>
+        <div class="pd">
+          <div class="note"><b>圈选不只是省 token,它是「宁缺毋滥」在采集端的形态。</b><br>整页塞进去,模型会从一堆题里挑一个它最有把握的——<span class="rl">而那个不一定是你想记的那个</span>。<br><br>圈一下,候选范围就是你自己划的。</div>
+        </div>
+        <div class="grp">识别出来会是这样</div>
+        <div class="row lg"><i class="sd empty"></i><span class="nm">增长量计算<i style="display:block;font-style:normal;font-size:11px;color:var(--t3);margin-top:1px">候选来自你自己的考点树</i></span><span class="conf"><i class="hi" style="width:86%"></i></span><span class="c wt num s11">0.86</span></div>
+        <div class="row lg"><i class="sd empty"></i><span class="nm">基期量计算</span><span class="conf"><i style="width:41%"></i></span><span class="c wt num s11">0.41</span></div>
+        <div class="pd">
+          <div class="note w">第二个候选 0.41 <b>低于阈值,不会被选中</b>。<br>低于阈值就丢掉,不硬凑一个最接近的考点。</div>
+        </div>
+        <div class="f1"></div>
+        <div class="ht pd">
+          <div class="rw">
+            <button class="btn p" style="flex:1;justify-content:center">记成 增长量计算 <span class="kbd dk">↵</span></button>
+            <button class="btn">都不对</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="ann"><b>圈选看起来是省流量,其实是准确率。</b>把整页截屏塞进模型,它会从一堆题里挑一个最有把握的——<span class="rl">而那个不一定是你想记的那个</span>。错标会让覆盖度失真,而覆盖度就是整个产品。<br>圈完之后<b>圈外的像素不出这台设备</b>,这一条同时服务于准确率和原图红线,两件事在这里恰好同向。<br>右下角保留「都不对」这个出口,和其他各端一致:<b>模型给不出就让用户自己挑,不硬凑</b>。第二候选 0.41 显示出来但不可选,是为了让用户看见「它确实在犹豫」,而不是假装只有一个答案。</div>
+</div>
+
+</div>
+
+<div class="sec"><h2>二 · 复盘与随手记</h2><span class="sub">P4 – P6 · 竖屏全览 · 悬浮记 · 键盘</span></div>
+<div class="grid">
+
+<div class="cell">
+  <div class="cap"><span class="cap-n">P4</span><span class="cap-t">竖屏 · 18 个考点一屏看全</span></div>
+  <div class="cap-d">竖屏比横屏更适合看树。整块空白在这里最有说服力。</div>
+  <div class="dev pad app col">
+    <div class="status">9:41<span class="r">Wi-Fi · 86%</span></div>
+    <div class="cmd lg">
+      <span class="ic"></span>
+      <span class="scope">考点 <span class="sep">/</span> <b>山东省考 · 资料分析</b></span>
+      <span class="sp"></span><span class="kbd">⌘K</span><span class="kbd on">N 记一笔</span>
+    </div>
+    <div class="pd hb">
+      <div class="rw">
+        <span class="big">44<s>%</s></span>
+        <div class="vs" style="margin:0 6px"></div>
+        <div style="flex:1">
+          <div class="num t2 s12">18 考点 · 8 有记录 · 10 空白</div>
+          <div class="num red s12" style="margin-top:4px">2 组整块空白</div>
+        </div>
+      </div>
+      <div class="meter tall" style="margin-top:11px">
+        <i style="width:16.7%;background:var(--s-stable)"></i><i style="width:11.1%;background:var(--s-weak)"></i>
+        <i style="width:11.1%;background:var(--s-rusty)"></i><i style="width:5.6%;background:var(--s-touch)"></i>
+        <i style="width:55.5%;background:var(--s-empty)"></i>
+      </div>
+      <div class="lg-row" style="margin-top:8px"><s>稳 3</s><s>弱 2</s><s>生疏 2</s><s>仅接触 1</s><s>空白 10</s></div>
+    </div>
+    <div class="f1" style="overflow:hidden">
+      <div class="grp">增长类<span class="r">4/7 有记录</span></div>
+      <div class="row"><span class="ix">01</span><i class="sd stable"></i><span class="nm">增长率计算</span><span class="c wt2 t3 s11">9次 · 今天</span></div>
+      <div class="row"><span class="ix">02</span><i class="sd weak"></i><span class="nm">增长量计算</span><span class="c wt2 t3 s11">8次 · 2天前</span></div>
+      <div class="row"><span class="ix">03</span><i class="sd rusty"></i><span class="nm">基期量计算</span><span class="c wt2 t3 s11">7次 · 32天前</span></div>
+      <div class="row"><span class="ix">04</span><i class="sd rusty"></i><span class="nm">间隔增长率</span><span class="c wt2 t3 s11">6次 · 33天前</span></div>
+      <div class="row"><span class="ix">05</span><i class="sd empty"></i><span class="nm off">现期量计算</span><span class="c wt2 t3 s11">5次 · —</span></div>
+      <div class="row"><span class="ix">06</span><i class="sd empty"></i><span class="nm off">年均增长率</span><span class="c wt2 t3 s11">4次 · —</span></div>
+      <div class="row"><span class="ix">07</span><i class="sd empty"></i><span class="nm off">混合增长率</span><span class="c wt2 t3 s11">2次 · —</span></div>
+      <div class="grp void">倍数与比较 · 整块空白<span class="r">0/3 · 频次合计 12</span></div>
+      <div class="row"><span class="ix">08</span><i class="sd empty"></i><span class="nm off">倍数计算</span><span class="c wt2 t3 s11">5次 · —</span></div>
+      <div class="row"><span class="ix">09</span><i class="sd empty"></i><span class="nm off">倍数变化</span><span class="c wt2 t3 s11">3次 · —</span></div>
+      <div class="row"><span class="ix">10</span><i class="sd empty"></i><span class="nm off">同比与环比</span><span class="c wt2 t3 s11">4次 · —</span></div>
+      <div class="grp void">效应类 · 整块空白<span class="r">0/2 · 频次合计 6</span></div>
+      <div class="row"><span class="ix">11</span><i class="sd empty"></i><span class="nm off">贡献率</span><span class="c wt2 t3 s11">3次 · —</span></div>
+      <div class="row"><span class="ix">12</span><i class="sd empty"></i><span class="nm off">拉动增长</span><span class="c wt2 t3 s11">3次 · —</span></div>
+      <div class="grp">平均与比重<span class="r">2/3 有记录</span></div>
+      <div class="row"><span class="ix">13</span><i class="sd stable"></i><span class="nm">比重计算</span><span class="c wt2 t3 s11">8次 · 昨天</span></div>
+      <div class="row"><span class="ix">14</span><i class="sd empty"></i><span class="nm off">平均数计算</span><span class="c wt2 t3 s11">6次 · —</span></div>
+      <div class="row"><span class="ix">15</span><i class="sd touch"></i><span class="nm">比重变化</span><span class="c wt2 t3 s11">5次 · 5天前</span></div>
+      <div class="grp">速算技巧<span class="r">2/3 有记录</span></div>
+      <div class="row"><span class="ix">16</span><i class="sd weak"></i><span class="nm">截位直除</span><span class="c wt2 t3 s11">7次 · 4天前</span></div>
+      <div class="row"><span class="ix">17</span><i class="sd stable"></i><span class="nm">特征数字法</span><span class="c wt2 t3 s11">4次 · 3天前</span></div>
+      <div class="row"><span class="ix">18</span><i class="sd empty"></i><span class="nm off">分数比较</span><span class="c wt2 t3 s11">3次 · —</span></div>
+    </div>
+    <div class="ht pd" style="padding:11px 14px">
+      <div class="note">实心的碰过,空心虚线的没碰过。<br><b>两条红色分组头是这一屏唯一想让你看见的东西。</b></div>
+    </div>
+    <div class="homebar"><i></i></div>
+  </div>
+  <div class="ann"><b>竖屏比横屏更适合看树,所以竖屏不是横屏的降级形态。</b>18 行一屏放得下、不用滚动,而「整块空白」这个产品语义只有在<span class="rl">连续几行全是空心圆点</span>时才成立——滚动会把这个连续性切断。<br>分组头承担全部表达,不用图表:<b>不是某个考点弱,是一整块从来没碰过</b>。<br>这一屏与桌面 D3、H5 H2 的数据逐字一致(18/8/44%、五态 3-2-2-1-10),<b>五端看到的是同一个数</b>——跨端一致本身就是产品承诺的一部分。</div>
+</div>
+
+<div class="cell">
+  <div class="cap"><span class="cap-n">P5</span><span class="cap-t">Slide Over · 不离开当前 App</span></div>
+  <div class="cap-d">悬浮窄窗。人还在别的 App 里,记完滑走。</div>
+  <div class="dev pad-l app col" style="position:relative">
+    <div class="foreign" style="flex:1">
+      <div class="fbar"><span>Safari · 某个题库网页</span><span class="sp"></span><span class="mono">外部来源</span></div>
+      <div class="video" style="background:#0D0E10">
+        <div style="position:absolute;left:44px;right:400px;top:52px;display:flex;flex-direction:column;gap:14px">
+          <i style="height:2px;background:#26282C;display:block"></i>
+          <i style="height:2px;background:#26282C;display:block;width:76%"></i>
+          <i style="height:2px;background:#26282C;display:block;width:88%"></i>
+          <i style="height:2px;background:#26282C;display:block;width:54%"></i>
+        </div>
+      </div>
+    </div>
+    <div class="slide">
+      <div class="grab"><i></i></div>
+      <div class="cmd">
+        <span class="ic"></span>
+        <span class="scope">记一笔</span>
+        <span class="sp"></span><span class="kbd">esc</span>
+      </div>
+      <div class="pd hb">
+        <span class="lbl">来源</span>
+        <div class="field"><span class="s12">B站 · 资料分析技巧</span></div>
+        <div class="t3 s11" style="margin-top:7px">从剪贴板认出来的,可以改</div>
+      </div>
+      <div class="grp">形式<span class="r">选一个</span></div>
+      <div class="pd" style="padding-top:10px">
+        <div class="seg"><s class="on">粘一段</s><s>语音</s><s>拍照</s><s>做题</s></div>
+        <div class="tarea" style="margin-top:11px;height:96px">粘进来的文字只用来认考点,认完就丢,不落库。</div>
+      </div>
+      <div class="grp">认出来的<span class="r">1 个</span></div>
+      <div class="row lg"><i class="sd empty"></i><span class="nm">截位直除</span><span class="c wt num s11">0.81</span></div>
+      <div class="f1"></div>
+      <div class="ht pd">
+        <button class="btn p blk">记下 <span class="kbd dk">↵</span></button>
+        <div class="t3 s11" style="margin-top:8px;text-align:center">记完滑走,Safari 没动过</div>
+      </div>
+    </div>
+  </div>
+  <div class="ann"><b>Slide Over 是 iPad 上唯一「不切换 App 就能记」的形态。</b>用户在 Safari 里看一篇题解,想记一笔——网页版的路径是「新开一个标签页 → 登录状态还在吗 → 找到记一笔」,而这里是从右边缘划一下。<br><span class="rl">采集摩擦的单位是「几个动作」,不是「几秒钟」</span>。多一个动作就多一次放弃的机会,而关卡 0 量的就是放弃了几次。<br>来源名从剪贴板自动认出来并<b>允许改</b>:自动填错比不填更糟,因为用户不会去核对一个已经填好的框——所以它旁边永远有一句「可以改」。</div>
+</div>
+
+<div class="cell">
+  <div class="cap"><span class="cap-n">P6</span><span class="cap-t">妙控键盘 · ⌘ 在 iPad 上也成立</span></div>
+  <div class="cap-d">接上键盘的 iPad 就是一台窄一点的电脑,命令条骨架原样搬过来。</div>
+  <div class="dev pad-l app col">
+    <div class="cmd lg">
+      <span class="ic"></span>
+      <span class="scope">考点 <span class="sep">/</span> <b>山东省考 · 资料分析</b></span>
+      <span class="sep">·</span>
+      <span class="ph2">搜考点、切科目、执行动作,都在这条里</span>
+      <span class="kbd on">⌘K</span><span class="kbd">⌘N</span><span class="kbd">⌘E</span><span class="kbd">⌘J</span>
+    </div>
+    <div class="fx" style="display:flex;flex:1;min-height:0">
+      <div class="col" style="width:640px;border-right:1px solid var(--hair)">
+        <div class="grp">命令面板<span class="r">它就是导航栏</span></div>
+        <div class="pd" style="padding-bottom:9px">
+          <div class="field fc"><span class="mono t3 s12">&gt;</span><span>增长</span><span class="sp"></span><span class="kbd">esc</span></div>
+        </div>
+        <div class="row sel"><i class="sd stable"></i><span class="nm">增长率计算</span><span class="c t3 s11">考点</span><span class="kbd">↵</span></div>
+        <div class="row"><i class="sd weak"></i><span class="nm">增长量计算</span><span class="c t3 s11">考点</span></div>
+        <div class="row"><i class="sd rusty"></i><span class="nm">间隔增长率</span><span class="c t3 s11">考点</span></div>
+        <div class="row"><i class="sd empty"></i><span class="nm off">年均增长率</span><span class="c t3 s11">考点</span></div>
+        <div class="row"><span class="nm t2">增长类</span><span class="c t3 s11">题型 · 4/7</span></div>
+        <div class="row"><span class="nm t2">跳到「先补这几个」</span><span class="c t3 s11">动作</span></div>
+        <div class="pd">
+          <div class="note">没有左侧菜单,没有面包屑。<br><b>位置信息在命令条左边的 scope 段里</b>,层级切换靠 ⌘K——桌面稿的骨架规则在这里一条都没变。</div>
+        </div>
+        <div class="f1"></div>
+      </div>
+      <div class="col f1">
+        <div class="grp">在 iPad 上成立的快捷键</div>
+        <div class="row sm"><span class="nm">命令条</span><span class="kbd">⌘K</span></div>
+        <div class="row sm"><span class="nm">记一笔</span><span class="kbd">⌘N</span></div>
+        <div class="row sm"><span class="nm">粘一段</span><span class="kbd">⌘V</span></div>
+        <div class="row sm"><span class="nm">问 AI 时带上的东西</span><span class="kbd">⌘J</span></div>
+        <div class="row sm"><span class="nm">导出</span><span class="kbd">⌘E</span></div>
+        <div class="row sm"><span class="nm">撤销刚才那笔</span><span class="kbd">⌘Z</span></div>
+        <div class="grp void">在 iPad 上不成立的<span class="r">别照搬</span></div>
+        <div class="row sm"><span class="nm">全局热键(不在前台也能记)</span><span class="tag w">拿不到</span></div>
+        <div class="row sm"><span class="nm">监听截图目录自动入队</span><span class="tag w">拿不到</span></div>
+        <div class="pd">
+          <div class="note w"><b>这两条是桌面稿里有、iPad 上做不到的。</b><br>照搬一份快捷键表过来、再让其中两个点了没反应,比不做更糟。<br><br>iPad 的对应形态是 <b>P2 的拖放</b> 与 <b>P5 的 Slide Over</b>——<span class="rl">同一个需求,不同的系统能力</span>。</div>
+        </div>
+        <div class="f1"></div>
+        <div class="ht pd">
+          <div class="t3 s11">接上妙控键盘的 iPad 在交互上更接近电脑而不是手机。<b>所以这一屏几乎就是桌面稿</b>——不是偷懒,是同一套骨架在不同硬件上的自然结果。</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="mkb"><span>妙控键盘</span><span>⌘K</span><span>⌘N</span><span>⌘E</span><span>⌘J</span><span>触控板</span></div>
+  <div class="ann"><b>这一屏几乎就是桌面稿,而这件事值得说明白。</b>接上妙控键盘的 iPad 在交互上更接近电脑,同一套「命令条 + 密集行、无侧栏无面包屑」的骨架原样成立——<span class="rl">不是偷懒,是同一套骨架在不同硬件上的自然结果</span>。<br>右下角那组「在 iPad 上不成立的」是这一屏真正的价值:<b>全局热键、监听截图目录,桌面能做、iPad 拿不到</b>。照搬一份快捷键表过来、再让其中两个点了没反应,比不做更糟。<br>iPad 对这两个需求的答案不是快捷键,是 P2 的拖放和 P5 的 Slide Over——同一个需求,不同的系统能力。</div>
+</div>
+
+</div>
+
+
+<div class="sec"><h2>三 · 进入与出口</h2><span class="sub">P7 – P10 · 这半边此前整个缺席,与其余各端拉齐</span></div>
+<div class="grid">
+
+<div class="cell">
+  <div class="cap"><span class="cap-n">P7</span><span class="cap-t">登录 · 手机号 / 微信扫码</span></div>
+  <div class="cap-d">iPad 是扫码体验最好的一端:二维码有地方放,不用挤。</div>
+  <div class="dev pad-l app col">
+    <div class="status">9:41<span class="r">Wi-Fi · 86%</span></div>
+    <div class="cmd lg">
+      <span class="ic"></span>
+      <span class="scope">考点盲区 / <b>登录</b></span>
+      <span class="sp"></span><span class="kbd">v0.4.2</span>
+    </div>
+    <div class="split" style="flex:1">
+      <div class="col" style="width:600px;border-right:1px solid var(--hair);padding:34px 40px">
+        <div style="font-size:26px;font-weight:600;letter-spacing:-.01em">考点盲区</div>
+        <div class="t2 s13" style="margin-top:8px">你碰过的,和你还没碰过的。</div>
+        <div class="seg" style="margin-top:26px;width:230px"><s class="on">手机号</s><s>微信扫码</s></div>
+        <div style="margin-top:22px">
+          <span class="lbl">手机号</span>
+          <div class="field"><span class="pre">+86</span><span>138 0013 6027</span></div>
+        </div>
+        <div style="margin-top:18px">
+          <span class="lbl">验证码 · 已发送,60 秒后可重发</span>
+          <div class="otp"><i>4</i><i>0</i><i>7</i><i class="cur"></i></div>
+        </div>
+        <div class="rw" style="margin-top:22px">
+          <button class="btn p lg">进去 <span class="kbd dk">↵</span></button>
+          <button class="btn lg">换个号</button>
+          <span class="t3 num s11" style="margin-left:4px">58s</span>
+        </div>
+        <div class="sp"></div>
+        <div class="note">手机号是跨端账号锚点。<b>iPad、电脑、手机、导出的文件都按它对齐</b>;微信只是挂在这个号下面的登录方式。<br><span class="rl">没有社交关系,没有好友,没有排行榜。</span></div>
+      </div>
+      <div class="col f1" style="align-items:center;justify-content:center;padding:34px">
+        <div class="qr"><span class="m"></span><b class="tl"></b><b class="tr"></b><b class="bl"></b></div>
+        <div class="s13" style="margin-top:18px">微信扫一扫</div>
+        <div class="t3 s11" style="margin-top:7px;text-align:center;line-height:1.75">
+          扫完还要补一次手机号。<br><b style="color:var(--t2)">微信只是快登,不是账号本身。</b>
+        </div>
+        <div class="t3 mono s10" style="margin-top:12px">二维码 90 秒后失效</div>
+      </div>
+    </div>
+    <div class="ht" style="padding:11px 16px;display:flex;align-items:center;gap:18px">
+      <span class="t3 s11">数据存在你的账号下</span>
+      <span class="t3 s11">随时全量导出 md / csv / json</span>
+      <span class="sp"></span>
+      <span class="t3 s11">登录即同意 用户协议 · 隐私政策</span>
+    </div>
+  </div>
+  <div class="ann"><b>iPad 是扫码体验最好的一端,所以这一屏的两栏配比与桌面稿不同。</b>桌面上扫码是 seg 切换后才出现的次要通道;这里二维码常驻右栏,因为 iPad 用户手边一定有手机,而在 iPad 上敲手机号比在电脑上更别扭。<br>「<span class="rl">微信只是快登,不是账号本身</span>」这句话在桌面、iPad、App 三稿逐字一致,不是文案复用,是产品定义:<b>手机号是跨端锚点</b>,两端不是一个账号,差集就算错。<br>登录页不出现任何课程、题库、榜单——不碰内容与不做社交,在第一屏就得成立。</div>
+</div>
+
+<div class="cell">
+  <div class="cap"><span class="cap-n">P8</span><span class="cap-t">首次进入 · 哪些你已经学过</span></div>
+  <div class="cap-d">横屏两栏,18 个一次勾完,不做分步向导。</div>
+  <div class="dev pad-l app col">
+    <div class="status">9:41<span class="r">Wi-Fi · 86%</span></div>
+    <div class="cmd lg">
+      <span class="ic"></span>
+      <span class="scope">首次进入 / <b>山东省考 · 行测 · 资料分析</b></span>
+      <span class="sp"></span><span class="kbd">1 / 1</span>
+    </div>
+    <div class="pd hb" style="display:flex;align-items:flex-end;gap:22px">
+      <div>
+        <div class="s15" style="font-size:19px;font-weight:600">哪些你已经学过</div>
+        <div class="t2 s12" style="margin-top:7px;line-height:1.7">勾掉学过的,免得把「学过但没记过」也算成盲区。凭印象勾就行,后面有记录了会自己覆盖。</div>
+      </div>
+      <div class="sp"></div>
+      <div style="text-align:right">
+        <span class="num acid" style="font-size:26px">5</span><span class="t3 num s13"> / 18</span>
+        <div class="t3 s11" style="margin-top:2px">已勾</div>
+      </div>
+      <button class="btn">全选</button>
+    </div>
+    <div class="split" style="flex:1">
+      <div class="col" style="width:597px;border-right:1px solid var(--hair)">
+        <div class="grp">增长类<span class="r">7</span></div>
+        <div class="row"><span class="ck on"></span><span class="nm">增长率计算</span><span class="c t3 s11">近五年 9 次</span></div>
+        <div class="row"><span class="ck on"></span><span class="nm">增长量计算</span><span class="c t3 s11">近五年 8 次</span></div>
+        <div class="row"><span class="ck on"></span><span class="nm">基期量计算</span><span class="c t3 s11">近五年 7 次</span></div>
+        <div class="row"><span class="ck"></span><span class="nm">间隔增长率</span><span class="c t3 s11">近五年 6 次</span></div>
+        <div class="row"><span class="ck"></span><span class="nm">现期量计算</span><span class="c t3 s11">近五年 5 次</span></div>
+        <div class="row"><span class="ck"></span><span class="nm">年均增长率</span><span class="c t3 s11">近五年 4 次</span></div>
+        <div class="row"><span class="ck"></span><span class="nm">混合增长率</span><span class="c t3 s11">近五年 2 次</span></div>
+        <div class="grp">倍数与比较<span class="r">3</span></div>
+        <div class="row"><span class="ck"></span><span class="nm">倍数计算</span><span class="c t3 s11">近五年 5 次</span></div>
+        <div class="row"><span class="ck"></span><span class="nm">倍数变化</span><span class="c t3 s11">近五年 3 次</span></div>
+        <div class="row"><span class="ck"></span><span class="nm">同比与环比</span><span class="c t3 s11">近五年 4 次</span></div>
+        <div class="grp">效应类<span class="r">2</span></div>
+        <div class="row"><span class="ck"></span><span class="nm">贡献率</span><span class="c t3 s11">近五年 3 次</span></div>
+        <div class="row"><span class="ck"></span><span class="nm">拉动增长</span><span class="c t3 s11">近五年 3 次</span></div>
+        <div class="f1"></div>
+      </div>
+      <div class="col f1">
+        <div class="grp">平均与比重<span class="r">3</span></div>
+        <div class="row"><span class="ck on"></span><span class="nm">比重计算</span><span class="c t3 s11">近五年 8 次</span></div>
+        <div class="row"><span class="ck"></span><span class="nm">平均数计算</span><span class="c t3 s11">近五年 6 次</span></div>
+        <div class="row"><span class="ck"></span><span class="nm">比重变化</span><span class="c t3 s11">近五年 5 次</span></div>
+        <div class="grp">速算技巧<span class="r">3</span></div>
+        <div class="row"><span class="ck"></span><span class="nm">截位直除</span><span class="c t3 s11">近五年 7 次</span></div>
+        <div class="row"><span class="ck on"></span><span class="nm">特征数字法</span><span class="c t3 s11">近五年 4 次</span></div>
+        <div class="row"><span class="ck"></span><span class="nm">分数比较</span><span class="c t3 s11">近五年 3 次</span></div>
+        <div class="grp">勾完之后会怎样</div>
+        <div class="row sm"><span class="nm t2">勾了的</span><span class="t2 s11">显示成「学过,没记录」,不进盲区</span></div>
+        <div class="row sm"><span class="nm t2">没勾的</span><span class="t2 s11">空白,进「先补这几个」</span></div>
+        <div class="row sm"><span class="nm t2">记了一笔之后</span><span class="t2 s11">自动变成 稳 / 弱 / 生疏</span></div>
+        <div class="row sm"><span class="nm t2">勾错了</span><span class="t2 s11">设置里随时改,不会丢记录</span></div>
+        <div class="pd">
+          <div class="note"><b>勾了只表示「学过」,不表示「练过」。</b><br>这一屏不问你学得怎么样,只问碰没碰过——<span class="rl">「学过」和「练过」是两件事,产品从头到尾不判断第三件:对不对</span>。</div>
+        </div>
+        <div class="f1"></div>
+      </div>
+    </div>
+    <div class="ht pd" style="display:flex;align-items:center;gap:14px">
+      <button class="btn">跳过,我从零开始</button>
+      <span class="t3 s11">全不勾也行。那样 18 个全是空白,你自己知道就好。</span>
+      <span class="sp"></span>
+      <button class="btn p lg">就这些 <span class="kbd dk">↵</span></button>
+    </div>
+  </div>
+  <div class="ann"><b>这屏解决差集的第一个漏洞。</b><span class="m">盲区 = 骨架层 − 行为层</span>,而新用户的行为层是空的,系统会把「学过但没记过」全判成盲区——第一屏就全红,人会直接走。<br>横屏两栏让 18 个考点<b>一次勾完、不用滚动、不做分步向导</b>:一次性的问题分成三步问,放弃率只会更高。这是 iPad 相对手机(H17 要滚)和桌面(D2 也是两栏)的实际差别——<span class="rl">这三者里,只有 iPad 能把「全集一屏呈现」和「手指直接点」同时做到</span>。<br>勾选只写「碰过」,不写「对不对」,依然没有任何测评。</div>
+</div>
+
+<div class="cell">
+  <div class="cap"><span class="cap-n">P9</span><span class="cap-t">考点详情 · 四统计字段与跨来源时间线</span></div>
+  <div class="cap-d">产品的立身之处:同一个考点下,五家来源的记录并排。</div>
+  <div class="dev pad-l app col">
+    <div class="status">9:41<span class="r">Wi-Fi · 86%</span></div>
+    <div class="cmd lg">
+      <span class="ic"></span>
+      <span class="scope">考点 / 增长类 / <b>增长率计算</b></span>
+      <span class="sep">·</span>
+      <span class="ph2">这一屏只回答:有没有、几次、多久前</span>
+      <span class="kbd">⌘K</span><span class="kbd">esc</span>
+    </div>
+    <div class="split" style="flex:1">
+      <div class="col" style="width:640px;border-right:1px solid var(--hair)">
+        <div class="pd hb">
+          <div class="rw"><i class="sd stable lg"></i><span class="s15" style="font-size:19px;font-weight:600">增长率计算</span>
+            <span class="tag">稳</span><span class="sp"></span><span class="mono t3 s11">KD-ZL-01</span></div>
+        </div>
+        <div class="st4 hb">
+          <div><u>练过几道</u><b>12</b></div>
+          <div><u>自己填的对</u><b>10</b></div>
+          <div><u>正确率</u><b>83<s>%</s></b></div>
+          <div><u>近五年</u><b>9<s>次</s></b></div>
+        </div>
+        <div class="pd hb">
+          <div class="note"><b>正确率是你自己填的数,不是我们判的。</b><br>记录一个你输入的数字是「几次」;<span class="rl">判断一道题对不对,是这个产品永远不做的事</span>。</div>
+        </div>
+        <div class="grp">五家来源,一条线<span class="r">5 条 · 最近 今天</span></div>
+        <div class="pd" style="padding-top:12px">
+          <div class="tl">
+            <div class="ti now"><div class="rw"><span class="mono t3 s11">今天 14:02</span><span class="s12">自己刷题 · 2023 国考真题</span><span class="sp"></span><span class="tag">记做题 12/10</span></div></div>
+            <div class="ti"><div class="rw"><span class="mono t3 s11">今天 09:12</span><span class="s12">粉笔 · 资料分析系统班 L12</span><span class="sp"></span><span class="tag">语音记</span></div></div>
+            <div class="ti"><div class="rw"><span class="mono t3 s11">3 天前</span><span class="s12">B站 · 资料分析技巧</span><span class="sp"></span><span class="tag">拍照记</span></div></div>
+            <div class="ti"><div class="rw"><span class="mono t3 s11">4 天前</span><span class="s12">华图 · 资料速算网课</span><span class="sp"></span><span class="tag">语音记</span></div></div>
+            <div class="ti"><div class="rw"><span class="mono t3 s11">9 天前</span><span class="s12">中公 · 资料分析专项</span><span class="sp"></span><span class="tag">粘一段</span></div></div>
+          </div>
+        </div>
+        <div class="f1"></div>
+      </div>
+      <div class="col f1">
+        <div class="grp void">这条线上存了什么<span class="r">两列,没有第三列</span></div>
+        <div class="row"><span class="nm">来源名称</span><span class="t2 s11">粉笔 · 资料分析系统班 L12</span></div>
+        <div class="row"><span class="nm">时间戳</span><span class="t2 s11">2026-08-26 09:12</span></div>
+        <div class="row"><span class="nm off">课程内容 / 讲义 / 题干</span><span class="tag w">没有这一列</span></div>
+        <div class="pd">
+          <div class="note w"><b>不是「不填」,是结构上没有位置。</b><br>存机构的课程内容会让这个产品变成盗版课件的托管方——<span class="rl">这条第一天不定,后面改不回来</span>。<br><br>所以这张表只有两列,而且以后也加不了第三列。</div>
+        </div>
+        <div class="grp">这一屏为什么是产品的立身之处</div>
+        <div class="pd">
+          <div class="note"><b>五家机构的记录出现在同一条线上。</b><br>粉笔的 App 里看不到你在中公听了什么,华图的也一样——<span class="rl">它们结构上做不到,因为聚合竞品的学习记录等于拆自己的墙</span>。<br><br>而这个产品什么内容都不存,所以它做得到。</div>
+        </div>
+        <div class="grp">能做的三件事</div>
+        <div class="row sm"><span class="nm">再记一笔</span><span class="kbd">⌘N</span></div>
+        <div class="row sm"><span class="nm">问 AI 时带上这个考点</span><span class="kbd">⌘J</span></div>
+        <div class="row sm"><span class="nm">改名 / 归档(去网页版)</span><span class="t3 s11">坐下来做的事</span></div>
+        <div class="f1"></div>
+      </div>
+    </div>
+  </div>
+  <div class="ann"><b>这一屏是整个产品的立身之处,不是一个详情页。</b>五家机构的记录出现在同一条线上——粉笔的 App 里看不到你在中公听了什么,反过来也一样。<span class="rl">它们结构上做不到:聚合竞品的学习记录等于拆自己的墙。</span><br>而这个产品做得到的原因恰恰是它<b>什么内容都不存</b>。右栏那张「两列,没有第三列」的表把这件事说死:不是不填,是结构上没有位置,以后也加不了第三列。<br>四统计字段旁边那句「正确率是你自己填的数」在每一端都出现:<b>记录一个用户输入的数字是「几次」,判断一道题对不对是永远不做的事。</b></div>
+</div>
+
+<div class="cell">
+  <div class="cap"><span class="cap-n">P10</span><span class="cap-t">出口 · 问 AI、导出、只读接入</span></div>
+  <div class="cap-d">不做教研的三个出口。学科判断全部往外交。</div>
+  <div class="dev pad-l app col">
+    <div class="status">9:41<span class="r">Wi-Fi · 86%</span></div>
+    <div class="cmd lg">
+      <span class="ic"></span>
+      <span class="scope">出口 / <b>问 AI 时带上的东西</b></span>
+      <span class="sep">·</span>
+      <span class="ph2">复制走,粘到任何一个模型里</span>
+      <span class="kbd on">⌘J</span><span class="kbd">⌘E</span>
+    </div>
+    <div class="split" style="flex:1">
+      <div class="col" style="width:660px;border-right:1px solid var(--hair)">
+        <div class="grp">这段文字是产品的全部产出<span class="r">可全选</span></div>
+        <div class="pd">
+          <div class="code">我在准备<b>山东省考 · 行测 · 资料分析</b>。
+我的考点覆盖情况:
+
+<i>已经练过且稳</i>:增长率计算、比重计算、特征数字法
+<i>练过但正确率低</i>:增长量计算(8 题对 4)、截位直除(6 题对 2)
+<i>练过但超过 30 天没碰</i>:基期量计算、间隔增长率
+<i>只听过没练过</i>:比重变化
+<i>完全没碰过</i>:现期量计算、年均增长率、混合增长率、
+  倍数计算、倍数变化、同比与环比、贡献率、拉动增长、
+  平均数计算、分数比较
+
+<b>请针对「完全没碰过」里近五年频次最高的三个,
+各讲一遍解题思路,并给我两道例题。</b></div>
+          <div class="rw" style="margin-top:13px">
+            <button class="btn p">复制 <span class="kbd dk">⌘J</span></button>
+            <span class="t3 s11">粘到 豆包 / DeepSeek / ChatGPT / 任何一个</span>
+          </div>
+        </div>
+        <div class="pd">
+          <div class="note"><b>不做教研,在这里不是一句免责,是一个功能。</b><br>产品只负责把「你碰过什么、没碰过什么」组装成一段话;<span class="rl">讲解、例题、对不对,全部交给外面的模型</span>。<br><br>它也说明了为什么这段文字里<b>一个字的课程内容都没有</b>——全是从记录推出来的事实。</div>
+        </div>
+        <div class="f1"></div>
+      </div>
+      <div class="col f1">
+        <div class="grp">导出<span class="r">全量 · 不限次数 · 不加水印</span></div>
+        <div class="row"><span class="nm">Markdown</span><span class="t3 s11">考点树 + 五态 + 时间线</span><button class="btn">导</button></div>
+        <div class="row"><span class="nm">CSV</span><span class="t3 s11">每条记录一行</span><button class="btn">导</button></div>
+        <div class="row"><span class="nm">JSON</span><span class="t3 s11">含考点树结构</span><button class="btn">导</button></div>
+        <div class="row"><span class="nm">已归档的考点</span><span class="t2 s11">一并导出</span><span class="tag w">固定</span></div>
+        <div class="pd">
+          <div class="note w"><b>归档清单必须在导出里,这条没有开关。</b><br>归档是唯一一个不用真学就能让覆盖率上升的操作——<span class="rl">不让它被无声地做掉,靠的就是这一行</span>。</div>
+        </div>
+        <div class="grp">只读接入<span class="r">MCP / CLI</span></div>
+        <div class="row"><span class="nm">令牌</span><span class="mono t3 s11">ro_a41f…9c2e</span><button class="btn">复制</button></div>
+        <div class="row sm"><span class="nm t2">能读</span><span class="t2 s11">考点树 / 覆盖率 / 盲区 / 时间线</span></div>
+        <div class="row sm"><span class="nm t2">不能写</span><span class="t2 s11">采集、支付、额度一律不注册</span></div>
+        <div class="pd">
+          <div class="note"><b><span class="m">ro_</span> 前缀不是装饰,是凭证本身的一部分。</b><br>拿着它换不出写能力——<span class="rl">不是被判断为不许写,是这个令牌根本换不出来</span>。</div>
+        </div>
+        <div class="f1"></div>
+        <div class="ht pd">
+          <div class="t3 s11"><b>导出与盲区诊断永不上锁</b>,五端一致。付费拦的只有「替你转写、替你打标、替你去问」。</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="ann"><b>「问 AI 时带上的东西」是这套设计里最反直觉、也最重要的一屏。</b>别的产品会想办法把用户留在自己的对话框里;这里直接给一段可复制的纯文本,<span class="rl">送用户去别人的模型</span>。<br>因为不做教研不是一句免责声明,是产品定义:学科判断外包出去,才换来「什么内容都不存」这个前提,而那个前提又是跨来源聚合能成立的唯一原因。<b>三件事是同一件事。</b><br>这段文字里一个字的课程内容都没有——全是从记录推出来的事实(有没有、几次、多久前)。<br>右栏「已归档的考点一并导出」标了<b>固定</b>:它是防止覆盖率被无声刷高的三条防线之一,不做成开关。</div>
+</div>
+
+</div>
+
+<div class="sec"><h2>四 · 会员与设置</h2><span class="sub">P11 – P13 · 收的是模型钱,不是你的记录</span></div>
+<div class="grid">
+
+<div class="cell">
+  <div class="cap"><span class="cap-n">P11</span><span class="cap-t">定价与扫码支付</span></div>
+  <div class="cap-d">一个付费档。iPad 上支付走扫码,与桌面同价。</div>
+  <div class="dev pad-l app col">
+    <div class="status">9:41<span class="r">Wi-Fi · 86%</span></div>
+    <div class="cmd lg">
+      <span class="ic"></span>
+      <span class="scope">定价 / <b>一个付费档</b></span>
+      <span class="sep">·</span>
+      <span class="ph2">当前 免费 · 本月录入 28/30</span>
+      <span class="kbd">esc</span>
+    </div>
+    <div class="split" style="flex:1">
+      <div class="col" style="width:700px;border-right:1px solid var(--hair)">
+        <div class="prow" style="background:var(--bg3)">
+          <div><div class="pn">项目</div></div>
+          <div><div class="pn">免费</div><div class="pv">¥0</div></div>
+          <div style="background:rgba(201,242,77,.05)"><div class="pn" style="color:var(--acid)">记多点</div><div class="pv" style="color:var(--acid)">¥9.9 / 月</div></div>
+        </div>
+        <div class="prow"><div><div class="pn">AI 录入(语音转写 / 拍照打标)</div></div><div><div class="pv">30 次/月</div></div><div><div class="pv">300 次/月</div></div></div>
+        <div class="prow"><div><div class="pn">AI 代发提问</div></div><div><div class="pv">5 次/月</div></div><div><div class="pv">50 次/月</div></div></div>
+        <div class="prow"><div><div class="pn">手动记录(记做题 / 粘一段自己挂考点)</div></div><div><div class="pv">不限</div></div><div><div class="pv">不限</div></div></div>
+        <div class="prow"><div><div class="pn">盲区诊断</div></div><div><div class="pv">不限</div></div><div><div class="pv">不限</div></div></div>
+        <div class="prow"><div><div class="pn">导出 md / csv / json</div></div><div><div class="pv">不限</div></div><div><div class="pv">不限</div></div></div>
+        <div class="prow"><div><div class="pn">MCP / CLI 只读接入</div></div><div><div class="pv">不限</div></div><div><div class="pv">不限</div></div></div>
+        <div class="pd">
+          <div class="note w"><b>盲区诊断与导出永远不进付费墙。</b><br>被拦下的只有三件事:<span class="rl">替你转写、替你打标、替你去问</span>——它们每一次都产生一笔真实的外部账单。<br><br><b>计费的是成本,不是价值。</b>你的记录、你的覆盖率、你的盲区清单,一次都不锁。</div>
+        </div>
+        <div class="f1"></div>
+      </div>
+      <div class="col f1" style="align-items:center;padding:30px 24px">
+        <div class="qr"><span class="m"></span><b class="tl"></b><b class="tr"></b><b class="bl"></b></div>
+        <div class="s13" style="margin-top:16px">微信扫码支付 <span class="num" style="font-size:17px">¥9.90</span></div>
+        <div class="t3 mono s10" style="margin-top:8px">二维码 15 分钟后失效</div>
+        <div style="width:100%;margin-top:22px">
+          <div class="row sm"><span class="nm t2">商品</span><span class="t2 s11">记多点 · 1 个月</span></div>
+          <div class="row sm"><span class="nm t2">到期</span><span class="t2 s11">2026-09-26</span></div>
+          <div class="row sm"><span class="nm t2">自动续费</span><span class="tag w">不做</span></div>
+        </div>
+        <div class="note w" style="margin-top:18px"><b>到期就停,不会再扣任何一笔钱。</b><br>各端同价 ¥9.90,<span class="rl">不做分端差价</span>——差价本身就是一支指向外部支付的箭头。</div>
+        <div class="f1"></div>
+      </div>
+    </div>
+  </div>
+  <div class="ann"><b>定价页用分栏密集行,不用卡片</b>——三列之间是 1px 发丝线,零圆角容器、零阴影。骨架规则在商业化页面上不放松,否则这里会第一个变回「AI 味」的样子。<br><span class="rl">「不限」这两个字出现了四次</span>,而且都在免费列:手动记录、盲区诊断、导出、MCP。这不是慷慨,是产品定义——<b>计费的是成本(每次产生外部账单的 AI 调用),不是价值(你的记录和你的盲区)</b>。<br>「自动续费 不做」标成固定项:平台开通门槛此刻够不着,而且写成「到期就停」比写「连续包月」诚实。<b>各端同价,不做分端差价</b>——差价本身就是一支指向外部支付的箭头。</div>
+</div>
+
+<div class="cell">
+  <div class="cap"><span class="cap-n">P12</span><span class="cap-t">会员额度与订单</span></div>
+  <div class="cap-d">只报次数,不评价学习。订单六列,没有第七列。</div>
+  <div class="dev pad-l app col">
+    <div class="status">9:41<span class="r">Wi-Fi · 86%</span></div>
+    <div class="cmd lg">
+      <span class="ic"></span>
+      <span class="scope">我的 / <b>会员与额度</b></span>
+      <span class="sep">·</span>
+      <span class="ph2">按订单号、时间搜</span>
+      <span class="kbd">⌘K</span><span class="kbd">⌘E 导出账单</span>
+    </div>
+    <div class="cover" style="height:76px;padding:0 16px;display:flex;align-items:center;gap:24px;border-bottom:1px solid var(--hair)">
+      <div>
+        <div class="lbl">当前</div>
+        <div class="s15" style="font-size:17px">记多点 <span class="num t2 s12">¥9.9 / 月</span></div>
+      </div>
+      <div class="vs"></div>
+      <div>
+        <div class="lbl">有效期至</div>
+        <div class="s15" style="font-size:17px"><span class="num">2026-09-24</span> <span class="t3 s12">· 手动续费</span></div>
+      </div>
+      <div class="sp"></div>
+      <button class="btn p lg">续 1 个月 ¥9.90</button>
+    </div>
+    <div class="split" style="flex:1">
+      <div class="col" style="width:640px;border-right:1px solid var(--hair)">
+        <div class="grp">本月额度<span class="r">每月 1 日零点重置</span></div>
+        <div class="pd" style="padding-bottom:10px">
+          <div class="rw"><span class="s12">AI 录入</span><span class="sp"></span><span class="num t2 s12">137 / 300</span></div>
+          <div class="meter" style="margin-top:7px"><i style="width:45.7%;background:var(--t2)"></i></div>
+        </div>
+        <div class="pd" style="padding-top:4px;padding-bottom:12px">
+          <div class="rw"><span class="s12">AI 代发提问</span><span class="sp"></span><span class="num t2 s12">12 / 50</span></div>
+          <div class="meter" style="margin-top:7px"><i style="width:24%;background:var(--t2)"></i></div>
+        </div>
+        <div class="row sm"><span class="nm">手动记录</span><span class="t3 s11">记做题 / 粘一段自己挂考点</span><span class="tag">不限</span></div>
+        <div class="row sm"><span class="nm">盲区诊断 · 导出 · MCP</span><span class="t3 s11">永不上锁</span><span class="tag">不限</span></div>
+        <div class="pd">
+          <div class="note"><b>这张表只有日期与次数,合计行只是加法。</b><br><span class="rl">零处学习水平评价</span>——「你这个月很努力」这种话,这个产品一句都不说。</div>
+        </div>
+        <div class="f1"></div>
+      </div>
+      <div class="col f1">
+        <div class="grp">订单<span class="r">3 笔 · 全部记录都在这里</span></div>
+        <div class="row sm" style="background:var(--bg3)"><span class="nm t3 s10 mono">订单号</span><span class="c wt2 t3 s10 mono">金额</span><span class="c wt2 t3 s10 mono">状态</span></div>
+        <div class="row"><span class="nm mono s11">KD26082400317<i style="display:block;font-style:normal;font-size:10.5px;color:var(--t3);margin-top:2px">2026-08-24 21:06 · 记多点 1 个月 · 微信支付</i></span><span class="c wt2 num s11">¥9.90</span><span class="c wt2 s11">已支付</span></div>
+        <div class="row"><span class="nm mono s11">KD26072411204<i style="display:block;font-style:normal;font-size:10.5px;color:var(--t3);margin-top:2px">2026-07-24 20:51 · 记多点 1 个月 · 微信支付</i></span><span class="c wt2 num s11">¥9.90</span><span class="c wt2 s11">已支付</span></div>
+        <div class="row"><span class="nm mono s11 off">KD26062309882<i style="display:block;font-style:normal;font-size:10.5px;color:var(--t3);margin-top:2px">2026-06-23 19:33 · 用了 2 天后退款</i></span><span class="c wt2 num s11 t3">¥9.90</span><span class="c wt2 s11 t3">已退款</span></div>
+        <div class="pd">
+          <div class="note">合计 3 笔 · 实付 <b class="num">¥19.80</b> · 已退 <b class="num">¥9.90</b>。<br>退款原路退回微信,不问原因,3–5 个工作日。</div>
+        </div>
+        <div class="grp void">这张单子里存了什么<span class="r">六列,没有第七列</span></div>
+        <div class="row sm"><span class="nm t2">存</span><span class="t2 s11">订单号 / 时间 / 商品名 / 金额 / 方式 / 状态</span></div>
+        <div class="row sm"><span class="nm t2">不存</span><span class="t2 s11">你记了什么考点、来源是哪家、用掉的次数录的是什么</span></div>
+        <div class="f1"></div>
+        <div class="ht pd">
+          <div class="t3 s11">到期不续也只是回到免费档,<b>记录、覆盖、盲区诊断一样都不少</b>。</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="ann"><b>「只报次数,不评价学习」是这一屏的全部纪律。</b>额度表里只有日期与次数,合计行只是加法——<span class="rl">零处学习水平评价</span>。一个记录工具一旦开始说「你这个月很努力」,它就跨到了「判断」那一侧,而那是产品明令不做的事。<br>订单六列写死并且写明了「没有第七列」:<b>订单表里最长的字符列是商品名,内容形如「记多点 · 月度」——是商品名,不是学习内容。</b><br>那笔「用了 2 天后退款」的订单是故意留在这里的:它对应后端一个尚未定义的口径(退款后额度怎么算),界面已经画出来了,而规则还在律师稿里。</div>
+</div>
+
+<div class="cell">
+  <div class="cap"><span class="cap-n">P13</span><span class="cap-t">设置 · 原图、阈值、AI 公示、账号</span></div>
+  <div class="cap-d">三处「固定」标记比开关本身重要。</div>
+  <div class="dev pad-l app col">
+    <div class="status">9:41<span class="r">Wi-Fi · 86%</span></div>
+    <div class="cmd lg">
+      <span class="ic"></span>
+      <span class="scope">设置 / <b>全部</b></span>
+      <span class="sep">·</span>
+      <span class="ph2">搜设置项</span>
+      <span class="kbd">⌘,</span><span class="kbd">esc</span>
+    </div>
+    <div class="split" style="flex:1">
+      <div class="col" style="width:620px;border-right:1px solid var(--hair)">
+        <div class="grp">账号</div>
+        <div class="row"><span class="nm">手机号</span><span class="mono t2 s11">138 **** 6027</span><button class="btn">更换</button></div>
+        <div class="row"><span class="nm">微信</span><span class="t2 s11">已绑定 · 仅用于扫码登录</span><button class="btn">解绑</button></div>
+        <div class="row"><span class="nm">登录设备</span><span class="t2 num s11">3 台</span><button class="btn">查看</button></div>
+        <div class="grp">数据与隐私</div>
+        <div class="row lg"><span class="nm">原图保留</span><div class="seg" style="width:240px"><s>识别完就删</s><s class="on">本机留 14 天</s></div></div>
+        <div class="row"><span class="nm">原图上云</span><span class="t3 s11">不做。不共享,不备份,没有开关。</span><span class="tag w">固定</span></div>
+        <div class="row"><span class="nm">本机缓存</span><span class="mono t3 s11">iPad · 应用沙盒内</span><button class="btn">清空</button></div>
+        <div class="row"><span class="nm">全量导出</span><span class="t3 s11">Markdown / CSV / JSON</span><button class="btn">导出 <span class="kbd">⌘E</span></button></div>
+        <div class="pd">
+          <div class="rw"><button class="btn d">注销账号并删除全部数据</button><span class="t3 s11">删完不可恢复,我们这边也不留备份。</span></div>
+          <div class="note w" style="margin-top:11px"><b>先导出再删。</b>点下去之后,考点记录、时间戳、来源名会从服务端清掉;本机缓存立即删。<br><span class="rl">这一步没有「后悔」按钮。</span></div>
+        </div>
+        <div class="f1"></div>
+      </div>
+      <div class="col f1">
+        <div class="grp">识别</div>
+        <div class="row"><span class="nm">语音转写</span><span class="t3 s11">松开就转,失败留录音</span><span class="sw on"><i></i></span></div>
+        <div class="row"><span class="nm">图片识别与考点匹配</span><span class="t3 s11">原图本机留 14 天</span><span class="sw on"><i></i></span></div>
+        <div class="row"><span class="nm">置信度阈值</span><span class="num t2 s11">0.60</span><div class="meter" style="width:120px"><i style="width:60%;background:var(--t2)"></i></div></div>
+        <div class="row"><span class="nm">低于阈值就丢掉</span><span class="t3 s11">不硬凑最接近的考点</span><span class="tag w">固定</span></div>
+        <div class="row"><span class="nm">候选只来自你的考点树</span><span class="t3 s11">模型不自由生成标签</span><span class="tag w">固定</span></div>
+        <div class="grp">生成式 AI 服务公示<span class="r">法定义务,不藏进二级页</span></div>
+        <div class="row"><span class="nm">语音转写</span><span class="mono t2 s11">腾讯云 · 一句话识别</span></div>
+        <div class="row"><span class="nm">图片识别与考点匹配</span><span class="mono t2 s11">DeepSeek · deepseek-v4-flash-vision-exp</span></div>
+        <div class="row"><span class="nm">登记编号</span><span class="mono t2 s11">待登记</span></div>
+        <div class="pd">
+          <div class="note">拍照识别时,图片会发给上面这个模型做一次识别,<b>不进我们的存储</b>;识别完本机就删。语音同理。<br>除此之外没有任何内容离开这台设备。</div>
+        </div>
+        <div class="grp">关于</div>
+        <div class="row sm"><span class="nm">数据存储地</span><span class="t2 s11">中国大陆</span></div>
+        <div class="row sm"><span class="nm">当前科目</span><span class="t2 s11">山东省考 · 行测 · 资料分析</span><button class="btn">换</button></div>
+        <div class="pd f1">
+          <div class="note">一次只开一个模块。<br><b>再开第二棵考点树之前,这一棵得先被人用起来。</b></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="ann"><b>三处「固定」标记比开关本身重要:</b>原图上云、候选闭集、低于阈值就丢——<span class="rl">这些没有开关,因为它们不是偏好,是产品定义</span>。做成开关就等于承认可以关掉。<br>生成式 AI 服务公示放在设置一级页而不是二级页,是<b>已上线服务的法定义务</b>:须在显著位置注明所用服务的模型名称与登记编号。「登记编号 待登记」如实写着——<span class="rl">这一项还没闭环,界面上不假装它已经有了</span>。<br>本机缓存那一行写的是「iPad · 应用沙盒内」,与桌面稿的文件系统路径不同:同一条红线,不同平台的真实形态。</div>
+</div>
+
+</div>
+
+<div class="sec"><h2>自查</h2><span class="sub">P1 – P13 · 两半边,两套判据</span></div>
+<div class="app" style="border:1px solid var(--hair);border-radius:3px;width:1196px">
+  <div class="grp">P1 – P6 必须回答「这件事在手机上做不到」<span class="r">做不到才配独立成屏</span></div>
+  <div class="row sm"><span class="nm t2" style="max-width:150px">P1 分屏</span><span class="nm">Split View · 课与记同屏。手机只能来回切 App</span></div>
+  <div class="row sm"><span class="nm t2" style="max-width:150px">P2 拖放</span><span class="nm">跨 App 拖一张截屏过来。<b>网页版要五步,这里一步</b></span></div>
+  <div class="row sm"><span class="nm t2" style="max-width:150px">P3 Pencil</span><span class="nm">圈选决定送进识别的范围。手机上没有笔</span></div>
+  <div class="row sm"><span class="nm t2" style="max-width:150px">P4 竖屏全览</span><span class="nm">18 行不滚动一屏看全。<b>「整块空白」需要连续性,滚动会切断它</b></span></div>
+  <div class="row sm"><span class="nm t2" style="max-width:150px">P5 Slide Over</span><span class="nm">不切换 App 就能记。手机上没有这个层</span></div>
+  <div class="row sm"><span class="nm t2" style="max-width:150px">P6 妙控键盘</span><span class="nm">⌘ 快捷键成立,<b>并且明说了哪两个不成立</b></span></div>
+  <div class="grp">P7 – P13 换一套判据<span class="r">这半边不追求 iPad 独有</span></div>
+  <div class="row sm"><span class="nm t2" style="max-width:150px">为什么标准不同</span><span class="nm">登录、支付、设置在哪个端上都一样。<b>硬要给它们编一个「iPad 独有」的理由,就是在为形态找活干</b></span></div>
+  <div class="row sm"><span class="nm t2" style="max-width:150px">那它们的判据是</span><span class="nm">与其余四端<b>同一套骨架、同一份数据、同一句话</b> —— 差一个字都是五端不一致</span></div>
+  <div class="row sm"><span class="nm t2" style="max-width:150px">P7 登录</span><span class="nm">二维码常驻右栏(桌面是 seg 后的次要通道)—— <b>唯一一处按端调整的布局,理由是 iPad 用户手边一定有手机</b></span></div>
+  <div class="row sm"><span class="nm t2" style="max-width:150px">P8 首次进入</span><span class="nm">18 个一屏勾完不滚动。H5 要滚,桌面也是两栏 —— <b>这一处 iPad 确实更好,但不是它存在的理由</b></span></div>
+  <div class="row sm"><span class="nm t2" style="max-width:150px">P9 – P13</span><span class="nm">与桌面 D5 / D8-D9 / D14-D18 / D11 同构。<span class="rl">刻意不做差异化</span></span></div>
+  <div class="grp">骨架规则<span class="r">与其余各端逐条一致</span></div>
+  <div class="row sm"><span class="nm t2" style="max-width:150px">左侧菜单 / 面包屑</span><span class="nm">0 处。位置在命令条 scope 段</span></div>
+  <div class="row sm"><span class="nm t2" style="max-width:150px">卡片 / 阴影 / emoji</span><span class="nm">0 处。分隔靠 1px 发丝线,图标为 CSS 几何形</span></div>
+  <div class="row sm"><span class="nm t2" style="max-width:150px">酸性绿</span><span class="nm">每屏一处主操作:P1 按住说一句 · P2 落点 · P3 记成 · P4 记一笔 · P5 记下 · P6 ⌘K · P7 进去 · P8 就这些 · P9 时间线当前点 · P10 复制 · P11 记多点列 · P12 续 1 个月。<b>P13 设置页无主操作</b>,与桌面 D11 一致</span></div>
+  <div class="row sm"><span class="nm t2" style="max-width:150px">数据</span><span class="nm">18 / 8 / 44% / 五态 3-2-2-1-10;会员 137/300 · 代发 12/50 · 有效期 2026-09-24;订单 KD26082400317 / KD26072411204 / KD26062309882。<b>与桌面、H5、小程序、App 逐字一致</b></span></div>
+  <div class="grp void">红线在这一份稿子上的形态<span class="r">3 条</span></div>
+  <div class="row sm"><span class="nm t2" style="max-width:150px">不碰内容</span><span class="nm">P1 左窗只有播放按钮与进度条;记的只有来源名与时间戳</span></div>
+  <div class="row sm"><span class="nm t2" style="max-width:150px">原图不上云</span><span class="nm">P2 <b>没有「上传中」进度条</b>——不是藏起来,是没有上传这一步</span></div>
+  <div class="row sm"><span class="nm t2" style="max-width:150px">宁缺毋滥</span><span class="nm">P3 第二候选 0.41 显示但不可选;保留「都不对」出口</span></div>
+</div>
+
+</div>
+</body>
+</html>

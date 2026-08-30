@@ -1,0 +1,1610 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>考点盲区 · 移动网页 H5 + iPad 断点 · 风格 A</title>
+<link rel="stylesheet" href="tokens.css">
+<style>
+/* ────────────────────────────────────────────────────────────
+   页面专属补充类。只补 tokens.css 没有的「排布」,
+   颜色/字体一律走 CSS 变量,不新造色值,不重定义已有类。
+   ──────────────────────────────────────────────────────────── */
+.col{display:flex;flex-direction:column;min-height:0}
+.f1{flex:1;min-height:0;overflow:hidden}
+.rel{position:relative}
+.rw{display:flex;align-items:center;gap:9px}
+.sp{flex:1}
+.hb{border-bottom:1px solid var(--hair)}
+.ht{border-top:1px solid var(--hair)}
+.s10{font-size:10.5px}.s11{font-size:11px}.s12{font-size:12px}.s13{font-size:13px}
+.s15{font-size:15px}
+.ttl2{font-size:15px;font-weight:500;letter-spacing:.01em}
+.lgi{display:inline-flex;align-items:center;gap:4px}
+.wt{width:46px;text-align:right}
+.wt2{width:54px;text-align:right}
+
+/* 移动端密度档:同一套 .row/.grp,只压行高,结构与语义不变 */
+.tr .row{height:24px;gap:9px}
+.tr .grp{height:20px}
+.tr .row .nm{font-size:12.5px}
+
+/* 勾选框 —— 与 desktop 稿同一份几何定义(tokens.css 未收录,两稿各自声明) */
+.ck{width:15px;height:15px;flex:none;border:1px solid var(--hair2);border-radius:2px;position:relative}
+.ck.on{border-color:var(--tx)}
+.ck.on:after{content:"";position:absolute;left:5px;top:1px;width:3px;height:8px;
+  border:solid var(--tx);border-width:0 1.5px 1.5px 0;transform:rotate(42deg)}
+
+/* 四统计字段 */
+.st{display:flex}
+.st>div{flex:1;padding:9px 0 10px}
+.st u{display:block;text-decoration:none;font-family:var(--mono);font-size:9.5px;
+  letter-spacing:.09em;color:var(--t3);margin-bottom:5px}
+.st b{font-family:var(--mono);font-size:16px;font-weight:500;color:var(--tx);letter-spacing:-.02em}
+.st b s{text-decoration:none;font-size:10px;color:var(--t3);margin-left:2px}
+
+/* 记一笔的四个入口:纯 CSS 几何图形,零 emoji */
+.ico{width:24px;height:24px;border:1px solid var(--hair2);border-radius:2px;flex:none;position:relative}
+.ico:before,.ico:after{content:"";position:absolute;box-sizing:border-box}
+.i-v:before{left:9px;top:4px;width:6px;height:9px;border:1px solid var(--t2);border-radius:2px}
+.i-v:after{left:6px;top:11px;width:12px;height:6px;border:1px solid var(--t2);border-top:none;border-radius:0 0 2px 2px}
+.i-c:before{left:4px;top:6px;width:16px;height:12px;border:1px solid var(--t2);border-radius:2px}
+.i-c:after{left:10px;top:10px;width:4px;height:4px;border:1px solid var(--t2)}
+.i-p:before{left:3px;top:3px;width:12px;height:14px;border:1px solid var(--t3)}
+.i-p:after{left:9px;top:7px;width:12px;height:14px;border:1px solid var(--t2);background:var(--bg3)}
+.i-n:before{left:5px;top:8px;width:14px;height:1px;background:var(--t2)}
+.i-n:after{left:5px;top:14px;width:9px;height:1px;background:var(--t2)}
+.ent{display:flex;align-items:center;gap:12px;height:52px;padding:0 14px;border-top:1px solid var(--hair)}
+
+/* 播放器骨架:中性,不承载任何课程内容 */
+.scr{border:1px solid var(--hair);background:var(--bg3);border-radius:3px;
+  display:flex;align-items:center;justify-content:center;flex-direction:column;gap:11px}
+.play{width:0;height:0;border-left:15px solid var(--t3);border-top:10px solid transparent;
+  border-bottom:10px solid transparent;flex:none}
+.play.sm{border-left-width:11px;border-top-width:7px;border-bottom-width:7px;border-left-color:var(--t2)}
+.prev{width:0;height:0;border-right:9px solid var(--t3);border-top:6px solid transparent;
+  border-bottom:6px solid transparent;flex:none}
+.next{width:0;height:0;border-left:9px solid var(--t3);border-top:6px solid transparent;
+  border-bottom:6px solid transparent;flex:none}
+.ph-img{border:1px solid var(--hair);background:var(--bg3);border-radius:3px;
+  display:flex;align-items:center;justify-content:center;flex-direction:column;gap:7px}
+
+/* 定价档位:分段带。不是卡片——只有一条背景带 + 上下发丝线,零圆角零阴影
+   margin-top:-1px 让本行的 border-top 压住上一行的 border-bottom,
+   两条 1px 不叠成 2px —— 发丝线永远只有 1px */
+.tierhd{background:var(--bg3);border-top:1px solid var(--hair2);margin-top:-1px}
+/* 档头价格必须各档右对齐:按钮定宽,免费档留同宽空位。
+   否则「选这档」带不带 ↵ 徽标会把价格推得一档一个位置 */
+.tierhd .btn{width:84px;justify-content:center}
+.wbtn{width:84px;flex:none}
+
+/* 额度数值列:mono 数字 + 中文单位混排,列宽给足且不许折行 */
+.wq{width:72px;text-align:right;white-space:nowrap;flex:none}
+.wq2{width:84px;text-align:right;white-space:nowrap;flex:none}
+
+/* 升级 / 重置 图标:延续 .ico 的纯 CSS 几何,零 emoji */
+.i-u:before{left:6px;top:5px;width:0;height:0;border-left:6px solid transparent;
+  border-right:6px solid transparent;border-bottom:7px solid var(--t2)}
+.i-u:after{left:10px;top:12px;width:4px;height:6px;background:var(--t2)}
+.i-t:before{left:5px;top:6px;width:14px;height:13px;border:1px solid var(--t2);border-radius:2px}
+.i-t:after{left:5px;top:9px;width:14px;height:1px;background:var(--t2)}
+
+/* 设计稿脚手架:注解宽度跟随设备宽度 */
+.ann.a1{max-width:375px}
+.ann.a2{max-width:834px}
+.ann.a3{max-width:1194px}
+</style>
+</head>
+<body>
+<div class="deck">
+
+<div class="dhd">
+  <h1>考点盲区 · 移动网页(H5)+ iPad 断点</h1>
+  <p>风格 A「极客暗色 · 命令条驱动」。<code>盲区 = 骨架层 − 行为层</code>。
+  H5 是主力移动载体:第一批真实用户走移动 Web,不走小程序(备案会拖进关键路径)。
+  所以这一端<b>既采集也复盘</b>,功能完整,不做阉割版。
+  无侧边栏、无面包屑、无卡片、零阴影、零 emoji;导航靠顶部命令条,底部 <code>.mbar</code> 是命令条的移动版,不是原生 tabBar。
+  数字全端一致:<code>18 个考点 / 8 个有记录 / 覆盖 44% / 10 个空白 / 2 组整块空白</code>。</p>
+</div>
+
+<!-- ══════════════════════════════ 手机 ══════════════════════════════ -->
+<div class="sec">
+  <h2>手机 · 375 × 812</h2>
+  <span class="sub">H1 – H10 · 采集与复盘都在这一端</span>
+</div>
+
+<div class="grid">
+
+  <!-- ══════ H1 登录 ══════ -->
+  <div class="cell">
+    <div class="cap"><span class="cap-n">H1</span><span class="cap-t">登录</span></div>
+    <div class="dev phone app col">
+      <div class="status">9:41<span class="r">5G · 86%</span></div>
+      <div class="f1 col" style="padding:0 20px">
+        <div style="height:76px"></div>
+        <div class="s15" style="font-weight:600;letter-spacing:.02em">考点盲区</div>
+        <div class="mono t3 s11" style="margin-top:7px">盲区 = 骨架层 − 行为层</div>
+        <div style="height:34px"></div>
+        <div class="seg" style="margin-bottom:18px"><s class="on">手机号</s><s>微信授权</s></div>
+        <span class="lbl">手机号</span>
+        <div class="field"><span class="pre">+86</span><span class="num">138 0531 2049</span></div>
+        <div style="height:16px"></div>
+        <span class="lbl">验证码</span>
+        <div class="otp"><i>4</i><i>7</i><i>2</i><i class="cur"></i><i></i><i></i></div>
+        <div class="rw" style="margin-top:11px">
+          <span class="mono t3 s11">没收到 · 41 秒后可重发</span><span class="sp"></span><span class="kbd">↵</span>
+        </div>
+        <div style="height:20px"></div>
+        <button class="btn p blk lg">进去</button>
+        <div style="height:12px"></div>
+        <button class="btn blk lg">换微信授权</button>
+        <div style="height:26px"></div>
+        <div class="grp" style="margin:0 -20px">进去之后<span class="r">三步</span></div>
+        <div class="row sm" style="margin:0 -20px"><span class="num t3 s11">1</span><span class="nm t2">选一门</span><span class="s11 t3">行测 · 资料分析</span></div>
+        <div class="row sm" style="margin:0 -20px"><span class="num t3 s11">2</span><span class="nm t2">骨架树给你建好</span><span class="s11 t3">18 个考点</span></div>
+        <div class="row sm" style="margin:0 -20px"><span class="num t3 s11">3</span><span class="nm t2">开始记</span><span class="s11 t3">语音 / 拍照 / 粘一段</span></div>
+        <div class="sp"></div>
+        <div class="note s11">语音转写:腾讯云一句话识别。图片识别与考点匹配:DeepSeek deepseek-v4-flash-vision-exp。登记编号:待登记。</div>
+        <div style="height:18px"></div>
+      </div>
+      <div class="homebar"><i></i></div>
+    </div>
+    <div class="ann a1">两条通道同一套账号,<b>.seg</b> 切换,不是两个入口。登录屏还没有 scope,所以不出命令条。
+    底部常驻<b>生成式 AI 服务公示</b>——法定义务,不藏进二级页;设置页(H10)另有一份完整的。</div>
+  </div>
+
+  <!-- ══════ H2 总览 ══════ -->
+  <div class="cell">
+    <div class="cap"><span class="cap-n">H2</span><span class="cap-t">总览 · 骨架树</span></div>
+    <div class="dev phone app col">
+      <div class="status">9:41<span class="r">5G · 86%</span></div>
+      <div class="cmd">
+        <span class="ic"></span>
+        <span class="scope">考点 <span class="sep">/</span> <b>山东省考 · 资料分析</b></span>
+        <span class="sp"></span><span class="kbd">⌘K</span>
+      </div>
+      <div style="padding:9px 12px 9px" class="hb">
+        <div class="rw">
+          <span class="big">44<s>%</s></span>
+          <span class="sp"></span>
+          <div style="text-align:right">
+            <div class="num t2 s11">18 考点 · 8 有记录 · 10 空白</div>
+            <div class="num red s11" style="margin-top:5px">2 组整块空白</div>
+          </div>
+        </div>
+        <div class="meter tall" style="margin-top:9px">
+          <i style="width:16.7%;background:var(--s-stable)"></i>
+          <i style="width:11.1%;background:var(--s-weak)"></i>
+          <i style="width:11.1%;background:var(--s-rusty)"></i>
+          <i style="width:5.6%;background:var(--s-touch)"></i>
+          <i style="width:55.5%;background:var(--s-empty)"></i>
+        </div>
+        <div class="lg-row" style="margin-top:7px">
+          <s class="lgi"><i class="sd stable"></i>稳 3</s>
+          <s class="lgi"><i class="sd weak"></i>弱 2</s>
+          <s class="lgi"><i class="sd rusty"></i>生疏 2</s>
+          <s class="lgi"><i class="sd touch"></i>仅接触 1</s>
+          <s class="lgi"><i class="sd empty"></i>空白 10</s>
+        </div>
+      </div>
+      <div class="f1 tr col">
+        <div class="grp">增长类<span class="r">4/7 有记录</span></div>
+        <div class="row"><i class="sd stable"></i><span class="nm">增长率计算</span><span class="num t3 s10">9次</span><span class="num t2 s10 wt">今天</span></div>
+        <div class="row"><i class="sd weak"></i><span class="nm">增长量计算</span><span class="num t3 s10">8次</span><span class="num t2 s10 wt">2天前</span></div>
+        <div class="row"><i class="sd rusty"></i><span class="nm">基期量计算</span><span class="num t3 s10">7次</span><span class="num t2 s10 wt">32天前</span></div>
+        <div class="row"><i class="sd rusty"></i><span class="nm">间隔增长率</span><span class="num t3 s10">6次</span><span class="num t2 s10 wt">33天前</span></div>
+        <div class="row"><i class="sd empty"></i><span class="nm off">现期量计算</span><span class="num t3 s10">5次</span><span class="num t3 s10 wt">—</span></div>
+        <div class="row"><i class="sd empty"></i><span class="nm off">年均增长率</span><span class="num t3 s10">4次</span><span class="num t3 s10 wt">—</span></div>
+        <div class="row"><i class="sd empty"></i><span class="nm off">混合增长率</span><span class="num t3 s10">2次</span><span class="num t3 s10 wt">—</span></div>
+
+        <div class="grp void">倍数与比较<span class="r">0/3 · 整块空白 · 频次 12</span></div>
+        <div class="row"><i class="sd empty"></i><span class="nm off">倍数计算</span><span class="num t3 s10">5次</span><span class="num t3 s10 wt">—</span></div>
+        <div class="row"><i class="sd empty"></i><span class="nm off">倍数变化</span><span class="num t3 s10">3次</span><span class="num t3 s10 wt">—</span></div>
+        <div class="row"><i class="sd empty"></i><span class="nm off">同比与环比</span><span class="num t3 s10">4次</span><span class="num t3 s10 wt">—</span></div>
+
+        <div class="grp void">效应类<span class="r">0/2 · 整块空白 · 频次 6</span></div>
+        <div class="row"><i class="sd empty"></i><span class="nm off">贡献率</span><span class="num t3 s10">3次</span><span class="num t3 s10 wt">—</span></div>
+        <div class="row"><i class="sd empty"></i><span class="nm off">拉动增长</span><span class="num t3 s10">3次</span><span class="num t3 s10 wt">—</span></div>
+
+        <div class="grp">平均与比重<span class="r">2/3 有记录</span></div>
+        <div class="row"><i class="sd stable"></i><span class="nm">比重计算</span><span class="num t3 s10">8次</span><span class="num t2 s10 wt">昨天</span></div>
+        <div class="row"><i class="sd empty"></i><span class="nm off">平均数计算</span><span class="num t3 s10">6次</span><span class="num t3 s10 wt">—</span></div>
+        <div class="row"><i class="sd touch"></i><span class="nm">比重变化</span><span class="num t3 s10">5次</span><span class="num t2 s10 wt">5天前</span></div>
+
+        <div class="grp">速算技巧<span class="r">2/3 有记录</span></div>
+        <div class="row"><i class="sd weak"></i><span class="nm">截位直除</span><span class="num t3 s10">7次</span><span class="num t2 s10 wt">4天前</span></div>
+        <div class="row"><i class="sd stable"></i><span class="nm">特征数字法</span><span class="num t3 s10">4次</span><span class="num t2 s10 wt">3天前</span></div>
+        <div class="row"><i class="sd empty"></i><span class="nm off">分数比较</span><span class="num t3 s10">3次</span><span class="num t3 s10 wt">—</span></div>
+        <div class="rw" style="padding:0 12px;height:18px"><span class="mono t3 s10">到底了 · 18 个考点</span></div>
+      </div>
+      <div class="mbar">
+        <span class="kbd">⌘K</span><span class="t3 s11">找考点</span>
+        <span class="sp"></span>
+        <button class="btn p">记一笔<span class="kbd dk">N</span></button>
+      </div>
+      <div class="homebar"><i></i></div>
+    </div>
+    <div class="ann a1">18 个考点一屏到底,靠压行高(24px)而不是折叠分组——折叠会把「整块空白」藏起来,那正是唯一要看的东西。
+    实心点是碰过的,空心虚线是没碰过的。两个 <b>.grp.void</b> 红头是这一屏的主角:<b>连着 5 个考点、18 次频次,一次都没碰过</b>。</div>
+  </div>
+
+  <!-- ══════ H3 考点详情 ══════ -->
+  <div class="cell">
+    <div class="cap"><span class="cap-n">H3</span><span class="cap-t">考点详情 · 增长量计算</span></div>
+    <div class="dev phone app col">
+      <div class="status">9:41<span class="r">5G · 86%</span></div>
+      <div class="cmd">
+        <span class="mono t2 s12">←</span>
+        <span class="scope">资料分析 <span class="sep">/</span> <b>增长量计算</b></span>
+        <span class="sp"></span><span class="kbd">⌘K</span>
+      </div>
+      <div class="f1 col">
+        <div class="rw hb" style="padding:12px 12px 11px">
+          <i class="sd weak lg"></i>
+          <span class="ttl2">增长量计算</span>
+          <span class="sp"></span>
+          <span class="tag w">弱</span>
+        </div>
+        <div class="st hb" style="padding:0 12px">
+          <div><u>练 / 对</u><b>8<s>/</s>4</b></div>
+          <div><u>正确率</u><b>50<s>%</s></b></div>
+          <div><u>近五年</u><b>8<s>次</s></b></div>
+          <div><u>最近一次</u><b>2<s>天前</s></b></div>
+        </div>
+        <div style="padding:10px 12px 11px" class="hb">
+          <div class="note s11">不判断对错。正确率是你自己填的数。</div>
+        </div>
+        <div class="grp">跨来源记录<span class="r">3 条</span></div>
+        <div style="padding:6px 12px 4px">
+          <div class="tl">
+            <div class="ti now">
+              <div class="rw"><span class="num t2 s11">2天前 21:14</span><span class="sp"></span><span class="tag">记做题 8/4</span></div>
+              <div class="s12 t2" style="margin-top:2px">自己刷题 · 2023 国考真题</div>
+            </div>
+            <div class="ti">
+              <div class="rw"><span class="num t2 s11">2天前 20:30</span><span class="sp"></span><span class="tag">语音记</span></div>
+              <div class="s12 t2" style="margin-top:2px">粉笔 · 资料分析系统班 L12</div>
+            </div>
+            <div class="ti">
+              <div class="rw"><span class="num t2 s11">6天前 19:52</span><span class="sp"></span><span class="tag">拍照记</span></div>
+              <div class="s12 t2" style="margin-top:2px">中公 · 资料分析专项</div>
+            </div>
+          </div>
+        </div>
+        <div class="grp">同组还没碰过<span class="r">3 个</span></div>
+        <div class="row sm"><i class="sd empty"></i><span class="nm off">现期量计算</span><span class="num t3 s10">5次</span></div>
+        <div class="row sm"><i class="sd empty"></i><span class="nm off">年均增长率</span><span class="num t3 s10">4次</span></div>
+        <div class="row sm"><i class="sd empty"></i><span class="nm off">混合增长率</span><span class="num t3 s10">2次</span></div>
+        <div class="grp">这个考点碰过谁<span class="r">3 家</span></div>
+        <div class="row sm"><span class="nm t2">粉笔 · 资料分析系统班 L12</span><span class="num t3 s10">1 次</span></div>
+        <div class="row sm"><span class="nm t2">中公 · 资料分析专项</span><span class="num t3 s10">1 次</span></div>
+        <div class="row sm"><span class="nm t2">自己刷题 · 2023 国考真题</span><span class="num t3 s10">1 次</span></div>
+        <div style="padding:11px 12px 0">
+          <div class="note s11">换了三家课,记录还在同一条线上。</div>
+        </div>
+        <div class="sp"></div>
+        <div class="row lg ht"><span class="nm t2">问 AI 时带上的东西</span><span class="mono t3">→</span></div>
+      </div>
+      <div class="mbar">
+        <span class="kbd">⌘K</span><span class="t3 s11">找考点</span>
+        <span class="sp"></span>
+        <button class="btn p">记一笔<span class="kbd dk">N</span></button>
+      </div>
+      <div class="homebar"><i></i></div>
+    </div>
+    <div class="ann a1">时间线只有<b>来源名 + 时间戳 + 记录方式</b>——结构上就没有放课程内容的位置,想放也放不进去。
+    正确率印在四统计里,但旁边那行小字说清了它是谁填的:<span class="rl">永不判断对错</span>。
+    要讲解,走最下面那行去 H8,把上下文交给外部 AI。</div>
+  </div>
+
+  <!-- ══════ H4 先补这几个 ══════ -->
+  <div class="cell">
+    <div class="cap"><span class="cap-n">H4</span><span class="cap-t">先补这几个</span></div>
+    <div class="dev phone app col">
+      <div class="status">9:41<span class="r">5G · 86%</span></div>
+      <div class="cmd">
+        <span class="ic"></span>
+        <span class="scope">先补 <span class="sep">/</span> <b>山东省考 · 资料分析</b></span>
+        <span class="sp"></span><span class="kbd">⌘K</span>
+      </div>
+      <div class="f1 col">
+        <div style="padding:12px 12px 10px" class="hb">
+          <div class="ttl2">先补这几个</div>
+          <div class="t3 s11" style="margin-top:5px">10 个空白 + 练过但生疏的,一起排,取前 5。</div>
+        </div>
+
+        <div class="row lg sel"><span class="num acid s11">01</span><span class="nm">增长量计算</span><span class="num t2 s11">6.4</span></div>
+        <div class="rw hb" style="padding:0 12px 9px;margin-top:-2px">
+          <span class="mono t3 s11" style="padding-left:29px">练 8 对 4 · 正确率 50%</span>
+          <span class="sp"></span>
+          <button class="btn">我已掌握</button>
+        </div>
+
+        <div class="row lg"><span class="num t3 s11">02</span><span class="nm">平均数计算</span><span class="num t2 s11">6.0</span></div>
+        <div class="rw hb" style="padding:0 12px 9px;margin-top:-2px">
+          <span class="mono t3 s11" style="padding-left:29px">近五年 6 次 · 无任何记录</span>
+        </div>
+
+        <div class="row lg"><span class="num t3 s11">03</span><span class="nm">截位直除</span><span class="num t2 s11">5.6</span></div>
+        <div class="rw hb" style="padding:0 12px 9px;margin-top:-2px">
+          <span class="mono t3 s11" style="padding-left:29px">练 6 对 2 · 正确率 33%</span>
+        </div>
+
+        <div class="row lg"><span class="num t3 s11">04</span><span class="nm">现期量计算</span><span class="num t2 s11">5.0</span></div>
+        <div class="rw hb" style="padding:0 12px 9px;margin-top:-2px">
+          <span class="mono t3 s11" style="padding-left:29px">近五年 5 次 · 无任何记录</span>
+        </div>
+
+        <div class="row lg"><span class="num t3 s11">05</span><span class="nm">倍数计算</span><span class="num t2 s11">5.0</span></div>
+        <div class="rw hb" style="padding:0 12px 9px;margin-top:-2px">
+          <span class="mono t3 s11" style="padding-left:29px">近五年 5 次 · 无任何记录</span>
+        </div>
+
+        <div class="grp">我已掌握<span class="r">0 个</span></div>
+        <div style="padding:10px 12px 12px" class="hb">
+          <div class="note s11">「我已掌握」是你说的,不计入覆盖度。<br>覆盖度只认记录:有没有、几次、多久前。</div>
+        </div>
+
+        <div class="grp void">整块空白<span class="r">2 组 · 5 个考点</span></div>
+        <div class="row"><i class="sd empty"></i><span class="nm off">倍数与比较</span><span class="num t3 s11">0/3</span><span class="num red s11 wt">频次 12</span></div>
+        <div class="row"><i class="sd empty"></i><span class="nm off">效应类</span><span class="num t3 s11">0/2</span><span class="num red s11 wt">频次 6</span></div>
+        <div style="padding:10px 12px 0">
+          <div class="note w s11">这两组一个都没碰过。上面的 05 就是从这儿挑出来的。</div>
+        </div>
+        <div class="sp"></div>
+        <div class="rw" style="padding:0 12px 11px">
+          <span class="mono t3 s10">权重 = 近五年频次 × 生疏度</span>
+        </div>
+      </div>
+      <div class="mbar">
+        <span class="kbd">⌘K</span><span class="t3 s11">找考点</span>
+        <span class="sp"></span>
+        <button class="btn p">记一笔<span class="kbd dk">N</span></button>
+      </div>
+      <div class="homebar"><i></i></div>
+    </div>
+    <div class="ann a1">每条都把理由写在名字底下,排序公式印在屏底——排名不是黑箱,用户能自己复算。
+    「我已掌握」是用户断言,单独计数、<b>永不并入 44%</b>;两套数混在一起,覆盖度就废了。</div>
+  </div>
+
+  <!-- ══════ H5 记一笔 ══════ -->
+  <div class="cell">
+    <div class="cap"><span class="cap-n">H5</span><span class="cap-t">记一笔 · 底部抽屉</span></div>
+    <div class="dev phone app col">
+      <div class="status">9:41<span class="r">5G · 86%</span></div>
+      <div class="cmd">
+        <span class="ic"></span>
+        <span class="scope">考点 <span class="sep">/</span> <b>山东省考 · 资料分析</b></span>
+        <span class="sp"></span><span class="kbd">⌘K</span>
+      </div>
+      <div class="f1 col rel">
+        <div class="tr col">
+          <div class="grp">增长类<span class="r">4/7 有记录</span></div>
+          <div class="row"><i class="sd stable"></i><span class="nm">增长率计算</span><span class="num t3 s10">9次</span><span class="num t2 s10 wt">今天</span></div>
+          <div class="row"><i class="sd weak"></i><span class="nm">增长量计算</span><span class="num t3 s10">8次</span><span class="num t2 s10 wt">2天前</span></div>
+          <div class="row"><i class="sd rusty"></i><span class="nm">基期量计算</span><span class="num t3 s10">7次</span><span class="num t2 s10 wt">32天前</span></div>
+          <div class="row"><i class="sd rusty"></i><span class="nm">间隔增长率</span><span class="num t3 s10">6次</span><span class="num t2 s10 wt">33天前</span></div>
+          <div class="row"><i class="sd empty"></i><span class="nm off">现期量计算</span><span class="num t3 s10">5次</span><span class="num t3 s10 wt">—</span></div>
+          <div class="row"><i class="sd empty"></i><span class="nm off">年均增长率</span><span class="num t3 s10">4次</span><span class="num t3 s10 wt">—</span></div>
+          <div class="row"><i class="sd empty"></i><span class="nm off">混合增长率</span><span class="num t3 s10">2次</span><span class="num t3 s10 wt">—</span></div>
+          <div class="grp void">倍数与比较<span class="r">0/3 · 整块空白 · 频次 12</span></div>
+          <div class="row"><i class="sd empty"></i><span class="nm off">倍数计算</span><span class="num t3 s10">5次</span><span class="num t3 s10 wt">—</span></div>
+          <div class="row"><i class="sd empty"></i><span class="nm off">倍数变化</span><span class="num t3 s10">3次</span><span class="num t3 s10 wt">—</span></div>
+          <div class="row"><i class="sd empty"></i><span class="nm off">同比与环比</span><span class="num t3 s10">4次</span><span class="num t3 s10 wt">—</span></div>
+          <div class="grp void">效应类<span class="r">0/2 · 整块空白 · 频次 6</span></div>
+          <div class="row"><i class="sd empty"></i><span class="nm off">贡献率</span><span class="num t3 s10">3次</span><span class="num t3 s10 wt">—</span></div>
+          <div class="row"><i class="sd empty"></i><span class="nm off">拉动增长</span><span class="num t3 s10">3次</span><span class="num t3 s10 wt">—</span></div>
+          <div class="grp">平均与比重<span class="r">2/3 有记录</span></div>
+          <div class="row"><i class="sd stable"></i><span class="nm">比重计算</span><span class="num t3 s10">8次</span><span class="num t2 s10 wt">昨天</span></div>
+        </div>
+        <div class="ov"></div>
+        <div class="sheet" style="position:absolute;left:0;right:0;bottom:0">
+          <div class="rw" style="padding:13px 14px 11px">
+            <span class="ttl2">记一笔</span>
+            <span class="t3 s11">怎么记都行,记完去打标</span>
+            <span class="sp"></span><span class="kbd">esc</span>
+          </div>
+          <div class="ent">
+            <i class="ico i-v"></i>
+            <div style="min-width:0">
+              <div class="s13">语音记</div>
+              <div class="t3 s11">说一句,自动转文字再挂考点</div>
+            </div>
+            <span class="sp"></span><span class="kbd">1</span>
+          </div>
+          <div class="ent">
+            <i class="ico i-c"></i>
+            <div style="min-width:0">
+              <div class="s13">拍照记</div>
+              <div class="t3 s11">拍屏幕或纸,原图不上云</div>
+            </div>
+            <span class="sp"></span><span class="kbd">2</span>
+          </div>
+          <div class="ent">
+            <i class="ico i-p"></i>
+            <div style="min-width:0">
+              <div class="s13">粘一段</div>
+              <div class="t3 s11">从别处复制的文字,粘进来</div>
+            </div>
+            <span class="sp"></span><span class="kbd">3</span>
+          </div>
+          <div class="ent">
+            <i class="ico i-n"></i>
+            <div style="min-width:0">
+              <div class="s13">记做题</div>
+              <div class="t3 s11">填练了几道、对了几道</div>
+            </div>
+            <span class="sp"></span><span class="kbd">4</span>
+          </div>
+          <div style="padding:11px 14px 13px" class="ht">
+            <div class="note s11">只记来源名和时间。课程内容不进来。</div>
+          </div>
+        </div>
+      </div>
+      <div class="mbar">
+        <span class="kbd">⌘K</span><span class="t3 s11">找考点</span>
+        <span class="sp"></span>
+        <button class="btn p">记一笔<span class="kbd dk">N</span></button>
+      </div>
+      <div class="homebar"><i></i></div>
+    </div>
+    <div class="ann a1">抽屉从 <b>.mbar</b> 的主操作升起,底下那层骨架树不卸载——记完落回原位,不跳页。
+    四个入口都带数字快捷键,外接键盘时按 1/2/3/4 直接进;这一条在 iPad 上尤其吃得开。</div>
+  </div>
+
+  <!-- ══════ H6 打标确认 ══════ -->
+  <div class="cell">
+    <div class="cap"><span class="cap-n">H6</span><span class="cap-t">打标确认</span></div>
+    <div class="dev phone app col">
+      <div class="status">9:41<span class="r">5G · 86%</span></div>
+      <div class="cmd">
+        <span class="mono t2 s12">←</span>
+        <span class="scope">记一笔 <span class="sep">/</span> <b>拍照记</b></span>
+        <span class="sp"></span><span class="kbd">esc</span>
+      </div>
+      <div class="f1 col">
+        <div style="padding:12px 12px 11px" class="hb">
+          <div class="rw" style="margin-bottom:10px">
+            <span class="ttl2">看看能认出什么</span>
+            <span class="sp"></span>
+            <span class="num t3 s11">09:41</span>
+          </div>
+          <div class="ph-img" style="height:130px">
+            <span class="mono t3 s10">原图 · 本机</span>
+            <span class="mono t3 s10">1170 × 1600</span>
+          </div>
+          <div class="note w s11" style="margin-top:11px">原图只存在这台设备,本机留 14 天。不上云,不共享。</div>
+        </div>
+        <div class="grp">来源<span class="r">自动带上</span></div>
+        <div class="row"><span class="nm t2">来源</span><span class="s12">粉笔 · 资料分析系统班 L12</span></div>
+        <div class="row"><span class="nm t2">时间</span><span class="num s12">今天 09:41</span><button class="btn">换</button></div>
+        <div class="grp">候选 · 来自你的考点树<span class="r">阈值 0.60</span></div>
+        <div class="row lg">
+          <i class="sd weak"></i><span class="nm">增长量计算</span>
+          <span class="conf"><i class="hi" style="width:86%"></i></span>
+          <span class="num t2 s11 wt2">0.86</span>
+        </div>
+        <div class="row lg">
+          <i class="sd empty"></i><span class="nm off">现期量计算</span>
+          <span class="conf"><i style="width:44%"></i></span>
+          <span class="num t3 s11 wt2">0.44</span>
+        </div>
+        <div class="row lg">
+          <i class="sd empty"></i><span class="nm off">平均数计算</span>
+          <span class="conf"><i class="lo" style="width:19%"></i></span>
+          <span class="num t3 s11 wt2">0.19</span>
+        </div>
+        <div style="padding:11px 12px 12px" class="hb">
+          <div class="note s11">候选只从你自己的考点树里挑,不新造标签。<br>低于 0.60 的不自动挂;认不出来就丢掉,不硬凑最近的那个。</div>
+        </div>
+        <div class="row sm"><span class="nm t2">这一笔会存下:考点标签 · 来源名 · 时间</span><span class="mono t3 s10">原图不存</span></div>
+        <div class="sp"></div>
+        <div style="padding:0 12px 12px">
+          <button class="btn p blk lg" style="margin-bottom:10px">挂到「增长量计算」<span class="kbd dk">↵</span></button>
+          <div class="rw">
+            <button class="btn">换个考点</button>
+            <span class="sp"></span>
+            <button class="btn d">都不像,丢掉</button>
+          </div>
+        </div>
+      </div>
+      <div class="homebar"><i></i></div>
+    </div>
+    <div class="ann a1"><span class="rl">宁缺毋滥</span>在这屏是个真按钮,不是一句话:丢掉和挂上并排出现,丢掉不需要多点两下。
+    识别出的只是<b>标签</b>,原文不落库;缩略图那块灰区没有内容,因为它本来就不该有。
+    候选是闭集——模型不自由生成,只能在你的树里选。</div>
+  </div>
+
+  <!-- ══════ H7 跨来源时间线 ══════ -->
+  <div class="cell">
+    <div class="cap"><span class="cap-n">H7</span><span class="cap-t">跨来源时间线</span></div>
+    <div class="dev phone app col">
+      <div class="status">9:41<span class="r">5G · 86%</span></div>
+      <div class="cmd">
+        <span class="ic"></span>
+        <span class="scope">记录 <span class="sep">/</span> <b>全部来源</b></span>
+        <span class="sp"></span><span class="kbd">⌘K</span>
+      </div>
+      <div class="rw hb" style="padding:9px 12px;gap:5px">
+        <span class="tag on">全部</span><span class="tag">粉笔</span><span class="tag">中公</span>
+        <span class="tag">华图</span><span class="tag">B站</span><span class="tag">自己刷题</span>
+      </div>
+      <div class="f1 col">
+        <div class="grp">今天<span class="r">2 条</span></div>
+        <div style="padding:5px 12px 3px">
+          <div class="tl">
+            <div class="ti now">
+              <div class="rw"><span class="num t2 s11">09:40</span><span class="sp"></span><span class="tag">记做题 12/10</span></div>
+              <div class="s12 t2" style="margin-top:2px">自己刷题 · 2023 国考真题 <span class="t3">→ 增长率计算</span></div>
+            </div>
+            <div class="ti">
+              <div class="rw"><span class="num t2 s11">09:12</span><span class="sp"></span><span class="tag">语音记</span></div>
+              <div class="s12 t2" style="margin-top:2px">粉笔 · 资料分析系统班 L12 <span class="t3">→ 增长率计算</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="grp">昨天<span class="r">1 条</span></div>
+        <div style="padding:5px 12px 3px">
+          <div class="tl">
+            <div class="ti">
+              <div class="rw"><span class="num t2 s11">22:06</span><span class="sp"></span><span class="tag">记做题 9/8</span></div>
+              <div class="s12 t2" style="margin-top:2px">自己刷题 · 2023 国考真题 <span class="t3">→ 比重计算</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="grp">2 天前<span class="r">2 条</span></div>
+        <div style="padding:5px 12px 3px">
+          <div class="tl">
+            <div class="ti">
+              <div class="rw"><span class="num t2 s11">21:14</span><span class="sp"></span><span class="tag">记做题 8/4</span></div>
+              <div class="s12 t2" style="margin-top:2px">自己刷题 · 2023 国考真题 <span class="t3">→ 增长量计算</span></div>
+            </div>
+            <div class="ti">
+              <div class="rw"><span class="num t2 s11">20:30</span><span class="sp"></span><span class="tag">语音记</span></div>
+              <div class="s12 t2" style="margin-top:2px">粉笔 · 资料分析系统班 L12 <span class="t3">→ 增长量计算</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="grp">3 天前<span class="r">2 条</span></div>
+        <div style="padding:5px 12px 3px">
+          <div class="tl">
+            <div class="ti">
+              <div class="rw"><span class="num t2 s11">21:05</span><span class="sp"></span><span class="tag">拍照记</span></div>
+              <div class="s12 t2" style="margin-top:2px">B站 · 资料分析技巧 <span class="t3">→ 增长率计算</span></div>
+            </div>
+            <div class="ti">
+              <div class="rw"><span class="num t2 s11">19:40</span><span class="sp"></span><span class="tag">记做题 7/6</span></div>
+              <div class="s12 t2" style="margin-top:2px">华图 · 资料速算网课 <span class="t3">→ 特征数字法</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="grp">4 天前<span class="r">1 条</span></div>
+        <div style="padding:5px 12px 3px">
+          <div class="tl">
+            <div class="ti">
+              <div class="rw"><span class="num t2 s11">20:52</span><span class="sp"></span><span class="tag">记做题 6/2</span></div>
+              <div class="s12 t2" style="margin-top:2px">华图 · 资料速算网课 <span class="t3">→ 截位直除</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="rw" style="padding:0 12px;height:18px"><span class="mono t3 s10">往下还有 · 最早 33 天前</span></div>
+      </div>
+      <div class="mbar">
+        <span class="kbd">⌘K</span><span class="t3 s11">找记录</span>
+        <span class="sp"></span>
+        <button class="btn p">记一笔<span class="kbd dk">N</span></button>
+      </div>
+      <div class="homebar"><i></i></div>
+    </div>
+    <div class="ann a1">五家来源躺在同一条线上——这是产品唯一做得成、机构做不成的事:
+    粉笔不会把中公的记录放进自己的时间线。
+    每条只有<b>时间 · 来源 · 记录方式 · 挂到哪个考点</b>,四段全是元数据,一个字的课程内容都没有。</div>
+  </div>
+
+  <!-- ══════ H8 问 AI 时带上的东西 ══════ -->
+  <div class="cell">
+    <div class="cap"><span class="cap-n">H8</span><span class="cap-t">问 AI 时带上的东西</span></div>
+    <div class="dev phone app col">
+      <div class="status">9:41<span class="r">5G · 86%</span></div>
+      <div class="cmd">
+        <span class="mono t2 s12">←</span>
+        <span class="scope">增长量计算 <span class="sep">/</span> <b>带给 AI</b></span>
+        <span class="sp"></span><span class="kbd">⌘C</span>
+      </div>
+      <div class="f1 col">
+        <div style="padding:12px 12px 11px" class="hb">
+          <div class="ttl2">问 AI 时带上的东西</div>
+          <div class="t3 s11" style="margin-top:5px">我们不讲题。要讲解,把这段粘给你在用的 AI。</div>
+        </div>
+        <div style="padding:12px">
+          <div class="code">山东省考 · 行测 · 资料分析
+考点:<i>增长量计算</i>
+我的记录:<b>练 8 对 4,正确率 50%</b>(我自己填的)
+近五年出现 <b>8 次</b>,最近一次 <b>2 天前</b>
+同组我还没碰过:现期量计算 / 年均增长率 / 混合增长率
+整块空白:倍数与比较 3 个、效应类 2 个
+—
+按这个顺序给我讲。别问我题目对不对。</div>
+          <div class="rw" style="margin-top:12px">
+            <button class="btn p" style="flex:1;justify-content:center">复制<span class="kbd dk">⌘C</span></button>
+            <button class="btn lg">存成文件</button>
+          </div>
+        </div>
+        <div class="grp">带出去的是什么<span class="r">4 项</span></div>
+        <div class="row sm"><span class="nm t2">考点名与状态</span><span class="mono t3 s10">元数据</span></div>
+        <div class="row sm"><span class="nm t2">你自己填的正确率</span><span class="mono t3 s10">元数据</span></div>
+        <div class="row sm"><span class="nm t2">近五年频次与最近一次</span><span class="mono t3 s10">元数据</span></div>
+        <div class="row sm"><span class="nm t2">同组和整块的空白</span><span class="mono t3 s10">差集</span></div>
+        <div class="grp">不带出去的<span class="r">3 项</span></div>
+        <div class="row sm"><span class="nm t2">课程内容</span><span class="mono t3 s10">本来就没存</span></div>
+        <div class="row sm"><span class="nm t2">拍照原图</span><span class="mono t3 s10">识别完已删</span></div>
+        <div class="row sm"><span class="nm t2">手机号与账号</span><span class="mono t3 s10">不带</span></div>
+        <div style="padding:11px 12px 0">
+          <div class="note s11">里面没有课程内容,只有你的记录。<br>粘到 DeepSeek、豆包、ChatGPT 都行,我们不替你去问。</div>
+        </div>
+        <div class="sp"></div>
+        <div class="row lg ht"><span class="nm t2">换个考点带</span><span class="mono t3">→</span></div>
+      </div>
+      <div class="mbar">
+        <span class="kbd">⌘K</span><span class="t3 s11">找考点</span>
+        <span class="sp"></span>
+        <button class="btn">回考点</button>
+      </div>
+      <div class="homebar"><i></i></div>
+    </div>
+    <div class="ann a1"><span class="rl">不做教研</span>这条边界在这屏变成了一个功能:讲解不是砍掉的,是<b>转交出去</b>的。
+    产品负责把「你缺什么」组织成一段能直接粘的话,学术判断留给外部模型。
+    上下文块做成可全选的纯文本,不是富文本控件——它要能被粘到任何地方。</div>
+  </div>
+
+  <!-- ══════ H9 导出与接入 ══════ -->
+  <div class="cell">
+    <div class="cap"><span class="cap-n">H9</span><span class="cap-t">导出与接入</span></div>
+    <div class="dev phone app col">
+      <div class="status">9:41<span class="r">5G · 86%</span></div>
+      <div class="cmd">
+        <span class="ic"></span>
+        <span class="scope">数据 <span class="sep">/</span> <b>导出与接入</b></span>
+        <span class="sp"></span><span class="kbd">⌘K</span>
+      </div>
+      <div class="f1 col">
+        <div style="padding:12px 12px 11px" class="hb">
+          <div class="ttl2">带走你的数据</div>
+          <div class="t3 s11" style="margin-top:5px">导出的是全量,不是摘要。</div>
+        </div>
+        <div class="grp">导出<span class="r">18 考点 · 8 有记录</span></div>
+        <div class="row lg">
+          <span class="nm">Markdown</span>
+          <span class="t3 s11">按考点树排版</span>
+          <button class="btn">导出</button>
+        </div>
+        <div class="row lg">
+          <span class="nm">CSV</span>
+          <span class="t3 s11">一行一条记录</span>
+          <button class="btn">导出</button>
+        </div>
+        <div class="row lg">
+          <span class="nm">JSON</span>
+          <span class="t3 s11">骨架层 + 行为层</span>
+          <button class="btn">导出</button>
+        </div>
+        <div style="padding:10px 12px 0">
+          <div class="note s11">考点树、每条记录的来源名和时间戳、你填的练/对,全在里面。</div>
+        </div>
+        <div class="grp" style="margin-top:12px">MCP 接入<span class="r">只读</span></div>
+        <div style="padding:11px 12px 0">
+          <div class="code">$ npx kaodian-mcp
+  --scope <i>read</i>
+  --token  kd_••••••••••••</div>
+          <div class="note w s11" style="margin-top:11px">只读。不能写,不能替你采集。</div>
+        </div>
+        <div class="row sm" style="margin-top:11px"><span class="nm t2">可读:考点树与覆盖率</span><span class="mono t3 s10">read</span></div>
+        <div class="row sm"><span class="nm t2">可读:记录时间线(来源名 + 时间)</span><span class="mono t3 s10">read</span></div>
+        <div class="row sm"><span class="nm t2">可读:盲区列表与先补顺序</span><span class="mono t3 s10">read</span></div>
+        <div class="row sm"><span class="nm t2">不提供:写入、代采集、代做题</span><span class="mono red s10">none</span></div>
+        <div class="grp">导出里也没有的<span class="r">2 项</span></div>
+        <div class="row sm"><span class="nm t2">拍照原图</span><span class="mono t3 s10">本机留 14 天,没有云端副本</span></div>
+        <div class="row sm"><span class="nm t2">课程内容</span><span class="mono t3 s10">从来没存过</span></div>
+        <div class="sp"></div>
+      </div>
+      <div class="mbar">
+        <span class="kbd">⌘K</span><span class="t3 s11">找考点</span>
+        <span class="sp"></span>
+        <button class="btn">设置</button>
+      </div>
+      <div class="homebar"><i></i></div>
+    </div>
+    <div class="ann a1">导出摆在一级入口,不藏进注销流程——不锁数据这件事得看得见。
+    MCP 只暴露 <b>read</b>,连参数都写死在命令里;它是市场资产,不是收入项,所以只占一块小版面。</div>
+  </div>
+
+  <!-- ══════ H10 设置 ══════ -->
+  <div class="cell">
+    <div class="cap"><span class="cap-n">H10</span><span class="cap-t">设置</span></div>
+    <div class="dev phone app col">
+      <div class="status">9:41<span class="r">5G · 86%</span></div>
+      <div class="cmd">
+        <span class="ic"></span>
+        <span class="scope">设置 <span class="sep">/</span> <b>山东省考 · 资料分析</b></span>
+        <span class="sp"></span><span class="kbd">⌘K</span>
+      </div>
+      <div class="f1 col">
+        <div class="grp">账号</div>
+        <div class="row"><span class="nm t2">手机号</span><span class="num s12">138****2049</span></div>
+        <div class="row"><span class="nm t2">微信</span><span class="s12">已绑定</span></div>
+        <div class="row"><span class="nm t2">科目</span><span class="s12">行测 · 资料分析</span><span class="mono t3">→</span></div>
+
+        <div class="grp">数据与隐私</div>
+        <div style="padding:9px 12px 8px" class="hb">
+          <span class="lbl">拍照原图</span>
+          <div class="seg"><s>识别完就删</s><s class="on">本机留 14 天</s></div>
+          <div class="note s11" style="margin-top:9px">两个选项都在这台设备上。没有上云这一项。</div>
+        </div>
+        <div class="row"><span class="nm t2">语音原声</span><span class="s12">转写完就删</span></div>
+        <div class="row"><span class="nm t2">导出数据</span><span class="s12 t3">MD / CSV / JSON</span><span class="mono t3">→</span></div>
+
+        <div class="grp">生成式 AI 服务公示</div>
+        <div class="row"><span class="nm t2">语音转写</span><span class="s12">腾讯云一句话识别</span></div>
+        <div class="row lg">
+          <span class="nm t2">图片识别与考点匹配</span>
+          <div style="text-align:right">
+            <div class="s12">DeepSeek</div>
+            <div class="mono t3 s10">deepseek-v4-flash-vision-exp</div>
+          </div>
+        </div>
+        <div class="row"><span class="nm t2">登记编号</span><span class="mono s12 t3">待登记</span></div>
+
+        <div class="grp">关于</div>
+        <div class="row sm"><span class="nm t2">版本</span><span class="num s12 t3">1.0.3 · web</span></div>
+        <div class="row sm"><span class="nm t2">说点什么</span><span class="mono t3">→</span></div>
+        <div class="row sm"><span class="nm t2">服务条款与隐私政策</span><span class="mono t3">→</span></div>
+
+        <div class="grp">注销</div>
+        <div style="padding:11px 12px 0">
+          <button class="btn d blk lg">注销账号并删除全部数据</button>
+          <div class="note w s11" style="margin-top:10px">删之前先导出。删完拿不回来,我们这边也没有备份。</div>
+        </div>
+        <div class="sp"></div>
+      </div>
+      <div class="mbar">
+        <span class="kbd">⌘K</span><span class="t3 s11">找考点</span>
+        <span class="sp"></span>
+        <button class="btn">回总览</button>
+      </div>
+      <div class="homebar"><i></i></div>
+    </div>
+    <div class="ann a1">原图保留是个 <b>.seg</b>,但两档都在本机——<span class="rl">不上云这条线不做成开关</span>,做成开关就等于留了反悔的余地。
+    生成式 AI 公示按法定要求列模型名与登记编号,「待登记」照实写,不含糊过去。</div>
+  </div>
+
+</div>
+
+<!-- ══════════════════════════════ iPad ══════════════════════════════ -->
+<div class="sec">
+  <h2>iPad 断点</h2>
+  <span class="sub">H11 竖屏 834 × 1112 · H12 横屏 1194 × 834</span>
+</div>
+
+<div class="grid">
+
+  <!-- ══════ H11 iPad 竖屏 ══════ -->
+  <div class="cell">
+    <div class="cap"><span class="cap-n">H11</span><span class="cap-t">iPad 竖屏 · 骨架树 + 先补这几个</span></div>
+    <div class="dev pad app col">
+      <div class="status">9:41<span class="r">Wi-Fi · 86%</span></div>
+      <div class="cmd lg">
+        <span class="ic"></span>
+        <span class="scope">考点 <span class="sep">/</span> <b>山东省考 · 资料分析</b></span>
+        <span class="sep">·</span>
+        <span class="ph2">搜考点、来源、记录…</span>
+        <span class="kbd">⌘K</span>
+        <span class="kbd">N 记一笔</span>
+      </div>
+      <div class="f1" style="display:flex">
+
+        <!-- 左:骨架树 -->
+        <div class="col" style="width:521px;border-right:1px solid var(--hair)">
+          <div style="padding:8px 16px 8px" class="hb">
+            <div class="rw">
+              <span class="big">44<s>%</s></span>
+              <span class="sp"></span>
+              <div style="text-align:right">
+                <div class="num t2 s12">18 考点 · 8 有记录 · 10 空白</div>
+                <div class="num red s12" style="margin-top:6px">2 组整块空白 · 5 个考点</div>
+              </div>
+            </div>
+            <div class="meter tall" style="margin-top:7px">
+              <i style="width:16.7%;background:var(--s-stable)"></i>
+              <i style="width:11.1%;background:var(--s-weak)"></i>
+              <i style="width:11.1%;background:var(--s-rusty)"></i>
+              <i style="width:5.6%;background:var(--s-touch)"></i>
+              <i style="width:55.5%;background:var(--s-empty)"></i>
+            </div>
+            <div class="lg-row" style="margin-top:6px">
+              <s class="lgi"><i class="sd stable"></i>稳 3</s>
+              <s class="lgi"><i class="sd weak"></i>弱 2</s>
+              <s class="lgi"><i class="sd rusty"></i>生疏 2</s>
+              <s class="lgi"><i class="sd touch"></i>仅接触 1</s>
+              <s class="lgi"><i class="sd empty"></i>空白 10</s>
+              <s class="sp"></s>
+              <s>实心的碰过,空心的没碰过</s>
+            </div>
+          </div>
+
+          <div class="grp">增长类<span class="r">4/7 有记录</span></div>
+          <div class="row"><i class="sd stable"></i><span class="nm">增长率计算</span><span class="num t2 s11">12/10</span><span class="num t2 s11 wt">83%</span><span class="num t3 s11 wt">9次</span><span class="num t2 s11 wt2">今天</span></div>
+          <div class="row sel"><i class="sd weak"></i><span class="nm">增长量计算</span><span class="num t2 s11">8/4</span><span class="num red s11 wt">50%</span><span class="num t3 s11 wt">8次</span><span class="num t2 s11 wt2">2天前</span></div>
+          <div class="row"><i class="sd rusty"></i><span class="nm">基期量计算</span><span class="num t2 s11">5/4</span><span class="num t2 s11 wt">80%</span><span class="num t3 s11 wt">7次</span><span class="num t2 s11 wt2">32天前</span></div>
+          <div class="row"><i class="sd rusty"></i><span class="nm">间隔增长率</span><span class="num t2 s11">3/2</span><span class="num t2 s11 wt">67%</span><span class="num t3 s11 wt">6次</span><span class="num t2 s11 wt2">33天前</span></div>
+          <div class="row"><i class="sd empty"></i><span class="nm off">现期量计算</span><span class="num t3 s11">—</span><span class="num t3 s11 wt">—</span><span class="num t3 s11 wt">5次</span><span class="num t3 s11 wt2">—</span></div>
+          <div class="row"><i class="sd empty"></i><span class="nm off">年均增长率</span><span class="num t3 s11">—</span><span class="num t3 s11 wt">—</span><span class="num t3 s11 wt">4次</span><span class="num t3 s11 wt2">—</span></div>
+          <div class="row"><i class="sd empty"></i><span class="nm off">混合增长率</span><span class="num t3 s11">—</span><span class="num t3 s11 wt">—</span><span class="num t3 s11 wt">2次</span><span class="num t3 s11 wt2">—</span></div>
+
+          <div class="grp void">倍数与比较<span class="r">0/3 · 整块空白 · 频次合计 12</span></div>
+          <div class="row"><i class="sd empty"></i><span class="nm off">倍数计算</span><span class="num t3 s11">—</span><span class="num t3 s11 wt">—</span><span class="num t3 s11 wt">5次</span><span class="num t3 s11 wt2">—</span></div>
+          <div class="row"><i class="sd empty"></i><span class="nm off">倍数变化</span><span class="num t3 s11">—</span><span class="num t3 s11 wt">—</span><span class="num t3 s11 wt">3次</span><span class="num t3 s11 wt2">—</span></div>
+          <div class="row"><i class="sd empty"></i><span class="nm off">同比与环比</span><span class="num t3 s11">—</span><span class="num t3 s11 wt">—</span><span class="num t3 s11 wt">4次</span><span class="num t3 s11 wt2">—</span></div>
+
+          <div class="grp void">效应类<span class="r">0/2 · 整块空白 · 频次合计 6</span></div>
+          <div class="row"><i class="sd empty"></i><span class="nm off">贡献率</span><span class="num t3 s11">—</span><span class="num t3 s11 wt">—</span><span class="num t3 s11 wt">3次</span><span class="num t3 s11 wt2">—</span></div>
+          <div class="row"><i class="sd empty"></i><span class="nm off">拉动增长</span><span class="num t3 s11">—</span><span class="num t3 s11 wt">—</span><span class="num t3 s11 wt">3次</span><span class="num t3 s11 wt2">—</span></div>
+
+          <div class="grp">平均与比重<span class="r">2/3 有记录</span></div>
+          <div class="row"><i class="sd stable"></i><span class="nm">比重计算</span><span class="num t2 s11">9/8</span><span class="num t2 s11 wt">89%</span><span class="num t3 s11 wt">8次</span><span class="num t2 s11 wt2">昨天</span></div>
+          <div class="row"><i class="sd empty"></i><span class="nm off">平均数计算</span><span class="num t3 s11">—</span><span class="num t3 s11 wt">—</span><span class="num t3 s11 wt">6次</span><span class="num t3 s11 wt2">—</span></div>
+          <div class="row"><i class="sd touch"></i><span class="nm">比重变化</span><span class="num t2 s11">听课1次,未练</span><span class="num t3 s11 wt">—</span><span class="num t3 s11 wt">5次</span><span class="num t2 s11 wt2">5天前</span></div>
+
+          <div class="grp">速算技巧<span class="r">2/3 有记录</span></div>
+          <div class="row"><i class="sd weak"></i><span class="nm">截位直除</span><span class="num t2 s11">6/2</span><span class="num red s11 wt">33%</span><span class="num t3 s11 wt">7次</span><span class="num t2 s11 wt2">4天前</span></div>
+          <div class="row"><i class="sd stable"></i><span class="nm">特征数字法</span><span class="num t2 s11">7/6</span><span class="num t2 s11 wt">86%</span><span class="num t3 s11 wt">4次</span><span class="num t2 s11 wt2">3天前</span></div>
+          <div class="row"><i class="sd empty"></i><span class="nm off">分数比较</span><span class="num t3 s11">—</span><span class="num t3 s11 wt">—</span><span class="num t3 s11 wt">3次</span><span class="num t3 s11 wt2">—</span></div>
+
+          <div class="grp">最近记录<span class="r">今天 2 条</span></div>
+          <div style="padding:2px 16px 0">
+            <div class="tl">
+              <div class="ti now">
+                <div class="rw"><span class="num t2 s11">今天 09:40</span><span class="sp"></span><span class="tag">记做题 12/10</span></div>
+                <div class="s12 t2" style="margin-top:2px">自己刷题 · 2023 国考真题 <span class="t3">→ 增长率计算</span></div>
+              </div>
+              <div class="ti">
+                <div class="rw"><span class="num t2 s11">今天 09:12</span><span class="sp"></span><span class="tag">语音记</span></div>
+                <div class="s12 t2" style="margin-top:2px">粉笔 · 资料分析系统班 L12 <span class="t3">→ 增长率计算</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="sp"></div>
+          <div class="rw ht" style="padding:4px 16px">
+            <span class="note s11">不判断对错。正确率是你自己填的数。</span>
+            <span class="sp"></span>
+            <span class="mono t3 s10">到底了 · 18 个考点</span>
+          </div>
+        </div>
+
+        <!-- 右:先补这几个 -->
+        <div class="col f1">
+          <div class="grp">先补这几个<span class="r">频次 × 生疏度</span></div>
+
+          <div class="row lg sel"><span class="num acid s12">01</span><span class="nm">增长量计算</span><span class="num t2 s12">6.4</span></div>
+          <div class="rw hb" style="padding:0 12px 9px"><span class="mono t3 s11" style="padding-left:31px">练 8 对 4 · 正确率 50%</span></div>
+
+          <div class="row lg"><span class="num t3 s12">02</span><span class="nm">平均数计算</span><span class="num t2 s12">6.0</span></div>
+          <div class="rw hb" style="padding:0 12px 9px"><span class="mono t3 s11" style="padding-left:31px">近五年 6 次 · 无任何记录</span></div>
+
+          <div class="row lg"><span class="num t3 s12">03</span><span class="nm">截位直除</span><span class="num t2 s12">5.6</span></div>
+          <div class="rw hb" style="padding:0 12px 9px"><span class="mono t3 s11" style="padding-left:31px">练 6 对 2 · 正确率 33%</span></div>
+
+          <div class="row lg"><span class="num t3 s12">04</span><span class="nm">现期量计算</span><span class="num t2 s12">5.0</span></div>
+          <div class="rw hb" style="padding:0 12px 9px"><span class="mono t3 s11" style="padding-left:31px">近五年 5 次 · 无任何记录</span></div>
+
+          <div class="row lg"><span class="num t3 s12">05</span><span class="nm">倍数计算</span><span class="num t2 s12">5.0</span></div>
+          <div class="rw hb" style="padding:0 12px 9px"><span class="mono t3 s11" style="padding-left:31px">近五年 5 次 · 无任何记录</span></div>
+
+          <div style="padding:11px 12px 12px" class="hb">
+            <div class="rw">
+              <button class="btn" style="flex:1;justify-content:center">我已掌握</button>
+              <button class="btn" style="flex:1;justify-content:center">这些先不算</button>
+            </div>
+            <div class="note s11" style="margin-top:10px">这两个都是你说的,不计入覆盖度。</div>
+          </div>
+
+          <div class="grp void">整块空白<span class="r">2 组 · 5 个考点</span></div>
+          <div class="row"><i class="sd empty"></i><span class="nm off">倍数与比较</span><span class="num t3 s11">0/3</span><span class="num red s11 wt">频次 12</span></div>
+          <div class="row"><i class="sd empty"></i><span class="nm off">效应类</span><span class="num t3 s11">0/2</span><span class="num red s11 wt">频次 6</span></div>
+
+          <div class="grp">来源<span class="r">5 家</span></div>
+          <div class="row sm"><span class="nm t2">粉笔 · 资料分析系统班 L12</span><span class="num t3 s10">今天</span></div>
+          <div class="row sm"><span class="nm t2">中公 · 资料分析专项</span><span class="num t3 s10">5天前</span></div>
+          <div class="row sm"><span class="nm t2">华图 · 资料速算网课</span><span class="num t3 s10">3天前</span></div>
+          <div class="row sm"><span class="nm t2">B站 · 资料分析技巧</span><span class="num t3 s10">3天前</span></div>
+          <div class="row sm"><span class="nm t2">自己刷题 · 2023 国考真题</span><span class="num t3 s10">今天</span></div>
+          <div style="padding:10px 12px 12px" class="hb">
+            <div class="note s11">只存来源名和时间。课程内容不进来。</div>
+          </div>
+
+          <div class="grp">别处<span class="r">4 个</span></div>
+          <div class="row"><span class="nm t2">跨来源时间线</span><span class="mono t3">→</span></div>
+          <div class="row"><span class="nm t2">导出 MD / CSV / JSON</span><span class="mono t3">→</span></div>
+          <div class="row"><span class="nm t2">MCP 接入</span><span class="mono t3 s10">只读</span><span class="mono t3">→</span></div>
+          <div class="row"><span class="nm t2">设置与 AI 服务公示</span><span class="mono t3">→</span></div>
+
+          <div class="sp"></div>
+          <div style="padding:0 12px 10px">
+            <div class="note s11" style="margin-bottom:10px">不判断对错。正确率是你自己填的数。</div>
+            <button class="btn p blk lg">记一笔<span class="kbd dk">N</span></button>
+          </div>
+        </div>
+      </div>
+      <div class="homebar"><i></i></div>
+    </div>
+    <div class="ann a2">竖屏的价值只有一个:<b>18 个考点全展开,加上练/对、正确率、频次、最近一次四列,还剩空间</b>。
+    手机上要压到 24px 行高才装得下,这里 34px 行高、四列元数据、右栏诊断常驻,不用来回跳。
+    左栏选中行用 inset 左边条,没有阴影、没有卡片,列与列之间也不画竖线——发丝线只在行之间。</div>
+  </div>
+
+  <!-- ══════ H12 iPad 横屏 ══════ -->
+  <div class="cell">
+    <div class="cap"><span class="cap-n">H12</span><span class="cap-t">iPad 横屏 · 边看课边记</span></div>
+    <div class="dev pad-l app col">
+      <div class="status">9:41<span class="r">Wi-Fi · 86%</span></div>
+      <div class="cmd lg">
+        <span class="ic"></span>
+        <span class="scope">考点 <span class="sep">/</span> <b>山东省考 · 资料分析</b> <span class="sep">/</span> 边看边记</span>
+        <span class="sep">·</span>
+        <span class="ph2">搜考点、来源、记录…</span>
+        <span class="kbd">⌘K</span>
+        <span class="kbd">空格 说一句</span>
+        <span class="kbd">⌥S 截屏记</span>
+      </div>
+      <div class="f1" style="display:flex">
+
+        <!-- 左 62%:正在看的课(中性播放器骨架,不承载任何课程内容) -->
+        <div class="col" style="width:740px;border-right:1px solid var(--hair)">
+          <div class="rw hb" style="padding:0 16px;height:38px;flex:none">
+            <span class="mono t3 s10" style="letter-spacing:.12em">正在看</span>
+            <span class="s13">粉笔 · 资料分析系统班 L12</span>
+            <span class="tag">外部来源</span>
+            <span class="sp"></span>
+            <span class="num t3 s11">进入 24:18</span>
+          </div>
+
+          <div style="padding:16px 16px 0">
+            <div class="scr" style="height:392px">
+              <i class="play"></i>
+              <span class="mono t3 s10">播放区 · 在原来的 App 里</span>
+            </div>
+            <div class="rw" style="margin-top:12px">
+              <i class="prev"></i><i class="play sm"></i><i class="next"></i>
+              <span class="num t2 s11" style="margin-left:4px">24:18</span>
+              <div class="meter tall" style="flex:1"><i style="width:47%;background:var(--t2)"></i></div>
+              <span class="num t3 s11">51:02</span>
+              <span class="kbd">1.5×</span>
+            </div>
+            <div class="note s11" style="margin-top:13px">课在人家那儿放着。这边只记来源名和时间,不存课程内容。</div>
+          </div>
+
+          <div class="grp" style="margin-top:16px">这节课刚挂上的<span class="r">2 条</span></div>
+          <div style="padding:6px 16px 0">
+            <div class="tl">
+              <div class="ti now">
+                <div class="rw"><span class="num t2 s11">今天 09:40</span><span class="sp"></span><span class="tag">记做题 12/10</span><span class="kbd">⌘Z 撤销</span></div>
+                <div class="s12 t2" style="margin-top:2px">自己刷题 · 2023 国考真题 <span class="t3">→ 增长率计算</span></div>
+              </div>
+              <div class="ti">
+                <div class="rw"><span class="num t2 s11">今天 09:12</span><span class="sp"></span><span class="tag">语音记</span></div>
+                <div class="s12 t2" style="margin-top:2px">粉笔 · 资料分析系统班 L12 <span class="t3">→ 增长率计算</span></div>
+              </div>
+            </div>
+          </div>
+          <div class="sp"></div>
+          <div class="rw ht" style="padding:10px 16px">
+            <span class="mono t3 s10">记一笔时视频不暂停</span>
+          </div>
+        </div>
+
+        <!-- 右 38%:常驻记录侧栏 -->
+        <div class="col f1">
+          <div class="rw hb" style="padding:0 14px;height:38px;flex:none">
+            <span class="ttl2">记一笔</span>
+            <span class="t3 s11">不用离开这一屏</span>
+            <span class="sp"></span><span class="kbd">N</span>
+          </div>
+
+          <div class="ent" style="border-top:none">
+            <i class="ico i-c"></i>
+            <div style="min-width:0">
+              <div class="s13">截屏记</div>
+              <div class="t3 s11">截当前这帧,原图本机留 14 天</div>
+            </div>
+            <span class="sp"></span><span class="kbd">⌥S</span>
+          </div>
+          <div class="ent">
+            <i class="ico i-v"></i>
+            <div style="min-width:0">
+              <div class="s13">语音记</div>
+              <div class="t3 s11">按住空格说一句,松开就落</div>
+            </div>
+            <span class="sp"></span><span class="kbd">空格</span>
+          </div>
+          <div class="ent">
+            <i class="ico i-n"></i>
+            <div style="min-width:0">
+              <div class="s13">记做题</div>
+              <div class="t3 s11">练了几道 · 对了几道</div>
+            </div>
+            <span class="sp"></span><span class="kbd">4</span>
+          </div>
+
+          <div class="grp ht">挂到哪个考点<span class="r">来自你的考点树</span></div>
+          <div style="padding:10px 14px 11px" class="hb">
+            <div class="field fc"><span class="pre">挂到</span><span class="ph">打两个字就行</span><span class="sp"></span><span class="kbd">↵</span></div>
+          </div>
+          <div class="row sel"><i class="sd stable"></i><span class="nm">增长率计算</span><span class="num t3 s11">9次</span><span class="num t2 s11 wt">今天</span></div>
+          <div class="row"><i class="sd weak"></i><span class="nm">增长量计算</span><span class="num t3 s11">8次</span><span class="num t2 s11 wt">2天前</span></div>
+          <div class="row"><i class="sd rusty"></i><span class="nm">基期量计算</span><span class="num t3 s11">7次</span><span class="num t2 s11 wt">32天前</span></div>
+          <div class="row"><i class="sd empty"></i><span class="nm off">现期量计算</span><span class="num t3 s11">5次</span><span class="num t3 s11 wt">—</span></div>
+          <div class="row"><i class="sd empty"></i><span class="nm off">年均增长率</span><span class="num t3 s11">4次</span><span class="num t3 s11 wt">—</span></div>
+          <div class="row"><i class="sd empty"></i><span class="nm off">混合增长率</span><span class="num t3 s11">2次</span><span class="num t3 s11 wt">—</span></div>
+          <div class="row"><i class="sd empty"></i><span class="nm off">倍数计算</span><span class="num t3 s11">5次</span><span class="num t3 s11 wt">—</span></div>
+          <div class="row"><i class="sd empty"></i><span class="nm off">倍数变化</span><span class="num t3 s11">3次</span><span class="num t3 s11 wt">—</span></div>
+          <div class="row"><i class="sd empty"></i><span class="nm off">同比与环比</span><span class="num t3 s11">4次</span><span class="num t3 s11 wt">—</span></div>
+          <div class="row"><i class="sd empty"></i><span class="nm off">贡献率</span><span class="num t3 s11">3次</span><span class="num t3 s11 wt">—</span></div>
+          <div class="rw hb" style="padding:9px 14px">
+            <span class="t3 s11">认不出来就丢掉,不硬凑最近的那个</span>
+            <span class="sp"></span>
+            <button class="btn d">丢掉</button>
+          </div>
+
+          <div class="sp"></div>
+          <div style="padding:0 14px 12px">
+            <div class="rw" style="margin-bottom:10px">
+              <span class="mono t3 s10">这节课已挂 2 条 · 覆盖 44%</span>
+              <span class="sp"></span>
+              <span class="num t2 s11">8/18</span>
+            </div>
+            <button class="btn p blk lg">挂上去,回去接着看<span class="kbd dk">↵</span></button>
+          </div>
+        </div>
+      </div>
+      <div class="homebar"><i></i></div>
+    </div>
+    <div class="ann a3">这一屏要证明的只有一件事:<b>记一笔全程不离开当前视图</b>。
+    侧栏常驻不是弹层,三种记法各挂一个快捷键(⌥S / 空格 / 4),挂考点的输入框已经聚焦,按 ↵ 就回到听课——
+    没有跳转、没有返回栈、没有一次播放中断。
+    左侧是<span class="rl">不碰内容</span>这条红线的物理形态:那块灰区里只有一个播放三角和一行「不由本产品渲染」,
+    来源名和时间戳在框外——就算想存课程内容,界面上也没有它的位置。</div>
+  </div>
+
+</div>
+
+<!-- ══════════════════════════════ 会员 · 支付 · 订单 · 额度 ══════════════════════════════ -->
+<div class="sec">
+  <h2>手机 · 会员 / 支付 / 订单 / 额度</h2>
+  <span class="sub">H13 – H16 · 375 × 812 · 微信内 JSAPI,外部浏览器 H5 支付,就地付完</span>
+</div>
+
+<div class="grid">
+
+  <!-- ══════ H13 定价 ══════ -->
+  <div class="cell">
+    <div class="cap"><span class="cap-n">H13</span><span class="cap-t">定价 · 一个付费档</span></div>
+    <div class="dev phone app col">
+      <div class="status">9:41<span class="r">5G · 86%</span></div>
+      <div class="cmd">
+        <span class="mono t2 s12">←</span>
+        <span class="scope">会员 <span class="sep">/</span> <b>一个付费档</b></span>
+        <span class="sp"></span><span class="kbd">⌘K</span>
+      </div>
+      <div class="f1 col">
+        <div style="padding:10px 12px 10px">
+          <div class="rw">
+            <span class="ttl2">记多少,自己定</span>
+            <span class="sp"></span>
+            <span class="mono t3 s10">只差 AI 的次数</span>
+          </div>
+        </div>
+
+        <div class="row lg tierhd">
+          <span class="ttl2">免费</span><span class="tag">你现在这档</span>
+          <span class="sp"></span>
+          <span class="num s15">¥0</span><span class="t3 s11">/月</span>
+          <span class="wbtn"></span>
+        </div>
+        <div class="tr">
+          <div class="row"><span class="nm">AI 录入 <span class="t3 s10">语音转写 / 拍照识别打标</span></span><span class="num s11 wq">30 次/月</span></div>
+          <div class="row"><span class="nm">AI 代发提问 <span class="t3 s10">代你问外部模型</span></span><span class="num s11 wq">5 次/月</span></div>
+          <div class="row"><span class="nm">手动记录 <span class="t3 s10">记做题 / 粘一段自己挂考点</span></span><span class="s12 wq">不限</span></div>
+          <div class="row"><span class="nm">骨架树 · 覆盖 · 盲区诊断</span><span class="s12 wq">不限</span></div>
+          <div class="row"><span class="nm">导出 Markdown / CSV / JSON</span><span class="s12 wq">不限</span></div>
+          <div class="row"><span class="nm">MCP / CLI 只读接入</span><span class="s12 wq">不限</span></div>
+        </div>
+        <div style="padding:9px 12px 10px">
+          <div class="note s11">盲区诊断、导出、MCP,免费也不限,不做付费墙。<br>你这个月已用:AI 录入 <span class="num">28 / 30</span>,代发提问 <span class="num">4 / 5</span>。</div>
+        </div>
+
+        <div class="row lg tierhd">
+          <span class="ttl2">记多点</span>
+          <span class="sp"></span>
+          <span class="num s15">¥9.9</span><span class="t3 s11">/月</span>
+          <button class="btn p">选这档<span class="kbd dk">↵</span></button>
+        </div>
+        <div class="tr">
+          <div class="row"><span class="nm">AI 录入 <span class="t3 s10">语音转写 / 拍照识别打标</span></span><span class="num s11 wq">300 次/月</span></div>
+          <div class="row"><span class="nm">AI 代发提问 <span class="t3 s10">代你问外部模型</span></span><span class="num s11 wq">50 次/月</span></div>
+          <div class="row"><span class="nm">手动记录 <span class="t3 s10">记做题 / 粘一段自己挂考点</span></span><span class="s12 wq">不限</span></div>
+          <div class="row"><span class="nm">骨架树 · 覆盖 · 盲区诊断</span><span class="s12 wq">不限</span></div>
+          <div class="row"><span class="nm">导出 Markdown / CSV / JSON</span><span class="s12 wq">不限</span></div>
+          <div class="row"><span class="nm">MCP / CLI 只读接入</span><span class="s12 wq">不限</span></div>
+        </div>
+
+
+        <div class="sp"></div>
+      </div>
+      <div class="rw ht" style="padding:0 12px;height:38px;flex:none">
+        <span class="s12">不自动扣费,到期就停</span>
+        <span class="sp"></span>
+        <span class="mono t3 s10">买 1 个月就是 1 个月</span>
+      </div>
+      <div class="homebar"><i></i></div>
+    </div>
+    <div class="ann a1">档位不是卡片,是<b>分段带</b>:同一列权益名、同一列数字,竖着扫一眼就对齐了。
+    圆角卡片是标准 SaaS 定价页的样子,这套设计要甩掉的正是它。
+    <span class="rl">免费段里骨架树 · 覆盖 · 盲区诊断、导出、MCP 全部标「不限」</span>——北极星指标是「主动查看盲区的人数」,
+    把它塞进付费墙等于用收费压住自己唯一的指标。免费与付费之间只有 AI 次数不同。
+    底部常驻条写死<b>不自动扣费,到期就停</b>:委托代扣本期开不了,索性把它当卖点写在最显眼的位置。</div>
+  </div>
+
+  <!-- ══════ H14 收银台 ══════ -->
+  <div class="cell">
+    <div class="cap"><span class="cap-n">H14</span><span class="cap-t">收银台</span></div>
+    <div class="dev phone app col">
+      <div class="status">9:41<span class="r">5G · 86%</span></div>
+      <div class="cmd">
+        <span class="mono t2 s12">←</span>
+        <span class="scope">记多点 <span class="sep">/</span> <b>收银台</b></span>
+        <span class="sp"></span><span class="kbd">esc</span>
+      </div>
+      <div class="f1 col">
+        <div style="padding:10px 12px 10px" class="hb">
+          <div class="rw">
+            <span class="ttl2">确认订单</span>
+            <span class="sp"></span>
+            <span class="mono t3 s10">一次性 1 个月</span>
+          </div>
+        </div>
+
+        <div class="grp">订单<span class="r">付之前先看清</span></div>
+        <div class="row"><span class="nm t2">商品</span><span class="s12">记多点 · 1 个月</span></div>
+        <div class="row"><span class="nm t2">有效期</span><span class="num s12">2026-08-25 → 2026-09-25</span></div>
+        <div class="row"><span class="nm t2">应付</span><span class="num s15">¥9.90</span></div>
+
+        <div class="grp">买了之后<span class="r">只动这两项</span></div>
+        <div class="row lg">
+          <span class="nm">AI 录入</span>
+          <span class="num t3 s11">30 次/月</span>
+          <span class="mono t3">→</span>
+          <span class="num s13 wq2">300 次/月</span>
+        </div>
+        <div class="row lg">
+          <span class="nm">AI 代发提问</span>
+          <span class="num t3 s11">5 次/月</span>
+          <span class="mono t3">→</span>
+          <span class="num s13 wq2">50 次/月</span>
+        </div>
+        <div class="row sm"><span class="nm t2">本月已用的 <span class="num">28</span> 次</span><span class="s11 t3">不清零,变的只是上限</span></div>
+        <div class="row sm"><span class="nm t2">手动记录 · 盲区诊断 · 导出 · MCP</span><span class="s11 t3">买不买都不限</span></div>
+
+        <div class="grp">付款 · 当前环境<span class="r">就地付完,不跨端</span></div>
+        <div class="row"><span class="nm t2">当前环境</span><span class="s12">微信内 · JSAPI 支付</span><span class="tag">自动判定</span></div>
+        <div class="row sm"><span class="nm t2">在 Safari / Chrome 里打开</span><span class="s11 t3">自动切 H5 支付</span></div>
+        <div style="padding:10px 12px 9px" class="hb">
+          <div class="note s11">环境不用你选。同一个价、同一笔订单,不用换个地方付。</div>
+        </div>
+
+        <div class="grp">AI 代发提问是怎么回事<span class="r">买的是次数,不是答案</span></div>
+        <div class="row sm"><span class="nm t2">我们做的</span><span class="s11 t3">把你的盲区清单和记录组装成上下文</span></div>
+        <div class="row sm"><span class="nm t2">用的模型</span><span class="mono s11">DeepSeek deepseek-v4-chat</span></div>
+        <div class="row sm"><span class="nm t2">答案</span><span class="s11 t3">原样透出,我们不产出任何学科内容</span></div>
+
+        <div class="sp"></div>
+        <div style="padding:0 12px 12px">
+          <div class="note s11" style="margin-bottom:10px">一次性买 1 个月。不签约、不代扣,到期就停。<br>想接着用,下个月再来点一次。</div>
+          <button class="btn p blk lg">微信支付 <span class="num">¥9.90</span><span class="kbd dk">↵</span></button>
+          <div class="rw" style="margin-top:10px">
+            <span class="mono t3 s10">网页端与小程序同价</span>
+            <span class="sp"></span>
+            <span class="mono t3 s10">订单里只有商品名和金额</span>
+          </div>
+        </div>
+      </div>
+      <div class="homebar"><i></i></div>
+    </div>
+    <div class="ann a1">H5 的支付路径<b>就地闭环</b>:在微信里走 JSAPI,在浏览器里走 H5 支付,同价、同一笔订单,
+    不往别的端上引导——小程序那条「不得引导至外部完成支付」的红线这边不适用,但也没有跨端的必要。
+    这一端不过苹果渠道,<b>没有 12% 佣金</b>,标准费率约 0.6%(2026-08 调研值);价钱仍旧跟小程序一模一样,不做分端差价。
+    支付环境是<b>探测出来的、不是选出来的</b>,所以写成只读行不是分段开关——微信内本来就走不了 H5 支付,
+    给一个点不动的第二档等于摆一条必然失败的路。
+    「买了之后」只有两行动了,底下两行把「已用的 28 次不清零」和手动记录、盲区诊断、导出、MCP 的「买不买都不限」
+    都写在成交之前,而不是等用户付完才发现自己买了本来就免费的东西、或者以为额度会归零重来。</div>
+  </div>
+
+  <!-- ══════ H15 会员与账单 ══════ -->
+  <div class="cell">
+    <div class="cap"><span class="cap-n">H15</span><span class="cap-t">会员与账单</span></div>
+    <div class="dev phone app col">
+      <div class="status">9:41<span class="r">5G · 86%</span></div>
+      <div class="cmd">
+        <span class="ic"></span>
+        <span class="scope">会员 <span class="sep">/</span> <b>额度与账单</b></span>
+        <span class="sp"></span><span class="kbd">⌘K</span>
+      </div>
+      <div class="f1 col">
+        <div style="padding:12px 12px 11px" class="hb">
+          <div class="rw">
+            <span class="ttl2">记多点</span><span class="tag">会员中</span>
+            <span class="sp"></span>
+            <span class="num s12">¥9.9<span class="t3">/月</span></span>
+          </div>
+          <div class="rw" style="margin-top:6px">
+            <span class="mono t3 s11">有效期至</span>
+            <span class="num s12">2026-09-24</span>
+            <span class="sp"></span>
+            <span class="mono t3 s10">还剩 30 天</span>
+          </div>
+        </div>
+
+        <div class="grp">本月额度<span class="r">按次算</span></div>
+        <div style="padding:10px 12px 11px" class="hb">
+          <div class="rw"><span class="s12">AI 录入</span><span class="sp"></span><span class="num s12">137 <span class="t3">/ 300</span></span></div>
+          <div class="meter" style="margin-top:7px"><i style="width:45.7%;background:var(--t2)"></i></div>
+          <div class="rw" style="margin-top:12px"><span class="s12">AI 代发提问</span><span class="sp"></span><span class="num s12">12 <span class="t3">/ 50</span></span></div>
+          <div class="meter" style="margin-top:7px"><i style="width:24%;background:var(--t2)"></i></div>
+          <div class="rw" style="margin-top:9px">
+            <span class="mono t3 s10">每月 1 日零点重置</span>
+            <span class="sp"></span>
+            <span class="mono t3 s10">手动记录不占额度</span>
+          </div>
+        </div>
+
+        <div style="padding:11px 12px 12px" class="hb">
+          <button class="btn p blk lg">续 <span class="num">1</span> 个月 <span class="num">¥9.90</span><span class="kbd dk">↵</span></button>
+          <div class="note s11" style="margin-top:10px">手动续费。到期就停,停了记录和骨架树都还在。</div>
+        </div>
+
+
+        <div class="grp">订单<span class="r">3 条</span></div>
+        <div style="padding:8px 12px 9px" class="hb">
+          <div class="rw">
+            <span class="num s12">KD26082400317</span>
+            <span class="sp"></span>
+            <span class="num s12">¥9.90</span>
+            <span class="tag">已支付</span>
+          </div>
+          <div class="rw" style="margin-top:3px"><span class="mono t3 s10">2026-08-24 21:06 · 记多点 · 1 个月 · 微信支付</span></div>
+        </div>
+        <div style="padding:8px 12px 9px" class="hb">
+          <div class="rw">
+            <span class="num s12">KD26072411204</span>
+            <span class="sp"></span>
+            <span class="num s12">¥9.90</span>
+            <span class="tag">已支付</span>
+          </div>
+          <div class="rw" style="margin-top:3px"><span class="mono t3 s10">2026-07-24 20:51 · 记多点 · 1 个月 · 微信支付</span></div>
+        </div>
+        <div style="padding:8px 12px 9px" class="hb">
+          <div class="rw">
+            <span class="num s12 t2">KD26062309882</span>
+            <span class="sp"></span>
+            <span class="num s12 t2">¥9.90</span>
+            <span class="tag" style="color:var(--t3)">已退款</span>
+          </div>
+          <div class="rw" style="margin-top:3px"><span class="mono t3 s10">2026-06-23 19:33 · 记多点 · 1 个月 · 微信支付</span></div>
+        </div>
+        <div class="row sm"><span class="nm t2">更早的订单</span><span class="mono t3 s10">按月翻</span><span class="mono t3">→</span></div>
+        <div class="row"><span class="nm t2">开发票</span><span class="s11 t3">电子普通发票 · 已支付的可开</span><span class="mono t3">→</span></div>
+
+        <div style="padding:11px 12px 0">
+          <div class="note s11">账单里只有商品名和金额,不含任何学习内容。<br>这一页也不说你学得怎么样,只有次数和日期。</div>
+        </div>
+        <div class="sp"></div>
+      </div>
+      <div class="mbar">
+        <span class="kbd">⌘K</span><span class="t3 s11">找记录</span>
+        <span class="sp"></span>
+        <button class="btn">回总览</button>
+      </div>
+      <div class="homebar"><i></i></div>
+    </div>
+    <div class="ann a1">上半额度、下半账单,中间只有一条发丝线,没有卡片也没有分区容器。
+    续费是<b>一次手动点击</b>,按钮写「续 1 个月」——委托代扣要企业主体 + 微信支付认证客服电话,
+    还卡着「最近 4 自然周去重付费用户 ≥ 300、投诉率 ≤ 0.05%」,本期开不了,于是把它写成承诺:到期就停。
+    三条订单只有订单号、时间、商品名、金额、方式、状态六段,
+    <span class="rl">一个字的学习内容都没有,也不给任何学习水平评价</span>——额度页不是成绩单。</div>
+  </div>
+
+  <!-- ══════ H16 额度用尽 · 拦截 ══════ -->
+  <div class="cell">
+    <div class="cap"><span class="cap-n">H16</span><span class="cap-t">额度用尽 · 拦截</span></div>
+    <div class="dev phone app col">
+      <div class="status">9:41<span class="r">5G · 86%</span></div>
+      <div class="cmd">
+        <span class="mono t2 s12">←</span>
+        <span class="scope">记一笔 <span class="sep">/</span> <b>语音记</b></span>
+        <span class="sp"></span><span class="kbd">esc</span>
+      </div>
+      <div class="f1 col rel">
+        <div class="tr col">
+          <div class="grp">增长类<span class="r">4/7 有记录</span></div>
+          <div class="row"><i class="sd stable"></i><span class="nm">增长率计算</span><span class="num t3 s10">9次</span><span class="num t2 s10 wt">今天</span></div>
+          <div class="row"><i class="sd weak"></i><span class="nm">增长量计算</span><span class="num t3 s10">8次</span><span class="num t2 s10 wt">2天前</span></div>
+          <div class="row"><i class="sd rusty"></i><span class="nm">基期量计算</span><span class="num t3 s10">7次</span><span class="num t2 s10 wt">32天前</span></div>
+          <div class="row"><i class="sd rusty"></i><span class="nm">间隔增长率</span><span class="num t3 s10">6次</span><span class="num t2 s10 wt">33天前</span></div>
+          <div class="row"><i class="sd empty"></i><span class="nm off">现期量计算</span><span class="num t3 s10">5次</span><span class="num t3 s10 wt">—</span></div>
+          <div class="row"><i class="sd empty"></i><span class="nm off">年均增长率</span><span class="num t3 s10">4次</span><span class="num t3 s10 wt">—</span></div>
+          <div class="row"><i class="sd empty"></i><span class="nm off">混合增长率</span><span class="num t3 s10">2次</span><span class="num t3 s10 wt">—</span></div>
+          <div class="grp void">倍数与比较<span class="r">0/3 · 整块空白 · 频次 12</span></div>
+          <div class="row"><i class="sd empty"></i><span class="nm off">倍数计算</span><span class="num t3 s10">5次</span><span class="num t3 s10 wt">—</span></div>
+          <div class="row"><i class="sd empty"></i><span class="nm off">倍数变化</span><span class="num t3 s10">3次</span><span class="num t3 s10 wt">—</span></div>
+          <div class="row"><i class="sd empty"></i><span class="nm off">同比与环比</span><span class="num t3 s10">4次</span><span class="num t3 s10 wt">—</span></div>
+        </div>
+        <div class="ov"></div>
+        <div class="sheet" style="position:absolute;left:0;right:0;bottom:0">
+          <div style="padding:13px 14px 11px">
+            <div class="rw">
+              <span class="ttl2">这个月的 AI 录入用完了</span>
+              <span class="sp"></span><span class="kbd">esc</span>
+            </div>
+            <div class="t3 s11" style="margin-top:3px">你正要发起这个月的第 <span class="num">31</span> 次 AI 录入。</div>
+          </div>
+          <div style="padding:0 14px 11px" class="hb">
+            <div class="rw"><span class="s12">AI 录入</span><span class="sp"></span><span class="num red s12">30 / 30</span></div>
+            <div class="meter" style="margin-top:6px"><i style="width:100%;background:var(--red)"></i></div>
+            <div class="rw" style="margin-top:11px"><span class="s12 t2">AI 代发提问</span><span class="sp"></span><span class="num t2 s12">4 / 5</span></div>
+            <div class="meter" style="margin-top:6px"><i style="width:80%;background:var(--t2)"></i></div>
+            <div class="rw" style="margin-top:9px">
+              <span class="mono t3 s10">每月 1 日零点重置 · 还有 7 天</span>
+              <span class="sp"></span>
+              <span class="mono t3 s10">手动记录不占额度</span>
+            </div>
+          </div>
+
+          <div class="grp">三条路<span class="r">都能往下走</span></div>
+          <div class="ent" style="border-top:none">
+            <i class="ico i-u"></i>
+            <div style="min-width:0">
+              <div class="s13">升级到记多点</div>
+              <div class="t3 s11">录入 <span class="num">300</span> 次/月 · 提问 <span class="num">50</span> 次/月</div>
+            </div>
+            <span class="sp"></span>
+            <button class="btn p"><span class="num">¥9.9</span><span class="kbd dk">1</span></button>
+          </div>
+          <div class="ent">
+            <i class="ico i-n"></i>
+            <div style="min-width:0">
+              <div class="s13">改用手动记 <span class="t2 s11">不消耗额度</span></div>
+              <div class="t3 s11">记做题 / 粘一段自己挂考点</div>
+            </div>
+            <span class="sp"></span>
+            <button class="btn">去记<span class="kbd">2</span></button>
+          </div>
+          <div class="ent">
+            <i class="ico i-t"></i>
+            <div style="min-width:0">
+              <div class="s13">等 <span class="num">9</span> 月 <span class="num">1</span> 日零点</div>
+              <div class="t3 s11">额度回到 <span class="num">30</span> 次 / <span class="num">5</span> 次</div>
+            </div>
+            <span class="sp"></span>
+            <span class="kbd">3</span>
+          </div>
+
+          <div class="grp">没被限制的<span class="r">跟额度无关</span></div>
+          <div class="row sm"><span class="nm t2">骨架树 · 覆盖 · 盲区诊断</span><span class="s12">不限</span></div>
+          <div class="row sm"><span class="nm t2">手动记录 <span class="t3 s10">记做题 / 粘一段自己挂考点</span></span><span class="s12">不限</span></div>
+          <div class="row sm"><span class="nm t2">导出 Markdown / CSV / JSON</span><span class="s12">不限</span></div>
+          <div class="row sm"><span class="nm t2">MCP / CLI 只读接入</span><span class="s12">不限</span></div>
+
+          <div style="padding:11px 14px 12px">
+            <div class="note s11">按次算的只有 AI 录入和 AI 代发提问。<br>代发 = 代你去问外部模型,答案原样透出。<br>我们不产出任何学科内容。模型:DeepSeek deepseek-v4-chat。</div>
+          </div>
+        </div>
+      </div>
+      <div class="mbar">
+        <span class="kbd">⌘K</span><span class="t3 s11">找考点</span>
+        <span class="sp"></span>
+        <button class="btn">记一笔<span class="kbd">N</span></button>
+      </div>
+      <div class="homebar"><i></i></div>
+    </div>
+    <div class="ann a1">拦截页最容易写成一堵墙。这里三条路并排,<b>「改用手动记」跟升级按钮同尺寸、同一列位置</b>,
+    差别只有颜色——酸性绿一屏只出现一次,给的是主操作,不代表另外两条是次品。
+    第二条是真出口:手动记录不走 AI、不占额度,点了就能接着记,不是一行小字免责。
+    下半段那四行才是这屏的主角:<span class="rl">盲区诊断、骨架树、导出、MCP 一样都没锁</span>。
+    定价页(H13)停在 <b>28 / 30</b>(还剩 2 次),这一屏是那 2 次用完之后的第 31 次。</div>
+  </div>
+
+</div>
+
+
+<div class="sec"><h2>七 · 冷启动</h2><span class="sub">H17 · 首次进入 · 阶段 2 的第一批真实用户从这一屏开始</span></div>
+<div class="grid">
+
+<div class="cell">
+  <div class="cap"><span class="cap-n">H17</span><span class="cap-t">首次进入 · 哪些你已经学过</span></div>
+  <div class="cap-d">D2 的移动版。差集的第一个漏洞在这里被补上。</div>
+  <div class="dev phone app col">
+    <div class="status">9:41<span class="r">5G · 86%</span></div>
+    <div class="cmd">
+      <span class="ic"></span>
+      <span class="scope">首次进入 <span class="sep">/</span> <b>资料分析</b></span>
+      <span class="sp"></span><span class="kbd">1 / 1</span>
+    </div>
+    <div style="padding:13px 14px 11px" class="hb">
+      <div class="ttl2">哪些你已经学过</div>
+      <div class="t2 s12" style="margin-top:6px;line-height:1.7">勾掉学过的,免得把「学过但没记过」也算成盲区。<br>凭印象勾就行,后面有记录了会自己覆盖。</div>
+      <div class="rw" style="margin-top:11px">
+        <span class="num acid" style="font-size:19px">5</span><span class="t3 num s12">/ 18</span>
+        <span class="t3 s11" style="margin-left:5px">已勾</span>
+        <span class="sp"></span>
+        <button class="btn">全选</button>
+      </div>
+      <div class="note" style="margin-top:11px">勾了只表示「学过」,不表示「练过」。<br>等你真记了一笔,状态才会变成 稳 / 弱 / 生疏。</div>
+    </div>
+    <div class="f1 tr" style="overflow:hidden">
+      <div class="grp">增长类<span class="r">7</span></div>
+      <div class="row"><span class="ck on"></span><span class="nm">增长率计算</span><span class="t3 num s11">9 次</span></div>
+      <div class="row"><span class="ck on"></span><span class="nm">增长量计算</span><span class="t3 num s11">8 次</span></div>
+      <div class="row"><span class="ck on"></span><span class="nm">基期量计算</span><span class="t3 num s11">7 次</span></div>
+      <div class="row"><span class="ck"></span><span class="nm">间隔增长率</span><span class="t3 num s11">6 次</span></div>
+      <div class="row"><span class="ck"></span><span class="nm">现期量计算</span><span class="t3 num s11">5 次</span></div>
+      <div class="row"><span class="ck"></span><span class="nm">年均增长率</span><span class="t3 num s11">4 次</span></div>
+      <div class="row"><span class="ck"></span><span class="nm">混合增长率</span><span class="t3 num s11">2 次</span></div>
+      <div class="grp">倍数与比较<span class="r">3</span></div>
+      <div class="row"><span class="ck"></span><span class="nm">倍数计算</span><span class="t3 num s11">5 次</span></div>
+      <div class="row"><span class="ck"></span><span class="nm">倍数变化</span><span class="t3 num s11">3 次</span></div>
+      <div class="row"><span class="ck"></span><span class="nm">同比与环比</span><span class="t3 num s11">4 次</span></div>
+      <div class="grp">效应类<span class="r">2</span></div>
+      <div class="row"><span class="ck"></span><span class="nm">贡献率</span><span class="t3 num s11">3 次</span></div>
+      <div class="row"><span class="ck"></span><span class="nm">拉动增长</span><span class="t3 num s11">3 次</span></div>
+      <div class="grp">平均与比重<span class="r">3</span></div>
+      <div class="row"><span class="ck on"></span><span class="nm">比重计算</span><span class="t3 num s11">8 次</span></div>
+      <div class="row"><span class="ck"></span><span class="nm">平均数计算</span><span class="t3 num s11">6 次</span></div>
+      <div class="row"><span class="ck"></span><span class="nm">比重变化</span><span class="t3 num s11">5 次</span></div>
+      <div class="grp">速算技巧<span class="r">3</span></div>
+      <div class="row"><span class="ck"></span><span class="nm">截位直除</span><span class="t3 num s11">7 次</span></div>
+      <div class="row"><span class="ck on"></span><span class="nm">特征数字法</span><span class="t3 num s11">4 次</span></div>
+      <div class="row"><span class="ck"></span><span class="nm">分数比较</span><span class="t3 num s11">3 次</span></div>
+    </div>
+    <div class="ht" style="padding:11px 14px 9px">
+      <div class="rw">
+        <button class="btn" style="flex:1;justify-content:center">跳过,我从零开始</button>
+        <button class="btn p" style="flex:1;justify-content:center">就这些</button>
+      </div>
+      <div class="t3 s11" style="margin-top:8px;line-height:1.7">全不勾也行。那样 18 个全是空白,你自己知道就好。<br>这一步只做一次,后面在设置里还能改。</div>
+    </div>
+    <div class="homebar"><i></i></div>
+  </div>
+  <div class="ann"><b>这一屏在 H5 上比在桌面上更要紧。</b>分阶段计划里,<span class="rl">第一批真实用户用的是 H5,不是小程序、也不是桌面端</span>——所以他们见到的第一屏就是这一屏,而不是 D2。<br>它解决的是差集的第一个漏洞:<span class="m">盲区 = 骨架层 − 行为层</span>,而新用户的行为层是空的,系统会把「学过但没记过」全判成盲区,第一屏就全红,人会直接走。<br>勾选写的是「碰过」,不是「对不对」——<b>依然没有任何测评</b>。移动端行高压到 24px(<span class="m">.tr</span> 密度档),18 行一屏放得下,不做分步向导:<span class="rl">一次性的问题分成三步问,放弃率只会更高</span>。</div>
+</div>
+
+</div>
+
+
+<div class="sec"><h2>八 · 登录的异常态</h2><span class="sub">H18 · 阶段 2 的第一批用户在这里撞上频控与滑块</span></div>
+<div class="grid">
+
+<div class="cell">
+  <div class="cap"><span class="cap-n">H18</span><span class="cap-t">验证码异常与防刷</span></div>
+  <div class="cap-d">D25 的移动版。正常态在 H1。</div>
+  <div class="dev phone app col">
+    <div class="status">9:41<span class="r">5G · 86%</span></div>
+    <div class="cmd">
+      <span class="ic"></span>
+      <span class="scope">登录 <span class="sep">/</span> <b>138 0531 2049</b></span>
+      <span class="sp"></span><span class="kbd">esc</span>
+    </div>
+    <div class="f1" style="overflow:hidden">
+      <div class="grp">输错<span class="r">还能再试 3 次</span></div>
+      <div style="padding:12px 14px">
+        <div class="otp"><i>4</i><i>7</i><i class="cur" style="border-color:var(--red)">2</i><i></i></div>
+        <div style="margin-top:10px;display:flex;gap:8px;align-items:baseline;flex-wrap:wrap">
+          <span class="red s12">验证码不对</span>
+          <span class="t3 s11">还能再试 <b class="num">3</b> 次</span>
+        </div>
+      </div>
+
+      <div class="grp">过期<span class="r">超过 5 分钟</span></div>
+      <div style="padding:12px 14px">
+        <div style="display:flex;gap:8px;align-items:center">
+          <span class="red s12">这个码过期了</span>
+          <span class="sp"></span>
+          <button class="btn p">重发一条</button>
+        </div>
+        <div class="note" style="margin-top:9px">输错要重输,过期要重发。<br>说成同一句话,人会拿着过期的码反复输。</div>
+      </div>
+
+      <div class="grp void">频控<span class="r">今天第 10 条</span></div>
+      <div style="padding:12px 14px">
+        <div style="display:flex;gap:8px;align-items:baseline;flex-wrap:wrap">
+          <span class="red s12">这个号今天发满了</span>
+          <span class="t3 num s11">明天 00:00 重置</span>
+        </div>
+        <div class="note w" style="margin-top:9px">给准确时点,不给「请稍后再试」。<br>真实用户会去等,刷子不会因此少刷。</div>
+      </div>
+
+      <div class="grp">滑块 · 在发送之前</div>
+      <div style="padding:12px 14px">
+        <div class="field" style="height:auto;padding:0;display:block;overflow:hidden">
+          <div style="height:36px;display:flex;align-items:center;padding:0 11px;background:var(--bg2);border-bottom:1px solid var(--hair)">
+            <span class="t2 s12">按住滑块拖到最右</span>
+            <span class="sp"></span><span class="t3 mono s10">行为验证</span>
+          </div>
+          <div style="height:36px;position:relative;background:var(--bg3)">
+            <div style="position:absolute;left:0;top:0;bottom:0;width:112px;background:var(--sel);border-right:1px solid var(--acid)"></div>
+            <div style="position:absolute;left:92px;top:5px;width:28px;bottom:5px;background:var(--acid);border-radius:2px"></div>
+          </div>
+        </div>
+        <div class="note w" style="margin-top:10px"><b>拦在花钱那一步。</b><br>短信是这条链路上唯一一处「还没有账号的人就能让你花钱」的地方。</div>
+      </div>
+
+      <div class="grp">没有「注册」这个按钮</div>
+      <div class="row"><span class="nm">号码没见过</span><span class="t2 s11">建账号,直接进</span></div>
+      <div class="row"><span class="nm">号码见过</span><span class="t2 s11">登进去</span></div>
+    </div>
+    <div class="ht" style="padding:10px 14px 8px">
+      <div class="note">验证码通过那一刻,注册和登录是同一件事。<br>没有注册页,没有密码,没有「已有账号?去登录」。</div>
+    </div>
+    <div class="homebar"><i></i></div>
+  </div>
+  <div class="ann"><b>H1 只画了正常态,而第一批真实用户用的就是 H5。</b>频控、滑块、错次锁定这些约束在接口契约里全都写死了,他们会撞上,界面必须有话说。<br>移动端把五种失败压成三组(输错 / 过期 / 频控),<b>「已用过」合进「重发一条」的动作里</b>——手机屏放不下四组还各带一段解释,而这三组对应的用户动作恰好各不相同:重输、重发、去等。<br>滑块同样放在<span class="rl">发送之前</span>。理由与 D25 一致,而在移动端更要紧:换 IP 刷短信的脚本本来就伪装成移动端。</div>
+</div>
+
+</div>
+
+
+<div class="sec"><h2>九 · 对话面</h2><span class="sub">H19 · 阶段 2 的用户在这一端问它</span></div>
+<div class="grid">
+
+<div class="cell">
+  <div class="cap"><span class="cap-n">H19</span><span class="cap-t">问一句 · 工具调用照样敞开</span></div>
+  <div class="cap-d">手机上更要敞开:屏幕小,越容易让人以为那些数字是它随口说的。</div>
+  <div class="dev phone app col">
+    <div class="status">9:41<span class="r">5G · 86%</span></div>
+    <div class="cmd">
+      <span class="ic"></span>
+      <span class="scope">对话 <span class="sep">/</span> <b>覆盖率</b></span>
+      <span class="sp"></span><span class="kbd">新会话</span>
+    </div>
+    <div class="f1" style="overflow:hidden">
+      <div class="grp">你<span class="r">09:41</span></div>
+      <div style="padding:11px 14px 12px"><div class="s15">我的覆盖率怎么样</div></div>
+
+      <div class="grp">调了 2 个工具<span class="r">只读</span></div>
+      <div class="row sm"><span class="mono acid s10" style="width:104px;flex:none">coverage_summary</span><span class="nm t2 s11">18 / 8 / 44%</span></div>
+      <div class="row sm"><span class="mono acid s10" style="width:104px;flex:none">blindspot_list</span><span class="nm t2 s11">10 空白 · 2 整块</span></div>
+
+      <div class="grp">它说</div>
+      <div style="padding:12px 14px">
+        <div class="s13" style="line-height:1.9">
+          18 个考点碰过 8 个,覆盖 <b>44%</b>。<br>
+          两整块是空的:<b>倍数与比较</b>、<b>效应类</b>,近五年合计 18 次,你一条记录都没有。
+        </div>
+        <div class="note" style="margin-top:12px">每个数字都来自上面两个工具,<b>没有一个是它自己算的</b>。</div>
+      </div>
+      <div class="grp void">它拿不到题干 / 答案 / 解析<span class="r">零工具可达</span></div>
+      <div style="padding:11px 14px">
+        <div class="note w">所以「不讲解」不是它答应的,<span class="rl">是它做不到</span>。<br>要讲解就用「问 AI 时带上的东西」导出去问。</div>
+      </div>
+    </div>
+    <div class="ht" style="padding:10px 14px 8px">
+      <div class="field fc"><span class="ph">再问一句…</span><span class="sp"></span><span class="kbd">↵</span></div>
+      <div class="t3 s11" style="margin-top:7px">附图只在内存里过一次,不进会话记录</div>
+    </div>
+    <div class="homebar"><i></i></div>
+  </div>
+  <div class="ann"><b>手机上更要把工具调用敞开,不是更该收起来。</b>屏幕小、字少,用户越容易把那些数字当成它随口说的——而整个产品的主张是这些数字都来自真实记录。<span class="rl">屏幕越小,可信度越需要被显式证明。</span><br>所以移动版砍掉的是右栏的工具清单与防线表(那些属于坐下来读的内容,放桌面 D33/D34),<b>保留的恰恰是两行工具调用</b>。<br>「它拿不到题干/答案/解析」压成一格红边提示,后面接的是出口(导出去问),不是一句道歉。</div>
+</div>
+
+</div>
+
+</div>
+</body>
+</html>

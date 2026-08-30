@@ -28,8 +28,19 @@ auth-*.json
 # ── 构建产物(子目录 .gitignore 已覆盖,这里是兜底)──
 target/
 node_modules/
-dist/
+# dist/ 不再整目录忽略 —— 结构与 README 要进仓库,只挡产物(见文件末尾)
 
 # ── 历史遗留 ──
 # files.zip 是 2026-08-20 原始四份文档的陈旧备份,已跟踪,保留不删(CLAUDE.md)。
 # 不再新增同类归档件。
+
+# ── 客户端构建产物:不进仓库 ──
+# dist/ 下是 .app / .apk / .aab,单次 48MB 且每次构建都变。
+# git 存二进制不做增量,提交几次仓库就再也 clone 不动了。
+# 目录结构与 README 保留(便于知道产物该放哪),产物本身重新构建即可:
+#   cd shell && ./build.sh macos|ios|android
+dist/**/*.app
+dist/**/*.apk
+dist/**/*.aab
+dist/**/*.dmg
+dist/**/*.ipa

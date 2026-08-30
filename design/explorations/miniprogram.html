@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>考点答题卡 · 小程序(采集端)</title>
+<link rel="stylesheet" href="tokens.css">
+<style>
+.pad{padding:0 16px}
+.sec{margin:20px 0}
+.hint{font-size:11.5px;color:var(--mist);line-height:1.6;margin:6px 0 9px}
+.ta{
+  width:100%;font-family:inherit;font-size:13.5px;line-height:1.65;padding:11px;
+  border:1px solid var(--line);background:var(--paper-2);border-radius:var(--r);
+  color:var(--ink);min-height:88px;
+}
+.srcopts{display:flex;flex-wrap:wrap;gap:5px}
+.srcb{
+  background:var(--paper-2);border:1px solid var(--line);color:var(--graphite);
+  font-size:11.5px;padding:5px 10px;border-radius:var(--r);
+}
+.srcb.on{background:var(--seal);border-color:var(--seal);color:#fff}
+.tabs{display:flex;border:1px solid var(--line);border-radius:var(--r);overflow:hidden;margin-bottom:11px}
+.tabs button{
+  flex:1;background:var(--paper-2);border:none;padding:9px 4px;font-size:12.5px;
+  color:var(--graphite);border-right:1px solid var(--line);font-family:inherit;
+}
+.tabs button:last-child{border-right:none}
+.tabs button.on{background:var(--ink);color:var(--paper)}
+.parsed{border:1px solid var(--ink);border-radius:var(--r);margin-top:12px;background:var(--paper-2)}
+.parsed-hd{
+  background:var(--ink);color:var(--paper);padding:7px 11px;
+  font-family:var(--mono);font-size:10px;letter-spacing:.14em;
+  display:flex;justify-content:space-between;align-items:center;
+}
+.parsed-bd{padding:11px}
+.prow{display:flex;align-items:center;gap:9px;padding:8px 0;border-bottom:1px solid var(--line)}
+.prow:last-child{border-bottom:none}
+.tick{
+  width:18px;height:18px;border:1.5px solid var(--graphite);border-radius:var(--r);
+  display:flex;align-items:center;justify-content:center;flex:none;
+  font-size:11px;color:transparent;
+}
+.tick.on{background:var(--graphite);color:var(--paper)}
+.tick.off{border-color:var(--line);border-style:dashed}
+.pname{font-size:13.5px;font-weight:600}
+.pmeta{font-size:11px;color:var(--mist);margin-top:2px}
+.pfix{color:var(--seal);font-size:11px;text-decoration:underline;flex:none}
+.unmatched{
+  font-size:11.5px;color:var(--mist);padding:9px 0 0;border-top:1px dashed var(--line);
+  margin-top:4px;line-height:1.6;
+}
+.rec-row{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--line-2)}
+.rec-day{
+  font-family:var(--mono);font-size:10px;color:var(--mist);letter-spacing:.1em;
+  margin:16px 0 2px;
+}
+.wave{display:flex;align-items:center;gap:2px;height:38px}
+.wave i{width:2.5px;background:var(--graphite);border-radius:1px;display:block}
+.wave i.q{background:var(--line)}
+.redline{
+  border:1px solid var(--seal);background:var(--seal-soft);border-radius:var(--r);
+  padding:11px 12px;
+}
+.redline .h{font-size:12px;font-weight:700;color:var(--seal);line-height:1.5}
+.redline .p{font-size:11px;color:#8A3A33;line-height:1.7;margin-top:5px}
+.shot{
+  height:150px;background:var(--paper-2);border:1px solid var(--line);border-radius:var(--r);
+  display:flex;align-items:center;justify-content:center;position:relative;
+}
+.stamp{
+  position:absolute;top:9px;right:9px;font-family:var(--mono);font-size:9.5px;
+  background:var(--ink);color:var(--paper);padding:3px 7px;border-radius:var(--r);
+  letter-spacing:.06em;
+}
+.stamp.ok{background:var(--graphite);left:9px;right:auto}
+.tabbar{
+  height:50px;flex:none;border-top:1px solid var(--line);display:flex;background:var(--paper-2);
+}
+.tb{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px}
+.tb .i{width:16px;height:16px;border:1.5px solid var(--mist);border-radius:var(--r)}
+.tb .t{font-size:9.5px;color:var(--mist)}
+.tb.on .i{border-color:var(--ink);background:var(--ink)}
+.tb.on .t{color:var(--ink);font-weight:600}
+</style></head>
+<body><div class="deck">
+<div class="deck-head">
+  <div class="deck-kicker">01 · 微信小程序 · 采集端</div>
+  <div class="deck-title">随身的那半截 —— 只负责把痕迹留下</div>
+  <div class="deck-sub">
+    文档 §2.4 已推翻「小程序做主形态」,理由是 iPad 复盘与 PC 导图上体验是残的。
+    这一组不推翻那条结论:<b>小程序只做采集入口,不做分析</b>。盲区诊断在这里只有入口、没有实现。
+    §2.3 把语音与拍照列为第一优先级,打字是备选——所以首页只有两个大按钮,打字被降到第三顺位。
+  </div>
+  <div class="deck-formula">采集端产出行为层 · 分析在网页端发生 · 两端靠手机号同一账号打通</div>
+</div>
+<div class="grid">
+
+<!-- ========== M1 登录 ========== -->
+<div class="cell"><div class="cap"><span class="cap-n">M1</span><span class="cap-t">登录 · 两条通道</span></div>
+<div class="cap-d">不放插画,放答题卡本身。这批人(§5.3 说他们手里已经有 Notion 和 Obsidian)对「这工具到底算什么」比对精美插图敏感得多。</div>
+<div class="phone"><div class="notch"></div>
+  <div class="statusbar">9:41<span class="r">•••• ᯤ 82%</span></div>
+  <div class="screen pad">
+    <div class="masthead" style="border-bottom:2px solid var(--ink);margin-top:30px">
+      <div class="kicker">公考 · 资料分析</div>
+      <h1>考点答题卡</h1>
+      <div class="sub">你在哪儿学的不重要,<br>重要的是考点覆盖到没有。</div>
+    </div>
+    <!-- 答题卡预览 -->
+    <div style="margin-top:26px">
+      <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:11px 7px;
+           background:var(--paper-2);border:1px solid var(--line);padding:15px 11px;border-radius:var(--r)">
+        <div class="bub"><span class="dot solid">12</span></div>
+        <div class="bub"><span class="dot weak">8</span></div>
+        <div class="bub"><span class="dot seen"></span></div>
+        <div class="bub"><span class="dot untouched"></span></div>
+        <div class="bub"><span class="dot seen"></span></div>
+        <div class="bub"><span class="dot untouched"></span></div>
+        <div class="bub"><span class="dot solid">9</span></div>
+        <div class="bub"><span class="dot stale"></span></div>
+        <div class="bub"><span class="dot untouched"></span></div>
+        <div class="bub"><span class="dot untouched"></span></div>
+        <div class="bub"><span class="dot weak">6</span></div>
+        <div class="bub"><span class="dot untouched"></span></div>
+      </div>
+      <div style="font-size:11.5px;color:var(--mist);text-align:center;margin-top:11px;line-height:1.6">
+        涂满的是你碰过的,空心的是还没碰过的。</div>
+    </div>
+    <div style="margin-top:auto;padding-bottom:14px">
+      <button class="go" style="background:#07C160;color:#fff;margin-bottom:9px">微信一键登录</button>
+      <button class="go ghost">用手机号登录</button>
+      <div style="display:flex;gap:7px;margin-top:14px;align-items:flex-start">
+        <span style="width:13px;height:13px;border:1.5px solid var(--graphite);border-radius:var(--r);
+              flex:none;margin-top:2px;display:flex;align-items:center;justify-content:center;
+              font-size:9px;background:var(--graphite);color:var(--paper)">✓</span>
+        <div style="font-size:10.5px;color:var(--mist);line-height:1.7">
+          已阅读并同意<span style="color:var(--seal)">《用户协议》</span>与<span style="color:var(--seal)">《隐私政策》</span>。
+          <b style="color:var(--graphite)">拍照原图仅本地短期缓存,不上传云端。</b></div></div>
+    </div>
+  </div>
+  <div class="homebar"></div>
+</div>
+<div class="note">图片留存承诺写在<b>勾选同意那一行</b>,不埋进隐私政策里。§2.3 说这条线第一天不定后面改不回来——那它就该出现在用户第一次做决定的地方。</div>
+</div>
+
+<!-- ========== M2 手机号 ========== -->
+<div class="cell"><div class="cap"><span class="cap-n">M2</span><span class="cap-t">手机号登录 · 验证码</span></div>
+<div class="cap-d">手机号是跨端账号锚点。网页端不能只靠微信授权——两端账号不通,行为层就会裂成两半,差集直接算错。</div>
+<div class="phone"><div class="notch"></div>
+  <div class="statusbar">9:41<span class="r">•••• ᯤ 82%</span></div>
+  <div class="navbar">‹<div class="capsule"><i></i><span class="sep"></span><i></i></div></div>
+  <div class="screen pad">
+    <div style="margin-top:14px">
+      <div class="mono" style="font-size:9.5px;letter-spacing:.22em;color:var(--seal);
+           text-transform:uppercase;margin-bottom:8px">STEP 01 / 02</div>
+      <div class="song" style="font-size:22px;font-weight:700;letter-spacing:.04em">输入验证码</div>
+      <div style="font-size:12px;color:var(--mist);margin-top:6px">
+        已发送至 +86 138 8888 6666</div>
+    </div>
+    <div style="display:flex;gap:9px;margin-top:26px">
+      <div style="flex:1;height:52px;border:1px solid var(--ink);background:var(--paper-3);
+           border-radius:var(--r);display:flex;align-items:center;justify-content:center;
+           font-family:var(--mono);font-size:22px;font-weight:600">8</div>
+      <div style="flex:1;height:52px;border:1px solid var(--ink);background:var(--paper-3);
+           border-radius:var(--r);display:flex;align-items:center;justify-content:center;
+           font-family:var(--mono);font-size:22px;font-weight:600">2</div>
+      <div style="flex:1;height:52px;border:1px solid var(--ink);background:var(--paper-3);
+           border-radius:var(--r);display:flex;align-items:center;justify-content:center;
+           font-family:var(--mono);font-size:22px;font-weight:600">0</div>
+      <div style="flex:1;height:52px;border:1px solid var(--line);background:var(--paper-2);
+           border-radius:var(--r);display:flex;align-items:center;justify-content:center">
+        <span style="width:1.5px;height:22px;background:var(--ink)"></span></div>
+    </div>
+    <div style="display:flex;align-items:center;margin-top:14px">
+      <span style="font-size:11.5px;color:var(--mist)">没收到?</span>
+      <span class="mono" style="margin-left:auto;font-size:11.5px;color:var(--mist)">52s 后可重发</span></div>
+    <div class="panel" style="margin-top:26px">
+      <div class="mono" style="font-size:9.5px;letter-spacing:.14em;color:var(--mist);
+           text-transform:uppercase;margin-bottom:8px">WHY PHONE</div>
+      <div style="font-size:11.5px;color:var(--graphite);line-height:1.8">
+        手机号用来把<b>小程序记的</b>和<b>网页端看的</b>连成同一个账号。<br>
+        只做登录,不做推送,不外传。</div>
+    </div>
+    <div style="margin-top:auto;padding-bottom:14px">
+      <button class="go">进入</button>
+      <div style="text-align:center;margin-top:12px;font-size:11.5px;color:var(--seal)">
+        改用微信登录</div>
+    </div>
+  </div>
+  <div class="homebar"></div>
+</div>
+<div class="note">导航栏右上角空出 <b>87×32</b> 给微信胶囊按钮——小程序真机上那块区域不可用,设计稿里如果不空出来,落地时整行都要返工。</div>
+</div>
+
+<!-- ========== M3 首页 ========== -->
+<div class="cell"><div class="cap"><span class="cap-n">M3</span><span class="cap-t">首页 · 覆盖度 + 记一笔</span></div>
+<div class="cap-d">进来先看见自己的答题卡,再看见两个录入按钮。顺序是刻意的:先让人想起「我还有一片空白」,再给他填的工具。</div>
+<div class="phone"><div class="notch"></div>
+  <div class="statusbar">9:41<span class="r">•••• ᯤ 82%</span></div>
+  <div class="screen">
+    <div class="pad" style="flex:1;overflow:hidden">
+      <div class="masthead" style="padding-top:8px">
+        <div class="kicker">山东省考 · 资料分析</div>
+        <h1>考点答题卡</h1>
+        <div style="display:flex;gap:5px;margin-top:10px">
+          <span class="chip">强化刷题</span><span class="chip">18 个考点</span>
+          <span class="chip seal">空白 10</span></div>
+      </div>
+      <div class="sec">
+        <div class="cover">
+          <div class="big">44<span>%</span></div>
+          <div class="txt">8 / 18 个考点有记录<br>还有 <b>10</b> 个是空白</div></div>
+        <div class="bar">
+          <i class="b-solid" style="width:16.7%"></i>
+          <i class="b-weak" style="width:11.1%"></i>
+          <i class="b-seen" style="width:16.7%"></i></div>
+      </div>
+      <div class="sec">
+        <div class="sec-head"><h2>记一笔</h2><div class="meta">Input</div></div>
+        <div style="font-size:11.5px;color:var(--mist);margin-bottom:8px">这次是从哪儿学的</div>
+        <div class="srcopts" style="margin-bottom:13px">
+          <button class="srcb on">粉笔</button><button class="srcb">中公</button>
+          <button class="srcb">华图</button><button class="srcb">B站UP主</button>
+          <button class="srcb">抖音</button><button class="srcb">自己刷题</button></div>
+        <button class="go" style="margin-bottom:8px">按住说一句</button>
+        <button class="go ghost" style="margin-bottom:8px">拍一张</button>
+        <div style="display:flex;gap:7px">
+          <button class="mini" style="flex:1;justify-content:center;padding:8px">粘一段</button>
+          <button class="mini" style="flex:1;justify-content:center;padding:8px">记做题</button></div>
+        <div class="hint" style="margin-top:9px">
+          听课中截图、听完说一句、做完拍答题卡。<b style="color:var(--graphite)">不用分类,不用打标签。</b></div>
+      </div>
+      <div class="sec">
+        <div class="sec-head"><h2>今天</h2><div class="meta">3 条</div></div>
+        <div class="rec-row" style="padding-top:0">
+          <span class="dot sm seen" style="margin-top:2px"></span>
+          <div style="flex:1">
+            <div style="font-size:13px">间隔增长率 · 混合增长率</div>
+            <div style="font-size:10.5px;color:var(--mist);margin-top:2px">
+              <span class="mono">09:41</span> · 粉笔 · 语音</div></div>
+          <span class="mono" style="font-size:10px;color:var(--seal)">+1</span></div>
+        <div class="rec-row">
+          <span class="dot sm solid" style="margin-top:2px"></span>
+          <div style="flex:1">
+            <div style="font-size:13px">比重变化判断</div>
+            <div style="font-size:10.5px;color:var(--mist);margin-top:2px">
+              <span class="mono">08:52</span> · 粉笔 · 截图</div></div>
+          <span class="mono" style="font-size:10px;color:var(--mist)">±0</span></div>
+        <div class="rec-row" style="border-bottom:none">
+          <span class="dot sm weak" style="margin-top:2px"></span>
+          <div style="flex:1">
+            <div style="font-size:13px">截位直除</div>
+            <div style="font-size:10.5px;color:var(--mist);margin-top:2px">
+              <span class="mono">07:58</span> · 自己刷题 · 6 道对 2 道</div></div>
+          <span class="mono" style="font-size:10px;color:var(--mist)">±0</span></div>
+      </div>
+      <div class="panel" style="margin-top:4px;display:flex;align-items:center;gap:10px">
+        <div style="flex:1;font-size:11.5px;color:var(--graphite);line-height:1.65">
+          <b>盲区诊断在网页端。</b><br>
+          <span style="color:var(--mist)">小程序只管记,不做分析。</span></div>
+        <span class="mini pri">去网页端 ›</span></div>
+      <div style="height:14px"></div>
+    </div>
+    <div class="tabbar">
+      <div class="tb on"><span class="i"></span><span class="t">答题卡</span></div>
+      <div class="tb"><span class="i"></span><span class="t">记录</span></div>
+      <div class="tb"><span class="i"></span><span class="t">我的</span></div></div>
+  </div>
+  <div class="homebar"></div>
+</div>
+<div class="note">「来源」是<b>一等字段</b>,摆在录入按钮之上而不是折叠进二级页。跨机构聚合是这个产品唯一不可替代的部分——从哪儿学的必须在记之前就选好,不能是笔记正文里的一句话。</div>
+</div>
+
+<!-- ========== M4 语音 ========== -->
+<div class="cell"><div class="cap"><span class="cap-n">M4</span><span class="cap-t">按住说一句 · 录制中</span></div>
+<div class="cap-d">§2.3:正在听课、手边是纸笔的时候没人会切出去打字。所以主路径是「按住就说」,松手即出结果,中间不问任何问题。</div>
+<div class="phone"><div class="notch"></div>
+  <div class="statusbar">9:41<span class="r">•••• ᯤ 82%</span></div>
+  <div class="navbar">‹ <span style="font-size:15px">语音速记</span>
+    <div class="capsule"><i></i><span class="sep"></span><i></i></div></div>
+  <div class="screen pad">
+    <div style="display:flex;align-items:center;gap:7px;margin-top:18px">
+      <span class="chip seal">粉笔</span>
+      <span style="font-size:11.5px;color:var(--mist)">来源已选</span>
+      <span class="mono" style="margin-left:auto;font-size:11px;color:var(--mist)">改</span></div>
+    <div style="display:flex;flex-direction:column;align-items:center;margin-top:34px">
+      <div style="display:flex;align-items:center;gap:7px">
+        <span style="width:7px;height:7px;border-radius:50%;background:var(--seal)"></span>
+        <span class="mono" style="font-size:26px;font-weight:600;letter-spacing:-.01em">00:23</span></div>
+      <div class="wave" style="margin-top:20px">
+        <i style="height:18%"></i><i style="height:34%"></i><i style="height:62%"></i>
+        <i style="height:88%"></i><i style="height:47%"></i><i style="height:96%"></i>
+        <i style="height:71%"></i><i style="height:39%"></i><i style="height:78%"></i>
+        <i style="height:55%"></i><i style="height:91%"></i><i style="height:43%"></i>
+        <i style="height:66%"></i><i style="height:29%"></i><i style="height:81%"></i>
+        <i style="height:52%"></i><i class="q" style="height:26%"></i><i class="q" style="height:41%"></i>
+        <i class="q" style="height:17%"></i><i class="q" style="height:33%"></i>
+        <i class="q" style="height:12%"></i><i class="q" style="height:22%"></i>
+        <i class="q" style="height:15%"></i><i class="q" style="height:9%"></i></div>
+    </div>
+    <div class="panel" style="margin-top:28px">
+      <div class="mono" style="font-size:9.5px;letter-spacing:.14em;color:var(--mist);
+           text-transform:uppercase;margin-bottom:7px">转写中</div>
+      <div style="font-size:13.5px;line-height:1.75">
+        比重变化判断上升还是下降,看部分的增长率和整体的增长率比大小,
+        部分增速大于整体就是上升……老师说这个几乎每年都考</div>
+    </div>
+    <div style="margin-top:16px">
+      <div class="mono" style="font-size:9.5px;letter-spacing:.14em;color:var(--mist);
+           text-transform:uppercase;margin-bottom:9px">已认出</div>
+      <div style="display:flex;flex-direction:column;gap:7px">
+        <div style="display:flex;align-items:center;gap:9px">
+          <span class="dot sm solid"></span>
+          <span style="font-size:13.5px;font-weight:600">比重变化判断</span>
+          <span class="mono" style="margin-left:auto;font-size:11.5px;color:var(--graphite)">96%</span></div>
+        <div style="display:flex;align-items:center;gap:9px">
+          <span class="dot sm seen"></span>
+          <span style="font-size:13.5px;font-weight:600">比重计算</span>
+          <span class="mono" style="margin-left:auto;font-size:11.5px;color:var(--graphite)">74%</span></div>
+      </div>
+    </div>
+    <div style="margin-top:auto;padding-bottom:14px">
+      <div style="display:flex;align-items:center;gap:7px;margin-bottom:11px">
+        <span style="font-family:var(--mono);font-size:10px;color:var(--seal)">●</span>
+        <span style="font-size:11px;color:var(--mist);line-height:1.6">
+          转写完即丢弃音频,不留存、不上传。</span></div>
+      <button class="go">松手结束</button>
+    </div>
+  </div>
+  <div class="homebar"></div>
+</div>
+<div class="note">识别出的考点直接用<b>答题卡涂格</b>显示当前状态,而不是普通标签。用户一眼能看出「这条记完,这个格子会从半涂变成实心」——把结果前置到动作发生之前。</div>
+</div>
+
+<!-- ========== M5 拍照 ========== -->
+<div class="cell"><div class="cap"><span class="cap-n">M5</span><span class="cap-t">拍一张 · OCR 提取</span></div>
+<div class="cap-d">§2.3 的红线在这一屏最完整:原图倒计时常驻、删除按钮常驻、理由写明。这是全稿唯一用满印章红边框的地方。</div>
+<div class="phone"><div class="notch"></div>
+  <div class="statusbar">9:41<span class="r">•••• ᯤ 82%</span></div>
+  <div class="navbar">‹ <span style="font-size:15px">拍照记录</span>
+    <div class="capsule"><i></i><span class="sep"></span><i></i></div></div>
+  <div class="screen pad" style="overflow:hidden">
+    <div style="display:flex;align-items:center;gap:7px;margin-top:12px">
+      <span class="chip seal">B站UP主</span>
+      <span class="mono" style="margin-left:auto;font-size:11px;color:var(--mist)">改</span></div>
+    <div class="shot" style="margin-top:12px">
+      <div style="text-align:center;color:var(--mist)">
+        <div class="song" style="font-size:26px">课件截图</div>
+        <div style="font-size:10.5px;margin-top:5px">示意</div></div>
+      <span class="stamp ok">OCR 已完成</span>
+      <span class="stamp">原图 6d 23h 后删除</span></div>
+    <div class="redline" style="margin-top:11px">
+      <div class="h">原图只在这台手机上放 7 天</div>
+      <div class="p">不上传云端、不参与同步、不可分享。只有抽出的文字和考点标签会保存。<br>
+        否则这个产品会变成盗版课件的托管方。</div>
+      <button class="mini" style="margin-top:9px;border-color:var(--seal);color:var(--seal);background:#fff">
+        立即删除原图</button></div>
+    <div style="margin-top:14px">
+      <div class="sec-head"><h2>抽出的文字</h2><div class="meta">OCR</div></div>
+      <div style="font-size:13px;line-height:1.8;color:var(--ink)">
+        倍数问题:现期倍数 = A ÷ B,注意题目问「是几倍」还是「多几倍」。
+        基期倍数要先各自还原到基期再相除。翻 n 番 = 乘以 2ⁿ,不是乘以 n。</div>
+    </div>
+    <div style="margin-top:auto;padding-bottom:14px">
+      <div class="hint">这一步只做归类,不判断对错,也不生成任何讲解。</div>
+      <button class="go">看看能认出什么</button></div>
+  </div>
+  <div class="homebar"></div>
+</div>
+<div class="note">按钮文案是<b>「看看能认出什么」</b>,不是「智能识别」。前者承诺的是一次尝试,后者承诺的是准确率——而 §2.2 宁缺毋滥意味着这一步<b>本来就允许认不出</b>,文案不该把话说满。</div>
+</div>
+
+<!-- ========== M6 认出什么 ========== -->
+<div class="cell"><div class="cap"><span class="cap-n">M6</span><span class="cap-t">认出什么 · 宁缺毋滥</span></div>
+<div class="cap-d">§2.2:自动打标匹配不上就丢弃,不硬归类。所以「没认出来的」独立成区、<b style="color:#D7DBD4">默认不勾选</b>,并把后果写出来——归错会让覆盖度失真,而覆盖度是这个产品唯一的输出。</div>
+<div class="phone"><div class="notch"></div>
+  <div class="statusbar">9:41<span class="r">•••• ᯤ 82%</span></div>
+  <div class="navbar">‹ <span style="font-size:15px">确认</span>
+    <div class="capsule"><i></i><span class="sep"></span><i></i></div></div>
+  <div class="screen pad">
+    <div class="parsed" style="margin-top:14px">
+      <div class="parsed-hd"><span>认出 3 个考点</span><span>B站UP主 · 截图</span></div>
+      <div class="parsed-bd">
+        <div class="prow">
+          <span class="tick on">✓</span>
+          <div style="flex:1">
+            <div class="pname">倍数计算</div>
+            <div class="pmeta">近五年 5 次 · <span style="color:var(--seal)">你还没碰过</span></div></div>
+          <span class="dot sm untouched"></span></div>
+        <div class="prow">
+          <span class="tick on">✓</span>
+          <div style="flex:1">
+            <div class="pname">倍数变化</div>
+            <div class="pmeta">近五年 3 次 · <span style="color:var(--seal)">你还没碰过</span></div></div>
+          <span class="dot sm untouched"></span></div>
+        <div class="prow">
+          <span class="tick on">✓</span>
+          <div style="flex:1">
+            <div class="pname">基期量计算</div>
+            <div class="pmeta">近五年 7 次 · 上次是 32 天前</div></div>
+          <span class="dot sm stale"></span></div>
+        <div class="unmatched">
+          <div style="display:flex;align-items:flex-start;gap:9px">
+            <span class="tick off">✓</span>
+            <div style="flex:1">
+              <div style="font-size:12.5px;color:var(--graphite)">「注意题目问法」</div>
+              <div style="font-size:11px;color:var(--mist);margin-top:2px">
+                没有对应考点 · 默认丢弃</div></div>
+            <span class="pfix">手动挂</span></div>
+          <div style="margin-top:9px;font-size:11px;color:var(--mist);line-height:1.7">
+            <b style="color:var(--graphite)">认不出来的就丢掉,不硬归类。</b>
+            归错会让覆盖度失真,而覆盖度是这个产品唯一的输出。</div>
+        </div>
+      </div>
+    </div>
+    <div class="panel" style="margin-top:14px">
+      <div style="display:flex;align-items:center;gap:11px">
+        <div style="display:flex;gap:5px">
+          <span class="dot sm untouched"></span>
+          <span style="color:var(--mist);font-size:12px">→</span>
+          <span class="dot sm seen"></span></div>
+        <div style="flex:1;font-size:11.5px;color:var(--graphite);line-height:1.6">
+          记完之后,<b>倍数与比较</b>这一组<br>会从整块空白变成 2/3</div></div>
+    </div>
+    <div style="margin-top:auto;padding-bottom:14px;display:flex;gap:8px">
+      <button class="mini" style="flex:1;justify-content:center;padding:12px">全部丢弃</button>
+      <button class="go" style="flex:2">记下这 3 个</button></div>
+  </div>
+  <div class="homebar"></div>
+</div>
+<div class="note">主按钮是<b>「记下这 3 个」</b>而不是「保存」。「保存」把注意力放在文件上,「记下这 3 个」把注意力放在覆盖度增量上——这是北极星指标能不能被用户感知到的分水岭。</div>
+</div>
+
+<!-- ========== M7 记录 ========== -->
+<div class="cell"><div class="cap"><span class="cap-n">M7</span><span class="cap-t">记录 · 跨来源流水</span></div>
+<div class="cap-d">粉笔、中公、B站、抖音、自己刷题并排在同一条时间线上。在位者永远不会做这件事——聚合等于拆自己的围墙。这一屏是整个方向的论据。</div>
+<div class="phone"><div class="notch"></div>
+  <div class="statusbar">9:41<span class="r">•••• ᯤ 82%</span></div>
+  <div class="screen">
+    <div class="pad" style="flex:1;overflow:hidden">
+      <div class="masthead" style="padding-top:8px">
+        <div class="kicker">CROSS-SOURCE</div>
+        <h1>记录</h1>
+        <div class="sub">38 条 · 5 个来源</div></div>
+      <div style="display:flex;gap:5px;margin-top:12px;flex-wrap:wrap">
+        <span class="chip on">全部 38</span><span class="chip">粉笔 14</span>
+        <span class="chip">B站 9</span><span class="chip">自己刷题 7</span>
+        <span class="chip">中公 5</span><span class="chip">抖音 3</span></div>
+      <div class="rec-day">8月21日 · 今天</div>
+      <div class="rec-row">
+        <span class="dot sm seen" style="margin-top:2px"></span>
+        <div style="flex:1">
+          <div style="font-size:13px">间隔增长率 · 混合增长率</div>
+          <div style="font-size:10.5px;color:var(--mist);margin-top:3px">
+            <span class="mono">09:41</span> · <b style="color:var(--graphite)">粉笔</b> · 语音</div></div>
+        <span class="mono" style="font-size:10px;color:var(--seal);flex:none">+1</span></div>
+      <div class="rec-row">
+        <span class="dot sm solid" style="margin-top:2px"></span>
+        <div style="flex:1">
+          <div style="font-size:13px">比重变化判断</div>
+          <div style="font-size:10.5px;color:var(--mist);margin-top:3px">
+            <span class="mono">08:52</span> · <b style="color:var(--graphite)">粉笔</b> · 截图</div></div>
+        <span class="mono" style="font-size:10px;color:var(--mist);flex:none">±0</span></div>
+      <div class="rec-row">
+        <span class="dot sm weak" style="margin-top:2px"></span>
+        <div style="flex:1">
+          <div style="font-size:13px">截位直除</div>
+          <div style="font-size:10.5px;color:var(--mist);margin-top:3px">
+            <span class="mono">07:58</span> · <b style="color:var(--graphite)">自己刷题</b> · 6 道对 2 道</div></div>
+        <span class="mono" style="font-size:10px;color:var(--mist);flex:none">±0</span></div>
+      <div class="rec-day">8月20日</div>
+      <div class="rec-row">
+        <span class="dot sm solid" style="margin-top:2px"></span>
+        <div style="flex:1">
+          <div style="font-size:13px">比重计算</div>
+          <div style="font-size:10.5px;color:var(--mist);margin-top:3px">
+            <span class="mono">21:30</span> · <b style="color:var(--graphite)">B站UP主</b> · 截图</div></div>
+        <span class="mono" style="font-size:10px;color:var(--mist);flex:none">±0</span></div>
+      <div class="rec-row">
+        <span class="dot sm seen" style="margin-top:2px"></span>
+        <div style="flex:1">
+          <div style="font-size:13px">平均数计算 · 平均数增长率</div>
+          <div style="font-size:10.5px;color:var(--mist);margin-top:3px">
+            <span class="mono">20:14</span> · <b style="color:var(--graphite)">中公</b> · 语音</div></div>
+        <span class="mono" style="font-size:10px;color:var(--seal);flex:none">+2</span></div>
+      <div class="rec-row" style="opacity:.5">
+        <span class="dot sm untouched" style="margin-top:2px;border-style:dashed"></span>
+        <div style="flex:1">
+          <div style="font-size:13px;color:var(--mist)">未匹配 · 已丢弃</div>
+          <div style="font-size:10.5px;color:var(--mist);margin-top:3px">
+            <span class="mono">19:02</span> · 抖音 · 语音</div></div>
+        <span class="mono" style="font-size:10px;color:var(--mist);flex:none">—</span></div>
+      <div class="footnote" style="margin-top:16px">
+        每条只有四样东西:时间、来源名称、采集方式、考点。<br>
+        本工具不存储任何机构的课程内容。</div>
+      <div style="height:14px"></div>
+    </div>
+    <div class="tabbar">
+      <div class="tb"><span class="i"></span><span class="t">答题卡</span></div>
+      <div class="tb on"><span class="i"></span><span class="t">记录</span></div>
+      <div class="tb"><span class="i"></span><span class="t">我的</span></div></div>
+  </div>
+  <div class="homebar"></div>
+</div>
+<div class="note">被丢弃的那条<b>保留可见但置灰</b>,不计入覆盖度。让用户看见「系统丢掉了什么」,比悄悄丢掉更能建立对覆盖度数字的信任——§5.2 说用户会认为工具不准,可见性是唯一的解药。</div>
+</div>
+
+<!-- ========== M8 我的 ========== -->
+<div class="cell"><div class="cap"><span class="cap-n">M8</span><span class="cap-t">我的 · 边界与出口</span></div>
+<div class="cap-d">这一屏把两件事讲清楚:数据随时能带走,以及这个工具不做什么。后者写成一段人话,放在最下面。</div>
+<div class="phone"><div class="notch"></div>
+  <div class="statusbar">9:41<span class="r">•••• ᯤ 82%</span></div>
+  <div class="screen">
+    <div class="pad" style="flex:1;overflow:hidden">
+      <div class="masthead" style="padding-top:8px">
+        <div class="kicker">ACCOUNT</div>
+        <h1>我的</h1></div>
+      <div style="display:flex;align-items:center;gap:12px;margin-top:16px">
+        <div style="width:44px;height:44px;border:1px solid var(--line);background:var(--paper-2);
+             border-radius:var(--r);display:flex;align-items:center;justify-content:center;
+             font-family:var(--song);font-size:19px;font-weight:700">陈</div>
+        <div style="flex:1">
+          <div class="mono" style="font-size:13.5px">138****6666</div>
+          <div style="font-size:10.5px;color:var(--mist);margin-top:3px">微信已绑定 · 两端同账号</div></div>
+      </div>
+      <div class="sec">
+        <div class="sec-head"><h2>覆盖度</h2><div class="meta">18 个考点</div></div>
+        <div class="cover">
+          <div class="big">44<span>%</span></div>
+          <div class="txt">8 个有记录<br>还有 <b>10</b> 个是空白</div></div>
+        <div class="bar"><i class="b-solid" style="width:16.7%"></i>
+          <i class="b-weak" style="width:11.1%"></i><i class="b-seen" style="width:16.7%"></i></div>
+        <button class="mini pri" style="width:100%;justify-content:center;margin-top:12px;padding:9px">
+          去网页端看盲区 ›</button>
+      </div>
+      <div class="sec">
+        <div class="sec-head"><h2>数据</h2><div class="meta">Export</div></div>
+        <div class="kv"><span>导出我的数据</span><span>MD / CSV / JSON</span></div>
+        <div class="kv"><span>MCP / CLI 只读接入</span><span>未开启</span></div>
+        <div class="kv"><span>本地图片缓存</span><span>24.6 MB</span></div>
+        <div class="kv"><span>原图保留时长</span><span>7 天</span></div>
+      </div>
+      <div class="panel" style="margin-top:16px">
+        <div class="mono" style="font-size:9.5px;letter-spacing:.14em;color:var(--seal);
+             text-transform:uppercase;margin-bottom:8px">这个工具不做什么</div>
+        <div style="font-size:12px;color:var(--graphite);line-height:1.85">
+          不判断你做得对不对,不讲知识点,不存任何机构的课程内容。<br>
+          它只回答三件事:<b>有没有、几次、多久前。</b><br>
+          <span style="color:var(--mist)">要学,把导出的东西丢给豆包或 DeepSeek。</span></div>
+      </div>
+      <div style="height:14px"></div>
+    </div>
+    <div class="tabbar">
+      <div class="tb"><span class="i"></span><span class="t">答题卡</span></div>
+      <div class="tb"><span class="i"></span><span class="t">记录</span></div>
+      <div class="tb on"><span class="i"></span><span class="t">我的</span></div></div>
+  </div>
+  <div class="homebar"></div>
+</div>
+<div class="note">能力边界写成一段用户能读的话,而不是产品文档里的表格。<b>「有没有、几次、多久前」</b>这七个字直接来自 §2.2,原样放进界面——它既是约束,也恰好是最好的产品说明。</div>
+</div>
+
+</div></div></body></html>

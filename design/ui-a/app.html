@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>考点盲区 · 原生 App(iOS / Android) · 风格 A</title>
+<link rel="stylesheet" href="tokens.css">
+<style>
+.col{display:flex;flex-direction:column;min-height:0}
+.f1{flex:1;min-height:0;overflow:hidden}
+.rw{display:flex;align-items:center;gap:9px}
+.sp{flex:1}
+.hb{border-bottom:1px solid var(--hair)}
+.ht{border-top:1px solid var(--hair)}
+.s10{font-size:10.5px}.s11{font-size:11px}.s12{font-size:12px}.s13{font-size:13px}.s15{font-size:15px}
+.pd{padding:13px 14px}
+.wt{width:44px;text-align:right}
+.ix{width:19px;flex:none;font-family:var(--mono);font-size:10.5px;color:var(--t3);text-align:right}
+
+/* 原生导航栏:大标题,与小程序的 .wxnav(居中小标题)刻意不同 */
+.navb{padding:6px 14px 10px;flex:none;border-bottom:1px solid var(--hair)}
+.navb h3{margin:0;font-size:24px;font-weight:600;letter-spacing:-.01em;color:var(--tx)}
+/* 原生 tabBar:4 项,与微信 tabBar 的胶囊留位无关 */
+.appbar{height:50px;border-top:1px solid var(--hair);background:var(--bg2);display:flex;flex:none}
+.appbar s{text-decoration:none;flex:1;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:3px;font-size:9.5px;color:var(--t3)}
+.appbar s.on{color:var(--acid)}
+.appbar s u{text-decoration:none;width:16px;height:16px;border:1.2px solid currentColor;
+  border-radius:2px;display:block}
+
+/* 系统分享面板 —— iOS 的 Share Sheet / Android 的 Share Target */
+.sheetos{position:absolute;left:8px;right:8px;bottom:8px;background:#1B1D21;
+  border:1px solid var(--hair2);border-radius:12px;overflow:hidden;z-index:9}
+.sheetos .hd2{padding:11px 14px;border-bottom:1px solid var(--hair);display:flex;align-items:center;gap:9px}
+.approw{display:flex;gap:12px;padding:13px 14px;border-bottom:1px solid var(--hair)}
+.appico{width:52px;flex:none;text-align:center;font-size:9.5px;color:var(--t3);line-height:1.5}
+.appico i{width:46px;height:46px;border-radius:11px;border:1px solid var(--hair2);
+  background:var(--bg3);display:block;margin:0 auto 5px;position:relative}
+.appico.on i{border-color:var(--acid);background:rgba(201,242,77,.09)}
+.appico.on{color:var(--acid)}
+
+/* 锁屏 */
+.lock{position:absolute;inset:0;background:#08090A;display:flex;flex-direction:column;z-index:7}
+.lock .clk{font-family:var(--mono);font-size:62px;font-weight:200;letter-spacing:-.03em;
+  color:var(--tx);text-align:center;margin-top:74px;line-height:1}
+.lock .dt{text-align:center;color:var(--t2);font-size:13px;margin-top:6px}
+/* 灵动岛 */
+.island{position:absolute;left:50%;top:12px;transform:translateX(-50%);height:34px;
+  min-width:124px;border-radius:17px;background:#000;border:1px solid #23252A;
+  display:flex;align-items:center;gap:9px;padding:0 13px;z-index:9}
+.island .dotr{width:8px;height:8px;border-radius:50%;background:var(--red);flex:none}
+
+/* 系统通知 */
+.notif{background:#1B1D21;border:1px solid var(--hair2);border-radius:13px;padding:11px 13px}
+.notif .nh{display:flex;align-items:center;gap:7px;font-size:10.5px;color:var(--t3);margin-bottom:6px}
+.notif .nh i{width:13px;height:13px;border-radius:3px;background:var(--acid);flex:none;display:block}
+
+/* 系统权限弹窗 */
+.perm{background:#202226;border-radius:13px;overflow:hidden;width:262px;margin:0 auto}
+.perm .pb{padding:16px 17px 14px;text-align:center}
+.perm .pa{display:flex;border-top:1px solid #2E3137}
+.perm .pa s{text-decoration:none;flex:1;text-align:center;padding:11px 0;font-size:14px;color:#4C9BFF}
+.perm .pa s+s{border-left:1px solid #2E3137;font-weight:600}
+
+/* 波形 */
+.wave{display:flex;align-items:flex-end;gap:2px;height:22px}
+.wave i{width:2px;background:var(--acid);display:block}
+
+.ck{width:15px;height:15px;flex:none;border:1px solid var(--hair2);border-radius:2px;position:relative}
+.ck.on{border-color:var(--tx)}
+.ck.on:after{content:"";position:absolute;left:5px;top:1px;width:3px;height:8px;
+  border:solid var(--tx);border-width:0 1.5px 1.5px 0;transform:rotate(42deg)}
+</style>
+</head>
+<body>
+<div class="deck">
+
+<div class="dhd">
+  <h1>考点盲区 · 原生 App(iOS / Android) · 风格 A「极客暗色 · 命令条驱动」</h1>
+  <p>
+    <b style="color:#FF6B5A">先说清楚这一份稿子的前提:原生 App 是一次新增的形态决定,文档集里没有它。</b><br>
+    已定的是三端——<span class="m">H5 / PWA 是主形态</span>、<span class="m">桌面先用 PWA 安装(桌面壳「先不做」)</span>、<span class="m">小程序只做采集入口</span>。<br>
+    桌面壳被判「先不做」的理由是一条可以照搬到这里的规则:<b style="color:#D4D4D8">要出现 PWA 拿不到的本地能力需求,而且不止一个,才值得做壳。</b><br>
+    所以这一份稿子里的每一屏,都必须是 <b style="color:#D4D4D8">PWA 与小程序都拿不到的能力</b>——<span class="m">系统分享面板 · 锁屏与灵动岛 · 后台录音 · 系统通知 · 本机长期存储</span>。<br>
+    做成 H5 的重绘,这一份就自动证明了「不该做 App」。<br>
+    <b style="color:#D4D4D8">A7 – A12 是另一半,换一套判据</b>:登录、内购、订单、设置在哪个端上都要有,它们不必「App 独有」。
+    但其中有真差异 —— <b style="color:#D4D4D8">不是我们设计出来的,是上架规则逼出来的</b>:4.8 登录等价选项、内购弹窗接管、恢复购买、订单一半在平台那边、删除入口必须在 App 内。<br>
+    <span class="m">375×812</span>,数据与其余各端逐字一致。
+  </p>
+</div>
+
+<div class="sec"><h2>一 · App 凭什么存在</h2><span class="sub">A1 – A3 · 三个 PWA 拿不到的采集入口</span></div>
+<div class="grid">
+
+<div class="cell">
+  <div class="cap"><span class="cap-n">A1</span><span class="cap-t">从任何 App 分享进来</span></div>
+  <div class="cap-d">iOS Share Extension / Android Share Target。这是 App 存在的第一理由。</div>
+  <div class="dev phone app col" style="position:relative">
+    <div class="status">9:41<span class="r">5G · 86%</span></div>
+    <div class="col f1" style="background:#0D0E10">
+      <div style="height:34px;flex:none;display:flex;align-items:center;padding:0 14px;
+        background:#17181B;border-bottom:1px solid #26282C;font-size:11px;color:var(--t3)">
+        <span>B站</span><span class="sp"></span><span class="mono">外部 App</span>
+      </div>
+      <div style="flex:1;position:relative;padding:22px 16px;display:flex;flex-direction:column;gap:13px">
+        <i style="height:2px;background:#26282C;display:block"></i>
+        <i style="height:2px;background:#26282C;display:block;width:74%"></i>
+        <i style="height:2px;background:#26282C;display:block;width:88%"></i>
+        <i style="height:2px;background:#26282C;display:block;width:52%"></i>
+      </div>
+    </div>
+    <div class="sheetos">
+      <div class="hd2"><span class="t2 s12">分享截图</span><span class="sp"></span><span class="t3 s10 mono">系统面板</span></div>
+      <div class="approw">
+        <div class="appico"><i></i>微信</div>
+        <div class="appico"><i></i>备忘录</div>
+        <div class="appico on"><i></i>考点盲区</div>
+        <div class="appico"><i></i>存图片</div>
+        <div class="appico"><i></i>更多</div>
+      </div>
+      <div style="padding:12px 14px;border-bottom:1px solid var(--hair)">
+        <div class="rw"><span class="lbl" style="margin:0">识别到的来源</span></div>
+        <div class="field" style="margin-top:7px"><span class="s12">B站 · 资料分析技巧</span><span class="sp"></span><span class="t3 s10">可改</span></div>
+      </div>
+      <div class="row lg"><i class="sd empty"></i><span class="nm">增长量计算<i style="display:block;font-style:normal;font-size:11px;color:var(--t3);margin-top:1px">候选来自你自己的考点树</i></span><span class="c wt num s11">0.84</span></div>
+      <div style="padding:12px 14px">
+        <button class="btn p blk">记下,不用打开 App</button>
+        <div class="t3 s11" style="margin-top:8px;text-align:center">整个过程停留在这张面板里</div>
+      </div>
+    </div>
+  </div>
+  <div class="ann"><b>这是 App 存在的第一理由,也是唯一一个足够硬的理由。</b>用户在 B站 / 微信 / 任何题库 App 里看到一道题,截屏之后——<br>网页版的路径:<span class="m">存相册 → 切到浏览器 → 找到我们 → 选照片 → 翻到刚才那张</span>,五步。<br>小程序的路径:少一步,但仍要切出去。<br>这里:<span class="rl">分享 → 选「考点盲区」→ 记下</span>,而且<b>不用打开 App</b>。<br>系统分享面板是 PWA 与小程序都拿不到的能力。<span class="rl">采集摩擦是关卡 0 唯一在量的东西</span>,五步变两步不是体验优化,是判据本身——如果 App 的价值只能靠这一屏证明,那这一屏就得成立。</div>
+</div>
+
+<div class="cell">
+  <div class="cap"><span class="cap-n">A2</span><span class="cap-t">锁屏就能说一句</span></div>
+  <div class="cap-d">锁屏小组件 + 灵动岛。手机在兜里也能记,不用解锁找 App。</div>
+  <div class="dev phone app col" style="position:relative">
+    <div class="lock">
+      <div class="status">9:41<span class="r">5G · 86%</span></div>
+      <div class="clk">9:41</div>
+      <div class="dt">8月26日 星期三</div>
+      <div style="flex:1"></div>
+      <div style="padding:0 14px 16px">
+        <div class="lbl">锁屏小组件</div>
+        <div style="display:flex;gap:9px;margin-top:8px">
+          <div style="flex:1;border:1px solid var(--hair2);border-radius:10px;background:rgba(20,21,24,.7);padding:11px 12px">
+            <div class="mono t3 s10">今天</div>
+            <div class="rw" style="margin-top:5px"><span class="num" style="font-size:22px">3</span><span class="t3 s11">条</span></div>
+            <div class="t3 s10" style="margin-top:3px">日均目标 3</div>
+          </div>
+          <div style="flex:1.4;border:1px solid var(--acid);border-radius:10px;
+            background:rgba(201,242,77,.08);padding:11px 12px;display:flex;flex-direction:column;justify-content:center">
+            <div class="acid s12" style="font-weight:600">按住说一句</div>
+            <div class="t3 s10" style="margin-top:4px">不用解锁</div>
+          </div>
+        </div>
+        <div class="note" style="margin-top:12px">锁屏组件只放两样:<b>今天记了几条</b> 和 <b>按住说一句</b>。<br>不放覆盖率,不放盲区数——<span class="rl">锁屏是采集入口,不是复盘入口</span>。</div>
+      </div>
+      <div class="homebar"><i></i></div>
+    </div>
+    <div class="island"><span class="dotr"></span><span class="mono s11 acid">录音 0:07</span><span class="wave"><i style="height:7px"></i><i style="height:13px"></i><i style="height:9px"></i><i style="height:16px"></i><i style="height:6px"></i></span></div>
+  </div>
+  <div class="ann"><b>锁屏组件与灵动岛是 App 的第二个硬理由。</b>网页版和小程序都进不了锁屏——用户想记一笔,必须先解锁、找到入口、等加载。<br>这一屏做了一个克制的决定:<span class="rl">锁屏上只放「今天几条」和「按住说一句」,不放覆盖率、不放盲区数</span>。锁屏是采集入口,不是复盘入口;把北极星指标(主动查看盲区的人数)搬到锁屏上,会把「看一眼数字」和「主动去查盲区」混成一件事,而那个指标就不准了。<br>「今天 3 条」直接对着关卡 0 的判据(日均 ≥3 条)——<b>把判据放在用户每天看几十次的地方</b>,是这个组件唯一想干的事。</div>
+</div>
+
+<div class="cell">
+  <div class="cap"><span class="cap-n">A3</span><span class="cap-t">息屏也在录 · 后台录音</span></div>
+  <div class="cap-d">听课时手机放一边、屏幕黑了,录音不断。浏览器做不到。</div>
+  <div class="dev phone app col">
+    <div class="status">9:41<span class="r">5G · 86%</span></div>
+    <div class="navb"><h3>录音中</h3></div>
+    <div class="pd hb">
+      <div class="rw">
+        <span class="big" style="font-size:38px">12:41</span>
+        <span class="sp"></span>
+        <span class="wave" style="height:30px">
+          <i style="height:11px"></i><i style="height:22px"></i><i style="height:15px"></i><i style="height:28px"></i>
+          <i style="height:9px"></i><i style="height:19px"></i><i style="height:24px"></i><i style="height:13px"></i>
+          <i style="height:26px"></i><i style="height:8px"></i><i style="height:17px"></i><i style="height:21px"></i>
+        </span>
+      </div>
+      <div class="rw" style="margin-top:11px">
+        <span class="tag on">后台运行中</span>
+        <span class="t3 s11">屏幕已关闭 · 仍在录</span>
+      </div>
+    </div>
+    <div class="grp">这一段的来源<span class="r">记的时候就写死</span></div>
+    <div class="pd" style="padding-top:10px">
+      <div class="field"><span class="s12">粉笔 · 资料分析系统班 L12</span></div>
+    </div>
+    <div class="grp void">录音不落库,只过一次<span class="r">红线</span></div>
+    <div class="row sm"><span class="nm">音频</span><span class="t2 s11">转完文字就删</span></div>
+    <div class="row sm"><span class="nm">转写文字</span><span class="t2 s11">认完考点就丢,不落库</span></div>
+    <div class="row sm"><span class="nm">最后留下的</span><span class="t2 s11">考点 + 来源名 + 时间戳</span></div>
+    <div class="pd">
+      <div class="note w"><b>录了 12 分钟,最后存下来的是三个字段。</b><br>这不是节省存储,是<span class="rl">结构上就没有能装下课程内容的位置</span>。</div>
+    </div>
+    <div class="f1"></div>
+    <div class="ht pd">
+      <div class="rw">
+        <button class="btn p" style="flex:1;justify-content:center">停下并识别</button>
+        <button class="btn d">丢掉</button>
+      </div>
+      <div class="t3 s11" style="margin-top:9px">网页版一旦切到后台或息屏,录音就断。<b>这是 App 的第三个理由。</b></div>
+    </div>
+    <div class="homebar"><i></i></div>
+  </div>
+  <div class="ann"><b>后台录音是浏览器拿不到的第三个能力。</b>网页版一旦切到后台或者屏幕关闭,录音就断——而听课的真实姿势恰恰是「手机放一边,人在看 iPad 或纸质讲义」。<br>这一屏最要紧的信息在中段那三行:<span class="rl">录了 12 分钟,最后存下来的只有考点 + 来源名 + 时间戳</span>。音频转完就删、转写文字认完考点就丢,不是为了省存储,是结构上没有能装下课程内容的位置。<br>把这三行放在录音界面而不是设置页,是因为<b>用户对「后台一直在录」这件事的疑虑发生在此刻</b>,不发生在他去翻设置的时候。</div>
+</div>
+
+</div>
+
+<div class="sec"><h2>二 · 分工与代价</h2><span class="sub">A4 – A6 · App 做什么、不做什么、以及它带来的新账单</span></div>
+<div class="grid">
+
+<div class="cell">
+  <div class="cap"><span class="cap-n">A4</span><span class="cap-t">盲区在 App 里做到哪一层</span></div>
+  <div class="cap-d">和小程序不同:App 做完整复盘。但它不是 web 的替代,是同一个账号的另一个壳。</div>
+  <div class="dev phone app col">
+    <div class="status">9:41<span class="r">5G · 86%</span></div>
+    <div class="navb"><h3>盲区</h3></div>
+    <div class="pd hb">
+      <div class="rw">
+        <span class="big">44<s>%</s></span>
+        <span class="sp"></span>
+        <div style="text-align:right">
+          <div class="num t2 s12">18 考点 · 8 有记录</div>
+          <div class="num red s12" style="margin-top:4px">2 组整块空白</div>
+        </div>
+      </div>
+      <div class="meter tall" style="margin-top:10px">
+        <i style="width:16.7%;background:var(--s-stable)"></i><i style="width:11.1%;background:var(--s-weak)"></i>
+        <i style="width:11.1%;background:var(--s-rusty)"></i><i style="width:5.6%;background:var(--s-touch)"></i>
+        <i style="width:55.5%;background:var(--s-empty)"></i>
+      </div>
+      <div class="lg-row" style="margin-top:8px"><s>稳 3</s><s>弱 2</s><s>生疏 2</s><s>仅接触 1</s><s>空白 10</s></div>
+    </div>
+    <div class="grp">先补这几个<span class="r">频次 × 生疏度</span></div>
+    <div class="row lg"><span class="ix">01</span><span class="nm">增长量计算<i style="display:block;font-style:normal;font-size:11px;color:var(--t3);margin-top:1px">练 8 对 4 · 正确率 50%</i></span><span class="c wt num s11">6.4</span></div>
+    <div class="row lg"><span class="ix">02</span><span class="nm">平均数计算<i style="display:block;font-style:normal;font-size:11px;color:var(--t3);margin-top:1px">近五年 6 次 · 无任何记录</i></span><span class="c wt num s11">6.0</span></div>
+    <div class="row lg"><span class="ix">03</span><span class="nm">截位直除<i style="display:block;font-style:normal;font-size:11px;color:var(--t3);margin-top:1px">练 6 对 2 · 正确率 33%</i></span><span class="c wt num s11">5.6</span></div>
+    <div class="grp void">倍数与比较 · 整块空白<span class="r">0/3 · 频次合计 12</span></div>
+    <div class="row"><i class="sd empty"></i><span class="nm off">倍数计算</span><span class="c t3 s11">5次</span></div>
+    <div class="row"><i class="sd empty"></i><span class="nm off">倍数变化</span><span class="c t3 s11">3次</span></div>
+    <div class="row"><i class="sd empty"></i><span class="nm off">同比与环比</span><span class="c t3 s11">4次</span></div>
+    <div class="pd">
+      <div class="note"><b>App 做完整复盘,小程序不做。</b><br>两者的分界不是「大屏小屏」,是<span class="rl">小程序被限定成采集入口,而 App 没有这个限定</span>。<br><br>但 App 也不替代 web:<b>考点树维护、导出、MCP 接入仍在 web</b>——那些是坐下来做的事。</div>
+    </div>
+    <div class="appbar">
+      <s class="on"><u></u>盲区</s><s><u></u>记一笔</s><s><u></u>时间线</s><s><u></u>我的</s>
+    </div>
+    <div class="homebar"><i></i></div>
+  </div>
+  <div class="ann"><b>App 与小程序的分界不是屏幕大小,是产品定位。</b>小程序被 <span class="m">L-C6</span> 限定成采集入口、分析跳网页;App 没有这个限定,所以它做完整复盘。<br>但 App <b>也不替代 web</b>:考点树维护(改名 / 归档 / 新增)、导出、MCP 只读接入仍然留在 web——<span class="rl">那些是「坐下来做」的事,不是「等电梯时做」的事</span>。<br>底部四个 tab 与小程序的 tabBar 刻意不同:小程序那份要给微信胶囊留位、且只有采集相关的项。<b>同一个账号,不同的壳,不同的能力边界</b>——这句话是三端共存不打架的全部前提。</div>
+</div>
+
+<div class="cell">
+  <div class="cap"><span class="cap-n">A5</span><span class="cap-t">权限:每要一个,都要说清换来什么</span></div>
+  <div class="cap-d">系统弹窗只有一句话的空间,而拒绝之后就很难再要回来。</div>
+  <div class="dev phone app col" style="position:relative">
+    <div class="status">9:41<span class="r">5G · 86%</span></div>
+    <div class="navb"><h3>开始之前</h3></div>
+    <div class="pd hb">
+      <div class="t2 s12" style="line-height:1.8">下面三个权限,<b style="color:var(--tx)">每一个都对应一个你会用到的入口</b>。<br>现在拒绝也能用,只是少一个入口。</div>
+    </div>
+    <div class="row lg"><i class="sd stable"></i><span class="nm">麦克风<i style="display:block;font-style:normal;font-size:11px;color:var(--t3);margin-top:1px">按住说一句 · 息屏也能录</i></span><span class="tag on">要</span></div>
+    <div class="row lg"><i class="sd touch"></i><span class="nm">通知<i style="display:block;font-style:normal;font-size:11px;color:var(--t3);margin-top:1px">待补队列补上了 / 权益到账</i></span><span class="tag">可选</span></div>
+    <div class="row lg"><i class="sd empty"></i><span class="nm off">相册<i style="display:block;font-style:normal;font-size:11px;color:var(--t3);margin-top:1px">不要。截图走系统分享面板,不读你的相册</i></span><span class="tag w">不要</span></div>
+    <div class="pd">
+      <div class="note w"><b>相册权限一个都不要,这是刻意的。</b><br>读相册意味着这个 App <span class="rl">在技术上能看到你所有的照片</span>——而它只需要你主动分享过来的那一张。<br><br>A1 的系统分享面板已经把这件事解决了:<b>少要一个权限,比多解释一句管用</b>。</div>
+    </div>
+    <div style="position:absolute;left:0;right:0;top:236px;z-index:9">
+      <div class="perm">
+        <div class="pb">
+          <div style="font-size:15px;font-weight:600;color:#fff">"考点盲区"想访问麦克风</div>
+          <div style="font-size:12.5px;color:#B4B7BD;margin-top:7px;line-height:1.55">用来把你说的话转成文字,认出是哪个考点。录音转完就删,不上传保存。</div>
+        </div>
+        <div class="pa"><s>不允许</s><s>好</s></div>
+      </div>
+    </div>
+    <div class="f1"></div>
+    <div class="ht pd">
+      <div class="t3 s11">系统弹窗那句话只有两行,而<b>拒绝之后想要回来要去系统设置里翻</b>——所以那两行必须先说「用来做什么」,再说「不做什么」。</div>
+    </div>
+    <div class="homebar"><i></i></div>
+  </div>
+  <div class="ann"><b>「相册权限一个都不要」是这一屏的主张。</b>读相册意味着这个 App 在技术上能看到用户的<span class="rl">全部照片</span>,而它真正需要的只有主动分享过来的那一张——A1 的系统分享面板已经把这件事解决了。<b>少要一个权限,比在隐私政策里多解释一段管用。</b><br>系统弹窗的文案只有两行,而<b>拒绝之后想要回来要去系统设置里翻</b>,实际等于一次性机会。所以那两行的顺序是固定的:先说「用来做什么」(转文字、认考点),再说「不做什么」(转完就删、不上传)。<br>三个权限用三种状态点区分(要 / 可选 / 不要),和考点五态用的是同一套视觉语言——<b>一套点,两处语义,不新造图形</b>。</div>
+</div>
+
+<div class="cell">
+  <div class="cap"><span class="cap-n">A6</span><span class="cap-t">上架带来的新账单</span></div>
+  <div class="cap-d">App 形态引入了一条现有成本测算里没有的抽成通道。</div>
+  <div class="dev phone app col">
+    <div class="status">9:41<span class="r">5G · 86%</span></div>
+    <div class="navb"><h3>记多点</h3></div>
+    <div class="pd hb">
+      <div class="rw"><span class="big" style="font-size:34px">¥9.9</span><span class="t3 s12">/ 月 · 到期就停,不自动扣费</span></div>
+    </div>
+    <div class="grp">同一个价,三个通道<span class="r">不做分端差价</span></div>
+    <div class="row lg"><span class="nm">网页 / PWA<i style="display:block;font-style:normal;font-size:11px;color:var(--t3);margin-top:1px">微信支付</i></span><span class="c num s12">¥9.90</span></div>
+    <div class="row lg"><span class="nm">微信小程序<i style="display:block;font-style:normal;font-size:11px;color:var(--t3);margin-top:1px">iOS 走虚拟支付</i></span><span class="c num s12">¥9.90</span></div>
+    <div class="row lg"><span class="nm">App Store<i style="display:block;font-style:normal;font-size:11px;color:var(--t3);margin-top:1px">虚拟商品必须走内购</i></span><span class="c num s12">¥9.90</span></div>
+    <div class="pd">
+      <div class="note w"><b>价格各端一样,到手不一样。</b><br>分端差价本身就是一支指向外部支付的箭头,所以<span class="rl">价不能变,只能自己吃掉差额</span>。<br><br>而 App Store 的内购抽成<b>高于</b>现有成本测算里用的那一档——那一档算的是微信小程序 iOS 虚拟支付,不是苹果内购。<b>这是 App 形态新增的一笔账,现有毛利测算没有覆盖。</b></div>
+    </div>
+    <div class="grp void">上架还带来这些<span class="r">都不在现有成本表里</span></div>
+    <div class="row sm"><span class="nm">开发者年费</span><span class="t2 s11">iOS + 安卓多渠道</span></div>
+    <div class="row sm"><span class="nm">代码签名主体</span><span class="t2 s11">须与域名 / 备案 / 小程序一致</span></div>
+    <div class="row sm"><span class="nm">审核周期</span><span class="t2 s11">每次发版都要排队</span></div>
+    <div class="row sm"><span class="nm">安卓渠道</span><span class="t2 s11">不止一个应用商店</span></div>
+    <div class="f1"></div>
+    <div class="ht pd">
+      <button class="btn p blk">买 ¥9.90</button>
+      <div class="t3 s11" style="margin-top:9px;text-align:center">盲区诊断与导出永不上锁,这一条五端一致</div>
+    </div>
+    <div class="homebar"><i></i></div>
+  </div>
+  <div class="ann"><b>这一屏是这份稿子对自己的成本交代。</b>价格各端必须一样(分端差价本身就是一支指向外部支付的箭头),所以<span class="rl">通道抽成的差额只能自己吃掉</span>。<br><b>而 App Store 的内购抽成高于现有毛利测算里用的那一档</b>——那一档算的是微信小程序 iOS 虚拟支付,不是苹果内购。这是 App 形态新增的一笔账,现有测算没有覆盖,<span class="rl">具体档位与小企业计划资格需要单独核一次,本稿不编数字</span>。<br>下半屏那四条(开发者年费、签名主体、审核周期、安卓多渠道)同样都不在现有成本表里。<b>桌面壳当初被判「先不做」,靠的就是这一类账算不过来</b>——把它们画出来,是为了让这个决定在同一张桌子上做。</div>
+</div>
+
+</div>
+
+
+<div class="sec"><h2>三 · 另一半</h2><span class="sub">A7 – A12 · 登录、内购、订单、设置 —— 换一套判据:平台规则逼出来的差异</span></div>
+<div class="grid">
+
+<div class="cell">
+  <div class="cap"><span class="cap-n">A7</span><span class="cap-t">登录 · 以及 4.8 那道题</span></div>
+  <div class="cap-d">用微信登录就触发 App Store 4.8,必须再给一个「等价选项」。</div>
+  <div class="dev phone app col">
+    <div class="status">9:41<span class="r">5G · 86%</span></div>
+    <div class="f1" style="padding:44px 22px 0;display:flex;flex-direction:column">
+      <div style="font-size:26px;font-weight:600;letter-spacing:-.01em">考点盲区</div>
+      <div class="t2 s13" style="margin-top:7px">你碰过的,和你还没碰过的。</div>
+
+      <div style="margin-top:32px">
+        <span class="lbl">手机号</span>
+        <div class="field"><span class="pre">+86</span><span>138 0531 2049</span></div>
+      </div>
+      <div style="margin-top:16px">
+        <span class="lbl">验证码</span>
+        <div class="otp"><i>4</i><i>7</i><i>2</i><i class="cur"></i></div>
+      </div>
+      <button class="btn p blk lg" style="margin-top:20px">进去</button>
+
+      <div class="rw" style="margin-top:26px">
+        <i style="flex:1;height:1px;background:var(--hair);display:block"></i>
+        <span class="t3 s11">或者</span>
+        <i style="flex:1;height:1px;background:var(--hair);display:block"></i>
+      </div>
+      <button class="btn blk lg" style="margin-top:16px">微信一键登录</button>
+      <div class="t3 s11" style="margin-top:9px;text-align:center">微信只是快登,不是账号本身 —— 之后仍要补一次手机号</div>
+      <div class="sp" style="flex:1"></div>
+    </div>
+    <div class="ht pd">
+      <div class="note w"><b>4.8 被上面那个微信按钮触发了。</b><br>规则的触发条件是「用第三方社交登录建立主账号」,而微信登录正是。<br>它要求再提供一个<b>等价选项</b>:只收姓名/邮箱级别的数据、允许隐藏真实邮箱、<span class="rl">不为广告追踪 App 内行为</span>。</div>
+    </div>
+    <div class="homebar"><i></i></div>
+  </div>
+  <div class="ann"><b>这一屏画的是一个还没解掉的合规题,不是一个已经想好的方案。</b><br>App Store 4.8 在用第三方社交登录建立主账号时触发,微信登录就是。它要求另给一个「等价选项」——<b>但它并不点名 Sign in with Apple</b>,任何满足隐私条件的提供方都算(2024 年这条已放宽,不再是「必须苹果登录」)。<br><span class="rl">我们的手机号验证码登录很可能就是那个等价选项</span>:只收一个手机号、不做广告追踪。但「很可能」不等于「是」——<b>这属于提审前必须确认一次的事,不是可以想当然的事</b>,已登记为待确认项。<br>如果结论是不够,补的那一个按钮会长在「或者」这条分割线下面,和微信并排——<b>而不会动手机号那一栏</b>:手机号是跨端账号锚点,这一条不因平台规则改变。<br>另一条相关规则已经确认:<b>支持注册就必须在 App 内提供账号删除入口</b>(见 A12)。</div>
+</div>
+
+<div class="cell">
+  <div class="cap"><span class="cap-n">A8</span><span class="cap-t">通知 · 只发两类</span></div>
+  <div class="cap-d">A5 要了这个权限,这是它换来的东西。不发运营推送。</div>
+  <div class="dev phone app col" style="position:relative">
+    <div class="lock">
+      <div class="status">9:41<span class="r">5G · 86%</span></div>
+      <div class="clk">9:41</div>
+      <div class="dt">8月27日 星期四</div>
+      <div style="padding:26px 12px 0;display:flex;flex-direction:column;gap:10px">
+        <div class="notif">
+          <div class="nh"><i></i><span>考点盲区</span><span class="sp"></span><span>刚刚</span></div>
+          <div class="s13">昨天那 3 条补上了</div>
+          <div class="t2 s12" style="margin-top:3px">断网时记的语音已经转完,挂到了 增长量计算、截位直除、比重变化</div>
+        </div>
+        <div class="notif">
+          <div class="nh"><i></i><span>考点盲区</span><span class="sp"></span><span>昨天</span></div>
+          <div class="s13">记多点已到账</div>
+          <div class="t2 s12" style="margin-top:3px">AI 录入上限 300 次/月,有效期至 2026-09-24</div>
+        </div>
+      </div>
+      <div class="sp" style="flex:1"></div>
+      <div style="padding:0 14px 18px">
+        <div class="note w"><b>只有这两类,没有第三类。</b><br>没有「今天还没记录哦」,没有「你已经 3 天没打开了」,<span class="rl">没有任何以「把你唤回来」为目的的推送</span>。</div>
+      </div>
+      <div class="homebar"><i></i></div>
+    </div>
+  </div>
+  <div class="ann"><b>推送是这套设计里最容易变质的一处,所以它的白名单只有两条:待补队列补上了、权益到账。</b>两条的共同点是——<span class="rl">它们都在报告一件已经发生的事实,而不是在制造一个打开 App 的理由</span>。<br>「今天还没记录哦」这类提醒被明确排除,原因不是体贴,是指标:<b>北极星是主动查看盲区的人数</b>。用推送把人叫回来,涨的是打开次数,而那正是一个「更容易涨、但代理错了对象」的指标——用它去代理主动性,等于把指标本身换掉。<br>这也是 A5 里通知权限被标成「可选」而不是「要」的原因:<b>拿不到这个权限,产品不缺任何东西。</b></div>
+</div>
+
+<div class="cell">
+  <div class="cap"><span class="cap-n">A9</span><span class="cap-t">时间线 · 跨来源记录</span></div>
+  <div class="cap-d">与其余各端同构。这一屏不追求 App 独有。</div>
+  <div class="dev phone app col">
+    <div class="status">9:41<span class="r">5G · 86%</span></div>
+    <div class="navb"><h3>时间线</h3></div>
+    <div class="pd hb">
+      <div class="rw"><span class="t2 s12">最近 7 天</span><span class="sp"></span><span class="num t2 s12">14 条 · 5 个来源</span></div>
+    </div>
+    <div class="f1" style="overflow:hidden">
+      <div class="grp">今天<span class="r">3 条</span></div>
+      <div class="pd" style="padding-top:11px">
+        <div class="tl">
+          <div class="ti now"><div class="rw"><span class="mono t3 s11">14:02</span><span class="s12">自己刷题 · 2023 国考真题</span></div><div class="t3 s11" style="margin-top:2px">→ 增长率计算 · 记做题 12/10</div></div>
+          <div class="ti"><div class="rw"><span class="mono t3 s11">10:03</span><span class="s12">B站 · 资料分析技巧</span></div><div class="t3 s11" style="margin-top:2px">→ 比重变化 · 拍照记</div></div>
+          <div class="ti"><div class="rw"><span class="mono t3 s11">09:12</span><span class="s12">粉笔 · 资料分析系统班 L12</span></div><div class="t3 s11" style="margin-top:2px">→ 增长率计算 · 语音记</div></div>
+        </div>
+      </div>
+      <div class="grp">3 天前<span class="r">2 条</span></div>
+      <div class="pd" style="padding-top:11px">
+        <div class="tl">
+          <div class="ti"><div class="rw"><span class="mono t3 s11">21:40</span><span class="s12">华图 · 资料速算网课</span></div><div class="t3 s11" style="margin-top:2px">→ 特征数字法 · 语音记</div></div>
+          <div class="ti"><div class="rw"><span class="mono t3 s11">20:15</span><span class="s12">中公 · 资料分析专项</span></div><div class="t3 s11" style="margin-top:2px">→ 截位直除 · 粘一段</div></div>
+        </div>
+      </div>
+      <div class="pd">
+        <div class="note w"><b>每条只有三样:来源名、时间、挂上的考点。</b><br><span class="rl">没有第四样,结构上也放不下第四样。</span></div>
+      </div>
+    </div>
+    <div class="appbar">
+      <s><u></u>盲区</s><s><u></u>记一笔</s><s class="on"><u></u>时间线</s><s><u></u>我的</s>
+    </div>
+    <div class="homebar"><i></i></div>
+  </div>
+  <div class="ann"><b>这一屏和其余各端同构,而且刻意不做差异化。</b>它出现在这里不是因为 App 能做得更好,是因为一个做完整复盘的 App 不能缺它。<br>五家机构的记录并排在一条线上——这是产品的立身之处,而它成立的原因恰恰是<b>每条只有三样:来源名、时间、挂上的考点</b>。<span class="rl">没有第四样,结构上也放不下第四样。</span><br>按「今天 / 3 天前」分组而不是按来源分组,是因为用户回想的方式是时间,不是机构。</div>
+</div>
+
+</div>
+
+<div class="sec"><h2>四 · 内购这一段是真的不一样</h2><span class="sub">A10 – A12 · 上架规则改变的不只是抽成,还有画法</span></div>
+<div class="grid">
+
+<div class="cell">
+  <div class="cap"><span class="cap-n">A10</span><span class="cap-t">内购 · 系统弹窗接管一切</span></div>
+  <div class="cap-d">这一步不是我们的界面。价格、按钮、确认方式全部由系统决定。</div>
+  <div class="dev phone app col" style="position:relative">
+    <div class="status">9:41<span class="r">5G · 86%</span></div>
+    <div class="navb"><h3>记多点</h3></div>
+    <div class="pd hb">
+      <div class="rw"><span class="big" style="font-size:32px">¥9.9</span><span class="t3 s12">/ 月 · 到期就停,不自动扣费</span></div>
+    </div>
+    <div class="row lg"><span class="nm">AI 录入<i style="display:block;font-style:normal;font-size:11px;color:var(--t3);margin-top:1px">语音转写 / 拍照打标</i></span><span class="c num s12">30 → 300</span></div>
+    <div class="row lg"><span class="nm">AI 代发提问</span><span class="c num s12">5 → 50</span></div>
+    <div class="row lg"><span class="nm">盲区诊断 · 导出 · MCP · 手动记录</span><span class="tag">一直不限</span></div>
+    <div class="pd">
+      <button class="btn p blk lg">购买 ¥9.90</button>
+      <button class="btn blk" style="margin-top:10px">恢复购买</button>
+      <div class="t3 s11" style="margin-top:9px;text-align:center">换了手机、重装了 App,用这个把已买的拿回来</div>
+    </div>
+    <div class="sp" style="flex:1"></div>
+    <div class="perm" style="position:absolute;left:0;right:0;bottom:96px;margin:0 auto;z-index:9;width:272px">
+      <div class="pb">
+        <div style="font-size:13px;color:#B4B7BD">确认购买</div>
+        <div style="font-size:15px;font-weight:600;color:#fff;margin-top:9px">记多点 · 1 个月</div>
+        <div style="font-size:20px;font-weight:600;color:#fff;margin-top:7px;font-family:var(--mono)">¥9.90</div>
+        <div style="font-size:11.5px;color:#8A8D93;margin-top:9px">Apple ID · c***n@icloud.com</div>
+      </div>
+      <div class="pa"><s>取消</s><s>双击侧边按钮确认</s></div>
+    </div>
+    <div class="homebar"><i></i></div>
+  </div>
+  <div class="ann"><b>「购买 ¥9.90」这个按钮之后,界面就不归我们了。</b>系统弹窗的排版、按钮文案、确认方式(双击侧边键 / Face ID)全部由平台决定——<span class="rl">这是与微信支付最实在的一处差别:那边我们至少还画一张扫码页,这边一张都画不了</span>。<br><b>「恢复购买」是必须有的,不是贴心功能。</b>用户换手机或重装后,权益要能从平台那边拿回来;缺了它,一个已经付过钱的人会看到自己还是免费档。这个按钮在微信支付路径上不存在,因为那边权益记在我们自己的账上。<br>价格那一格有一个待核项:<span class="rl">App Store 的价格是从平台给定的价格点里选,不是填任意数字</span>——¥9.90 能不能精确设成这个数,提审前要核一次。各端同价是已定的原则(分端差价本身就是一支指向外部支付的箭头),<b>所以万一 ¥9.90 不在价格点里,要动的是另外两端还是这一端,得先想清楚</b>。</div>
+</div>
+
+<div class="cell">
+  <div class="cap"><span class="cap-n">A11</span><span class="cap-t">订单 · 有一半不在我们这儿</span></div>
+  <div class="cap-d">走内购买的那笔,收据、发票、退款都在平台那边。</div>
+  <div class="dev phone app col">
+    <div class="status">9:41<span class="r">5G · 86%</span></div>
+    <div class="navb"><h3>会员与订单</h3></div>
+    <div class="pd hb">
+      <div class="rw">
+        <div><div class="lbl">当前</div><div class="s15" style="font-size:16px">记多点</div></div>
+        <div class="sp"></div>
+        <div style="text-align:right"><div class="lbl">有效期至</div><div class="s15 num" style="font-size:16px">2026-09-24</div></div>
+      </div>
+      <div class="rw" style="margin-top:12px"><span class="s12">AI 录入</span><span class="sp"></span><span class="num t2 s12">137 / 300</span></div>
+      <div class="meter" style="margin-top:6px"><i style="width:45.7%;background:var(--t2)"></i></div>
+      <div class="rw" style="margin-top:11px"><span class="s12">AI 代发提问</span><span class="sp"></span><span class="num t2 s12">12 / 50</span></div>
+      <div class="meter" style="margin-top:6px"><i style="width:24%;background:var(--t2)"></i></div>
+    </div>
+    <div class="grp">订单<span class="r">3 笔</span></div>
+    <div class="row"><span class="nm mono s11">KD26082400317<i style="display:block;font-style:normal;font-size:10.5px;color:var(--t3);margin-top:2px">08-24 · 内购 · Apple</i></span><span class="c wt num s11">¥9.90</span></div>
+    <div class="row"><span class="nm mono s11">KD26072411204<i style="display:block;font-style:normal;font-size:10.5px;color:var(--t3);margin-top:2px">07-24 · 微信支付 · 网页版</i></span><span class="c wt num s11">¥9.90</span></div>
+    <div class="row"><span class="nm mono s11 off">KD26062309882<i style="display:block;font-style:normal;font-size:10.5px;color:var(--t3);margin-top:2px">06-23 · 微信支付 · 已退款</i></span><span class="c wt num s11 t3">¥9.90</span></div>
+    <div class="grp void">内购那笔,这三件事我们做不了<span class="r">规则如此</span></div>
+    <div class="row sm"><span class="nm">开发票</span><span class="t2 s11">收据在平台账户里</span></div>
+    <div class="row sm"><span class="nm">退款</span><span class="t2 s11">向平台申请,不经过我们</span></div>
+    <div class="row sm"><span class="nm">系统订阅管理页</span><span class="t2 s11"><b>里没有我们这一条</b> —— 卖的不是订阅</span></div>
+    <div class="pd">
+      <div class="note"><b>做不了就直说,并给一条路。</b><br>把用户留在一个点了没反应的按钮前,比诚实地说「这件事得去那边办」更糟。<br><span class="rl">但「去那边办」不能写成一句引导支付的话</span> —— 它指向的是账单管理,不是另一个付款入口。</div>
+    </div>
+    <div class="appbar">
+      <s><u></u>盲区</s><s><u></u>记一笔</s><s><u></u>时间线</s><s class="on"><u></u>我的</s>
+    </div>
+    <div class="homebar"><i></i></div>
+  </div>
+  <div class="ann"><b>同一个账号下,两条支付通道的订单混在一张表里,而它们能做的事不一样。</b>网页版那两笔我们能开票、能退款;内购那笔的收据、发票、退款全在平台账户里。<br>处理方式是<span class="rl">把做不了的两件事单独列出来并写明去哪儿办</span>——把用户留在一个点了没反应的按钮前,比诚实地说清楚更糟。<br>第三行写的是「系统订阅管理页里<b>没有</b>我们这一条」而不是「去那里取消订阅」——<span class="rl">因为产品根本不做自动续费,卖的是一次性非续期商品</span>,它不会出现在系统的订阅列表里。写成「去那边取消订阅」等于凭空承认了一个不存在的订阅关系,和「到期就停,不会再扣任何一笔钱」直接打架。<br>另有一条细线要走:<b>「去那边办」指向的必须是账单管理,不能变成另一个付款入口</b>。不得引导用户至外部完成支付这条红线,在退款文案上同样成立——<b>规则约束的是「去别处付钱」,不是「去别处退钱」</b>,但文案一旦写成「网页版可以直接退」,性质就变了。<br>那笔「已退款」的订单仍然留着:退款之后额度怎么算,后端还没有定义,界面已经画出来了。</div>
+</div>
+
+<div class="cell">
+  <div class="cap"><span class="cap-n">A12</span><span class="cap-t">设置 · 删除账号必须在这儿</span></div>
+  <div class="cap-d">支持注册就必须在 App 内提供账号删除入口。这是硬性规则,不是选择。</div>
+  <div class="dev phone app col">
+    <div class="status">9:41<span class="r">5G · 86%</span></div>
+    <div class="navb"><h3>我的</h3></div>
+    <div class="grp">账号</div>
+    <div class="row"><span class="nm">手机号</span><span class="mono t2 s11">138 **** 6027</span></div>
+    <div class="row"><span class="nm">微信</span><span class="t2 s11">已绑定</span></div>
+    <div class="row"><span class="nm">登录设备</span><span class="t2 num s11">3 台</span></div>
+    <div class="grp">权限<span class="r">A5 要过的那三个</span></div>
+    <div class="row sm"><i class="sd stable"></i><span class="nm">麦克风</span><span class="t2 s11">已允许</span></div>
+    <div class="row sm"><i class="sd touch"></i><span class="nm">通知</span><span class="t2 s11">已允许 · 只发两类</span></div>
+    <div class="row sm"><i class="sd empty"></i><span class="nm off">相册</span><span class="tag w">从不索取</span></div>
+    <div class="grp">数据</div>
+    <div class="row"><span class="nm">原图保留</span><span class="t2 s11">本机留 14 天 · 到期转留存区</span></div>
+    <div class="row"><span class="nm">原图上云</span><span class="tag w">固定不做</span></div>
+    <div class="row"><span class="nm">全量导出</span><span class="t3 s11">md / csv / json</span><button class="btn">导出</button></div>
+    <div class="grp">生成式 AI 服务公示</div>
+    <div class="row sm"><span class="nm">语音转写</span><span class="mono t2 s11">腾讯云 · 一句话识别</span></div>
+    <div class="row sm"><span class="nm">图片识别</span><span class="mono t2 s11">DeepSeek · v4-flash-vision-exp</span></div>
+    <div class="row sm"><span class="nm">登记编号</span><span class="mono t2 s11">待登记</span></div>
+    <div class="pd">
+      <button class="btn d blk">注销账号并删除全部数据</button>
+      <div class="note w" style="margin-top:11px"><b>这个入口必须在 App 里,而且必须能走完。</b><br>规则写得很直接:支持创建账号,就必须让用户在 App 内发起删除。<span class="rl">「请发邮件给客服」不算</span>。<br><br>先导出再删。删完不可恢复。</div>
+    </div>
+    <div class="appbar">
+      <s><u></u>盲区</s><s><u></u>记一笔</s><s><u></u>时间线</s><s class="on"><u></u>我的</s>
+    </div>
+    <div class="homebar"><i></i></div>
+  </div>
+  <div class="ann"><b>账号删除入口在 App 内可达,是一条已经确认的硬性规则</b>——支持创建账号就必须支持在 App 内发起删除,「请发邮件给客服」不算。<span class="rl">这一条不需要我们权衡,只需要照做。</span><br>它和产品自己的主张恰好同向:<b>你的东西你随时能拿走,也随时能销毁</b>。所以「先导出再删」的强制前置在这里同样保留(桌面稿 D27 那一整套流程,在 App 上是同一个入口进去)。<br>「相册:从不索取」用空心点标出来,是这一屏唯一一处主动展示「我们没要什么」——<b>权限列表通常只列已获得的,而没要过的那些才是更值得说的</b>。<br>生成式 AI 服务公示在设置一级页,与其余各端一致,「登记编号 待登记」如实写着,不假装已经有了。</div>
+</div>
+
+</div>
+
+<div class="sec"><h2>自查</h2><span class="sub">A1 – A12 · 两半边,两套判据</span></div>
+<div class="app" style="border:1px solid var(--hair);border-radius:3px;width:1196px">
+  <div class="grp">A1 – A6 的判据:是不是 PWA 与小程序都拿不到的能力<span class="r">拿得到就说明不该做 App</span></div>
+  <div class="row sm"><span class="nm t2" style="max-width:160px">A1 系统分享面板</span><span class="nm"><b>拿不到。</b>网页版五步,这里两步,<b>且不用打开 App</b></span></div>
+  <div class="row sm"><span class="nm t2" style="max-width:160px">A2 锁屏 / 灵动岛</span><span class="nm"><b>拿不到。</b>浏览器与小程序都进不了锁屏</span></div>
+  <div class="row sm"><span class="nm t2" style="max-width:160px">A3 后台录音</span><span class="nm"><b>拿不到。</b>网页切后台或息屏即断</span></div>
+  <div class="row sm"><span class="nm t2" style="max-width:160px">A4 完整复盘</span><span class="nm"><span class="rl">拿得到。</span>这一屏 web 完全能做,它不构成做 App 的理由——留在稿里是为了说清三端分工</span></div>
+  <div class="row sm"><span class="nm t2" style="max-width:160px">A5 权限</span><span class="nm">是 App 的<b>代价</b>,不是 App 的能力</span></div>
+  <div class="row sm"><span class="nm t2" style="max-width:160px">A6 上架成本</span><span class="nm">是 App 的<b>代价</b>,不是 App 的能力</span></div>
+  <div class="grp void">诚实结论<span class="r">这份稿子自己的判据</span></div>
+  <div class="row lg"><span class="nm"><b>三个硬理由(A1 / A2 / A3)全部指向同一件事:采集摩擦。</b>而采集摩擦正是关卡 0 在量的东西</span></div>
+  <div class="row lg"><span class="nm">三个都拿不到的能力 &gt; 一个 —— <b>桌面壳「不止一个」的触发条件,在移动端是满足的</b></span></div>
+  <div class="row lg"><span class="nm red">但 A4 说明:<b>复盘那半边 App 并没有带来新东西</b>。若只做 A1–A3,一个「分享入队 + 锁屏说一句」的极薄 App 就够,不必做全功能</span></div>
+  <div class="row lg"><span class="nm red">阶段上仍在关卡 2 之后 —— <b>与桌面壳、小程序同一档</b>。A6 那笔账要在决定前算清</span></div>
+  <div class="grp">A7 – A12 换一套判据<span class="r">不追求 App 独有</span></div>
+  <div class="row sm"><span class="nm t2" style="max-width:160px">为什么标准不同</span><span class="nm">登录、订单、设置在哪个端上都要有。<b>硬给它们编一个「App 独有」的理由,就是在为形态找活干</b></span></div>
+  <div class="row sm"><span class="nm t2" style="max-width:160px">但这半边有真差异</span><span class="nm"><b>不是设计出来的,是上架规则逼出来的</b> —— 这类差异必须画,因为它改的是能不能上架</span></div>
+  <div class="row sm"><span class="nm t2" style="max-width:160px">A7 登录</span><span class="nm">用微信登录触发 4.8,须再给一个等价选项。<span class="rl">手机号很可能就是,但要提审前确认</span></span></div>
+  <div class="row sm"><span class="nm t2" style="max-width:160px">A10 内购</span><span class="nm">系统弹窗接管;<b>恢复购买是必须项</b>;价格从平台价格点里选,不是任意数字</span></div>
+  <div class="row sm"><span class="nm t2" style="max-width:160px">A11 订单</span><span class="nm">内购那笔的发票 / 退款在平台那边,我们只能指路;<b>「订阅」一栏写的是「没有这一条」——不做自动续费</b></span></div>
+  <div class="row sm"><span class="nm t2" style="max-width:160px">A12 删除账号</span><span class="nm"><b>已确认的硬性规则</b>:支持注册就必须在 App 内发起删除,发邮件给客服不算</span></div>
+  <div class="row sm"><span class="nm t2" style="max-width:160px">A8 / A9</span><span class="nm">通知白名单与时间线,与其余各端同构,<span class="rl">刻意不做差异化</span></span></div>
+  <div class="grp">骨架规则<span class="r">与其余各端逐条一致</span></div>
+  <div class="row sm"><span class="nm t2" style="max-width:160px">卡片 / 阴影 / emoji</span><span class="nm">0 处。系统弹窗与分享面板用系统自身圆角,属于 OS 控件不属于产品 UI</span></div>
+  <div class="row sm"><span class="nm t2" style="max-width:160px">酸性绿</span><span class="nm">每屏一处:A1 记下 · A2 按住说一句 · A3 停下并识别 · A4/A9/A11/A12 当前 tab · A5 麦克风 · A6 买 · A7 进去 · A8 通知图标 · A10 购买</span></div>
+  <div class="row sm"><span class="nm t2" style="max-width:160px">数据</span><span class="nm">18 / 8 / 44% / 五态 3-2-2-1-10,<b>与桌面、iPad、H5、小程序逐字一致</b></span></div>
+  <div class="row sm"><span class="nm t2" style="max-width:160px">红线</span><span class="nm">A3 录音转完即删、A5 不要相册权限、A6 盲区与导出永不上锁</span></div>
+</div>
+
+</div>
+</body>
+</html>

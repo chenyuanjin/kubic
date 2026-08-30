@@ -1,0 +1,268 @@
+/* ============================================================================
+   考点盲区 · 设计系统  风格 A「极客暗色 · 命令条驱动」
+   ----------------------------------------------------------------------------
+   骨架规则(违反即失去风格,不是审美问题):
+     1. 没有左侧固定菜单。导航靠 ⌘K 命令条 + 分组行。
+     2. 没有面包屑。位置信息压进命令条左侧的 scope 段。
+     3. 没有卡片。信息靠 1px 发丝线分隔,不靠圆角容器。
+     4. 零阴影。box-shadow 只允许用于 inset 选中指示。
+     5. 圆角 ≤ 3px。唯一例外是状态点(圆形)与设备外壳。
+     6. 零 emoji。图标一律 CSS 绘制或 mono 字形。
+     7. 字体强制配对:正文 Helvetica Neue / 苹方,数字与快捷键 SF Mono。
+        不允许一族打天下。
+     8. 酸性绿 --acid 是唯一强调色,只给「当前主操作」和序号。
+        用超过一次/屏就说明用错了。
+   ========================================================================== */
+
+*{box-sizing:border-box;-webkit-font-smoothing:antialiased}
+
+:root{
+  /* —— 表面:从最凹到最凸 —— */
+  --bg:#0E0F11;        /* 页面底 */
+  --bg2:#141518;       /* 抬起:命令条 / 底栏 / hover */
+  --bg3:#0A0B0D;       /* 压凹:分组头 / kbd / 代码块 */
+  --sel:#171A1F;       /* 选中行 */
+
+  /* —— 发丝线 —— */
+  --hair:#232529;
+  --hair2:#2E3137;     /* 需要更强分隔时,仍是 1px */
+
+  /* —— 文字三级 —— */
+  --tx:#E6E7EA;
+  --t2:#9BA0A8;
+  --t3:#61666E;
+
+  /* —— 唯一强调 + 唯一告警 —— */
+  --acid:#C9F24D;
+  --red:#FF6B5A;
+
+  /* —— 状态色(五态,全部可由「有没有/几次/多久前」推出) —— */
+  --s-stable:#E6E7EA;  /* 稳    练过且近期 */
+  --s-weak:#FF6B5A;    /* 弱    练过但用户自填正确率低 */
+  --s-rusty:#61666E;   /* 生疏  练过但 >30 天 */
+  --s-touch:#9BA0A8;   /* 仅接触 听过看过,没练 */
+  --s-empty:#3A3E44;   /* 空白  无任何记录 */
+
+  --fs:13px;
+  --font:"Helvetica Neue","PingFang SC","Hiragino Sans GB",system-ui,sans-serif;
+  --mono:"SF Mono",Menlo,Consolas,"Roboto Mono",monospace;
+}
+
+/* ============================ 排版基元 ============================ */
+.app{background:var(--bg);color:var(--tx);font:var(--fs)/1.6 var(--font)}
+.mono{font-family:var(--mono)}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.big{font-family:var(--mono);font-weight:500;letter-spacing:-.03em;line-height:1;font-size:44px}
+.big s{text-decoration:none;font-size:.38em;color:var(--t2);margin-left:1px}
+.t2{color:var(--t2)}  .t3{color:var(--t3)}
+.acid{color:var(--acid)} .red{color:var(--red)}
+
+/* ============================ 命令条 ============================
+   代替导航栏。左 scope,中搜索,右快捷键。任何页面都只有这一条。 */
+.cmd{height:38px;display:flex;align-items:center;gap:9px;padding:0 12px;
+  border-bottom:1px solid var(--hair);background:var(--bg2);flex:none}
+.cmd.lg{height:42px}
+.cmd .ic{width:13px;height:13px;border:1px solid var(--t3);border-radius:2px;flex:none}
+.cmd .scope{font-family:var(--mono);font-size:12px;color:var(--t2);white-space:nowrap}
+.cmd .scope b{color:var(--acid);font-weight:500}
+.cmd .sep{color:var(--t3)}
+.cmd .ph2{flex:1;font-size:12.5px;color:var(--t3);min-width:0;overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap}
+
+/* 快捷键徽标 —— 常驻,不是 hover 才出现 */
+.kbd{font-family:var(--mono);font-size:10px;color:var(--t2);border:1px solid var(--hair);
+  border-radius:3px;padding:2px 5px;background:var(--bg3);white-space:nowrap;flex:none;
+  line-height:1.3;display:inline-block}
+.kbd.on{background:var(--acid);color:var(--bg);border-color:var(--acid);font-weight:600}
+.kbd.dk{background:rgba(0,0,0,.16);border-color:rgba(0,0,0,.22);color:var(--bg)}
+
+/* ============================ 密集行 ============================
+   代替表格与卡片。34px 行高,1px 发丝线,选中靠 inset 左边条。 */
+.row{display:flex;align-items:center;gap:11px;height:34px;padding:0 12px;
+  border-bottom:1px solid var(--hair);flex:none}
+.row.sm{height:29px}
+.row.lg{height:42px}
+.row:hover{background:var(--bg2)}
+.row.sel{background:var(--sel);box-shadow:inset 2px 0 0 var(--acid)}
+.row .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row .nm.off{color:var(--t2)}
+
+/* 分组头 —— 承担「整块空白」这个产品语义,红色分组头是核心表达 */
+.grp{height:26px;display:flex;align-items:center;gap:8px;padding:0 12px;background:var(--bg3);
+  border-bottom:1px solid var(--hair);font-family:var(--mono);font-size:10px;
+  letter-spacing:.12em;color:var(--t3);text-transform:uppercase;flex:none}
+.grp .r{margin-left:auto;letter-spacing:0}
+.grp.void{color:var(--red)}
+.grp.void .r{color:var(--red)}
+
+/* ============================ 状态点 · 五态 ============================ */
+.sd{width:7px;height:7px;border-radius:50%;flex:none;box-sizing:border-box}
+.sd.stable{background:var(--s-stable)}
+.sd.weak{background:var(--s-weak)}
+.sd.rusty{background:var(--s-rusty)}
+.sd.touch{border:1.5px solid var(--s-touch);background:none}
+.sd.empty{border:1px dashed var(--s-empty);background:none}
+.sd.lg{width:9px;height:9px}
+
+/* ============================ 按钮 ============================ */
+.btn{height:26px;padding:0 10px;border:1px solid var(--hair);border-radius:3px;
+  background:transparent;color:var(--t2);font-size:11.5px;display:inline-flex;
+  align-items:center;gap:6px;font-family:inherit;cursor:default;white-space:nowrap}
+.btn:hover{border-color:var(--hair2);color:var(--tx)}
+.btn.p{background:var(--acid);color:var(--bg);border-color:var(--acid);font-weight:600}
+.btn.d{color:var(--red);border-color:rgba(255,107,90,.3)}
+.btn.lg{height:32px;padding:0 14px;font-size:12.5px}
+.btn.blk{display:flex;width:100%;justify-content:center}
+.btn[disabled],.btn.off{color:var(--t3);border-color:var(--hair);opacity:.55}
+
+/* ============================ 覆盖计量条 ============================ */
+.meter{height:3px;background:#1B1D21;display:flex;overflow:hidden}
+.meter i{display:block;height:100%}
+.meter.tall{height:5px}
+.lg-row{display:flex;gap:13px;font-size:10.5px;color:var(--t3);font-family:var(--mono)}
+.lg-row s{text-decoration:none}
+
+/* ============================ 表单 ============================ */
+.field{height:34px;border:1px solid var(--hair);border-radius:3px;background:var(--bg3);
+  display:flex;align-items:center;padding:0 11px;gap:9px;font-size:13px;color:var(--tx)}
+.field.fc{border-color:var(--acid)}
+.field .ph{color:var(--t3)}
+.field .pre{font-family:var(--mono);font-size:12px;color:var(--t2);
+  border-right:1px solid var(--hair);padding-right:9px}
+.lbl{font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--t3);
+  text-transform:uppercase;margin-bottom:6px;display:block}
+.tarea{border:1px solid var(--hair);border-radius:3px;background:var(--bg3);
+  padding:9px 11px;font-size:12.5px;color:var(--tx);line-height:1.75}
+.seg{display:flex;border:1px solid var(--hair);border-radius:3px;overflow:hidden}
+.seg s{text-decoration:none;flex:1;text-align:center;height:26px;line-height:26px;
+  font-size:11.5px;color:var(--t2);border-right:1px solid var(--hair)}
+.seg s:last-child{border-right:none}
+.seg s.on{background:var(--sel);color:var(--tx);box-shadow:inset 0 -2px 0 var(--acid)}
+
+/* 验证码格 */
+.otp{display:flex;gap:8px}
+.otp i{width:38px;height:44px;border:1px solid var(--hair);border-radius:3px;background:var(--bg3);
+  display:flex;align-items:center;justify-content:center;font-family:var(--mono);
+  font-size:19px;color:var(--tx);font-style:normal}
+.otp i.cur{border-color:var(--acid)}
+
+/* ============================ 标签 / 徽标 ============================ */
+.tag{display:inline-flex;align-items:center;gap:5px;height:20px;padding:0 7px;
+  border:1px solid var(--hair);border-radius:3px;font-size:11px;color:var(--t2);
+  font-family:var(--mono);white-space:nowrap}
+.tag.on{border-color:var(--acid);color:var(--acid)}
+.tag.w{border-color:rgba(255,107,90,.35);color:var(--red)}
+
+/* 置信度条 —— 打标确认页专用 */
+.conf{height:2px;width:44px;background:#1B1D21;flex:none}
+.conf i{display:block;height:100%;background:var(--t2)}
+.conf i.hi{background:var(--acid)}
+.conf i.lo{background:var(--red)}
+
+/* ============================ 代码 / 上下文块 ============================
+   「问 AI 时带上的东西」用。刻意做成可全选的纯文本块。 */
+.code{background:var(--bg3);border:1px solid var(--hair);border-radius:3px;
+  font-family:var(--mono);font-size:11px;line-height:1.85;color:var(--t2);
+  padding:11px 13px;white-space:pre-wrap;overflow:hidden}
+.code b{color:var(--tx);font-weight:400}
+.code i{color:var(--acid);font-style:normal}
+
+/* ============================ 时间线 ============================
+   跨来源记录。只有来源名与时间戳,结构上没有放内容的地方。 */
+.tl{position:relative;padding-left:17px}
+.tl:before{content:"";position:absolute;left:3px;top:4px;bottom:4px;width:1px;background:var(--hair)}
+.tl .ti{position:relative;padding:7px 0;border-bottom:1px solid var(--hair)}
+.tl .ti:last-child{border-bottom:none}
+.tl .ti:before{content:"";position:absolute;left:-17px;top:13px;width:7px;height:7px;
+  border-radius:50%;background:var(--t3);border:2px solid var(--bg)}
+.tl .ti.now:before{background:var(--acid)}
+
+/* ============================ 浮层 / 面板 ============================ */
+.ov{position:absolute;inset:0;background:rgba(6,7,8,.72)}
+.panel{background:var(--bg);border:1px solid var(--hair2);border-radius:3px;overflow:hidden}
+.sheet{background:var(--bg);border-top:1px solid var(--hair2);
+  border-radius:3px 3px 0 0;overflow:hidden}
+.note{border-left:2px solid var(--hair2);padding-left:11px;font-size:11.5px;
+  color:var(--t3);line-height:1.8}
+.note.w{border-left-color:var(--red)}
+
+/* ============================ 设备外壳 ============================ */
+.dev{flex:none;position:relative;overflow:hidden;background:var(--bg);color:var(--tx);
+  font:var(--fs)/1.6 var(--font)}
+
+/* macOS 窗口:红黄绿在左,标题居中,无边框 */
+.mac{border-radius:9px;border:1px solid #26282C}
+.mac .bar{height:30px;background:#1B1D21;border-bottom:1px solid var(--hair);
+  display:flex;align-items:center;padding:0 11px;gap:7px;flex:none}
+.mac .bar i{width:11px;height:11px;border-radius:50%;display:block}
+.mac .bar .r{background:#FF5F57} .mac .bar .y{background:#FEBC2E} .mac .bar .g{background:#28C840}
+.mac .bar .ttl{position:absolute;left:0;right:0;text-align:center;font-size:11.5px;
+  color:var(--t3);pointer-events:none}
+/* macOS 全局菜单栏(系统级,画在窗口外) */
+.macmenu{height:24px;background:#101113;border-bottom:1px solid var(--hair);
+  display:flex;align-items:center;gap:17px;padding:0 13px;font-size:11.5px;color:var(--t2)}
+.macmenu b{font-weight:600;color:var(--tx)}
+
+/* Windows 窗口:最小/最大/关闭在右,直角 */
+.win{border-radius:0;border:1px solid #26282C}
+.win .bar{height:32px;background:#1B1D21;border-bottom:1px solid var(--hair);
+  display:flex;align-items:center;padding:0 0 0 12px;gap:9px;flex:none}
+.win .bar .ttl{font-size:11.5px;color:var(--t2)}
+.win .bar .wc{margin-left:auto;display:flex;height:100%}
+.win .bar .wc s{text-decoration:none;width:44px;display:flex;align-items:center;
+  justify-content:center;color:var(--t2);font-size:11px;font-family:var(--mono)}
+.win .bar .wc s.x:hover{background:#C42B1C;color:#fff}
+
+/* 手机:小程序 / H5 共用 */
+.phone{width:375px;height:812px;border-radius:26px;border:1px solid #26282C}
+.status{height:30px;display:flex;align-items:center;padding:0 15px;font-family:var(--mono);
+  font-size:11px;color:var(--t3);flex:none}
+.status .r{margin-left:auto;letter-spacing:.08em}
+/* 微信小程序胶囊:右上角原生控件,必须留位 */
+.wxcap{position:absolute;right:11px;top:36px;width:87px;height:32px;border-radius:16px;
+  border:1px solid var(--hair2);background:rgba(255,255,255,.05);display:flex;
+  align-items:center;justify-content:space-around;z-index:5}
+.wxcap i{display:block;width:3px;height:3px;border-radius:50%;background:var(--t2);
+  box-shadow:5px 0 0 var(--t2),-5px 0 0 var(--t2)}
+.wxcap b{display:block;width:11px;height:11px;border:1.2px solid var(--t2);border-radius:50%}
+.wxnav{height:44px;display:flex;align-items:center;justify-content:center;flex:none;
+  font-size:15px;font-weight:500;color:var(--tx);position:relative}
+/* 小程序 tabBar:原生,最多 5 项 */
+.tabbar{height:52px;border-top:1px solid var(--hair);background:var(--bg2);display:flex;flex:none}
+.tabbar s{text-decoration:none;flex:1;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:3px;font-size:10px;color:var(--t3)}
+.tabbar s.on{color:var(--acid)}
+.tabbar s u{text-decoration:none;width:15px;height:15px;border:1.2px solid currentColor;
+  border-radius:2px;display:block}
+/* H5 底部工具条:非原生,可以做成命令条的移动版 */
+.mbar{height:40px;border-top:1px solid var(--hair);background:var(--bg2);display:flex;
+  align-items:center;padding:0 12px;gap:13px;flex:none}
+.homebar{height:20px;display:flex;align-items:center;justify-content:center;flex:none}
+.homebar i{width:120px;height:4px;border-radius:2px;background:#35383D;display:block}
+
+/* iPad */
+.pad{width:834px;height:1112px;border-radius:16px;border:1px solid #26282C}
+.pad-l{width:1194px;height:834px;border-radius:16px;border:1px solid #26282C}
+
+/* ============================ 设计稿脚手架(不属于产品 UI) ============================ */
+body{margin:0;background:#08090A;color:#EDEDED;font:14px/1.7 var(--font)}
+.deck{max-width:1560px;margin:0 auto;padding:44px 36px 120px}
+.dhd{border-bottom:1px solid #212326;padding-bottom:24px;margin-bottom:40px}
+.dhd h1{font-size:22px;font-weight:600;margin:0 0 10px;letter-spacing:.02em}
+.dhd p{margin:0;color:#8A8A8E;font-size:13px;line-height:1.9;max-width:960px}
+.dhd code,.dhd .m{font-family:var(--mono);font-size:11.5px;color:#C9C9CE}
+.sec{margin:64px 0 26px;border-bottom:1px solid #212326;padding-bottom:11px;
+  display:flex;align-items:baseline;gap:12px}
+.sec h2{font-size:16px;font-weight:600;margin:0;letter-spacing:.02em}
+.sec .sub{font-size:12px;color:#6E6E73;font-family:var(--mono)}
+.grid{display:flex;flex-wrap:wrap;gap:34px 30px;align-items:flex-start}
+.cell{display:flex;flex-direction:column;gap:10px}
+.cap{display:flex;align-items:baseline;gap:9px;max-width:100%}
+.cap-n{font-family:var(--mono);font-size:11px;color:#08090A;background:#C9F24D;
+  padding:2px 7px;border-radius:2px;font-weight:600;flex:none}
+.cap-t{font-size:13px;font-weight:500;color:#EDEDED}
+.cap-d{font-size:11.5px;color:#6E6E73;line-height:1.65;max-width:100%}
+.ann{border-left:2px solid #2E3137;padding-left:12px;font-size:11.5px;color:#8A8A8E;
+  line-height:1.85;max-width:640px}
+.ann b{color:#D4D4D8;font-weight:600}
+.ann .rl{color:#FF6B5A}

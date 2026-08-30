@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>三个方向 · 选一个</title>
+<style>
+/* ================= 中性外壳(不参与评选) ================= */
+*{box-sizing:border-box}
+body{margin:0;background:#0B0B0C;color:#EDEDED;
+  font:14px/1.7 "PingFang SC","Helvetica Neue",system-ui,sans-serif}
+.shell{max-width:1500px;margin:0 auto;padding:44px 36px 100px}
+.top{border-bottom:1px solid #262628;padding-bottom:26px;margin-bottom:44px}
+.top h1{font-size:23px;font-weight:600;margin:0 0 12px;letter-spacing:.02em}
+.top p{margin:0;color:#8A8A8E;font-size:13.5px;line-height:1.9;max-width:900px}
+.top code{font-family:"SF Mono",Menlo,monospace;font-size:12px;color:#C9C9CE}
+.opt{margin-bottom:76px}
+.oh{display:flex;align-items:baseline;gap:14px;border-bottom:1px solid #262628;padding-bottom:13px;margin-bottom:9px}
+.oid{font-family:"SF Mono",Menlo,monospace;font-size:12px;color:#0B0B0C;background:#EDEDED;
+  padding:3px 9px;border-radius:3px;font-weight:600}
+.on{font-size:19px;font-weight:600;letter-spacing:.01em}
+.oref{margin-left:auto;font-family:"SF Mono",Menlo,monospace;font-size:11.5px;color:#6E6E73}
+.spec{display:flex;gap:0;margin-bottom:22px;border:1px solid #262628;border-radius:4px;overflow:hidden}
+.sp{flex:1;padding:11px 14px;border-right:1px solid #262628}
+.sp:last-child{border-right:none}
+.sp .k{font-family:"SF Mono",Menlo,monospace;font-size:10px;color:#6E6E73;letter-spacing:.1em;text-transform:uppercase}
+.sp .v{font-size:12.5px;color:#D4D4D8;margin-top:5px;line-height:1.6}
+.stage{display:flex;gap:26px;align-items:flex-start;flex-wrap:wrap}
+.why{margin-top:16px;border-left:2px solid #3A3A3D;padding-left:13px;font-size:12.5px;
+  color:#8A8A8E;line-height:1.9;max-width:1080px}
+.why b{color:#D4D4D8;font-weight:600}
+.ph{width:375px;height:760px;border-radius:26px;overflow:hidden;flex:none;position:relative}
+.wb{width:1010px;height:660px;border-radius:5px;overflow:hidden;flex:none;position:relative}
+
+/* ============================================================
+   A · 极客暗色  骨架 = 命令条 + 无卡片密集行 + 快捷键常驻
+   ============================================================ */
+.A{--bg:#0E0F11;--bg2:#141518;--hair:#232529;--tx:#E6E7EA;--t2:#9BA0A8;--t3:#61666E;
+  --acid:#C9F24D;--red:#FF6B5A;
+  background:var(--bg);color:var(--tx);
+  font:13px/1.6 "Helvetica Neue","PingFang SC",system-ui,sans-serif}
+.A .mono{font-family:"SF Mono",Menlo,Consolas,monospace}
+.A .cmd{height:38px;display:flex;align-items:center;gap:9px;padding:0 12px;
+  border-bottom:1px solid var(--hair);background:var(--bg2)}
+.A .cmd .ic{width:13px;height:13px;border:1px solid var(--t3);border-radius:2px}
+.A .cmd .ph2{flex:1;font-size:12.5px;color:var(--t3)}
+.A .kbd{font-family:"SF Mono",Menlo,monospace;font-size:10px;color:var(--t2);
+  border:1px solid var(--hair);border-radius:3px;padding:2px 5px;background:#0A0B0D}
+.A .row{display:flex;align-items:center;gap:11px;height:34px;padding:0 12px;
+  border-bottom:1px solid var(--hair)}
+.A .row:hover{background:var(--bg2)}
+.A .row.sel{background:#171A1F;box-shadow:inset 2px 0 0 var(--acid)}
+.A .sd{width:7px;height:7px;border-radius:50%;flex:none}
+.A .num{font-family:"SF Mono",Menlo,monospace;font-size:11.5px;color:var(--t2);
+  text-align:right;font-variant-numeric:tabular-nums}
+.A .grp{height:26px;display:flex;align-items:center;gap:8px;padding:0 12px;background:#0A0B0D;
+  border-bottom:1px solid var(--hair);font-family:"SF Mono",Menlo,monospace;
+  font-size:10px;letter-spacing:.12em;color:var(--t3);text-transform:uppercase}
+.A .btn{height:26px;padding:0 10px;border:1px solid var(--hair);border-radius:3px;
+  background:transparent;color:var(--t2);font-size:11.5px;display:inline-flex;
+  align-items:center;gap:6px;font-family:inherit}
+.A .btn.p{background:var(--acid);color:#0E0F11;border-color:var(--acid);font-weight:600}
+.A .big{font-family:"SF Mono",Menlo,monospace;font-size:44px;font-weight:500;
+  letter-spacing:-.03em;line-height:1}
+.A .meter{height:3px;background:#1B1D21;display:flex;overflow:hidden}
+.A .meter i{display:block;height:100%}
+
+/* ============================================================
+   B · 便当格  骨架 = 不等分模块网格 + 超大字 + 零导航
+   ============================================================ */
+.B{--bg:#F2F0EB;--card:#FFFFFF;--ink:#101014;--t2:#6B6B72;--t3:#A3A3AA;
+  --hot:#FF4A17;--cool:#1B1B1F;
+  background:var(--bg);color:var(--ink);
+  font:13px/1.6 "PingFang SC","Helvetica Neue",system-ui,sans-serif}
+.B .disp{font-family:"Helvetica Neue","PingFang SC",sans-serif;font-weight:800;letter-spacing:-.045em}
+.B .bento{display:grid;gap:10px;padding:10px;height:100%}
+.B .m{background:var(--card);border-radius:19px;padding:17px 19px;overflow:hidden;position:relative}
+.B .m.dark{background:var(--cool);color:#F2F0EB}
+.B .m.hot{background:var(--hot);color:#fff}
+.B .lb{font-size:10.5px;letter-spacing:.13em;text-transform:uppercase;opacity:.5;font-weight:600}
+.B .huge{font-family:"Helvetica Neue",sans-serif;font-weight:800;letter-spacing:-.05em;line-height:.86}
+.B .chipb{display:inline-flex;align-items:center;height:25px;padding:0 11px;border-radius:13px;
+  background:#EFEFF2;font-size:11.5px;font-weight:600;color:var(--t2)}
+.B .m.dark .chipb{background:rgba(255,255,255,.13);color:#D8D8DE}
+
+/* ============================================================
+   C · 试卷手写  骨架 = 一张实体答题卡(密封线/页眉/红笔批改)
+   ============================================================ */
+.C{--paper:#F7F4EC;--grid:#DCD8CC;--ink:#1A1A18;--t2:#5C5A52;--t3:#918D80;
+  --pen:#C62B22;--pencil:#4A4A46;
+  background:var(--paper);color:var(--ink);
+  font:13px/1.7 "PingFang SC",system-ui,sans-serif;position:relative}
+.C .kai{font-family:"Kaiti SC","STKaiti",KaiTi,serif}
+.C .hand{font-family:"Xingkai SC","Hannotate SC","HanziPen SC","Kaiti SC",cursive}
+.C .num{font-family:"Courier New",Courier,monospace;font-variant-numeric:tabular-nums}
+.C .seal-line{position:absolute;left:0;top:0;bottom:0;width:34px;
+  border-right:1px dashed var(--grid);display:flex;align-items:center;justify-content:center}
+.C .seal-line span{writing-mode:vertical-rl;font-size:10.5px;letter-spacing:.55em;color:var(--t3)}
+.C .hdr{display:flex;align-items:flex-end;border-bottom:2px solid var(--ink);padding-bottom:7px}
+.C .omr{border:1px solid var(--ink);background:#FFFDF7}
+.C .omr-h{background:var(--ink);color:var(--paper);padding:4px 10px;font-size:10.5px;
+  letter-spacing:.22em;display:flex;justify-content:space-between}
+.C .bub{width:23px;height:12px;border:1px solid var(--pencil);border-radius:7px;
+  display:flex;align-items:center;justify-content:center;font-size:8px;color:var(--t3)}
+.C .bub.f{background:var(--pencil);border-color:var(--pencil)}
+.C .bub.h{background:linear-gradient(to right,var(--pencil) 50%,transparent 50%)}
+.C .bub.e{border-style:dashed;border-color:var(--grid)}
+.C .pen{color:var(--pen)}
+.C .circle-pen{border:1.6px solid var(--pen);border-radius:46%;padding:1px 6px;display:inline-block;
+  transform:rotate(-1.4deg)}
+.C .stamp{border:2px solid var(--pen);color:var(--pen);padding:3px 9px;
+  transform:rotate(-7deg);font-size:12px;letter-spacing:.16em;display:inline-block;opacity:.86}
+.C .foot{border-top:1px solid var(--grid);font-size:10.5px;color:var(--t3);
+  display:flex;justify-content:space-between;padding-top:6px}
+</style></head>
+<body><div class="shell">
+
+<div class="top">
+  <h1>三个方向 · 结构不同,不是换配色</h1>
+  <p>
+    调研结论:「AI 味」的根源在<b style="color:#D4D4D8">骨架层</b>而非样式层 ——
+    <code>左侧固定菜单 + 顶部面包屑 + 表格 + 统一按钮</code> 这套后台骨架,涂成什么颜色都还是它。
+    所以下面三个方向的差别是<b style="color:#D4D4D8">页面骨架不同</b>:A 没有导航栏只有命令条;B 没有导航只有不等分模块;C 根本不是 App,是一张纸。
+    字体一律强制配对(展示字 + 正文字不同族),避免「一字打天下」。<br>
+    每个方向给同样两屏:<b style="color:#D4D4D8">手机首页</b> 与 <b style="color:#D4D4D8">网页总览</b>,数据完全一致(18 考点 / 8 有记录 / 44%),方便直接比。
+  </p>
+</div>
+
+<!-- ══════════════════════ A ══════════════════════ -->
+<div class="opt">
+  <div class="oh"><span class="oid">A</span><span class="on">极客暗色 · 命令条驱动</span>
+    <span class="oref">参考 Linear / Raycast / Anki · 发力点:密度与速度</span></div>
+  <div class="spec">
+    <div class="sp"><div class="k">骨架</div><div class="v">顶部命令条(⌘K)+ 无卡片密集行。没有侧边栏、没有面包屑、没有卡片投影。</div></div>
+    <div class="sp"><div class="k">字体配对</div><div class="v">Helvetica Neue 正文 / SF Mono 只用于编号与快捷键</div></div>
+    <div class="sp"><div class="k">色</div><div class="v">近黑灰阶 + 唯一酸性绿 #C9F24D(只给主操作)</div></div>
+    <div class="sp"><div class="k">分隔</div><div class="v">1px 发丝线,零阴影,圆角 ≤3px</div></div>
+    <div class="sp"><div class="k">代价</div><div class="v">冷、硬,不适合截图发小红书</div></div>
+  </div>
+  <div class="stage">
+    <!-- A 手机 -->
+    <div class="ph A">
+      <div style="height:30px;display:flex;align-items:center;padding:0 14px;font-size:11px;color:var(--t3)"
+           class="mono">9:41<span style="margin-left:auto">82%</span></div>
+      <div style="padding:14px 12px 10px">
+        <div style="display:flex;align-items:flex-end;gap:12px">
+          <div class="big">44<span style="font-size:17px;color:var(--t2)">%</span></div>
+          <div style="padding-bottom:5px">
+            <div class="mono" style="font-size:11px;color:var(--t2)">8/18 有记录</div>
+            <div class="mono" style="font-size:11px;color:var(--red)">10 空白</div></div>
+          <button class="btn p" style="margin-left:auto;margin-bottom:5px">记一笔 <span class="kbd" style="background:rgba(0,0,0,.15);border-color:rgba(0,0,0,.2);color:#0E0F11">N</span></button></div>
+        <div class="meter" style="margin-top:11px">
+          <i style="width:16.7%;background:var(--tx)"></i><i style="width:11.1%;background:var(--red)"></i>
+          <i style="width:16.7%;background:var(--t3)"></i></div>
+      </div>
+      <div class="cmd"><span class="ic"></span><span class="ph2">跳到考点、来源、记录…</span><span class="kbd">⌘K</span></div>
+      <div class="grp"><span>增长类</span><span class="mono" style="margin-left:auto;letter-spacing:0">4/7</span></div>
+      <div class="row sel"><span class="sd" style="background:var(--tx)"></span>
+        <span style="flex:1">增长率计算</span><span class="num" style="width:26px">12</span>
+        <span class="kbd">↵</span></div>
+      <div class="row"><span class="sd" style="background:var(--red)"></span>
+        <span style="flex:1">增长量计算</span><span class="num" style="width:26px">8</span>
+        <span class="num" style="width:34px;color:var(--red)">50%</span></div>
+      <div class="row"><span class="sd" style="background:var(--t3)"></span>
+        <span style="flex:1">基期量计算</span><span class="num" style="width:60px">32d</span></div>
+      <div class="row"><span class="sd" style="border:1px solid var(--t3);background:none"></span>
+        <span style="flex:1;color:var(--t2)">现期量计算</span><span class="num" style="width:60px;color:var(--t3)">—</span></div>
+      <div class="row"><span class="sd" style="background:var(--t3)"></span>
+        <span style="flex:1">间隔增长率</span><span class="num" style="width:60px">33d</span></div>
+      <div class="row"><span class="sd" style="border:1px solid var(--t3);background:none"></span>
+        <span style="flex:1;color:var(--t2)">年均增长率</span><span class="num" style="width:60px;color:var(--t3)">—</span></div>
+      <div class="row"><span class="sd" style="border:1px solid var(--t3);background:none"></span>
+        <span style="flex:1;color:var(--t2)">混合增长率</span><span class="num" style="width:60px;color:var(--t3)">—</span></div>
+      <div class="grp"><span style="color:var(--red)">倍数与比较</span>
+        <span class="mono" style="color:var(--red);letter-spacing:0">整块空白</span>
+        <span class="mono" style="margin-left:auto;letter-spacing:0;color:var(--red)">0/3</span></div>
+      <div class="row"><span class="sd" style="border:1px solid var(--t3);background:none"></span>
+        <span style="flex:1;color:var(--t2)">倍数计算</span><span class="num" style="width:60px;color:var(--t3)">—</span></div>
+      <div class="row"><span class="sd" style="border:1px solid var(--t3);background:none"></span>
+        <span style="flex:1;color:var(--t2)">倍数变化</span><span class="num" style="width:60px;color:var(--t3)">—</span></div>
+      <div class="row"><span class="sd" style="border:1px solid var(--t3);background:none"></span>
+        <span style="flex:1;color:var(--t2)">同比与环比</span><span class="num" style="width:60px;color:var(--t3)">—</span></div>
+      <div class="grp"><span style="color:var(--red)">效应类</span>
+        <span class="mono" style="color:var(--red);letter-spacing:0">整块空白</span>
+        <span class="mono" style="margin-left:auto;letter-spacing:0;color:var(--red)">0/2</span></div>
+      <div class="row"><span class="sd" style="border:1px solid var(--t3);background:none"></span>
+        <span style="flex:1;color:var(--t2)">贡献率</span><span class="num" style="width:60px;color:var(--t3)">—</span></div>
+      <div style="position:absolute;left:0;right:0;bottom:0;height:36px;border-top:1px solid var(--hair);
+           background:var(--bg2);display:flex;align-items:center;padding:0 12px;gap:14px">
+        <span class="kbd">V</span><span style="font-size:11px;color:var(--t3)">语音</span>
+        <span class="kbd">P</span><span style="font-size:11px;color:var(--t3)">拍照</span>
+        <span class="kbd">D</span><span style="font-size:11px;color:var(--t3)">记做题</span></div>
+    </div>
+    <!-- A 网页 -->
+    <div class="wb A">
+      <div class="cmd" style="height:42px">
+        <span class="mono" style="font-size:12px;color:var(--acid)">考点</span>
+        <span style="color:var(--t3)">/</span>
+        <span class="mono" style="font-size:12px;color:var(--t2)">山东省考 · 资料分析</span>
+        <span class="ph2" style="text-align:center">搜索考点、来源、记录…</span>
+        <span class="kbd">⌘K</span><span class="kbd">?</span></div>
+      <div style="display:flex;height:618px">
+        <div style="flex:1;border-right:1px solid var(--hair);display:flex;flex-direction:column">
+          <div style="padding:16px 18px;border-bottom:1px solid var(--hair);display:flex;align-items:flex-end;gap:16px">
+            <div class="big" style="font-size:52px">44<span style="font-size:19px;color:var(--t2)">%</span></div>
+            <div style="padding-bottom:7px">
+              <div class="mono" style="font-size:12px;color:var(--t2)">8 / 18 有记录</div>
+              <div class="mono" style="font-size:12px;color:var(--red);margin-top:2px">10 个空白 · 2 组整块</div></div>
+            <div style="flex:1;padding-bottom:9px">
+              <div class="meter"><i style="width:16.7%;background:var(--tx)"></i>
+                <i style="width:11.1%;background:var(--red)"></i><i style="width:16.7%;background:var(--t3)"></i></div>
+              <div style="display:flex;gap:13px;margin-top:8px;font-size:10.5px;color:var(--t3)" class="mono">
+                <span>■ 稳 3</span><span style="color:var(--red)">■ 弱 2</span><span>■ 生疏 3</span><span>□ 空白 10</span></div></div>
+          </div>
+          <div class="grp"><span>增长类</span><span class="mono" style="margin-left:auto;letter-spacing:0">4/7</span></div>
+          <div class="row sel"><span class="sd" style="background:var(--tx)"></span>
+            <span style="width:130px">增长率计算</span>
+            <span class="num" style="width:34px">12</span><span class="num" style="width:38px">10</span>
+            <span class="num" style="width:44px">83%</span>
+            <span class="num" style="width:52px;color:var(--t3)">9 次</span>
+            <span class="num" style="flex:1;text-align:right;color:var(--t3)">今天</span><span class="kbd">↵</span></div>
+          <div class="row"><span class="sd" style="background:var(--red)"></span>
+            <span style="width:130px">增长量计算</span>
+            <span class="num" style="width:34px">8</span><span class="num" style="width:38px">4</span>
+            <span class="num" style="width:44px;color:var(--red)">50%</span>
+            <span class="num" style="width:52px;color:var(--t3)">8 次</span>
+            <span class="num" style="flex:1;text-align:right;color:var(--t3)">2 天前</span></div>
+          <div class="row"><span class="sd" style="background:var(--t3)"></span>
+            <span style="width:130px">基期量计算</span>
+            <span class="num" style="width:34px">—</span><span class="num" style="width:38px">—</span>
+            <span class="num" style="width:44px">—</span>
+            <span class="num" style="width:52px;color:var(--t3)">7 次</span>
+            <span class="num" style="flex:1;text-align:right;color:var(--t3)">32 天前</span></div>
+          <div class="row"><span class="sd" style="border:1px solid var(--t3);background:none"></span>
+            <span style="width:130px;color:var(--t2)">现期量计算</span>
+            <span class="num" style="width:34px">—</span><span class="num" style="width:38px">—</span>
+            <span class="num" style="width:44px">—</span>
+            <span class="num" style="width:52px;color:var(--t3)">5 次</span>
+            <span class="num" style="flex:1;text-align:right;color:var(--t3)">—</span></div>
+          <div class="row"><span class="sd" style="background:var(--t3)"></span>
+            <span style="width:130px">间隔增长率</span>
+            <span class="num" style="width:34px">—</span><span class="num" style="width:38px">—</span>
+            <span class="num" style="width:44px">—</span>
+            <span class="num" style="width:52px;color:var(--t3)">6 次</span>
+            <span class="num" style="flex:1;text-align:right;color:var(--t3)">33 天前</span></div>
+          <div class="grp" style="color:var(--red)"><span>倍数与比较 · 整块空白</span>
+            <span class="mono" style="margin-left:auto;letter-spacing:0">0/3 · 频次 12</span></div>
+          <div class="row"><span class="sd" style="border:1px solid var(--t3);background:none"></span>
+            <span style="width:130px;color:var(--t2)">倍数计算</span>
+            <span class="num" style="width:34px">—</span><span class="num" style="width:38px">—</span>
+            <span class="num" style="width:44px">—</span>
+            <span class="num" style="width:52px;color:var(--t3)">5 次</span>
+            <span class="num" style="flex:1;text-align:right;color:var(--t3)">—</span></div>
+          <div class="row"><span class="sd" style="border:1px solid var(--t3);background:none"></span>
+            <span style="width:130px;color:var(--t2)">倍数变化</span>
+            <span class="num" style="width:34px">—</span><span class="num" style="width:38px">—</span>
+            <span class="num" style="width:44px">—</span>
+            <span class="num" style="width:52px;color:var(--t3)">3 次</span>
+            <span class="num" style="flex:1;text-align:right;color:var(--t3)">—</span></div>
+          <div class="grp" style="color:var(--red)"><span>效应类 · 整块空白</span>
+            <span class="mono" style="margin-left:auto;letter-spacing:0">0/2 · 频次 6</span></div>
+          <div class="row"><span class="sd" style="border:1px solid var(--t3);background:none"></span>
+            <span style="width:130px;color:var(--t2)">贡献率</span>
+            <span class="num" style="width:34px">—</span><span class="num" style="width:38px">—</span>
+            <span class="num" style="width:44px">—</span>
+            <span class="num" style="width:52px;color:var(--t3)">3 次</span>
+            <span class="num" style="flex:1;text-align:right;color:var(--t3)">—</span></div>
+        </div>
+        <div style="width:300px;display:flex;flex-direction:column">
+          <div class="grp">先补这几个 <span class="mono" style="margin-left:auto;letter-spacing:0">频次 × 生疏度</span></div>
+          <div style="padding:12px 14px;border-bottom:1px solid var(--hair)">
+            <div style="display:flex;align-items:baseline;gap:9px">
+              <span class="mono" style="font-size:11px;color:var(--acid)">01</span>
+              <span style="font-weight:500">增长量计算</span>
+              <span class="num" style="margin-left:auto;color:var(--t3)">6.4</span></div>
+            <div style="font-size:11.5px;color:var(--t2);margin-top:4px">练 8 对 4 · 正确率 50%</div></div>
+          <div style="padding:12px 14px;border-bottom:1px solid var(--hair)">
+            <div style="display:flex;align-items:baseline;gap:9px">
+              <span class="mono" style="font-size:11px;color:var(--acid)">02</span>
+              <span style="font-weight:500">平均数计算</span>
+              <span class="num" style="margin-left:auto;color:var(--t3)">6.0</span></div>
+            <div style="font-size:11.5px;color:var(--t2);margin-top:4px">近五年 6 次 · 无任何记录</div></div>
+          <div style="padding:12px 14px;border-bottom:1px solid var(--hair)">
+            <div style="display:flex;align-items:baseline;gap:9px">
+              <span class="mono" style="font-size:11px;color:var(--acid)">03</span>
+              <span style="font-weight:500">截位直除</span>
+              <span class="num" style="margin-left:auto;color:var(--t3)">5.6</span></div>
+            <div style="font-size:11.5px;color:var(--t2);margin-top:4px">练 6 对 2 · 正确率 33%</div></div>
+          <div style="padding:12px 14px;border-bottom:1px solid var(--hair)">
+            <div style="display:flex;align-items:baseline;gap:9px">
+              <span class="mono" style="font-size:11px;color:var(--acid)">04</span>
+              <span style="font-weight:500">现期量计算</span>
+              <span class="num" style="margin-left:auto;color:var(--t3)">5.0</span></div>
+            <div style="font-size:11.5px;color:var(--t2);margin-top:4px">近五年 5 次 · 无任何记录</div></div>
+          <div style="margin-top:auto;padding:13px 14px;border-top:1px solid var(--hair);background:var(--bg2)">
+            <div style="display:flex;gap:7px;flex-wrap:wrap">
+              <button class="btn">复制上下文 <span class="kbd">⌘C</span></button>
+              <button class="btn">导出 <span class="kbd">⌘E</span></button></div>
+            <div style="font-size:11px;color:var(--t3);line-height:1.7;margin-top:10px">
+              不判断对错。正确率是你自己填的数。</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="why"><b>为什么可能对:</b> §5.3 说目标用户是自驱力人群、手里已有 Notion 和 Obsidian —— 这批人认「工具感」,快捷键常驻本身就是信号。密度也最高,一屏能看全 18 个考点。<br>
+  <b>为什么可能错:</b> 暗色 + 酸性绿在小红书上不讨喜,而 doc 04 §3.1 把小红书列为主要冷启动渠道。截图传播能力最弱。</div>
+</div>
+
+<!-- ══════════════════════ B ══════════════════════ -->
+<div class="opt">
+  <div class="oh"><span class="oid">B</span><span class="on">便当格 · 超大字模块</span>
+    <span class="oref">2026 趋势:大字号当主角 + Bento Grid · 发力点:截图传播</span></div>
+  <div class="spec">
+    <div class="sp"><div class="k">骨架</div><div class="v">整屏就是不等分模块网格。没有导航栏、没有侧边栏、没有标题栏。</div></div>
+    <div class="sp"><div class="k">字体配对</div><div class="v">Helvetica Neue 800 当展示字 / 苹方当正文,不同族</div></div>
+    <div class="sp"><div class="k">色</div><div class="v">暖白底 + 近黑模块 + 唯一橙 #FF4A17</div></div>
+    <div class="sp"><div class="k">分隔</div><div class="v">靠模块间距,19px 大圆角,零边框零阴影</div></div>
+    <div class="sp"><div class="k">代价</div><div class="v">密度最低,18 个考点放不进一屏</div></div>
+  </div>
+  <div class="stage">
+    <!-- B 手机 -->
+    <div class="ph B">
+      <div class="bento" style="grid-template-columns:1fr 1fr;grid-template-rows:auto auto 1fr auto auto">
+        <div class="m dark" style="grid-column:1/3;padding:20px">
+          <div class="lb">本周 · 山东省考 资料分析</div>
+          <div style="display:flex;align-items:flex-end;gap:14px;margin-top:10px">
+            <div class="huge" style="font-size:76px">44<span style="font-size:26px">%</span></div>
+            <div style="padding-bottom:13px;font-size:12.5px;line-height:1.5;opacity:.62">
+              8 / 18<br>个考点有记录</div></div>
+          <div style="display:flex;gap:3px;margin-top:14px">
+            <i style="height:5px;flex:3;background:#F2F0EB;border-radius:3px"></i>
+            <i style="height:5px;flex:2;background:var(--hot);border-radius:3px"></i>
+            <i style="height:5px;flex:3;background:rgba(242,240,235,.4);border-radius:3px"></i>
+            <i style="height:5px;flex:10;background:rgba(242,240,235,.13);border-radius:3px"></i></div>
+        </div>
+        <div class="m hot" style="grid-column:1/3;display:flex;align-items:center;gap:16px">
+          <div class="huge" style="font-size:56px">10</div>
+          <div style="font-size:13px;line-height:1.55;font-weight:600">
+            个考点你还没碰过<div style="opacity:.72;font-weight:400;font-size:12px;margin-top:3px">
+            其中 5 个属于两个<br>一次都没碰过的整组</div></div></div>
+        <div class="m" style="grid-column:1/3">
+          <div class="lb" style="color:var(--t3)">先补这几个</div>
+          <div style="display:flex;align-items:baseline;gap:10px;margin-top:11px">
+            <span class="disp" style="font-size:20px">增长量计算</span>
+            <span class="chipb" style="margin-left:auto;background:#FFE9E2;color:var(--hot)">50%</span></div>
+          <div style="font-size:12px;color:var(--t2);margin-top:3px">练了 8 道,对 4 道</div>
+          <div style="height:1px;background:#EDEDF0;margin:12px 0"></div>
+          <div style="display:flex;align-items:baseline;gap:10px">
+            <span class="disp" style="font-size:20px">平均数计算</span>
+            <span class="chipb" style="margin-left:auto">没碰过</span></div>
+          <div style="font-size:12px;color:var(--t2);margin-top:3px">近五年考了 6 次</div>
+        </div>
+        <div class="m" style="grid-column:1/2">
+          <div class="lb" style="color:var(--t3)">来源</div>
+          <div class="huge" style="font-size:34px;margin-top:8px">5</div>
+          <div style="font-size:11.5px;color:var(--t2);margin-top:4px">粉笔 · B站 · 中公<br>抖音 · 自己刷题</div></div>
+        <div class="m" style="grid-column:2/3">
+          <div class="lb" style="color:var(--t3)">本周记了</div>
+          <div class="huge" style="font-size:34px;margin-top:8px">17<span style="font-size:15px">条</span></div>
+          <div style="font-size:11.5px;color:var(--t2);margin-top:4px">日均 2.4 条</div></div>
+        <div class="m dark" style="grid-column:1/3;display:flex;align-items:center;gap:12px;padding:15px 19px">
+          <div class="disp" style="font-size:17px">记一笔</div>
+          <div style="margin-left:auto;display:flex;gap:7px">
+            <span class="chipb" style="background:rgba(255,255,255,.13);color:#F2F0EB">语音</span>
+            <span class="chipb" style="background:rgba(255,255,255,.13);color:#F2F0EB">拍照</span>
+            <span class="chipb" style="background:var(--hot);color:#fff">记做题</span></div></div>
+      </div>
+    </div>
+    <!-- B 网页 -->
+    <div class="wb B">
+      <div class="bento" style="grid-template-columns:repeat(4,1fr);grid-template-rows:auto 1fr auto;padding:14px;gap:12px">
+        <div class="m dark" style="grid-column:1/3;display:flex;align-items:center;gap:24px;padding:22px 26px">
+          <div>
+            <div class="lb">山东省考 · 资料分析 · 本周</div>
+            <div class="huge" style="font-size:82px;margin-top:8px">44<span style="font-size:28px">%</span></div></div>
+          <div style="flex:1">
+            <div style="font-size:13.5px;opacity:.7;line-height:1.7">
+              8 / 18 个考点有记录<br>还有 <b style="color:var(--hot);opacity:1">10</b> 个是空白</div>
+            <div style="display:flex;gap:3px;margin-top:14px">
+              <i style="height:6px;flex:3;background:#F2F0EB;border-radius:3px"></i>
+              <i style="height:6px;flex:2;background:var(--hot);border-radius:3px"></i>
+              <i style="height:6px;flex:3;background:rgba(242,240,235,.4);border-radius:3px"></i>
+              <i style="height:6px;flex:10;background:rgba(242,240,235,.13);border-radius:3px"></i></div>
+            <div style="display:flex;gap:12px;margin-top:9px;font-size:10.5px;opacity:.5">
+              <span>稳 3</span><span>弱 2</span><span>生疏 3</span><span>空白 10</span></div></div>
+        </div>
+        <div class="m hot" style="grid-column:3/4;display:flex;flex-direction:column;justify-content:center">
+          <div class="huge" style="font-size:64px">10</div>
+          <div style="font-size:13px;font-weight:600;margin-top:6px;line-height:1.5">个考点<br>还没碰过</div></div>
+        <div class="m" style="grid-column:4/5;display:flex;flex-direction:column;justify-content:center">
+          <div class="lb" style="color:var(--t3)">整组空白</div>
+          <div class="huge" style="font-size:64px;color:var(--hot);margin-top:6px">2</div>
+          <div style="font-size:12px;color:var(--t2);margin-top:6px;line-height:1.5">
+            倍数与比较 0/3<br>效应类 0/2</div></div>
+
+        <div class="m" style="grid-column:1/3">
+          <div class="lb" style="color:var(--t3)">考点分组</div>
+          <div style="margin-top:14px;display:flex;flex-direction:column;gap:13px">
+            <div><div style="display:flex;align-items:baseline">
+              <span class="disp" style="font-size:16px">增长类</span>
+              <span style="margin-left:auto;font-size:12px;color:var(--t2)">4 / 7</span></div>
+              <div style="display:flex;gap:3px;margin-top:6px">
+                <i style="height:7px;flex:1;background:var(--cool);border-radius:4px"></i>
+                <i style="height:7px;flex:1;background:var(--hot);border-radius:4px"></i>
+                <i style="height:7px;flex:2;background:#C7C7CE;border-radius:4px"></i>
+                <i style="height:7px;flex:3;background:#E7E7EB;border-radius:4px"></i></div></div>
+            <div><div style="display:flex;align-items:baseline">
+              <span class="disp" style="font-size:16px">比重与平均</span>
+              <span style="margin-left:auto;font-size:12px;color:var(--t2)">2 / 4</span></div>
+              <div style="display:flex;gap:3px;margin-top:6px">
+                <i style="height:7px;flex:2;background:var(--cool);border-radius:4px"></i>
+                <i style="height:7px;flex:2;background:#E7E7EB;border-radius:4px"></i></div></div>
+            <div><div style="display:flex;align-items:baseline">
+              <span class="disp" style="font-size:16px;color:var(--hot)">倍数与比较</span>
+              <span style="margin-left:auto;font-size:12px;color:var(--hot)">0 / 3 · 整组空白</span></div>
+              <div style="display:flex;gap:3px;margin-top:6px">
+                <i style="height:7px;flex:3;background:#FFD9CC;border-radius:4px"></i></div></div>
+            <div><div style="display:flex;align-items:baseline">
+              <span class="disp" style="font-size:16px;color:var(--hot)">效应类</span>
+              <span style="margin-left:auto;font-size:12px;color:var(--hot)">0 / 2 · 整组空白</span></div>
+              <div style="display:flex;gap:3px;margin-top:6px">
+                <i style="height:7px;flex:2;background:#FFD9CC;border-radius:4px"></i></div></div>
+            <div><div style="display:flex;align-items:baseline">
+              <span class="disp" style="font-size:16px">速算与读材料</span>
+              <span style="margin-left:auto;font-size:12px;color:var(--t2)">2 / 2</span></div>
+              <div style="display:flex;gap:3px;margin-top:6px">
+                <i style="height:7px;flex:1;background:var(--hot);border-radius:4px"></i>
+                <i style="height:7px;flex:1;background:#C7C7CE;border-radius:4px"></i></div></div>
+          </div>
+        </div>
+        <div class="m" style="grid-column:3/5">
+          <div class="lb" style="color:var(--t3)">先补这几个</div>
+          <div style="margin-top:13px;display:flex;flex-direction:column;gap:11px">
+            <div style="display:flex;align-items:baseline;gap:11px">
+              <span class="huge" style="font-size:19px;color:#C7C7CE">01</span>
+              <span class="disp" style="font-size:17px">增长量计算</span>
+              <span style="font-size:12px;color:var(--t2);margin-left:auto">练 8 对 4</span>
+              <span class="chipb" style="background:#FFE9E2;color:var(--hot)">50%</span></div>
+            <div style="display:flex;align-items:baseline;gap:11px">
+              <span class="huge" style="font-size:19px;color:#C7C7CE">02</span>
+              <span class="disp" style="font-size:17px">平均数计算</span>
+              <span style="font-size:12px;color:var(--t2);margin-left:auto">近五年 6 次</span>
+              <span class="chipb">没碰过</span></div>
+            <div style="display:flex;align-items:baseline;gap:11px">
+              <span class="huge" style="font-size:19px;color:#C7C7CE">03</span>
+              <span class="disp" style="font-size:17px">截位直除</span>
+              <span style="font-size:12px;color:var(--t2);margin-left:auto">练 6 对 2</span>
+              <span class="chipb" style="background:#FFE9E2;color:var(--hot)">33%</span></div>
+            <div style="display:flex;align-items:baseline;gap:11px">
+              <span class="huge" style="font-size:19px;color:#C7C7CE">04</span>
+              <span class="disp" style="font-size:17px">现期量计算</span>
+              <span style="font-size:12px;color:var(--t2);margin-left:auto">近五年 5 次</span>
+              <span class="chipb">没碰过</span></div>
+            <div style="display:flex;align-items:baseline;gap:11px">
+              <span class="huge" style="font-size:19px;color:#C7C7CE">05</span>
+              <span class="disp" style="font-size:17px">年均增长率</span>
+              <span style="font-size:12px;color:var(--t2);margin-left:auto">近五年 5 次</span>
+              <span class="chipb">没碰过</span></div>
+          </div>
+          <div style="font-size:11px;color:var(--t3);margin-top:14px">
+            排序 = 考的频次 × 你的生疏程度。不判断对错,正确率是你自己记的数。</div>
+        </div>
+        <div class="m dark" style="grid-column:1/5;display:flex;align-items:center;gap:14px;padding:14px 22px">
+          <span class="disp" style="font-size:16px">记一笔</span>
+          <span style="font-size:12px;opacity:.5">粉笔 · 中公 · 华图 · B站 · 抖音 · 自己刷题</span>
+          <div style="margin-left:auto;display:flex;gap:8px">
+            <span class="chipb" style="background:rgba(255,255,255,.13);color:#F2F0EB">语音</span>
+            <span class="chipb" style="background:rgba(255,255,255,.13);color:#F2F0EB">拍照</span>
+            <span class="chipb" style="background:rgba(255,255,255,.13);color:#F2F0EB">粘一段</span>
+            <span class="chipb" style="background:var(--hot);color:#fff">记做题</span></div></div>
+      </div>
+    </div>
+  </div>
+  <div class="why"><b>为什么可能对:</b> doc 04 §3.1 的冷启动渠道是知乎和小红书 —— 每个模块都是一个可独立截图的单元,「10 个考点还没碰过」那块橙色直接就是一条笔记的封面。大字号在缩略图尺寸下仍然可读。<br>
+  <b>为什么可能错:</b> 密度最低。§5.3 那批人可能觉得「太像营销页,信息太少」。18 个考点在手机上放不进一屏,必须滚动或折叠。</div>
+</div>
+
+<!-- ══════════════════════ C ══════════════════════ -->
+<div class="opt">
+  <div class="oh"><span class="oid">C</span><span class="on">实体答题卡 · 红笔批改</span>
+    <span class="oref">参考真实试卷 / 教辅 / 涂卡机读卡 · 发力点:品类原生</span></div>
+  <div class="spec">
+    <div class="sp"><div class="k">骨架</div><div class="v">不是 App,是一张纸:密封线、页眉页脚、题号栏、机读涂格区、红笔批注。</div></div>
+    <div class="sp"><div class="k">字体配对</div><div class="v">楷体当展示字 / 苹方当正文 / Courier 当机读编号 / 行楷当手写批注</div></div>
+    <div class="sp"><div class="k">色</div><div class="v">纸黄 #F7F4EC + 铅笔灰 + 唯一红笔 #C62B22</div></div>
+    <div class="sp"><div class="k">分隔</div><div class="v">印刷线框与虚线,零圆角,零阴影</div></div>
+    <div class="sp"><div class="k">代价</div><div class="v">最容易做油;做过头就变成怀旧玩具</div></div>
+  </div>
+  <div class="stage">
+    <!-- C 手机 -->
+    <div class="ph C">
+      <div class="seal-line"><span>密 封 线 内 不 要 答 题</span></div>
+      <div style="margin-left:34px;padding:14px 14px 0;height:100%;display:flex;flex-direction:column">
+        <div class="hdr">
+          <div><div style="font-size:10px;color:var(--t3);letter-spacing:.16em">山东省考 · 行政职业能力测验</div>
+            <div class="kai" style="font-size:22px;font-weight:700;letter-spacing:.1em;margin-top:2px">
+              资料分析 · 考点卡</div></div>
+          <div class="num" style="margin-left:auto;font-size:10px;color:var(--t3);text-align:right;line-height:1.5">
+            第 1 页<br>共 2 页</div></div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:9px;font-size:10.5px;color:var(--t2)">
+          <span>姓名</span><span style="flex:1;border-bottom:1px solid var(--grid);height:13px"></span>
+          <span>阶段</span><span class="kai" style="border-bottom:1px solid var(--grid);padding:0 12px">强化刷题</span></div>
+
+        <div style="display:flex;align-items:flex-end;gap:11px;margin-top:15px">
+          <div class="kai" style="font-size:44px;font-weight:700;line-height:.9">44<span style="font-size:17px">%</span></div>
+          <div style="padding-bottom:4px;font-size:11.5px;color:var(--t2);line-height:1.55">
+            18 个考点<br>涂了 <span class="num" style="font-weight:700;color:var(--ink)">8</span> 个</div>
+          <div class="stamp" style="margin-left:auto;margin-bottom:6px">空白 10</div></div>
+
+        <div class="omr" style="margin-top:14px">
+          <div class="omr-h"><span>机 读 涂 卡 区</span><span class="num">18 题</span></div>
+          <div style="padding:9px 10px">
+            <div style="display:flex;align-items:center;gap:7px;margin-bottom:6px">
+              <span class="num" style="font-size:9px;color:var(--t3);width:52px">增长类</span>
+              <span class="num" style="font-size:9px;color:var(--t3)">4/7</span></div>
+            <div style="display:flex;flex-wrap:wrap;gap:5px 6px">
+              <div style="display:flex;align-items:center;gap:3px">
+                <span class="num" style="font-size:8px;color:var(--t3);width:11px">1</span><span class="bub f"></span></div>
+              <div style="display:flex;align-items:center;gap:3px">
+                <span class="num" style="font-size:8px;color:var(--t3);width:11px">2</span>
+                <span class="bub f" style="background:var(--pen);border-color:var(--pen)"></span></div>
+              <div style="display:flex;align-items:center;gap:3px">
+                <span class="num" style="font-size:8px;color:var(--t3);width:11px">3</span><span class="bub h"></span></div>
+              <div style="display:flex;align-items:center;gap:3px">
+                <span class="num" style="font-size:8px;color:var(--t3);width:11px">4</span><span class="bub e"></span></div>
+              <div style="display:flex;align-items:center;gap:3px">
+                <span class="num" style="font-size:8px;color:var(--t3);width:11px">5</span><span class="bub h"></span></div>
+              <div style="display:flex;align-items:center;gap:3px">
+                <span class="num" style="font-size:8px;color:var(--t3);width:11px">6</span><span class="bub e"></span></div>
+              <div style="display:flex;align-items:center;gap:3px">
+                <span class="num" style="font-size:8px;color:var(--t3);width:11px">7</span><span class="bub e"></span></div>
+            </div>
+            <div style="display:flex;align-items:center;gap:7px;margin:11px 0 6px">
+              <span class="num" style="font-size:9px;color:var(--t3);width:52px">比重与平均</span>
+              <span class="num" style="font-size:9px;color:var(--t3)">2/4</span></div>
+            <div style="display:flex;flex-wrap:wrap;gap:5px 6px">
+              <div style="display:flex;align-items:center;gap:3px">
+                <span class="num" style="font-size:8px;color:var(--t3);width:11px">8</span><span class="bub f"></span></div>
+              <div style="display:flex;align-items:center;gap:3px">
+                <span class="num" style="font-size:8px;color:var(--t3);width:11px">9</span><span class="bub f"></span></div>
+              <div style="display:flex;align-items:center;gap:3px">
+                <span class="num" style="font-size:8px;color:var(--t3);width:11px">10</span><span class="bub e"></span></div>
+              <div style="display:flex;align-items:center;gap:3px">
+                <span class="num" style="font-size:8px;color:var(--t3);width:11px">11</span><span class="bub e"></span></div>
+            </div>
+            <div style="position:relative">
+              <div style="display:flex;align-items:center;gap:7px;margin:11px 0 6px">
+                <span class="num" style="font-size:9px;color:var(--pen);width:52px">倍数与比较</span>
+                <span class="num" style="font-size:9px;color:var(--pen)">0/3</span></div>
+              <div style="display:flex;flex-wrap:wrap;gap:5px 6px">
+                <div style="display:flex;align-items:center;gap:3px">
+                  <span class="num" style="font-size:8px;color:var(--t3);width:11px">12</span><span class="bub e"></span></div>
+                <div style="display:flex;align-items:center;gap:3px">
+                  <span class="num" style="font-size:8px;color:var(--t3);width:11px">13</span><span class="bub e"></span></div>
+                <div style="display:flex;align-items:center;gap:3px">
+                  <span class="num" style="font-size:8px;color:var(--t3);width:11px">14</span><span class="bub e"></span></div>
+              </div>
+              <div class="hand pen" style="position:absolute;right:2px;top:6px;font-size:15px;
+                   transform:rotate(-6deg)">整组空的!</div>
+            </div>
+            <div style="position:relative">
+              <div style="display:flex;align-items:center;gap:7px;margin:11px 0 6px">
+                <span class="num" style="font-size:9px;color:var(--pen);width:52px">效应类</span>
+                <span class="num" style="font-size:9px;color:var(--pen)">0/2</span></div>
+              <div style="display:flex;flex-wrap:wrap;gap:5px 6px">
+                <div style="display:flex;align-items:center;gap:3px">
+                  <span class="num" style="font-size:8px;color:var(--t3);width:11px">15</span><span class="bub e"></span></div>
+                <div style="display:flex;align-items:center;gap:3px">
+                  <span class="num" style="font-size:8px;color:var(--t3);width:11px">16</span><span class="bub e"></span></div>
+              </div></div>
+            <div style="display:flex;align-items:center;gap:7px;margin:11px 0 6px">
+              <span class="num" style="font-size:9px;color:var(--t3);width:52px">速算读材料</span>
+              <span class="num" style="font-size:9px;color:var(--t3)">2/2</span></div>
+            <div style="display:flex;flex-wrap:wrap;gap:5px 6px">
+              <div style="display:flex;align-items:center;gap:3px">
+                <span class="num" style="font-size:8px;color:var(--t3);width:11px">17</span>
+                <span class="bub f" style="background:var(--pen);border-color:var(--pen)"></span></div>
+              <div style="display:flex;align-items:center;gap:3px">
+                <span class="num" style="font-size:8px;color:var(--t3);width:11px">18</span><span class="bub h"></span></div>
+            </div>
+            <div style="display:flex;gap:11px;margin-top:11px;padding-top:8px;border-top:1px dashed var(--grid);
+                 font-size:9px;color:var(--t3);flex-wrap:wrap">
+              <span style="display:flex;align-items:center;gap:4px"><span class="bub f" style="width:15px;height:9px"></span>练过且稳</span>
+              <span style="display:flex;align-items:center;gap:4px"><span class="bub f" style="width:15px;height:9px;background:var(--pen);border-color:var(--pen)"></span>练过但弱</span>
+              <span style="display:flex;align-items:center;gap:4px"><span class="bub h" style="width:15px;height:9px"></span>碰过</span>
+              <span style="display:flex;align-items:center;gap:4px"><span class="bub e" style="width:15px;height:9px"></span>空白</span></div>
+          </div>
+        </div>
+        <div style="margin-top:11px;position:relative">
+          <div class="kai" style="font-size:14px;font-weight:700;letter-spacing:.08em;
+               border-bottom:1px solid var(--ink);padding-bottom:4px">先补这几个</div>
+          <div style="display:flex;align-items:baseline;gap:8px;padding:7px 0;border-bottom:1px dotted var(--grid)">
+            <span class="num" style="font-size:10px;color:var(--pen)">01</span>
+            <span style="font-size:13px">增长量计算</span>
+            <span class="num" style="margin-left:auto;font-size:11px;color:var(--t2)">8 题 · 对 4</span>
+            <span class="circle-pen num" style="font-size:10.5px">50%</span></div>
+          <div style="display:flex;align-items:baseline;gap:8px;padding:7px 0">
+            <span class="num" style="font-size:10px;color:var(--pen)">02</span>
+            <span style="font-size:13px">平均数计算</span>
+            <span class="num" style="margin-left:auto;font-size:11px;color:var(--t2)">近五年 6 次</span>
+            <span class="hand pen" style="font-size:14px">没碰</span></div>
+        </div>
+        <div style="margin-top:auto;padding-bottom:12px">
+          <div class="foot" style="margin-bottom:9px">
+            <span class="num">SD-2026-ZLFX-018</span><span>第 1 页 / 共 2 页</span></div>
+          <div style="display:flex;gap:7px">
+            <button class="kai" style="flex:1;height:36px;background:var(--ink);color:var(--paper);
+                    border:none;font-size:14px;letter-spacing:.14em">记 一 笔</button>
+            <button class="kai" style="width:76px;height:36px;background:transparent;color:var(--ink);
+                    border:1px solid var(--ink);font-size:14px;letter-spacing:.1em">导 出</button></div>
+        </div>
+      </div>
+    </div>
+    <!-- C 网页 -->
+    <div class="wb C">
+      <div class="seal-line" style="width:40px"><span>密 封 线 内 不 要 答 题</span></div>
+      <div style="margin-left:40px;padding:18px 24px;height:100%;display:flex;flex-direction:column">
+        <div class="hdr">
+          <div><div style="font-size:10.5px;color:var(--t3);letter-spacing:.2em">
+            山东省考 · 行政职业能力测验 · 2026</div>
+            <div class="kai" style="font-size:27px;font-weight:700;letter-spacing:.12em;margin-top:3px">
+              资料分析 · 考点卡</div></div>
+          <div style="margin-left:auto;display:flex;align-items:flex-end;gap:20px">
+            <div style="font-size:10.5px;color:var(--t2);text-align:right;line-height:1.7">
+              阶段 <span class="kai" style="color:var(--ink);border-bottom:1px solid var(--grid);
+                    padding:0 9px">强化刷题</span><br>
+              来源 <span class="num" style="color:var(--ink)">5</span> 个 ·
+              记录 <span class="num" style="color:var(--ink)">38</span> 条</div>
+            <div class="num" style="font-size:10.5px;color:var(--t3);text-align:right;line-height:1.6">
+              第 1 页<br>共 2 页</div></div>
+        </div>
+        <div style="display:flex;gap:22px;flex:1;margin-top:16px;min-height:0">
+          <div style="flex:1.5;display:flex;flex-direction:column">
+            <div style="display:flex;align-items:flex-end;gap:16px">
+              <div class="kai" style="font-size:52px;font-weight:700;line-height:.88">44<span style="font-size:20px">%</span></div>
+              <div style="padding-bottom:5px;font-size:12.5px;color:var(--t2);line-height:1.6">
+                18 个考点<br>涂了 <span class="num" style="font-weight:700;color:var(--ink)">8</span> 个,
+                空白 <span class="num" style="font-weight:700;color:var(--pen)">10</span> 个</div>
+              <div style="flex:1;padding-bottom:7px">
+                <div style="display:flex;height:7px;border:1px solid var(--ink)">
+                  <i style="flex:3;background:var(--pencil)"></i><i style="flex:2;background:var(--pen)"></i>
+                  <i style="flex:3;background:#B4B0A4"></i><i style="flex:10;background:transparent"></i></div></div>
+              <div class="stamp" style="margin-bottom:8px">待 补 10</div></div>
+            <div class="omr" style="margin-top:14px;flex:1">
+              <div class="omr-h"><span>机 读 涂 卡 区 · 一 题 一 考 点</span>
+                <span class="num">18 题 / 5 组</span></div>
+              <div style="padding:13px 15px">
+                <div style="display:flex;align-items:center;gap:9px;margin-bottom:8px">
+                  <span class="kai" style="font-size:13px;font-weight:700;width:84px">增长类</span>
+                  <span class="num" style="font-size:10px;color:var(--t3)">4/7</span></div>
+                <div style="display:flex;flex-wrap:wrap;gap:7px 13px">
+                  <div style="display:flex;align-items:center;gap:5px">
+                    <span class="num" style="font-size:9px;color:var(--t3);width:13px">1</span>
+                    <span class="bub f"></span>
+                    <span style="font-size:11px;width:66px">增长率计算</span></div>
+                  <div style="display:flex;align-items:center;gap:5px">
+                    <span class="num" style="font-size:9px;color:var(--t3);width:13px">2</span>
+                    <span class="bub f" style="background:var(--pen);border-color:var(--pen)"></span>
+                    <span style="font-size:11px;width:66px">增长量计算</span></div>
+                  <div style="display:flex;align-items:center;gap:5px">
+                    <span class="num" style="font-size:9px;color:var(--t3);width:13px">3</span>
+                    <span class="bub h"></span><span style="font-size:11px;width:66px">基期量计算</span></div>
+                  <div style="display:flex;align-items:center;gap:5px">
+                    <span class="num" style="font-size:9px;color:var(--t3);width:13px">4</span>
+                    <span class="bub e"></span><span style="font-size:11px;width:66px;color:var(--t3)">现期量计算</span></div>
+                  <div style="display:flex;align-items:center;gap:5px">
+                    <span class="num" style="font-size:9px;color:var(--t3);width:13px">5</span>
+                    <span class="bub h"></span><span style="font-size:11px;width:66px">间隔增长率</span></div>
+                  <div style="display:flex;align-items:center;gap:5px">
+                    <span class="num" style="font-size:9px;color:var(--t3);width:13px">6</span>
+                    <span class="bub e"></span><span style="font-size:11px;width:66px;color:var(--t3)">年均增长率</span></div>
+                  <div style="display:flex;align-items:center;gap:5px">
+                    <span class="num" style="font-size:9px;color:var(--t3);width:13px">7</span>
+                    <span class="bub e"></span><span style="font-size:11px;width:66px;color:var(--t3)">混合增长率</span></div>
+                </div>
+                <div style="display:flex;align-items:center;gap:9px;margin:14px 0 8px">
+                  <span class="kai" style="font-size:13px;font-weight:700;width:84px">比重与平均</span>
+                  <span class="num" style="font-size:10px;color:var(--t3)">2/4</span></div>
+                <div style="display:flex;flex-wrap:wrap;gap:7px 13px">
+                  <div style="display:flex;align-items:center;gap:5px">
+                    <span class="num" style="font-size:9px;color:var(--t3);width:13px">8</span>
+                    <span class="bub f"></span><span style="font-size:11px;width:66px">比重计算</span></div>
+                  <div style="display:flex;align-items:center;gap:5px">
+                    <span class="num" style="font-size:9px;color:var(--t3);width:13px">9</span>
+                    <span class="bub f"></span><span style="font-size:11px;width:66px">比重变化判断</span></div>
+                  <div style="display:flex;align-items:center;gap:5px">
+                    <span class="num" style="font-size:9px;color:var(--t3);width:13px">10</span>
+                    <span class="bub e"></span><span style="font-size:11px;width:66px;color:var(--t3)">平均数计算</span></div>
+                  <div style="display:flex;align-items:center;gap:5px">
+                    <span class="num" style="font-size:9px;color:var(--t3);width:13px">11</span>
+                    <span class="bub e"></span><span style="font-size:11px;width:66px;color:var(--t3)">平均数增长率</span></div>
+                </div>
+                <div style="position:relative;border:1.4px solid var(--pen);margin:14px -6px 0;padding:8px 6px">
+                  <div style="display:flex;align-items:center;gap:9px;margin-bottom:8px">
+                    <span class="kai" style="font-size:13px;font-weight:700;width:84px;color:var(--pen)">倍数与比较</span>
+                    <span class="num" style="font-size:10px;color:var(--pen)">0/3</span>
+                    <span class="kai" style="font-size:11px;color:var(--pen)">· 近五年出现 12 次</span></div>
+                  <div style="display:flex;flex-wrap:wrap;gap:7px 13px">
+                    <div style="display:flex;align-items:center;gap:5px">
+                      <span class="num" style="font-size:9px;color:var(--t3);width:13px">12</span>
+                      <span class="bub e"></span><span style="font-size:11px;width:66px;color:var(--t3)">倍数计算</span></div>
+                    <div style="display:flex;align-items:center;gap:5px">
+                      <span class="num" style="font-size:9px;color:var(--t3);width:13px">13</span>
+                      <span class="bub e"></span><span style="font-size:11px;width:66px;color:var(--t3)">倍数变化</span></div>
+                    <div style="display:flex;align-items:center;gap:5px">
+                      <span class="num" style="font-size:9px;color:var(--t3);width:13px">14</span>
+                      <span class="bub e"></span><span style="font-size:11px;width:66px;color:var(--t3)">同比与环比</span></div>
+                  </div>
+                  <div class="hand pen" style="position:absolute;right:12px;top:-9px;font-size:18px;
+                       background:#FFFDF7;padding:0 6px;transform:rotate(-3deg)">这一整组一次都没碰</div>
+                </div>
+                <div style="position:relative;border:1.4px solid var(--pen);margin:11px -6px 0;padding:8px 6px">
+                  <div style="display:flex;align-items:center;gap:9px;margin-bottom:8px">
+                    <span class="kai" style="font-size:13px;font-weight:700;width:84px;color:var(--pen)">效应类</span>
+                    <span class="num" style="font-size:10px;color:var(--pen)">0/2</span>
+                    <span class="kai" style="font-size:11px;color:var(--pen)">· 近五年出现 6 次</span></div>
+                  <div style="display:flex;flex-wrap:wrap;gap:7px 13px">
+                    <div style="display:flex;align-items:center;gap:5px">
+                      <span class="num" style="font-size:9px;color:var(--t3);width:13px">15</span>
+                      <span class="bub e"></span><span style="font-size:11px;width:66px;color:var(--t3)">贡献率</span></div>
+                    <div style="display:flex;align-items:center;gap:5px">
+                      <span class="num" style="font-size:9px;color:var(--t3);width:13px">16</span>
+                      <span class="bub e"></span><span style="font-size:11px;width:66px;color:var(--t3)">拉动增长</span></div>
+                  </div></div>
+                <div style="display:flex;align-items:center;gap:9px;margin:14px 0 8px">
+                  <span class="kai" style="font-size:13px;font-weight:700;width:84px">速算与读材料</span>
+                  <span class="num" style="font-size:10px;color:var(--t3)">2/2</span></div>
+                <div style="display:flex;flex-wrap:wrap;gap:7px 13px">
+                  <div style="display:flex;align-items:center;gap:5px">
+                    <span class="num" style="font-size:9px;color:var(--t3);width:13px">17</span>
+                    <span class="bub f" style="background:var(--pen);border-color:var(--pen)"></span>
+                    <span style="font-size:11px;width:66px">截位直除</span></div>
+                  <div style="display:flex;align-items:center;gap:5px">
+                    <span class="num" style="font-size:9px;color:var(--t3);width:13px">18</span>
+                    <span class="bub h"></span><span style="font-size:11px;width:66px">材料定位速读</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div style="width:268px;display:flex;flex-direction:column">
+            <div class="kai" style="font-size:16px;font-weight:700;letter-spacing:.1em;
+                 border-bottom:2px solid var(--ink);padding-bottom:5px">批 改 意 见</div>
+            <div style="font-size:10.5px;color:var(--t3);margin-top:5px">按 考的频次 × 你的生疏程度 排序</div>
+            <div style="margin-top:11px">
+              <div style="display:flex;align-items:baseline;gap:8px;padding:8px 0;border-bottom:1px dotted var(--grid)">
+                <span class="num" style="font-size:11px;color:var(--pen)">01</span>
+                <div style="flex:1"><div style="font-size:13px">增长量计算</div>
+                  <div class="num" style="font-size:10.5px;color:var(--t2);margin-top:2px">8 题 · 对 4 题</div></div>
+                <span class="circle-pen num" style="font-size:11px">50%</span></div>
+              <div style="display:flex;align-items:baseline;gap:8px;padding:8px 0;border-bottom:1px dotted var(--grid)">
+                <span class="num" style="font-size:11px;color:var(--pen)">02</span>
+                <div style="flex:1"><div style="font-size:13px">平均数计算</div>
+                  <div class="num" style="font-size:10.5px;color:var(--t2);margin-top:2px">近五年 6 次</div></div>
+                <span class="hand pen" style="font-size:15px">没碰</span></div>
+              <div style="display:flex;align-items:baseline;gap:8px;padding:8px 0;border-bottom:1px dotted var(--grid)">
+                <span class="num" style="font-size:11px;color:var(--pen)">03</span>
+                <div style="flex:1"><div style="font-size:13px">截位直除</div>
+                  <div class="num" style="font-size:10.5px;color:var(--t2);margin-top:2px">6 题 · 对 2 题</div></div>
+                <span class="circle-pen num" style="font-size:11px">33%</span></div>
+              <div style="display:flex;align-items:baseline;gap:8px;padding:8px 0;border-bottom:1px dotted var(--grid)">
+                <span class="num" style="font-size:11px;color:var(--pen)">04</span>
+                <div style="flex:1"><div style="font-size:13px">现期量计算</div>
+                  <div class="num" style="font-size:10.5px;color:var(--t2);margin-top:2px">近五年 5 次</div></div>
+                <span class="hand pen" style="font-size:15px">没碰</span></div>
+              <div style="display:flex;align-items:baseline;gap:8px;padding:8px 0">
+                <span class="num" style="font-size:11px;color:var(--pen)">05</span>
+                <div style="flex:1"><div style="font-size:13px">年均增长率</div>
+                  <div class="num" style="font-size:10.5px;color:var(--t2);margin-top:2px">近五年 5 次</div></div>
+                <span class="hand pen" style="font-size:15px">没碰</span></div>
+            </div>
+            <div class="hand pen" style="font-size:16px;line-height:1.75;margin-top:14px;
+                 border-top:1px dashed var(--grid);padding-top:11px;transform:rotate(-.6deg)">
+              倍数和效应两组整个空着,<br>这两组近五年一共考了 18 次。</div>
+            <div style="margin-top:auto">
+              <div style="font-size:10.5px;color:var(--t3);line-height:1.75;border-top:1px solid var(--grid);
+                   padding-top:9px">
+                本卡不判对错。正确率是你自己填的数,<br>要讲解请把导出内容交给外部模型。</div>
+              <div style="display:flex;gap:7px;margin-top:11px">
+                <button class="kai" style="flex:1;height:34px;background:var(--ink);color:var(--paper);
+                        border:none;font-size:13.5px;letter-spacing:.14em">记 一 笔</button>
+                <button class="kai" style="flex:1;height:34px;background:transparent;color:var(--ink);
+                        border:1px solid var(--ink);font-size:13.5px;letter-spacing:.14em">带 走 数 据</button></div>
+            </div>
+          </div>
+        </div>
+        <div class="foot" style="margin-top:12px;max-width:calc(100% - 290px)">
+          <span class="num">SD-2026-ZLFX-018 · 本卡由公开真题聚类反推,不使用任何机构教研体系</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="why"><b>为什么可能对:</b> 品类原生 —— 每个考过试的人都认得这张纸,不需要学。AI 几乎不会生成这种界面,所以「AI 味」风险最低。红笔批注天然承载「先补这几个」,不需要额外的卡片容器。<br>
+  <b>为什么可能错:</b> 分寸最难拿捏。手写体、印章、密封线三样里任意一样用过量,就从「专业感」滑到「怀旧玩具」。楷体/行楷在 Windows 和安卓上的渲染差异也比另外两个方向大。</div>
+</div>
+
+</div></body></html>

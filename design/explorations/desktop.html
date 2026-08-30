@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>考点答题卡 · 网页端(分析端)</title>
+<link rel="stylesheet" href="tokens.css">
+<style>
+.page{width:1440px;background:var(--paper);display:flex;flex-direction:column}
+.col{padding:0 56px}
+/* 报头 */
+.mast{padding:26px 0 0}
+.mast-top{display:flex;align-items:flex-end;gap:16px}
+.mast .kicker{
+  font-family:var(--mono);font-size:10px;letter-spacing:.24em;text-transform:uppercase;
+  color:var(--seal);margin-bottom:8px;
+}
+.mast h1{font-family:var(--song);font-size:31px;font-weight:700;letter-spacing:.08em;margin:0;line-height:1.15}
+.mast .sub{font-size:12.5px;color:var(--mist);margin-top:6px}
+.mast .rt{margin-left:auto;display:flex;gap:6px;align-items:center;padding-bottom:3px}
+.rule{border-bottom:2px solid var(--ink);margin-top:14px}
+/* 报纸栏目导航 */
+.nav{display:flex;gap:0;border-bottom:1px solid var(--line)}
+.nv{
+  padding:10px 17px 10px 0;margin-right:17px;font-size:13px;color:var(--graphite);
+  position:relative;
+}
+.nv.on{font-weight:700;color:var(--ink)}
+.nv.on::after{content:"";position:absolute;left:0;right:17px;bottom:-1px;height:2px;background:var(--seal)}
+.nv .n{font-family:var(--mono);font-size:9.5px;color:var(--mist);margin-left:5px}
+.body{padding:22px 0 30px;flex:1}
+.sec{margin-bottom:26px}
+.two{display:flex;gap:34px}
+.two>*{min-width:0}
+.hr{border-bottom:1px solid var(--line);margin:20px 0}
+.hint{font-size:11.5px;color:var(--mist);line-height:1.65}
+/* 答题卡墙 */
+.wall{background:var(--paper-2);border:1px solid var(--line);border-radius:var(--r);padding:20px 22px}
+.wgrp{margin-bottom:18px}
+.wgrp:last-child{margin-bottom:0}
+.wgrp-h{display:flex;align-items:baseline;gap:10px;margin-bottom:11px}
+.wgrp-n{font-size:13px;font-weight:700;letter-spacing:.04em}
+.wgrp-s{font-family:var(--mono);font-size:10.5px;color:var(--mist)}
+.wgrp-w{font-family:var(--mono);font-size:10.5px;color:var(--seal);letter-spacing:.04em}
+.wrow{display:flex;gap:30px;flex-wrap:wrap}
+.wall .bub .lab{font-size:10px;max-width:64px}
+/* 四统计 */
+.stat4{display:flex;border:1px solid var(--line);background:var(--paper-2);border-radius:var(--r)}
+.st{flex:1;padding:14px 16px;border-right:1px solid var(--line)}
+.st:last-child{border-right:none}
+.st .v{font-family:var(--song);font-size:27px;font-weight:700;line-height:1}
+.st .v em{font-style:normal;font-size:13px;margin-left:2px}
+.st .k{font-size:11px;color:var(--mist);margin-top:6px}
+.code{
+  background:var(--ink);color:#D7DBD4;border-radius:var(--r);padding:15px 17px;
+  font-family:var(--mono);font-size:11px;line-height:1.85;
+}
+.code .k{color:#9FBFA8}.code .s{color:#E2C68A}.code .c{color:#7E8A80}.code .p{color:#E2857E}
+.srow{display:flex;align-items:center;gap:11px;padding:7px 0}
+.srow .sname{width:96px;flex:none;font-size:13px;font-weight:600}
+.srow .sname em{display:block;font-style:normal;font-size:9.5px;color:var(--mist);font-weight:400;margin-top:1px}
+.srow .sbar{flex:1;height:9px;background:var(--line)}
+.srow .sbar i{display:block;height:100%;background:var(--graphite)}
+.srow .snum{font-family:var(--mono);font-size:12px;color:var(--graphite);width:20px;text-align:right}
+.yn{display:flex;gap:26px}
+.yn .h{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;margin-bottom:7px}
+.yn .li{font-size:12px;color:var(--graphite);line-height:1.95}
+</style></head>
+<body><div class="deck">
+<div class="deck-head">
+  <div class="deck-kicker">02 · 网页端 · 分析端</div>
+  <div class="deck-title">骨架、差集、盲区都在这里 —— 排得像一张报纸,不像一个后台</div>
+  <div class="deck-sub">
+    §2.4 把响应式 Web 定为主形态。这一组是 1440 宽的 PC 视图。
+    没有侧边栏、没有卡片阴影、没有仪表盘控件 —— 版式取自报纸:报头、栏目条、通栏、分隔线。
+    <b>唯一的强调色是印章红</b>,它同时用于「练过但弱」和「整块空白」,因为这两件事是同一类信息:该回头看的地方。
+  </div>
+  <div class="deck-formula">骨架层 <b>18</b> 考点 − 行为层 <b>8</b> 有记录 = 空白 <b>10</b> · 与 demo 的示例状态逐格一致</div>
+</div>
+<div class="grid" style="flex-direction:column;gap:60px">
+
+<!-- ========== W1 登录 ========== -->
+<div class="cell"><div class="cap"><span class="cap-n">W1</span><span class="cap-t">登录 · 扫码为主,手机号为备</span></div>
+<div class="cap-d wide">左边不放营销图,放一张真的答题卡。第一眼要回答的是「这工具到底算什么」,不是「这公司多可靠」。</div>
+<div class="win"><div class="win-bar">
+  <span class="dot" style="background:#E2857E"></span><span class="dot" style="background:#E2C68A"></span>
+  <span class="dot" style="background:#9FBFA8"></span>
+  <div class="win-url">kaodian.app/login</div></div>
+<div class="page" style="height:660px;flex-direction:row">
+  <div style="width:58%;background:var(--ink);padding:46px 52px;display:flex;flex-direction:column;color:#D7DBD4">
+    <div class="mono" style="font-size:10px;letter-spacing:.24em;color:var(--seal)">公考 · 资料分析</div>
+    <div class="song" style="font-size:31px;font-weight:700;letter-spacing:.08em;color:#F3F4F0;margin-top:9px">
+      考点答题卡</div>
+    <div style="margin-top:auto">
+      <div class="song" style="font-size:27px;line-height:1.55;color:#F3F4F0;letter-spacing:.04em">
+        你在哪儿学的不重要,<br>重要的是考点覆盖到没有。</div>
+      <div style="display:grid;grid-template-columns:repeat(9,1fr);gap:14px 8px;margin-top:34px;max-width:420px">
+        <span class="dot solid">12</span><span class="dot weak">8</span><span class="dot stale"></span>
+        <span class="dot untouched"></span><span class="dot stale"></span><span class="dot untouched"></span>
+        <span class="dot untouched"></span><span class="dot solid">9</span><span class="dot solid">5</span>
+        <span class="dot untouched"></span><span class="dot untouched"></span><span class="dot untouched"></span>
+        <span class="dot untouched"></span><span class="dot untouched"></span><span class="dot untouched"></span>
+        <span class="dot untouched"></span><span class="dot weak">6</span><span class="dot seen"></span>
+      </div>
+      <div style="font-size:12.5px;color:#7E8A80;margin-top:22px;line-height:1.85">
+        涂满的是你碰过的,空心的是还没碰过的。<br>
+        粉笔、中公、华图、B站、抖音、自己刷题都算 —— 我们只记来源名称和时间,不存课程内容。</div>
+    </div>
+  </div>
+  <div style="flex:1;background:var(--paper);display:flex;align-items:center;justify-content:center">
+    <div style="width:286px">
+      <div style="display:flex;border-bottom:1px solid var(--line);margin-bottom:24px">
+        <div style="padding:8px 0;margin-right:22px;font-size:13.5px;font-weight:700;
+             border-bottom:2px solid var(--seal);color:var(--ink)">微信扫码</div>
+        <div style="padding:8px 0;font-size:13.5px;color:var(--mist)">手机号</div></div>
+      <div style="width:172px;height:172px;margin:0 auto;border:1px solid var(--line);
+           background:var(--paper-2);display:flex;align-items:center;justify-content:center;position:relative">
+        <div style="display:grid;grid-template-columns:repeat(9,12px);grid-template-rows:repeat(9,12px);gap:2px">
+          <div style="background:var(--ink);grid-area:1/1/4/4"></div>
+          <div style="background:var(--ink);grid-area:1/7/4/10"></div>
+          <div style="background:var(--ink);grid-area:7/1/10/4"></div>
+          <div style="background:var(--ink);grid-area:5/5/6/6"></div>
+          <div style="background:var(--ink);grid-area:6/7/7/8"></div>
+          <div style="background:var(--ink);grid-area:5/2/6/3"></div>
+          <div style="background:var(--ink);grid-area:8/6/9/7"></div>
+          <div style="background:var(--ink);grid-area:6/4/7/5"></div></div>
+        <div style="position:absolute;width:34px;height:34px;background:#07C160;border:3px solid var(--paper-2);
+             display:flex;align-items:center;justify-content:center;color:#fff;font-size:15px">✆</div></div>
+      <div style="text-align:center;font-size:12.5px;color:var(--graphite);margin-top:14px">
+        用微信扫一扫登录</div>
+      <div style="text-align:center;font-size:11px;color:var(--mist);margin-top:5px">
+        与小程序同一个账号,记的东西自动同步</div>
+      <div class="footnote" style="margin-top:26px;text-align:center">
+        登录即代表同意《用户协议》与《隐私政策》</div>
+    </div>
+  </div>
+</div></div>
+<div class="note wide">两端必须同账号:小程序产生行为层,网页端消费行为层。账号不通,差集就会把「手机上记过的」算成空白,直接触发 §5.2 那条信任崩塌链。</div>
+</div>
+
+<!-- ========== W2 答题卡总览 ========== -->
+<div class="cell"><div class="cap"><span class="cap-n">W2</span><span class="cap-t">答题卡 · 落地页就是那张卡</span></div>
+<div class="cap-d wide">北极星是<b style="color:#D7DBD4">主动查看盲区的人数</b>,所以登录后第一屏直接是整张答题卡,不是欢迎语、不是学习时长、不是连续打卡。一眼能数出有几个空心圈。</div>
+<div class="win"><div class="win-bar">
+  <span class="dot" style="background:#E2857E"></span><span class="dot" style="background:#E2C68A"></span>
+  <span class="dot" style="background:#9FBFA8"></span>
+  <div class="win-url">kaodian.app</div></div>
+<div class="page">
+  <div class="col mast">
+    <div class="mast-top">
+      <div><div class="kicker">山东省考 · 资料分析</div>
+        <h1>考点答题卡</h1>
+        <div class="sub">涂满的是你碰过的,空心的是还没碰过的。</div></div>
+      <div class="rt"><span class="chip">强化刷题</span><span class="chip">18 个考点</span>
+        <span class="chip seal">空白 10</span></div></div>
+    <div class="rule"></div>
+    <div class="nav">
+      <div class="nv on">答题卡</div><div class="nv">考点导图</div>
+      <div class="nv">先补这几个<span class="n">05</span></div><div class="nv">记录<span class="n">38</span></div>
+      <div class="nv">来源</div><div class="nv">带走数据</div><div class="nv">接口</div></div>
+  </div>
+  <div class="col body">
+    <div class="two" style="align-items:flex-end;margin-bottom:20px">
+      <div class="cover">
+        <div class="big">44<span>%</span></div>
+        <div class="txt">8 / 18 个考点有记录<br>还有 <b>10</b> 个是空白</div></div>
+      <div style="flex:1;padding-bottom:4px">
+        <div class="bar" style="height:6px">
+          <i class="b-solid" style="width:16.7%"></i>
+          <i class="b-weak" style="width:11.1%"></i>
+          <i class="b-seen" style="width:16.7%"></i></div>
+        <div class="legend" style="margin-top:10px">
+          <div class="lg"><i class="untouched"></i>未触达 10</div>
+          <div class="lg"><i class="seen"></i>仅接触 1</div>
+          <div class="lg"><i class="stale"></i>久未复习 2</div>
+          <div class="lg"><i class="weak"></i>练过但弱 2</div>
+          <div class="lg"><i class="solid"></i>练过且稳 3</div>
+          <div class="lg"><span style="color:var(--seal);font-size:13px">★</span>常用</div></div>
+      </div>
+      <div style="flex:none;display:flex;gap:7px;padding-bottom:4px">
+        <button class="mini on">答题卡</button><button class="mini">导图</button>
+        <button class="mini">只看常用</button></div>
+    </div>
+    <div class="two">
+      <!-- 答题卡墙 -->
+      <div style="flex:1.3">
+        <div class="wall">
+          <div class="wgrp">
+            <div class="wgrp-h"><span class="wgrp-n">增长类</span><span class="wgrp-s">4/7</span></div>
+            <div class="wrow">
+              <div class="bub"><span class="dot lg solid">12</span><span class="lab">增长率计算</span></div>
+              <div class="bub"><span class="dot lg weak">8</span><span class="lab">增长量计算</span></div>
+              <div class="bub"><span class="dot lg stale"></span><span class="lab">基期量计算</span></div>
+              <div class="bub"><span class="dot lg untouched"></span><span class="lab">现期量计算</span></div>
+              <div class="bub"><span class="dot lg stale"></span><span class="lab">间隔增长率</span></div>
+              <div class="bub"><span class="dot lg untouched"></span><span class="lab">年均增长率</span></div>
+              <div class="bub"><span class="dot lg untouched"></span><span class="lab">混合增长率</span></div></div></div>
+          <div class="wgrp">
+            <div class="wgrp-h"><span class="wgrp-n">比重与平均</span><span class="wgrp-s">2/4</span></div>
+            <div class="wrow">
+              <div class="bub"><span class="dot lg solid">9</span><span class="lab">比重计算</span></div>
+              <div class="bub"><span class="dot lg solid">5</span><span class="lab">比重变化判断</span></div>
+              <div class="bub"><span class="dot lg untouched"></span><span class="lab">★平均数计算</span></div>
+              <div class="bub"><span class="dot lg untouched"></span><span class="lab">平均数增长率</span></div></div></div>
+          <div class="wgrp">
+            <div class="wgrp-h"><span class="wgrp-n" style="color:var(--seal)">倍数与比较</span>
+              <span class="wgrp-s" style="color:var(--seal)">0/3</span>
+              <span class="wgrp-w">整块空白 · 示例频次合计 12 次</span></div>
+            <div class="wrow">
+              <div class="bub"><span class="dot lg untouched"></span><span class="lab">★倍数计算</span></div>
+              <div class="bub"><span class="dot lg untouched"></span><span class="lab">倍数变化</span></div>
+              <div class="bub"><span class="dot lg untouched"></span><span class="lab">同比与环比</span></div></div></div>
+          <div class="wgrp">
+            <div class="wgrp-h"><span class="wgrp-n" style="color:var(--seal)">效应类</span>
+              <span class="wgrp-s" style="color:var(--seal)">0/2</span>
+              <span class="wgrp-w">整块空白 · 示例频次合计 6 次</span></div>
+            <div class="wrow">
+              <div class="bub"><span class="dot lg untouched"></span><span class="lab">贡献率</span></div>
+              <div class="bub"><span class="dot lg untouched"></span><span class="lab">拉动增长</span></div></div></div>
+          <div class="wgrp">
+            <div class="wgrp-h"><span class="wgrp-n">速算与读材料</span><span class="wgrp-s">2/2</span></div>
+            <div class="wrow">
+              <div class="bub"><span class="dot lg weak">6</span><span class="lab">截位直除</span></div>
+              <div class="bub"><span class="dot lg seen"></span><span class="lab">材料定位速读</span></div></div></div>
+        </div>
+        <div class="hint" style="margin-top:11px">
+          圈里的数字是你练过的题数。<b style="color:var(--graphite)">两组整块空白</b>——不是学漏了两个点,是这两类题从没进过你的备考视野。</div>
+      </div>
+      <!-- 先补这几个 -->
+      <div style="flex:1">
+        <div class="sec-head"><h2>先补这几个</h2><div class="meta">频次 × 状态权重</div></div>
+        <div class="gap"><div class="rank">01</div><div style="flex:1">
+          <div class="name">增长量计算</div>
+          <div class="why">练了 8 道,对 4 道,正确率 50%。</div>
+          <div class="acts"><button class="mini pri">记一次练习</button><button class="mini">我已掌握</button></div></div></div>
+        <div class="gap"><div class="rank">02</div><div style="flex:1">
+          <div class="name">平均数计算</div>
+          <div class="why">示例数据里近五年考了 6 次。你还没有任何记录。</div>
+          <div class="acts"><button class="mini pri">记一次练习</button><button class="mini">我已掌握</button></div></div></div>
+        <div class="gap"><div class="rank">03</div><div style="flex:1">
+          <div class="name">截位直除</div>
+          <div class="why">练了 6 道,对 2 道,正确率 33%。</div>
+          <div class="acts"><button class="mini pri">记一次练习</button><button class="mini">我已掌握</button></div></div></div>
+        <div class="gap"><div class="rank">04</div><div style="flex:1">
+          <div class="name">现期量计算</div>
+          <div class="why">示例数据里近五年考了 5 次。你还没有任何记录。</div>
+          <div class="acts"><button class="mini pri">记一次练习</button><button class="mini">我已掌握</button></div></div></div>
+        <div class="gap"><div class="rank">05</div><div style="flex:1">
+          <div class="name">年均增长率</div>
+          <div class="why">示例数据里近五年考了 5 次。你还没有任何记录。</div>
+          <div class="acts"><button class="mini pri">记一次练习</button><button class="mini">我已掌握</button></div></div></div>
+        <div class="footnote" style="margin-top:14px">
+          排序 = 考的频次 × 你的生疏程度。<br>
+          本工具不判断你做得对不对,正确率是你自己记下的数。
+        </div>
+      </div>
+    </div>
+  </div>
+</div></div>
+<div class="note wide">「先补这几个」的前两名一个是<b>练过但弱</b>、一个是<b>整块空白里的</b>。这说明排序不是按缺口大小,而是按 频次 × 状态权重 —— 考得多又生疏的排前面。缺口本身也有优先级,这是骨架层数据换来的东西。</div>
+</div>
+
+<!-- ========== W3 考点导图 ========== -->
+<div class="cell"><div class="cap"><span class="cap-n">W3</span><span class="cap-t">考点导图 · 三层树,整块空白一眼可见</span></div>
+<div class="cap-d wide">模块 → 题型 → 考点,不做第四层(§2.5:用户感知不到,标注准确率撑不住)。整块空白的枝干<b style="color:#D7DBD4">连接线变印章红</b>,并在枝干下直接写一行警告 —— 这是树相对扁平列表的全部收益。</div>
+<div class="win"><div class="win-bar">
+  <span class="dot" style="background:#E2857E"></span><span class="dot" style="background:#E2C68A"></span>
+  <span class="dot" style="background:#9FBFA8"></span>
+  <div class="win-url">kaodian.app/map</div></div>
+<div class="page">
+  <div class="col mast">
+    <div class="mast-top">
+      <div><div class="kicker">山东省考 · 资料分析</div><h1>考点答题卡</h1></div>
+      <div class="rt"><span class="chip">18 个考点</span><span class="chip seal">空白 10</span></div></div>
+    <div class="rule"></div>
+    <div class="nav">
+      <div class="nv">答题卡</div><div class="nv on">考点导图</div>
+      <div class="nv">先补这几个<span class="n">05</span></div><div class="nv">记录<span class="n">38</span></div>
+      <div class="nv">来源</div><div class="nv">带走数据</div><div class="nv">接口</div></div>
+  </div>
+  <div class="col body two">
+    <div style="flex:1.5">
+      <div class="wall">
+        <div style="margin-bottom:12px"><span class="root">资料分析 <em>18 个考点</em></span></div>
+        <div class="branches">
+          <div class="branch">
+            <div class="bhead"><span class="mono" style="font-size:12px;color:var(--mist);width:13px">▾</span>
+              <span class="bname">增长类</span><span class="bstat">4/7</span>
+              <span class="bmini" style="max-width:110px"><i style="width:57%"></i></span></div>
+            <div class="leaves">
+              <div class="leaf"><span class="dot sm solid">12</span>
+                <span class="lname">增长率计算 <em>9 次</em></span><span class="star">★</span></div>
+              <div class="leaf"><span class="dot sm weak">8</span>
+                <span class="lname">增长量计算 <em>8 次</em></span><span class="star">★</span></div>
+              <div class="leaf"><span class="dot sm stale"></span>
+                <span class="lname">基期量计算 <em>7 次</em></span><span class="star">★</span></div>
+              <div class="leaf"><span class="dot sm untouched"></span>
+                <span class="lname">现期量计算 <em>5 次</em></span><span class="star">★</span></div>
+              <div class="leaf"><span class="dot sm stale"></span>
+                <span class="lname">间隔增长率 <em>6 次</em></span><span class="star">★</span></div>
+              <div class="leaf"><span class="dot sm untouched"></span>
+                <span class="lname">年均增长率 <em>5 次</em></span><span class="star">★</span></div>
+              <div class="leaf"><span class="dot sm untouched"></span>
+                <span class="lname">混合增长率 <em>4 次</em></span><span class="star">★</span></div></div></div>
+          <div class="branch">
+            <div class="bhead"><span class="mono" style="font-size:12px;color:var(--mist);width:13px">▾</span>
+              <span class="bname">比重与平均</span><span class="bstat">2/4</span>
+              <span class="bmini" style="max-width:110px"><i style="width:50%"></i></span></div>
+            <div class="leaves">
+              <div class="leaf"><span class="dot sm solid">9</span>
+                <span class="lname">比重计算 <em>8 次</em></span><span class="star">★</span></div>
+              <div class="leaf"><span class="dot sm solid">5</span>
+                <span class="lname">比重变化判断 <em>7 次</em></span><span class="star">★</span></div>
+              <div class="leaf"><span class="dot sm untouched"></span>
+                <span class="lname">平均数计算 <em>6 次</em></span><span class="star on">★</span></div>
+              <div class="leaf"><span class="dot sm untouched"></span>
+                <span class="lname">平均数增长率 <em>4 次</em></span><span class="star">★</span></div></div></div>
+          <div class="branch cold">
+            <div class="bhead"><span class="mono" style="font-size:12px;color:var(--seal);width:13px">▾</span>
+              <span class="bname" style="color:var(--seal)">倍数与比较</span>
+              <span class="bstat" style="color:var(--seal)">0/3</span>
+              <span class="bmini" style="max-width:110px"><i style="width:0"></i></span></div>
+            <div class="bwarn">整块空白 · 示例频次合计 12 次</div>
+            <div class="leaves">
+              <div class="leaf"><span class="dot sm untouched"></span>
+                <span class="lname">倍数计算 <em>5 次</em></span><span class="star on">★</span></div>
+              <div class="leaf"><span class="dot sm untouched"></span>
+                <span class="lname">倍数变化 <em>3 次</em></span><span class="star">★</span></div>
+              <div class="leaf"><span class="dot sm untouched"></span>
+                <span class="lname">同比与环比 <em>4 次</em></span><span class="star">★</span></div></div></div>
+          <div class="branch cold">
+            <div class="bhead"><span class="mono" style="font-size:12px;color:var(--seal);width:13px">▾</span>
+              <span class="bname" style="color:var(--seal)">效应类</span>
+              <span class="bstat" style="color:var(--seal)">0/2</span>
+              <span class="bmini" style="max-width:110px"><i style="width:0"></i></span></div>
+            <div class="bwarn">整块空白 · 示例频次合计 6 次</div>
+            <div class="leaves">
+              <div class="leaf"><span class="dot sm untouched"></span>
+                <span class="lname">贡献率 <em>3 次</em></span><span class="star">★</span></div>
+              <div class="leaf"><span class="dot sm untouched"></span>
+                <span class="lname">拉动增长 <em>3 次</em></span><span class="star">★</span></div></div></div>
+          <div class="branch">
+            <div class="bhead"><span class="mono" style="font-size:12px;color:var(--mist);width:13px">▾</span>
+              <span class="bname">速算与读材料</span><span class="bstat">2/2</span>
+              <span class="bmini" style="max-width:110px"><i style="width:100%"></i></span></div>
+            <div class="leaves">
+              <div class="leaf"><span class="dot sm weak">6</span>
+                <span class="lname">截位直除 <em>7 次</em></span><span class="star">★</span></div>
+              <div class="leaf"><span class="dot sm seen"></span>
+                <span class="lname">材料定位速读 <em>6 次</em></span><span class="star">★</span></div></div></div>
+        </div>
+      </div>
+    </div>
+    <div style="flex:1">
+      <div class="sec-head"><h2>两组整块空白</h2><div class="meta">Cold branch</div></div>
+      <div style="border:1px solid var(--seal);background:var(--seal-soft);border-radius:var(--r);padding:15px 16px">
+        <div style="font-size:13.5px;font-weight:700;color:var(--seal);line-height:1.6">
+          倍数与比较(3 个)、效应类(2 个)<br>共 5 个考点一次都没碰过</div>
+        <div style="font-size:12px;color:#8A3A33;line-height:1.85;margin-top:10px">
+          示例数据里这两类近五年合计出现 <b>18</b> 次,而你的记录里一条都没有。</div>
+        <div style="font-size:12px;color:#8A3A33;line-height:1.85;margin-top:10px;
+             border-top:1px solid #DCC0BC;padding-top:10px">
+          这和「某个考点漏了」性质不同 —— 你不是学漏了,<b>是整类题从没进过你的备考视野</b>。</div>
+      </div>
+      <div class="hr"></div>
+      <div class="sec-head"><h2>为什么要有树</h2><div class="meta">§2.5</div></div>
+      <div style="font-size:12.5px;color:var(--graphite);line-height:1.95">
+        扁平列表只能说「漏了两个点」,树能说「漏了一整类」。<br><br>
+        后者更接近真实的知识缺口形态 —— 也是为什么热力打在<b>题型这一层</b>,而不是每个考点各自算各自的。<br><br>
+        <span style="color:var(--mist)">树只有三层:模块 → 题型 → 考点。不做第四层,用户感知不到,标注准确率也撑不住。</span></div>
+    </div>
+  </div>
+</div></div>
+<div class="note wide">★ 是「常用」标记,由用户自己点。它不参与覆盖度计算,只用来过滤视图 —— 和「我已掌握」一样属于用户自述,在视觉上都压到最轻的一档。</div>
+</div>
+
+<!-- ========== W4 考点详情 ========== -->
+<div class="cell"><div class="cap"><span class="cap-n">W4</span><span class="cap-t">考点详情 · 四个纯统计字段</span></div>
+<div class="cap-d wide">§2.5 规定每个考点必挂四个字段:近五年出现次数、出现过的省份、最近一次出现年份、平均每套卷题量。四个都是<b style="color:#D7DBD4">纯统计</b>,没有一个需要学科判断 —— 这正是「不做教研」守得住的技术前提。</div>
+<div class="win"><div class="win-bar">
+  <span class="dot" style="background:#E2857E"></span><span class="dot" style="background:#E2C68A"></span>
+  <span class="dot" style="background:#9FBFA8"></span>
+  <div class="win-url">kaodian.app/point/p02</div></div>
+<div class="page">
+  <div class="col mast">
+    <div class="mast-top">
+      <div><div class="kicker">资料分析 › 增长类</div>
+        <div style="display:flex;align-items:center;gap:13px">
+          <h1 style="font-size:28px">增长量计算</h1>
+          <span class="dot lg weak">8</span>
+          <span class="chip seal">练过但弱</span></div></div>
+      <div class="rt"><button class="mini">我已掌握</button><button class="mini">记一次练习</button>
+        <button class="mini pri">导出此考点</button></div></div>
+    <div class="rule"></div>
+    <div class="nav">
+      <div class="nv">答题卡</div><div class="nv on">考点导图</div>
+      <div class="nv">先补这几个<span class="n">05</span></div><div class="nv">记录<span class="n">38</span></div>
+      <div class="nv">来源</div><div class="nv">带走数据</div><div class="nv">接口</div></div>
+  </div>
+  <div class="col body">
+    <div class="stat4">
+      <div class="st"><div class="v">8</div><div class="k">近五年出现次数</div></div>
+      <div class="st"><div class="v">11<em>省</em></div><div class="k">出现过的省份</div></div>
+      <div class="st"><div class="v">2025</div><div class="k">最近一次出现年份</div></div>
+      <div class="st"><div class="v">1.2</div><div class="k">平均每套卷题量</div></div>
+    </div>
+    <div class="two" style="margin-top:22px">
+      <div style="flex:1.4">
+        <div class="sec-head"><h2>你的记录</h2><div class="meta">行为层 · 跨来源 · 共 11 条</div></div>
+        <table class="tbl">
+          <thead><tr><th style="width:120px">时间</th><th style="width:96px">来源</th>
+            <th style="width:96px">方式</th><th>内容</th><th style="width:64px">距今</th></tr></thead>
+          <tbody>
+            <tr><td class="mono">08-21 09:41</td><td><b>粉笔</b></td><td style="color:var(--graphite)">语音</td>
+              <td style="color:var(--mist)">—</td><td class="mono">今天</td></tr>
+            <tr><td class="mono">08-19 20:12</td><td><b>自己刷题</b></td><td style="color:var(--graphite)">记做题</td>
+              <td>4 道 · 对 2 道</td><td class="mono">2 天</td></tr>
+            <tr><td class="mono">08-14 19:48</td><td><b>粉笔</b></td><td style="color:var(--graphite)">截图</td>
+              <td style="color:var(--mist)">—</td><td class="mono">7 天</td></tr>
+            <tr><td class="mono">08-06 08:05</td><td><b>自己刷题</b></td><td style="color:var(--graphite)">记做题</td>
+              <td>4 道 · 对 2 道</td><td class="mono">15 天</td></tr>
+            <tr><td class="mono">07-28 21:33</td><td><b>B站UP主</b></td><td style="color:var(--graphite)">语音</td>
+              <td style="color:var(--mist)">—</td><td class="mono">24 天</td></tr>
+          </tbody></table>
+        <div class="panel" style="margin-top:14px">
+          <div style="font-size:12px;color:var(--graphite);line-height:1.85">
+            <b>只记来源名称和时间。</b>不存储任何机构的课程内容、讲义或题目原文。<br>
+            <span style="color:var(--mist)">这条边界让「跨机构聚合」在合规上成立 —— 也是在位者结构上做不了这件事的原因。</span></div></div>
+      </div>
+      <div style="flex:1">
+        <div class="sec-head"><h2>骨架层数据</h2><div class="meta">由公开真题聚类反推</div></div>
+        <div style="font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;color:var(--mist);
+             text-transform:uppercase;margin-bottom:9px">出现过的省份 · 11</div>
+        <div style="display:flex;flex-wrap:wrap;gap:5px">
+          <span class="chip on">国考</span><span class="chip">山东</span><span class="chip">江苏</span>
+          <span class="chip">浙江</span><span class="chip">广东</span><span class="chip">河北</span>
+          <span class="chip">四川</span><span class="chip">湖北</span><span class="chip">安徽</span>
+          <span class="chip">福建</span><span class="chip">河南</span></div>
+        <div style="font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;color:var(--mist);
+             text-transform:uppercase;margin:20px 0 10px">近五年出现分布</div>
+        <div style="display:flex;align-items:flex-end;gap:11px;height:88px">
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px">
+            <span class="mono" style="font-size:11px">1</span>
+            <div style="width:100%;height:16px;background:var(--line)"></div>
+            <span class="mono" style="font-size:9.5px;color:var(--mist)">21</span></div>
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px">
+            <span class="mono" style="font-size:11px">1</span>
+            <div style="width:100%;height:16px;background:var(--line)"></div>
+            <span class="mono" style="font-size:9.5px;color:var(--mist)">22</span></div>
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px">
+            <span class="mono" style="font-size:11px">2</span>
+            <div style="width:100%;height:32px;background:var(--graphite)"></div>
+            <span class="mono" style="font-size:9.5px;color:var(--mist)">23</span></div>
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px">
+            <span class="mono" style="font-size:11px">2</span>
+            <div style="width:100%;height:32px;background:var(--graphite)"></div>
+            <span class="mono" style="font-size:9.5px;color:var(--mist)">24</span></div>
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px">
+            <span class="mono" style="font-size:11px">2</span>
+            <div style="width:100%;height:32px;background:var(--ink)"></div>
+            <span class="mono" style="font-size:9.5px;color:var(--mist)">25</span></div>
+        </div>
+        <div class="panel" style="margin-top:20px">
+          <div style="font-size:12px;color:var(--graphite);line-height:1.85">
+            <b>这里没有讲解,也不会有。</b><br>
+            <span style="color:var(--mist)">要学这个考点,把导出的东西丢给豆包或 DeepSeek。本工具只回答有没有、几次、多久前。</span></div></div>
+      </div>
+    </div>
+  </div>
+</div></div>
+<div class="note wide">正确率 50% 这个数<b>是用户自己在「记做题」里填的</b>,不是产品判出来的。这个区别是 §2.2 能力边界的关键:记录用户报告的数字属于「几次」,判断答案对错才属于「对不对」。产品全程没碰过一道题的答案。</div>
+</div>
+
+<!-- ========== W5 来源分布 + 记录 ========== -->
+<div class="cell"><div class="cap"><span class="cap-n">W5</span><span class="cap-t">来源分布 + 跨来源流水 · 这个方向的论据</span></div>
+<div class="cap-d wide">左边回答「我在哪儿学的」,右边回答「我什么时候学的」。粉笔、中公、B站、抖音、自己刷题并排在一张表上 —— 在位者永远不会做这件事,聚合等于拆自己的围墙。</div>
+<div class="win"><div class="win-bar">
+  <span class="dot" style="background:#E2857E"></span><span class="dot" style="background:#E2C68A"></span>
+  <span class="dot" style="background:#9FBFA8"></span>
+  <div class="win-url">kaodian.app/sources</div></div>
+<div class="page">
+  <div class="col mast">
+    <div class="mast-top">
+      <div><div class="kicker">CROSS-SOURCE</div><h1>来源</h1>
+        <div class="sub">38 条记录 · 5 个来源 · 覆盖 8 个考点</div></div>
+      <div class="rt"><span class="chip">近 30 天</span></div></div>
+    <div class="rule"></div>
+    <div class="nav">
+      <div class="nv">答题卡</div><div class="nv">考点导图</div>
+      <div class="nv">先补这几个<span class="n">05</span></div><div class="nv">记录<span class="n">38</span></div>
+      <div class="nv on">来源</div><div class="nv">带走数据</div><div class="nv">接口</div></div>
+  </div>
+  <div class="col body two">
+    <div style="flex:1">
+      <div class="sec-head"><h2>来源分布</h2><div class="meta">Where from</div></div>
+      <div class="wall">
+        <div class="srow"><div class="sname">粉笔<em>机构</em></div>
+          <div class="sbar"><i style="width:100%"></i></div><div class="snum">14</div></div>
+        <div class="srow"><div class="sname">B站UP主<em>免费</em></div>
+          <div class="sbar"><i style="width:64%"></i></div><div class="snum">9</div></div>
+        <div class="srow"><div class="sname">自己刷题<em>自学</em></div>
+          <div class="sbar"><i style="width:50%"></i></div><div class="snum">7</div></div>
+        <div class="srow"><div class="sname">中公<em>机构</em></div>
+          <div class="sbar"><i style="width:36%"></i></div><div class="snum">5</div></div>
+        <div class="srow"><div class="sname">抖音<em>免费</em></div>
+          <div class="sbar"><i style="width:21%"></i></div><div class="snum">3</div></div>
+      </div>
+      <div style="font-size:12.5px;color:var(--graphite);line-height:1.9;margin-top:14px">
+        <p style="margin:0 0 8px"><b class="mono">3</b> 个考点你在两个以上的地方学过:
+          增长率计算、增长量计算、比重计算。重复听不一定是浪费,但这三个已经是你最稳的。</p>
+        <p style="margin:0 0 8px"><b class="mono">3</b> 个考点只在「B站UP主」学过,没有别的来源交叉验证:
+          间隔增长率、截位直除、材料定位速读。</p>
+        <p style="margin:0;color:var(--mist)">只记来源名称和时间,不存任何课程内容。</p></div>
+    </div>
+    <div style="flex:1.25">
+      <div class="sec-head"><h2>记录流水</h2><div class="meta">Timeline</div></div>
+      <table class="tbl">
+        <thead><tr><th style="width:112px">时间</th><th style="width:88px">来源</th>
+          <th style="width:76px">方式</th><th>挂到的考点</th><th style="width:56px">增量</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">08-21 09:41</td><td><b>粉笔</b></td><td style="color:var(--graphite)">语音</td>
+            <td>间隔增长率 · 混合增长率</td>
+            <td class="mono" style="color:var(--seal)">+1</td></tr>
+          <tr><td class="mono">08-21 08:52</td><td><b>粉笔</b></td><td style="color:var(--graphite)">截图</td>
+            <td>比重变化判断</td><td class="mono" style="color:var(--mist)">±0</td></tr>
+          <tr><td class="mono">08-21 07:58</td><td><b>自己刷题</b></td><td style="color:var(--graphite)">记做题</td>
+            <td>截位直除 · 6 道对 2 道</td><td class="mono" style="color:var(--mist)">±0</td></tr>
+          <tr><td class="mono">08-20 21:30</td><td><b>B站UP主</b></td><td style="color:var(--graphite)">截图</td>
+            <td>比重计算</td><td class="mono" style="color:var(--mist)">±0</td></tr>
+          <tr><td class="mono">08-20 20:14</td><td><b>中公</b></td><td style="color:var(--graphite)">语音</td>
+            <td>平均数计算 · 平均数增长率</td><td class="mono" style="color:var(--seal)">+2</td></tr>
+          <tr style="opacity:.5"><td class="mono">08-20 19:02</td><td>抖音</td><td>语音</td>
+            <td style="color:var(--mist)">未匹配 · 已丢弃</td><td class="mono">—</td></tr>
+          <tr><td class="mono">08-19 22:11</td><td><b>粉笔</b></td><td style="color:var(--graphite)">截图</td>
+            <td>增长率计算</td><td class="mono" style="color:var(--mist)">±0</td></tr>
+          <tr><td class="mono">08-19 20:12</td><td><b>自己刷题</b></td><td style="color:var(--graphite)">记做题</td>
+            <td>增长量计算 · 4 道对 2 道</td><td class="mono" style="color:var(--mist)">±0</td></tr>
+        </tbody></table>
+      <div class="footnote" style="margin-top:14px">
+        每行只有:时间、来源名称、采集方式、考点。<b style="color:var(--graphite)">没有「内容」这一列</b>,连预留位都没有。<br>
+        灰色那行是宁缺毋滥丢弃的记录,保留可见但不计入覆盖度。</div>
+    </div>
+  </div>
+</div></div>
+<div class="note wide">「3 个考点只在 B站UP主 学过,没有别的来源交叉验证」这句话是这个产品独有的 —— 任何单机构的错题本都说不出来,因为它看不见另外四个来源。这就是 §1 说的「在位者结构上不能做」在界面上长出来的样子。</div>
+</div>
+
+<!-- ========== W6 问 AI + 导出 ========== -->
+<div class="cell"><div class="cap"><span class="cap-n">W6</span><span class="cap-t">问 AI 时带上的东西 + 带走数据</span></div>
+<div class="cap-d wide">「不做教研」在这里不是一句免责声明,而是一个功能:把你的画像拼成一段上下文,粘进豆包或 DeepSeek。<b style="color:#D7DBD4">产品不回答问题,它只负责让模型知道你是谁、学到哪了。</b></div>
+<div class="win"><div class="win-bar">
+  <span class="dot" style="background:#E2857E"></span><span class="dot" style="background:#E2C68A"></span>
+  <span class="dot" style="background:#9FBFA8"></span>
+  <div class="win-url">kaodian.app/export</div></div>
+<div class="page">
+  <div class="col mast">
+    <div class="mast-top">
+      <div><div class="kicker">CONTEXT · EXPORT</div><h1>带走数据</h1>
+        <div class="sub">你记的每一条、练的每一道,随时可以完整导出。不需要理由,不需要联系客服。</div></div></div>
+    <div class="rule"></div>
+    <div class="nav">
+      <div class="nv">答题卡</div><div class="nv">考点导图</div>
+      <div class="nv">先补这几个<span class="n">05</span></div><div class="nv">记录<span class="n">38</span></div>
+      <div class="nv">来源</div><div class="nv on">带走数据</div><div class="nv">接口</div></div>
+  </div>
+  <div class="col body two">
+    <div style="flex:1">
+      <div class="sec-head"><h2>问 AI 时带上的东西</h2><div class="meta">Context</div></div>
+      <div class="ctxbox"><span class="cm"># 考生画像</span>
+考区 <b>山东省考</b>  阶段 <b>强化刷题</b>  模块 <b>资料分析</b>
+
+<span class="cm"># 已练稳(不用再讲)</span>
+增长率计算、比重计算、比重变化判断
+
+<span class="cm"># 练过但弱(讲这些)</span>
+增长量计算 <span class="sl">8 道对 4 道 50%</span>
+截位直除   <span class="sl">6 道对 2 道 33%</span>
+
+<span class="cm"># 完全空白(可以从零讲)</span>
+现期量计算、年均增长率、混合增长率
+平均数计算、平均数增长率
+倍数计算、倍数变化、同比与环比
+贡献率、拉动增长
+
+<span class="cm"># 久未复习</span>
+基期量计算 <span class="sl">32 天前</span>  间隔增长率 <span class="sl">33 天前</span>
+
+<span class="cm"># 来源</span>
+粉笔 14 · B站 9 · 自己刷题 7 · 中公 5 · 抖音 3</div>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button class="go" style="flex:1">复制这段</button>
+        <button class="mini" style="padding:0 14px">发给豆包</button>
+        <button class="mini" style="padding:0 14px">发给 DeepSeek</button></div>
+      <div class="hint" style="margin-top:11px">
+        这段会自动拼进你发给模型的问题里。<b style="color:var(--graphite)">产品本身不回答问题,也不判断对错</b> ——
+        它只负责让模型知道你是谁、学到哪了。</div>
+    </div>
+    <div style="flex:1">
+      <div class="sec-head"><h2>完整导出</h2><div class="meta">Export</div></div>
+      <div style="display:flex;gap:7px;margin-bottom:13px">
+        <button class="mini on">Markdown</button><button class="mini">CSV</button>
+        <button class="mini">JSON</button>
+        <span style="margin-left:auto;font-family:var(--mono);font-size:10.5px;color:var(--mist);
+              align-self:center">18 考点 · 38 记录 · 9 KB</span></div>
+      <div class="ctxbox" style="font-size:10.5px"><span class="cm"># 考点答题卡 · 山东省考/资料分析 · 2026-08-21</span>
+
+<span class="cm">## 覆盖度</span>
+18 个考点 · 8 个有记录 · 10 个空白 <span class="s">(44%)</span>
+
+<span class="cm">## 整块空白</span>
+- <span class="k">倍数与比较</span>  0/3  示例频次 12 次
+- <span class="k">效应类</span>      0/2  示例频次 6 次
+
+<span class="cm">## 考点明细</span>
+| 考点 | 题型 | 状态 | 练题 | 正确 | 频次 | 最近 |
+|---|---|---|---|---|---|---|
+| <span class="p">增长率计算</span> | 增长类 | 练过且稳 | 12 | 10 | 9 | 今天 |
+| <span class="p">增长量计算</span> | 增长类 | <span class="s">练过但弱</span> | 8 | 4 | 8 | 2 天前 |
+| <span class="p">倍数计算</span>   | 倍数与比较 | <span class="s">未触达</span> | 0 | — | 5 | — |
+
+<span class="cm">## 记录流水</span>
+2026-08-21 09:41 | 粉笔 | 语音 | 间隔增长率,混合增长率
+2026-08-21 07:58 | 自己刷题 | 记做题 | 截位直除 6/2</div>
+      <div class="hr"></div>
+      <div class="yn">
+        <div style="flex:1"><div class="h" style="color:var(--graphite)">导出里有</div>
+          <div class="li">考点树与状态<br>你的全部记录流水<br>练题数与正确数<br>来源名称与时间戳<br>四个统计字段</div></div>
+        <div style="flex:1"><div class="h" style="color:var(--seal)">导出里没有</div>
+          <div class="li">任何机构的课程内容<br>讲义、题目原文<br>拍照原图<br>音频<br><span style="color:var(--mist)">—— 因为压根就没存</span></div></div>
+      </div>
+    </div>
+  </div>
+</div></div>
+<div class="note wide">这一屏把 §2.2 的三条边界(不判断对错、不做教研、不碰内容)一次性变成了正面卖点:因为不存内容,导出才干净;因为不做教研,上下文才值得粘给别的模型。<b>约束在这里不是减法,是产品形态本身。</b></div>
+</div>
+
+<!-- ========== W7 接口 ========== -->
+<div class="cell"><div class="cap"><span class="cap-n">W7</span><span class="cap-t">MCP / CLI 只读接入</span></div>
+<div class="cap-d wide">§2.6 明确 MCP 是营销资产不是收入线,考研考公人群里能用的可能不到 1%,<b style="color:#D7DBD4">投入不超过总精力两成</b>。所以这一屏刻意只有一屏,不做控制台、不做用量图表、不做文档站。</div>
+<div class="win"><div class="win-bar">
+  <span class="dot" style="background:#E2857E"></span><span class="dot" style="background:#E2C68A"></span>
+  <span class="dot" style="background:#9FBFA8"></span>
+  <div class="win-url">kaodian.app/mcp</div></div>
+<div class="page" style="height:600px">
+  <div class="col mast">
+    <div class="mast-top">
+      <div><div class="kicker">READ ONLY</div><h1>接口</h1>
+        <div class="sub">用豆包、Qwen、Claude 等任意模型直接读你自己的数据。</div></div></div>
+    <div class="rule"></div>
+    <div class="nav">
+      <div class="nv">答题卡</div><div class="nv">考点导图</div>
+      <div class="nv">先补这几个<span class="n">05</span></div><div class="nv">记录<span class="n">38</span></div>
+      <div class="nv">来源</div><div class="nv">带走数据</div><div class="nv on">接口</div></div>
+  </div>
+  <div class="col body two">
+    <div style="flex:1">
+      <div style="border:1px solid var(--seal);background:var(--seal-soft);border-radius:var(--r);padding:15px 17px">
+        <div style="font-size:13.5px;font-weight:700;color:var(--seal)">这个接口只读。不开放写入,也不开放采集。</div>
+        <div class="yn" style="margin-top:13px">
+          <div style="flex:1"><div class="h" style="color:var(--graphite)">可以</div>
+            <div class="li" style="color:#8A3A33">读考点树<br>读覆盖度<br>读空白清单<br>读记录流水</div></div>
+          <div style="flex:1"><div class="h" style="color:var(--seal)">不可以</div>
+            <div class="li" style="color:#8A3A33">写入记录<br>调用采集<br>修改骨架<br>代表你操作</div></div></div>
+      </div>
+      <div class="hr"></div>
+      <div style="font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;color:var(--mist);
+           text-transform:uppercase;margin-bottom:9px">暴露的工具</div>
+      <div style="display:flex;gap:5px;flex-wrap:wrap">
+        <span class="chip mono">get_tree</span><span class="chip mono">get_coverage</span>
+        <span class="chip mono">list_gaps</span><span class="chip mono">get_point</span>
+        <span class="chip mono">list_records</span></div>
+      <div class="panel" style="margin-top:20px">
+        <div style="font-size:12px;color:var(--graphite);line-height:1.85">
+          <b>定位提醒:</b>MCP 是发到技术社区的传播素材,不是收入来源。<br>
+          <span style="color:var(--mist)">付费理由仍然是那三样:采集端、骨架数据、托管。</span></div></div>
+    </div>
+    <div style="flex:1">
+      <div class="sec-head"><h2>配置片段</h2><div class="meta">
+        <span style="border:1px solid var(--line);padding:2px 7px">复制</span></div></div>
+      <div class="code">{
+  <span class="k">"mcpServers"</span>: {
+    <span class="k">"kaodian"</span>: {
+      <span class="k">"command"</span>: <span class="s">"npx"</span>,
+      <span class="k">"args"</span>: [<span class="s">"-y"</span>, <span class="s">"@kaodian/mcp"</span>],
+      <span class="k">"env"</span>: {
+        <span class="k">"KAODIAN_TOKEN"</span>: <span class="s">"kd_ro_7f3a…9c2e"</span>
+      }
+    }
+  }
+}
+
+<span class="c">// 令牌前缀 ro_ = read only</span>
+<span class="c">// 服务端拒绝任何写操作,不可提权</span></div>
+      <div class="hint" style="margin-top:12px">
+        令牌前缀 <b class="mono" style="color:var(--graphite)">kd_ro_</b> 把「只读」写进凭证本身,
+        而不只是文档里的一句承诺。</div>
+    </div>
+  </div>
+</div></div>
+<div class="note wide">整个 W7 只有一屏、两栏、五个工具名。这是<b>刻意的欠设计</b> —— §2.6 给 MCP 的预算是两成精力,那它在设计稿里也只配占两成篇幅。把它做漂亮才是违约。</div>
+</div>
+
+</div></div></body></html>

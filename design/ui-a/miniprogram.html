@@ -1,0 +1,1291 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>考点盲区 · 微信小程序 · 风格 A</title>
+<link rel="stylesheet" href="tokens.css">
+<style>
+/* —— 页面专属:只补小程序端需要的少量类,变量一律沿用 tokens.css —— */
+
+/* 设备内部竖向布局 */
+.col{display:flex;flex-direction:column;min-height:0}
+.fl{flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column}
+.px{padding-left:12px;padding-right:12px}
+.sp{flex:1;min-height:0}
+.hr{height:1px;background:var(--hair);flex:none}
+
+/* 两行式密集行标签(名称 + 一句说明),不是卡片,仍靠发丝线分隔 */
+.two{flex:1;min-width:0}
+.two b{display:block;font-size:13.5px;font-weight:500;color:var(--tx);line-height:1.42;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.two em{display:block;font-style:normal;font-size:11px;color:var(--t3);line-height:1.42;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* 首页三个主动作:通栏密集行式大按钮 */
+.act{height:56px}
+.act.on{box-shadow:inset 2px 0 0 var(--acid)}
+
+/* CSS 绘制的几何图标,零 emoji */
+.ico{width:16px;height:16px;flex:none;position:relative;color:var(--t2)}
+.ico i{position:absolute;display:block;background:currentColor}
+.ico.mic i{width:2px;bottom:2px}
+.ico.cam{border:1px solid currentColor;border-radius:2px;height:12px;top:2px}
+.ico.cam i{border-radius:1px;width:6px;height:6px;left:4px;top:2px;background:none;
+  border:1px solid currentColor}
+.ico.lst i{height:1.5px;left:1px}
+
+/* 要 / 不要 标记 */
+.mk{width:8px;height:8px;flex:none;border:1px solid var(--t3);position:relative}
+.mk.y{background:var(--t2);border-color:var(--t2)}
+.mk.n{border-color:rgba(255,107,90,.55)}
+.mk.n:after{content:"";position:absolute;left:-2px;top:3px;width:12px;height:1px;background:var(--red)}
+
+/* 单选:方形 2px,和 PC 端 .ck 同一形状。不是圆形——圆形只留给状态点 */
+.pick{width:12px;height:12px;border-radius:2px;border:1px solid var(--hair2);flex:none;position:relative}
+.pick.on{border-color:var(--t2)}
+.pick.on:after{content:"";position:absolute;left:2.5px;top:2.5px;right:2.5px;bottom:2.5px;
+  background:var(--tx)}
+
+/* 录音波形:等宽竖条 */
+.wave{display:flex;align-items:center;gap:4px;height:56px}
+.wave i{display:block;width:4px;background:#2A2D32;flex:none}
+.wave i.h{background:var(--t3)}
+/* 录音指示点:状态点(圆形例外),不用酸性绿——这屏的酸性绿归「松开 · 结束」 */
+.rd{width:7px;height:7px;border-radius:50%;background:var(--tx);flex:none}
+
+/* 取景框 */
+.vf{position:relative;height:248px;border:1px solid var(--hair);background:#08090A;overflow:hidden}
+.vf .pg{position:absolute;left:24px;right:24px;top:16px;bottom:16px;background:#141518;padding:15px 13px}
+.vf .ln{height:5px;background:#22252A;margin-bottom:9px}
+.vf .cn{position:absolute;width:14px;height:14px;border:1.5px solid var(--t2)}
+.vf .c1{left:9px;top:9px;border-right:none;border-bottom:none}
+.vf .c2{right:9px;top:9px;border-left:none;border-bottom:none}
+.vf .c3{left:9px;bottom:9px;border-right:none;border-top:none}
+.vf .c4{right:9px;bottom:9px;border-left:none;border-top:none}
+.vf .zone{position:absolute;left:36px;right:58px;top:92px;height:60px;border:1px dashed var(--acid)}
+.vf .zn{position:absolute;left:36px;top:76px;font-family:var(--mono);font-size:10px;color:var(--acid)}
+
+/* 图例项 */
+.lgi{display:inline-flex;align-items:center;gap:5px}
+
+/* tabBar 图标区分(仍是 CSS 几何形,圆角一律沿用 tokens 的 2px) */
+.tabbar u.dot{position:relative}
+.tabbar u.dot:after{content:"";position:absolute;left:3.4px;right:3.4px;top:3.4px;bottom:3.4px;
+  background:currentColor}
+.tabbar u.half{position:relative}
+.tabbar u.half:after{content:"";position:absolute;left:2px;right:2px;top:5.4px;height:1.2px;background:currentColor}
+
+/* 大数字压小一档,避免英雄区 */
+.big.s2{font-size:32px}
+.big.s3{font-size:40px}
+
+/* —— 会员 / 额度 / 支付(M11 – M14)—— 仍然:没有卡片,没有阴影,圆角 ≤ 3px —— */
+
+/* 额度计量表头:名称 + 一句限定 + 用量。用量一律 .num */
+.qh{display:flex;align-items:baseline;gap:8px}
+.qh b{font-size:13px;font-weight:500;color:var(--tx);flex:none}
+.qh em{font-style:normal;font-size:10.5px;color:var(--t3);flex:1;min-width:0;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.qh .v{font-size:14px;flex:none}
+.qh .v s{text-decoration:none;font-size:11px;color:var(--t3)}
+.qsub{display:flex;align-items:baseline;margin-top:7px;font-size:10.5px;color:var(--t3)}
+.qsub .r{margin-left:auto;font-family:var(--mono)}
+
+/* 定价:纵向分段。段头是一条 bg3 色带 —— 分节,不是卡片外框 */
+.pseg{height:38px;display:flex;align-items:center;gap:9px;padding:0 12px;background:var(--bg3);
+  border-bottom:1px solid var(--hair);flex:none}
+.pseg b{font-size:13.5px;font-weight:500;color:var(--tx);flex:none}
+.pseg em{font-style:normal;font-size:10.5px;color:var(--t3);flex:1;min-width:0;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pseg .pr{font-size:15px;color:var(--tx);flex:none}
+.pseg .pr s{text-decoration:none;font-size:10.5px;color:var(--t3)}
+
+/* 权益行:比 .row.sm 再密一档。两档 × 6 条权益要落在一屏里 */
+.prow{height:25px;display:flex;align-items:center;gap:10px;padding:0 12px;
+  border-bottom:1px solid var(--hair);flex:none;font-size:12px}
+.prow .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--t2)}
+.prow .v{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:11.5px;
+  color:var(--t3);flex:none}
+.prow .v.un{color:var(--tx)}
+
+/* 底部常驻条:定价页那句「不自动扣费」不许滚出屏幕 */
+.fixbar{height:34px;display:flex;align-items:center;gap:10px;padding:0 12px;background:var(--bg2);
+  border-top:1px solid var(--hair2);flex:none;font-size:12px;color:var(--tx)}
+.fixbar .r{margin-left:auto;font-family:var(--mono);font-size:10.5px;color:var(--t3)}
+
+/* 原生支付确认区:小程序自带完整支付路径,出口只有这一个 */
+.payzone{border-top:1px solid var(--hair2);background:var(--bg2);padding:13px 12px 16px;flex:none}
+</style>
+</head>
+<body>
+<div class="deck app">
+
+<div class="dhd">
+  <h1>考点盲区 · 微信小程序 · 风格 A「极客暗色 · 命令条驱动」</h1>
+  <p>
+    小程序是<b>纯采集端</b>,不做复盘。它只解决一件事:边听课、边刷题、走在路上的时候,<span class="m">三秒记一笔</span>。
+    盲区诊断需要一屏摊开 18 行考点树,手机屏做不好,所以在这里只留一个<b>跳转网页版</b>的入口(M10),不实现。<br>
+    骨架照旧:没有侧边栏 · 没有面包屑 · 没有卡片 · 零阴影 · 圆角 ≤ 3px · 零 emoji。移动端不假装有键盘快捷键,
+    <span class="m">.kbd</span> 只用来常驻标注「长按 / 松手 / 上滑」这类手势,工具感的信号不丢。
+    小程序特有约束:右上角<span class="m">微信胶囊</span>全程留位 · 底部 tabBar 3 项(上限 5)· 录音与相机有授权态。<br>
+    科目固定 <span class="m">山东省考 · 行测 · 资料分析</span>,数字与 PC / iPad 端逐字一致:
+    <span class="m">18 个考点 / 8 个有记录 / 覆盖 44% / 10 个空白 / 2 组整块空白</span>。
+  </p>
+</div>
+
+
+<!-- ==================== 进入 ==================== -->
+<div class="sec"><h2>进入</h2><span class="sub">M1 – M2 · 授权与账号打通</span></div>
+<div class="grid">
+
+  <!-- ---------- M1 ---------- -->
+  <div class="cell">
+    <div class="cap"><span class="cap-n">M1</span><span class="cap-t">微信授权登录</span></div>
+    <div class="dev phone col">
+      <div class="wxcap"><i></i><b></b></div>
+      <div class="status"><span>9:06</span><span class="r">5G · 87%</span></div>
+      <div class="wxnav">考点盲区</div>
+      <div class="fl">
+
+        <div class="px" style="padding-top:22px;padding-bottom:18px">
+          <div style="font-size:26px;font-weight:600;letter-spacing:.02em;line-height:1.25">考点盲区</div>
+          <div class="t2" style="font-size:13px;margin-top:8px;line-height:1.7">
+            跨来源记学习。记过的攒起来,<br>没记过的那些,就是盲区。
+          </div>
+        </div>
+
+        <div class="px" style="padding-bottom:20px">
+          <div class="code"><i>盲区</i> = 骨架层 − 行为层
+骨架层  一棵维护好的考点树 · <b>18</b> 个
+行为层  你真的碰过的记录 · <b>8</b> 个</div>
+        </div>
+
+        <div class="grp">这次记哪棵树<span class="r">先只做一个模块</span></div>
+        <div class="row sm"><span class="nm">山东省考 · 行测 · 资料分析</span><span class="num t3" style="font-size:11px">18 个考点</span></div>
+
+        <div class="grp">要你这些<span class="r">仅此两项</span></div>
+        <div class="row sm"><span class="mk y"></span><span class="nm">微信昵称、头像</span><span class="t3 mono" style="font-size:10.5px">显示是谁</span></div>
+        <div class="row sm"><span class="mk y"></span><span class="nm">手机号(下一步)</span><span class="t3 mono" style="font-size:10.5px">两端同一个账号</span></div>
+
+        <div class="grp">不要这些</div>
+        <div class="row sm"><span class="mk n"></span><span class="nm off">不读你的聊天记录</span></div>
+        <div class="row sm"><span class="mk n"></span><span class="nm off">不发朋友圈,不替你转发</span></div>
+        <div class="row sm"><span class="mk n"></span><span class="nm off">不加好友,不看通讯录</span></div>
+        <div class="row sm"><span class="mk n"></span><span class="nm off">不判断你学得对不对</span></div>
+
+        <div class="sp"></div>
+
+        <div class="px" style="padding-bottom:16px">
+          <div class="note" style="margin-bottom:14px">
+            只有你自己看得到你的记录。默认不公开,也没有排行榜。
+          </div>
+          <span class="btn p lg blk">微信一键登录</span>
+          <div class="t3" style="font-size:10.5px;text-align:center;margin-top:11px">
+            登录即同意 <span style="color:var(--t2)">用户协议</span> 与 <span style="color:var(--t2)">隐私政策</span>
+          </div>
+        </div>
+
+      </div>
+      <div class="homebar"><i></i></div>
+    </div>
+    <div class="ann">
+      开屏不放插画、不放价值主张三连,直接把<b>公式</b>摆出来:看不懂公式的人本来也不是这个产品的人。<br>
+      「要 / 不要」两组用发丝线密集行并排,<span class="rl">不判断你学得对不对</span>被放进「不要」里 —— 能力边界写在授权页,比写在帮助中心可信。
+    </div>
+  </div>
+
+  <!-- ---------- M2 ---------- -->
+  <div class="cell">
+    <div class="cap"><span class="cap-n">M2</span><span class="cap-t">手机号绑定</span></div>
+    <div class="dev phone col">
+      <div class="wxcap"><i></i><b></b></div>
+      <div class="status"><span>9:07</span><span class="r">5G · 87%</span></div>
+      <div class="wxnav">绑定手机号</div>
+      <div class="fl">
+
+        <div class="px" style="padding-top:18px">
+          <div style="font-size:15px;font-weight:500;line-height:1.5">绑一个手机号,两边就是同一个账号。</div>
+        </div>
+
+        <div class="px" style="padding-top:16px">
+          <span class="lbl">手机号</span>
+          <div class="field"><span class="pre mono">+86</span><span class="num" style="letter-spacing:.06em">138 8888 0000</span></div>
+        </div>
+
+        <div class="px" style="padding-top:15px">
+          <span class="lbl">验证码</span>
+          <div class="otp">
+            <i>4</i><i>9</i><i>2</i><i>6</i><i class="cur"></i><i></i>
+          </div>
+          <div style="display:flex;align-items:center;margin-top:10px">
+            <span class="t3" style="font-size:11px">收不到?</span>
+            <span class="t3 num" style="font-size:11px;margin-left:auto">47<s style="text-decoration:none">s</s> 后可重发</span>
+          </div>
+        </div>
+
+        <div class="px" style="padding-top:20px">
+          <div class="code">一个手机号 = 一个账号
+小程序记的 · 网页版记的 → 同一个行为层
+差集才算得准 · <b>盲区 = 骨架层 − 行为层</b></div>
+        </div>
+
+        <div class="px" style="padding-top:16px">
+          <div class="note w">
+            不绑也能用。但两边就是两个账号,手机上记的电脑上看不见,盲区会凭空多出来几个。
+          </div>
+        </div>
+
+        <div class="grp" style="margin-top:16px">绑不绑的区别</div>
+        <div class="row sm">
+          <span class="nm">绑了</span>
+          <span class="mono t2" style="font-size:11px">手机记的 + 电脑记的 · 算一个人</span>
+        </div>
+        <div class="row sm">
+          <span class="nm off">没绑</span>
+          <span class="mono red" style="font-size:11px">手机一份 · 电脑一份 · 算两个人</span>
+        </div>
+
+        <div class="sp"></div>
+
+        <div class="px" style="padding-bottom:16px">
+          <span class="btn p lg blk">绑定</span>
+          <div style="text-align:center;margin-top:12px">
+            <span class="btn">先跳过,只在手机上记</span>
+          </div>
+        </div>
+
+      </div>
+      <div class="homebar"><i></i></div>
+    </div>
+    <div class="ann">
+      <b>这屏是整条链路的承重墙。</b>两端账号不通 = 行为层被劈成两半 = 覆盖率算错 = 整个产品的唯一指标失真。<br>
+      所以不用一句「为了更好的体验」糊过去,而是把后果直接写成 <span class="rl">.note.w</span> 一行小字:「盲区会凭空多出来几个」。<br>
+      「先跳过」保留但降级成幽灵按钮 —— 拒绝的自由要给,代价要说清。
+    </div>
+  </div>
+
+</div>
+
+
+<!-- ==================== 主场景 ==================== -->
+<div class="sec"><h2>主场景 · 记一笔</h2><span class="sub">M3 – M8 · 采集端的全部理由</span></div>
+<div class="grid">
+
+  <!-- ---------- M3 ---------- -->
+  <div class="cell">
+    <div class="cap"><span class="cap-n">M3</span><span class="cap-t">首页 · 今日</span></div>
+    <div class="dev phone col">
+      <div class="wxcap"><i></i><b></b></div>
+      <div class="status"><span>9:41</span><span class="r">5G · 84%</span></div>
+      <div class="wxnav">今日</div>
+      <div class="fl">
+
+        <div class="px" style="padding-top:13px;padding-bottom:11px;border-bottom:1px solid var(--hair)">
+          <div style="display:flex;align-items:flex-end;gap:22px">
+            <div>
+              <span class="lbl">今天记了</span>
+              <div class="big s2">2<s>条</s></div>
+            </div>
+            <div>
+              <span class="lbl">覆盖</span>
+              <div class="big s2">44<s>%</s></div>
+            </div>
+            <div style="margin-left:auto;text-align:right">
+              <span class="lbl">没碰过</span>
+              <div class="big s2">10<s>个</s></div>
+            </div>
+          </div>
+          <div class="meter tall" style="margin-top:12px">
+            <i style="width:16.7%;background:var(--s-stable)"></i>
+            <i style="width:11.1%;background:var(--s-weak)"></i>
+            <i style="width:11.1%;background:var(--s-rusty)"></i>
+            <i style="width:5.6%;background:var(--s-touch)"></i>
+            <i style="width:55.5%;background:var(--s-empty)"></i>
+          </div>
+          <div class="lg-row" style="margin-top:8px">
+            <s class="lgi"><span class="sd stable"></span>稳 3</s>
+            <s class="lgi"><span class="sd weak"></span>弱 2</s>
+            <s class="lgi"><span class="sd rusty"></span>生疏 2</s>
+            <s class="lgi"><span class="sd touch"></span>仅接触 1</s>
+            <s class="lgi"><span class="sd empty"></span>空白 10</s>
+          </div>
+        </div>
+
+        <div class="px" style="padding-top:10px;padding-bottom:10px">
+          <div class="note">两条都落在已经有记录的考点上,覆盖没动。</div>
+        </div>
+
+        <div class="row act on">
+          <span class="ico mic">
+            <i style="left:2px;height:6px"></i><i style="left:7px;height:12px"></i><i style="left:12px;height:8px"></i>
+          </span>
+          <span class="two"><b>语音记</b><em>边听课边说一句,不用打字</em></span>
+          <span class="kbd">长按</span>
+        </div>
+        <div class="row act">
+          <span class="ico cam"><i></i></span>
+          <span class="two"><b>拍照记</b><em>讲义、错题本、屏幕都行</em></span>
+          <span class="kbd">拍</span>
+        </div>
+        <div class="row act">
+          <span class="ico lst">
+            <i style="top:3px;width:14px"></i><i style="top:7.5px;width:9px"></i><i style="top:12px;width:12px"></i>
+          </span>
+          <span class="two"><b>记做题</b><em>练了几道,对了几道</em></span>
+          <span class="kbd">填</span>
+        </div>
+
+        <div class="grp">今日<span class="r">2 条</span></div>
+        <div class="row">
+          <span class="num t3" style="font-size:11px;width:38px">09:40</span>
+          <span class="sd stable"></span>
+          <span class="nm">增长率计算</span>
+          <span class="mono t3" style="font-size:10.5px">自己刷题 · 12/10</span>
+        </div>
+        <div class="row">
+          <span class="num t3" style="font-size:11px;width:38px">09:12</span>
+          <span class="sd stable"></span>
+          <span class="nm">增长率计算</span>
+          <span class="mono t3" style="font-size:10.5px">粉笔 · 资料分析系统班 L12</span>
+        </div>
+
+        <div class="grp">更早</div>
+        <div class="row sm">
+          <span class="num t3" style="font-size:11px;width:38px">昨天</span>
+          <span class="sd stable"></span><span class="nm off">比重计算</span>
+          <span class="mono t3" style="font-size:10.5px">记做题</span>
+        </div>
+        <div class="row sm">
+          <span class="num t3" style="font-size:11px;width:38px">2天前</span>
+          <span class="sd weak"></span><span class="nm off">增长量计算</span>
+          <span class="mono t3" style="font-size:10.5px">记做题</span>
+        </div>
+        <div class="row sm">
+          <span class="num t3" style="font-size:11px;width:38px">3天前</span>
+          <span class="sd stable"></span><span class="nm off">特征数字法</span>
+          <span class="mono t3" style="font-size:10.5px">语音记</span>
+        </div>
+        <div class="row sm">
+          <span class="num t3" style="font-size:11px;width:38px">4天前</span>
+          <span class="sd weak"></span><span class="nm off">截位直除</span>
+          <span class="mono t3" style="font-size:10.5px">拍照记</span>
+        </div>
+
+        <div class="sp"></div>
+        <div class="row" style="border-bottom:none;border-top:1px solid var(--hair)">
+          <span class="two"><b style="font-size:12.5px;color:var(--t2)">还有 10 个考点没碰过</b><em>摊开看要去网页版</em></span>
+          <span class="mono t3">→</span>
+        </div>
+
+      </div>
+      <div class="tabbar">
+        <s class="on"><u></u>今日</s>
+        <s><u class="half"></u>记录</s>
+        <s><u class="dot"></u>我的</s>
+      </div>
+      <div class="homebar"><i></i></div>
+    </div>
+    <div class="ann">
+      顶部三个数一眼给完:<b>今天记了几条 / 覆盖多少 / 还剩几个没碰过</b>。计量条按 18 个考点的五态比例分段,和 PC 端同一组数。<br>
+      三个主动作不是并排的圆角卡片,是<b>通栏密集行</b> —— 拇指打得到,也不占掉整屏。内容区里酸性绿只出现一次:「语音记」的 inset 左边条(最常用的那个),其余靠常驻 <span class="m">.kbd</span> 手势徽标区分。tabBar 的选中高亮是微信原生控件的既定行为,不算进这一屏的强调预算。<br>
+      底部那行是全小程序<b>唯一</b>一处提到盲区的地方,它只报数,不做诊断。
+    </div>
+  </div>
+
+  <!-- ---------- M4 ---------- -->
+  <div class="cell">
+    <div class="cap"><span class="cap-n">M4</span><span class="cap-t">语音记 · 录音中</span></div>
+    <div class="dev phone col">
+      <div class="wxcap"><i></i><b></b></div>
+      <div class="status"><span>9:12</span><span class="r">5G · 86%</span></div>
+      <div class="wxnav">语音记</div>
+      <div class="fl">
+
+        <div class="row sm">
+          <span class="tag">麦克风 已授权</span>
+          <span class="nm off" style="font-size:11.5px">松手即停,不在后台录</span>
+        </div>
+        <div class="row sm">
+          <span class="t3 mono" style="font-size:10.5px;width:32px">来源</span>
+          <span class="nm">粉笔 · 资料分析系统班 L12</span>
+          <span class="kbd">换</span>
+        </div>
+
+        <div style="padding:26px 12px 4px;text-align:center">
+          <div class="big s3">00:47</div>
+          <div style="margin-top:12px;display:inline-flex;align-items:center;gap:7px;font-size:11.5px;color:var(--t2)">
+            <span class="rd"></span>录音中
+          </div>
+        </div>
+
+        <div class="px" style="padding-top:14px;padding-bottom:14px">
+          <div class="wave">
+            <i style="height:6px"></i><i style="height:10px"></i><i style="height:16px"></i><i style="height:9px"></i>
+            <i style="height:22px"></i><i style="height:31px"></i><i style="height:18px"></i><i style="height:12px"></i>
+            <i style="height:27px"></i><i style="height:38px"></i><i style="height:24px"></i><i style="height:14px"></i>
+            <i style="height:8px"></i><i style="height:19px"></i><i style="height:29px"></i><i style="height:41px"></i>
+            <i style="height:26px"></i><i style="height:15px"></i><i style="height:11px"></i><i style="height:23px"></i>
+            <i style="height:34px"></i><i style="height:20px"></i><i style="height:13px"></i><i style="height:7px"></i>
+            <i style="height:17px"></i><i style="height:28px"></i><i style="height:36px"></i><i style="height:21px"></i>
+            <i style="height:12px"></i><i style="height:9px"></i><i style="height:25px"></i><i style="height:33px"></i>
+            <i style="height:19px"></i><i style="height:14px"></i><i style="height:10px"></i><i style="height:22px"></i>
+            <i class="h" style="height:30px"></i><i class="h" style="height:40px"></i><i class="h" style="height:27px"></i>
+            <i class="h" style="height:16px"></i><i class="h" style="height:11px"></i><i class="h" style="height:20px"></i>
+            <i class="h" style="height:32px"></i><i class="h" style="height:24px"></i>
+          </div>
+        </div>
+
+        <div class="px">
+          <span class="lbl">实时转写</span>
+          <div class="tarea">刚听完粉笔资料分析系统班 L12,这节讲的是增长率<span class="t3">,速算那块我还得再练</span><span class="t3" style="opacity:.45">…</span></div>
+        </div>
+
+        <div class="px" style="padding-top:14px">
+          <div class="note">转写只用来认考点。认完就丢,不留原文。</div>
+        </div>
+
+        <div class="row sm" style="margin-top:14px;border-top:1px solid var(--hair)">
+          <span class="nm off" style="font-size:11.5px">说来源、说考点、说做了几道都行</span>
+          <span class="mono t3" style="font-size:10.5px">别念题</span>
+        </div>
+
+        <div class="sp"></div>
+
+        <div class="px" style="padding-bottom:16px">
+          <div class="btn p lg blk" style="height:56px;font-size:14px">松开 · 结束</div>
+          <div style="display:flex;justify-content:center;gap:12px;margin-top:11px">
+            <span class="kbd">上滑取消</span>
+            <span class="kbd">松手结束</span>
+          </div>
+        </div>
+
+      </div>
+      <div class="homebar"><i></i></div>
+    </div>
+    <div class="ann">
+      波形是 44 根等宽 CSS 竖条,近端 8 根提亮表示「刚说的」,<b>没有一个 emoji,也没有麦克风插画</b>。计时用 <span class="m">.num</span>,正文用苹方,字体配对不破。<br>
+      授权态常驻在第一行(<span class="m">.tag.on</span> 麦克风 已授权 · 松手即停,不在后台录)—— 权限说明放在正在用权限的那一屏,比放在设置里有用。<br>
+      来源在录音<b>之前</b>就选好,因为记录的结构是「考点 + 来源名 + 时间」,来源不能事后编。
+    </div>
+  </div>
+
+  <!-- ---------- M5 ---------- -->
+  <div class="cell">
+    <div class="cap"><span class="cap-n">M5</span><span class="cap-t">语音记 · 识别结果</span></div>
+    <div class="dev phone col">
+      <div class="wxcap"><i></i><b></b></div>
+      <div class="status"><span>9:13</span><span class="r">5G · 86%</span></div>
+      <div class="wxnav">认出来了</div>
+      <div class="fl">
+
+        <div class="row sm">
+          <span class="t3 mono" style="font-size:10.5px;width:32px">来源</span>
+          <span class="nm">粉笔 · 资料分析系统班 L12</span>
+        </div>
+        <div class="row sm">
+          <span class="t3 mono" style="font-size:10.5px;width:32px">时间</span>
+          <span class="nm num" style="font-size:12px">今天 09:12</span>
+          <span class="t3 mono" style="font-size:10.5px">时长 00:47</span>
+        </div>
+
+        <div class="px" style="padding-top:14px">
+          <span class="lbl">转写</span>
+          <div class="tarea">刚听完粉笔资料分析系统班 L12,这节讲的是增长率,速算那块我还得再练。</div>
+          <div class="t3 mono" style="font-size:10px;margin-top:7px">转写 · 腾讯云一句话识别</div>
+        </div>
+
+        <div class="grp" style="margin-top:16px">认出来的考点<span class="r">候选来自你自己的考点树</span></div>
+        <div class="row lg sel">
+          <span class="sd stable"></span>
+          <span class="nm">增长率计算<span class="t3" style="font-size:10.5px;margin-left:8px">增长类</span></span>
+          <span class="conf"><i class="hi" style="width:91%"></i></span>
+          <span class="num t2" style="font-size:11px">0.91</span>
+        </div>
+        <div class="row">
+          <span class="sd rusty"></span>
+          <span class="nm off">间隔增长率</span>
+          <span class="conf"><i style="width:31%"></i></span>
+          <span class="num t3" style="font-size:11px">0.31</span>
+        </div>
+        <div class="row">
+          <span class="sd empty"></span>
+          <span class="nm off">年均增长率</span>
+          <span class="conf"><i style="width:18%"></i></span>
+          <span class="num t3" style="font-size:11px">0.18</span>
+        </div>
+        <div class="row sm">
+          <span class="nm t3" style="font-size:11px">其余 <span class="num">15</span> 个都比过了,分更低</span>
+          <span class="mono t3" style="font-size:10px">阈值 0.60</span>
+        </div>
+
+        <div class="px" style="padding-top:16px">
+          <div class="code">存下来的只有这三样
+<b>考点</b>  增长率计算
+<b>来源</b>  粉笔 · 资料分析系统班 L12
+<b>时间</b>  今天 09:12</div>
+        </div>
+
+        <div class="sp"></div>
+
+        <div class="px" style="padding-bottom:16px">
+          <div class="note" style="margin-bottom:13px">录音和转写都不留。认不出来就把标签空着,不硬凑一个最像的 —— 来源和时间照样存。</div>
+          <div style="display:flex;gap:9px">
+            <span class="btn lg" style="flex:1;justify-content:center">都不像,丢掉</span>
+            <span class="btn p lg" style="flex:1;justify-content:center">就它</span>
+          </div>
+        </div>
+
+      </div>
+      <div class="homebar"><i></i></div>
+    </div>
+    <div class="ann">
+      置信度条 <span class="m">.conf</span> 让「有多像」这件事变成可核对的数,而不是模型的口气。0.60 阈值明写在列表末行。<br>
+      <span class="rl">不碰内容</span>不靠文案宣布,靠 <span class="m">.code</span> 块<b>把最终落库的三个字段整个摊开</b> —— 结构上就没有放课程内容的地方。<br>
+      「都不像,丢掉」和「就它」等宽并列,丢掉在左手位,不是藏起来的次要出口。
+    </div>
+  </div>
+
+  <!-- ---------- M6 ---------- -->
+  <div class="cell">
+    <div class="cap"><span class="cap-n">M6</span><span class="cap-t">拍照记 · 识别中</span></div>
+    <div class="dev phone col">
+      <div class="wxcap"><i></i><b></b></div>
+      <div class="status"><span>10:24</span><span class="r">5G · 81%</span></div>
+      <div class="wxnav">拍照记</div>
+      <div class="fl">
+
+        <div class="row sm">
+          <span class="tag">相机 已授权</span>
+          <span class="nm off" style="font-size:11.5px">只在这一屏用,不读相册</span>
+        </div>
+
+        <div class="px" style="padding-top:12px">
+          <div class="vf">
+            <div class="pg">
+              <div class="ln" style="width:64%"></div>
+              <div class="ln" style="width:96%"></div>
+              <div class="ln" style="width:88%"></div>
+              <div class="ln" style="width:93%"></div>
+              <div class="ln" style="width:71%"></div>
+              <div class="ln" style="width:90%"></div>
+              <div class="ln" style="width:84%"></div>
+              <div class="ln" style="width:52%"></div>
+              <div class="ln" style="width:92%"></div>
+              <div class="ln" style="width:67%"></div>
+            </div>
+            <b class="cn c1"></b><b class="cn c2"></b><b class="cn c3"></b><b class="cn c4"></b>
+            <div class="zn">在认这块</div>
+            <div class="zone"></div>
+          </div>
+        </div>
+
+        <div class="px" style="padding-top:13px;padding-bottom:13px">
+          <div style="display:flex;align-items:center;gap:9px">
+            <span class="mono t2" style="font-size:11.5px">识别中</span>
+            <span class="num t3" style="font-size:11px;margin-left:auto">3.2<s style="text-decoration:none">s</s></span>
+          </div>
+          <div class="meter" style="margin-top:8px">
+            <i style="width:62%;background:var(--t2)"></i>
+          </div>
+        </div>
+
+        <div class="row sm">
+          <span class="nm off" style="font-size:12px">已认出的词</span>
+          <span class="num t2" style="font-size:11.5px">3<s style="text-decoration:none" class="t3"> 个</s></span>
+        </div>
+
+        <div class="px" style="padding-top:14px">
+          <div class="code"><b>留下</b>  考点 + 来源名 + 时间
+<b>不留</b>  原图 · 认出来的文字 · 讲义内容</div>
+        </div>
+
+        <div class="px" style="padding-top:14px">
+          <div class="note">原图只存在这台设备,识别完就删。不上云,不共享。</div>
+        </div>
+
+        <div class="sp"></div>
+
+        <div class="px" style="padding-bottom:16px">
+          <div style="display:flex;gap:9px">
+            <span class="btn lg">重拍</span>
+            <span class="btn lg off" style="flex:1;justify-content:center">识别中…</span>
+          </div>
+        </div>
+
+      </div>
+      <div class="homebar"><i></i></div>
+    </div>
+    <div class="ann">
+      取景框用 CSS 画:四角准星 + 灰条模拟的讲义版面。<b>页面上不显示识别出的原文</b>,只报「已认出的词 3 个」——
+      显示出来就等于在界面上留存了别人的课程内容。<br>
+      <span class="rl">原图只存在这台设备,识别完就删。不上云,不共享。</span> 放在快门正上方,不是放在隐私政策第七条。<br>
+      识别期间快门降级为 <span class="m">.btn.off</span>,只留「重拍」一个活出口,避免连拍堆队列。
+    </div>
+  </div>
+
+  <!-- ---------- M7 ---------- -->
+  <div class="cell">
+    <div class="cap"><span class="cap-n">M7</span><span class="cap-t">打标确认 · 低置信度</span></div>
+    <div class="dev phone col">
+      <div class="wxcap"><i></i><b></b></div>
+      <div class="status"><span>10:25</span><span class="r">5G · 81%</span></div>
+      <div class="wxnav">这是哪个考点</div>
+      <div class="fl">
+
+        <div class="px" style="padding-top:14px">
+          <div class="note w">这张认得不太准。最高的一个也才 <span class="num">0.52</span>,没过 <span class="num">0.60</span>。<br>宁可空着,别记错 —— 记错一条,覆盖率就假一分。</div>
+        </div>
+
+        <div class="px" style="padding-top:14px">
+          <div class="code"><b>来源</b>  中公 · 资料分析专项
+<b>时间</b>  今天 10:24
+<b>候选</b>  只在你自己的考点树里挑 · <i>18 个</i></div>
+        </div>
+
+        <div class="grp" style="margin-top:16px">候选<span class="r">按像的程度排 · 一个都没预选</span></div>
+        <div class="row lg">
+          <span class="sd empty"></span>
+          <span class="nm">倍数计算<span class="t3" style="font-size:10.5px;margin-left:8px">倍数与比较</span></span>
+          <span class="conf"><i class="lo" style="width:52%"></i></span>
+          <span class="num red" style="font-size:11px">0.52</span>
+        </div>
+        <div class="row lg">
+          <span class="sd empty"></span>
+          <span class="nm off">倍数变化<span class="t3" style="font-size:10.5px;margin-left:8px">倍数与比较</span></span>
+          <span class="conf"><i style="width:41%"></i></span>
+          <span class="num t3" style="font-size:11px">0.41</span>
+        </div>
+        <div class="row lg">
+          <span class="sd empty"></span>
+          <span class="nm off">同比与环比<span class="t3" style="font-size:10.5px;margin-left:8px">倍数与比较</span></span>
+          <span class="conf"><i style="width:33%"></i></span>
+          <span class="num t3" style="font-size:11px">0.33</span>
+        </div>
+        <div class="row lg">
+          <span class="sd weak"></span>
+          <span class="nm off">增长量计算<span class="t3" style="font-size:10.5px;margin-left:8px">增长类</span></span>
+          <span class="conf"><i style="width:11%"></i></span>
+          <span class="num t3" style="font-size:11px">0.11</span>
+        </div>
+        <div class="row sm">
+          <span class="nm t3" style="font-size:11px">剩下 <span class="num">14</span> 个也比过了,不到 <span class="num">0.10</span></span>
+          <span class="mono t3" style="font-size:10px">闭集</span>
+        </div>
+
+        <div class="grp" style="margin-top:14px">不打标之后会怎样</div>
+        <div class="row sm"><span class="nm off">这张原图</span><span class="mono t2" style="font-size:11px">立刻删</span></div>
+        <div class="row sm"><span class="nm off">来源和时间</span><span class="mono t2" style="font-size:11px">留着</span></div>
+        <div class="row sm"><span class="nm off">考点标签</span><span class="mono t2" style="font-size:11px">空着</span></div>
+        <div class="row sm"><span class="nm off">你的覆盖</span><span class="num t2" style="font-size:11px">还是 44%</span></div>
+
+        <div class="sp"></div>
+
+        <div class="px" style="padding-bottom:16px">
+          <div class="note" style="margin-bottom:13px">标不准就别标,不会偷偷给你记一个最像的。<br>空着的是标签,不是这一笔。</div>
+          <span class="btn p lg blk">先不打标,只存来源和时间</span>
+          <div style="display:flex;justify-content:center;gap:12px;margin-top:11px">
+            <span class="btn">就选倍数计算</span>
+            <span class="btn d">都不像,整条丢掉</span>
+          </div>
+        </div>
+
+      </div>
+      <div class="homebar"><i></i></div>
+    </div>
+    <div class="ann">
+      <b>低置信度下,主操作是「不打标」。</b>酸性绿给了「先不打标」,而不是给了确认 —— 这是<span class="rl">宁缺毋滥</span>在界面上唯一诚实的表达方式:
+      默认动作决定了大多数人的行为,把默认设成「不挂标签」,覆盖率这个唯一指标才干净。<br>
+      <b>三个出口,不是两个:</b>确认 / 不打标只存来源和时间 / 整条丢掉。中间那个是默认,因为<span class="rl">丢掉标签 ≠ 丢掉记录</span> —— 和 PC 端打标屏、和 M9 的「丢失 0 条」是同一条线:记录动作永不失败。<br>
+      候选全部来自那 18 个考点,末行明写「剩下 14 个也比过了」+「闭集」标记 —— 模型不自由生成标签,这件事必须看得见。<br>
+      候选列表<b>一个都不预选</b>:低于阈值时把最高分那行高亮起来,等于替用户先点了一下。分数和红色置信条已经把排序说清楚了。<br>
+      四个候选里三个是空白态(虚线点),说明这张图落在整块空白的「倍数与比较」上,但分数不够,还是不挂标签。
+    </div>
+  </div>
+
+  <!-- ---------- M8 ---------- -->
+  <div class="cell">
+    <div class="cap"><span class="cap-n">M8</span><span class="cap-t">记做题</span></div>
+    <div class="dev phone col">
+      <div class="wxcap"><i></i><b></b></div>
+      <div class="status"><span>9:40</span><span class="r">5G · 85%</span></div>
+      <div class="wxnav">记做题</div>
+      <div class="fl">
+
+        <div class="row lg">
+          <span class="t3 mono" style="font-size:10.5px;width:32px">考点</span>
+          <span class="sd stable"></span>
+          <span class="nm">增长率计算</span>
+          <span class="kbd">换</span>
+        </div>
+
+        <div style="display:flex;gap:10px;padding:16px 12px 0">
+          <div style="flex:1">
+            <span class="lbl">练了几道</span>
+            <div class="field fc" style="height:46px">
+              <span class="num" style="font-size:22px;flex:1">12</span>
+              <span class="t3" style="font-size:11px">道</span>
+            </div>
+          </div>
+          <div style="flex:1">
+            <span class="lbl">对了几道</span>
+            <div class="field" style="height:46px">
+              <span class="num" style="font-size:22px;flex:1">10</span>
+              <span class="t3" style="font-size:11px">道</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="px" style="padding-top:15px;padding-bottom:14px">
+          <div style="display:flex;align-items:baseline;gap:10px">
+            <span class="lbl" style="margin-bottom:0">正确率</span>
+            <span class="num" style="font-size:19px;margin-left:auto">83<s style="text-decoration:none;font-size:11px" class="t3">%</s></span>
+          </div>
+          <div class="note" style="margin-top:10px">不判断对错。正确率是你自己填的数。</div>
+        </div>
+
+        <div class="grp">这些题从哪儿来<span class="r">只记名字</span></div>
+        <div class="row"><span class="pick"></span><span class="nm off">粉笔 · 资料分析系统班 L12</span></div>
+        <div class="row"><span class="pick"></span><span class="nm off">中公 · 资料分析专项</span></div>
+        <div class="row"><span class="pick"></span><span class="nm off">华图 · 资料速算网课</span></div>
+        <div class="row"><span class="pick"></span><span class="nm off">B站 · 资料分析技巧</span></div>
+        <div class="row sel"><span class="pick on"></span><span class="nm">自己刷题 · 2023 国考真题</span></div>
+
+        <div class="px" style="padding-top:16px">
+          <div class="code"><b>这一笔</b>  增长率计算 · 练 12 对 10
+<b>来源</b>    自己刷题 · 2023 国考真题
+<b>时间</b>    今天 09:40</div>
+        </div>
+
+        <div class="sp"></div>
+
+        <div class="px" style="padding-bottom:16px">
+          <div class="note" style="margin-bottom:13px">只存来源的名字和时间,不存题目。</div>
+          <span class="btn p lg blk">记一笔</span>
+        </div>
+
+      </div>
+      <div class="homebar"><i></i></div>
+    </div>
+    <div class="ann">
+      两个数字输入是全产品最敏感的地方:一旦这里出现「答案解析」「正确率偏低,建议加练」,<span class="rl">不做教研</span>和<span class="rl">永不判断对错</span>就同时破了。<br>
+      所以正确率只是 <b>10 除以 12 的显示结果</b>,右边不跟任何评价词,下面跟一行
+      <span class="rl">不判断对错。正确率是你自己填的数。</span><br>
+      来源用密集行单选,五个来源全是「机构名 + 课程名」,没有一个字段能装内容。
+    </div>
+  </div>
+
+</div>
+
+
+<!-- ==================== 边界与设置 ==================== -->
+<div class="sec"><h2>边界与设置</h2><span class="sub">M9 – M10 · 断网、公示、以及把复盘推走</span></div>
+<div class="grid">
+
+  <!-- ---------- M9 ---------- -->
+  <div class="cell">
+    <div class="cap"><span class="cap-n">M9</span><span class="cap-t">离线队列</span></div>
+    <div class="dev phone col">
+      <div class="wxcap"><i></i><b></b></div>
+      <div class="status"><span>12:44</span><span class="r">无信号 · 76%</span></div>
+      <div class="wxnav">离线队列</div>
+      <div class="fl">
+
+        <div class="row">
+          <span class="tag w">没网</span>
+          <span class="nm off" style="font-size:11.5px"><span class="num">12:03</span> 起,已经 <span class="num">41</span> 分钟</span>
+          <span class="kbd">重试</span>
+        </div>
+
+        <div class="px" style="padding-top:16px;padding-bottom:14px;border-bottom:1px solid var(--hair)">
+          <div style="font-size:15px;font-weight:500;line-height:1.55">没网也能记。<br>有网了自己补上去。</div>
+          <div class="note" style="margin-top:11px">
+            记这个动作不许失败。转写和识别得等网,但你说的那句话、拍的那张图,已经在这台手机上了。
+          </div>
+        </div>
+
+        <div class="px" style="padding-top:13px;padding-bottom:12px">
+          <div style="display:flex;align-items:flex-end;gap:24px">
+            <div>
+              <span class="lbl">待上传</span>
+              <div class="big s2">4<s>条</s></div>
+            </div>
+            <div>
+              <span class="lbl">本机占用</span>
+              <div class="big s2">2.3<s>MB</s></div>
+            </div>
+            <div style="margin-left:auto;text-align:right">
+              <span class="lbl">丢失</span>
+              <div class="big s2">0<s>条</s></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="grp">排队中<span class="r">按记的时间排</span></div>
+        <div class="row lg">
+          <span class="num t3" style="font-size:11px;width:38px">12:41</span>
+          <span class="two"><b style="font-size:12.5px">语音记 · <span class="num">01:24</span></b><em>等联网转写</em></span>
+          <span class="tag">本机</span>
+        </div>
+        <div class="row lg">
+          <span class="num t3" style="font-size:11px;width:38px">12:33</span>
+          <span class="two"><b style="font-size:12.5px">拍照记 · <span class="num">2</span> 张</b><em>等联网识别</em></span>
+          <span class="tag">本机</span>
+        </div>
+        <div class="row lg">
+          <span class="num t3" style="font-size:11px;width:38px">12:20</span>
+          <span class="two"><b style="font-size:12.5px">语音记 · <span class="num">00:38</span></b><em>等联网转写</em></span>
+          <span class="tag">本机</span>
+        </div>
+        <div class="row lg">
+          <span class="num t3" style="font-size:11px;width:38px">12:06</span>
+          <span class="two"><b style="font-size:12.5px">拍照记 · <span class="num">1</span> 张</b><em>等联网识别</em></span>
+          <span class="tag">本机</span>
+        </div>
+
+        <div class="px" style="padding-top:14px">
+          <div class="note">关掉小程序也不会丢。原图和录音都在这台设备上,识别完就删。</div>
+        </div>
+
+        <div class="sp"></div>
+
+        <div class="px" style="padding-bottom:16px">
+          <div style="display:flex;gap:9px">
+            <span class="btn lg" style="flex:1;justify-content:center">现在重试</span>
+            <span class="btn lg" style="flex:1;justify-content:center">继续记</span>
+          </div>
+          <div class="t3" style="font-size:10.5px;text-align:center;margin-top:11px">有网会自动补,不用守在这儿</div>
+        </div>
+
+      </div>
+      <div class="homebar"><i></i></div>
+    </div>
+    <div class="ann">
+      「丢失 <b>0</b> 条」和另外两个数并排,是这一屏真正要说的话:<b>记录动作本身永不失败</b>。地铁里、教室里没信号,是这类工具最常见的死法。<br>
+      队列里的条目<b>停在「等联网识别」而不是先猜一个考点</b> —— 离线时硬猜等于绕过 <span class="rl">宁缺毋滥</span> 的阈值。<br>
+      没有一个操作是「确定」型弹窗,两个按钮都是可选项,不点也会自己补。
+    </div>
+  </div>
+
+  <!-- ---------- M10 ---------- -->
+  <div class="cell">
+    <div class="cap"><span class="cap-n">M10</span><span class="cap-t">我的</span></div>
+    <div class="dev phone col">
+      <div class="wxcap"><i></i><b></b></div>
+      <div class="status"><span>20:56</span><span class="r">5G · 63%</span></div>
+      <div class="wxnav">我的</div>
+      <div class="fl">
+
+        <div class="row act on" style="border-top:none">
+          <span class="two"><b>盲区诊断在网页版</b><em>18 个考点摊开看 · 同一个账号,打开就是你的记录</em></span>
+          <span class="mono t2">→</span>
+        </div>
+        <div class="px" style="padding-top:11px;padding-bottom:13px">
+          <div class="note">
+            手机屏一次放不下 18 行考点树,复盘在这儿是残的。小程序只管快点记一笔,剩下的去电脑上看。
+          </div>
+        </div>
+
+        <div class="grp">账号</div>
+        <div class="row sm"><span class="nm off">手机号</span><span class="num t2" style="font-size:11.5px">138 8888 0000</span></div>
+        <div class="row sm"><span class="nm off">微信</span><span class="mono t2" style="font-size:11px">已绑定</span></div>
+        <div class="row sm"><span class="nm off">授权管理</span><span class="mono t2" style="font-size:11px">麦克风 · 相机 已开</span></div>
+        <div class="row sm"><span class="nm off">会员与额度</span><span class="mono t2" style="font-size:11px">免费 · 本月录入 <span class="num">28/30</span></span></div>
+
+        <div class="grp">数据</div>
+        <div class="row sm"><span class="nm off">导出全部记录</span><span class="mono t2" style="font-size:11px">Markdown / CSV / JSON</span></div>
+        <div class="row sm"><span class="nm off">MCP / CLI</span><span class="mono t2" style="font-size:11px">只读</span></div>
+        <div class="row sm"><span class="nm off">同步</span><span class="mono t3" style="font-size:11px">已同步 · 刚刚</span></div>
+        <div class="px" style="padding-top:10px;padding-bottom:12px">
+          <div class="note">只读。不能写,不能替你采集。导出是全量的,想搬走随时搬。</div>
+        </div>
+
+        <div class="grp">生成式 AI 服务公示</div>
+        <div class="row sm"><span class="nm off">语音转写</span><span class="mono t2" style="font-size:10.5px">腾讯云一句话识别</span></div>
+        <div class="row sm" style="gap:8px"><span class="nm off" style="font-size:12px">图片识别与考点匹配</span><span class="mono t2" style="font-size:9.5px;white-space:nowrap;flex:none">DeepSeek deepseek-v4-flash-vision-exp</span></div>
+        <div class="row sm"><span class="nm off">登记编号</span><span class="mono t3" style="font-size:11px">待登记</span></div>
+        <div class="px" style="padding-top:10px;padding-bottom:12px">
+          <div class="note">模型只用来认考点,不判断对错,也不生成讲解。</div>
+        </div>
+
+        <div class="grp void">注销<span class="r">不可撤销</span></div>
+        <div class="row"><span class="nm red">注销账号并删除全部数据</span><span class="mono t3">→</span></div>
+
+        <div class="sp"></div>
+
+      </div>
+      <div class="tabbar">
+        <s><u></u>今日</s>
+        <s><u class="half"></u>记录</s>
+        <s class="on"><u class="dot"></u>我的</s>
+      </div>
+      <div class="homebar"><i></i></div>
+    </div>
+    <div class="ann">
+      跳转网页版<b>排在第一位、占最大一行、拿走本屏唯一的酸性绿</b>。它不是补充功能,是这个小程序主动交出去的那一半产品。
+      下面那行小字给的是原因(手机屏放不下 18 行),不是道歉。<br>
+      <span class="rl">生成式 AI 服务公示</span>是法定义务,做成密集行的一节而不是折叠在协议里:两个模型名 + 登记编号 待登记,一行一个,可截图。<br>
+      「导出 Markdown / CSV / JSON」和「MCP 只读」并排 —— <span class="rl">完全可导出</span>与<span class="rl">MCP 只读</span>是同一件事的两面:数据是你的,采集永远得你自己动手。<br>
+      注销用 <span class="m">.grp.void</span> 红色分组头,和「整块空白」共用同一套红色语义:这里是空的 / 这里会变空。
+    </div>
+  </div>
+
+</div>
+
+
+<!-- ==================== 会员与支付 ==================== -->
+<div class="sec"><h2>会员与支付</h2><span class="sub">M11 – M14 · 额度 · 一个付费档 · 虚拟支付 · 拦截</span></div>
+<div class="grid">
+
+  <!-- ---------- M11 ---------- -->
+  <div class="cell">
+    <div class="cap"><span class="cap-n">M11</span><span class="cap-t">会员与额度</span></div>
+    <div class="dev phone col">
+      <div class="wxcap"><i></i><b></b></div>
+      <div class="status"><span>20:58</span><span class="r">5G · 63%</span></div>
+      <div class="wxnav">会员与额度</div>
+      <div class="fl">
+
+        <div class="row">
+          <span class="tag">免费</span>
+          <span class="nm off" style="font-size:11.5px">还没开通任何一档</span>
+          <span class="mono t3" style="font-size:10.5px">2026 年 8 月</span>
+        </div>
+
+        <div class="grp">本月额度<span class="r">每月 1 日零点重置</span></div>
+
+        <div class="px" style="padding-top:12px;padding-bottom:12px;border-bottom:1px solid var(--hair)">
+          <div class="qh">
+            <b>AI 录入</b><em>语音转写 / 拍照识别打标</em>
+            <span class="v num red">28<s>/30</s></span>
+          </div>
+          <div class="meter tall" style="margin-top:9px"><i style="width:93.3%;background:var(--red)"></i></div>
+          <div class="qsub"><span>还剩 <span class="num red">2</span> 次</span><span class="r">9 月 1 日 00:00 归零</span></div>
+        </div>
+
+        <div class="px" style="padding-top:12px;padding-bottom:12px;border-bottom:1px solid var(--hair)">
+          <div class="qh">
+            <b>AI 代发提问</b><em>代你调外部模型</em>
+            <span class="v num">4<s>/5</s></span>
+          </div>
+          <div class="meter tall" style="margin-top:9px"><i style="width:80%;background:var(--t2)"></i></div>
+          <div class="qsub"><span>还剩 <span class="num t2">1</span> 次</span><span class="r">9 月 1 日 00:00 归零</span></div>
+        </div>
+
+        <div class="px" style="padding-top:11px;padding-bottom:12px">
+          <div class="note">代发提问是把你的盲区清单和记录组装成上下文,代你调外部模型 <span class="mono">DeepSeek deepseek-v4-chat</span>,答案原样透出。产品不产出学科内容,也不判断对错。</div>
+        </div>
+
+        <div class="grp">不消耗额度的事<span class="r">两档都不限</span></div>
+        <div class="row sm"><span class="nm off">记做题 · 练了几道 / 对了几道</span><span class="mono" style="font-size:11px">不限</span></div>
+        <div class="row sm"><span class="nm off">粘一段,自己挂考点</span><span class="mono" style="font-size:11px">不限</span></div>
+        <div class="row sm"><span class="nm off">骨架树 · 覆盖</span><span class="mono" style="font-size:11px">不限</span></div>
+        <div class="row sm"><span class="nm off">盲区诊断 · <span class="num">10</span> 个空白</span><span class="mono" style="font-size:11px">不限</span></div>
+        <div class="row sm"><span class="nm off">导出 Markdown / CSV / JSON</span><span class="mono" style="font-size:11px">不限</span></div>
+
+        <div class="grp">¥9.9 能换到什么<span class="r">各端同价</span></div>
+        <div class="row sm">
+          <span class="nm t3" style="font-size:10.5px">每月次数</span>
+          <span class="mono t3" style="font-size:10px;width:46px;text-align:right;flex:none">免费</span>
+          <span class="mono t3" style="font-size:10px;width:62px;text-align:right;flex:none">记多点 9.9</span>
+        </div>
+        <div class="row sm">
+          <span class="nm off" style="font-size:12px">AI 录入</span>
+          <span class="num t2" style="font-size:11.5px;width:46px;text-align:right;flex:none">30</span>
+          <span class="num" style="font-size:11.5px;width:62px;text-align:right;flex:none">300</span>
+        </div>
+        <div class="row sm">
+          <span class="nm off" style="font-size:12px">AI 代发提问</span>
+          <span class="num t2" style="font-size:11.5px;width:46px;text-align:right;flex:none">5</span>
+          <span class="num" style="font-size:11.5px;width:62px;text-align:right;flex:none">50</span>
+        </div>
+
+        <div class="sp"></div>
+
+        <div class="px" style="padding-bottom:16px">
+          <div class="note" style="margin-bottom:12px">开通是一次性买一个月。不自动扣费,到期就停。</div>
+          <span class="btn p lg blk">看看两档</span>
+        </div>
+
+      </div>
+      <div class="homebar"><i></i></div>
+    </div>
+    <div class="ann">
+      两条 <span class="m">.meter</span> 是这一屏唯一的图形,别的全是发丝线密集行。红只给<b>快用尽的那条</b>(AI 录入 <span class="m">28/30</span>,已经吃掉 93%);
+      AI 代发提问 <span class="m">4/5</span> 留在中性灰。一屏两处红,红就不再是告警。<br>
+      「不消耗额度的事」五行贴着额度条下面放,不是塞进帮助中心:<span class="rl">额度用尽 ≠ 记不了</span>。
+      <b>骨架树 · 覆盖 · 盲区诊断 和 导出,免费档一律写「不限」</b> —— 北极星指标是「主动查看盲区的人数」,把它关进付费墙等于用收费压住自己唯一的指标。<br>
+      代发提问的模型名 <span class="m">DeepSeek deepseek-v4-chat</span> 写在额度旁边而不是折叠进协议:<span class="rl">AI 代发不是产品自己答</span>,
+      产品只负责组上下文、代你调、原样透出。<br>
+      整屏没有「连续包月」「自动续费」「到期自动扣款」中的任何一个词,底部那句<b>不自动扣费,到期就停</b>是卖点不是缺陷。
+    </div>
+  </div>
+
+  <!-- ---------- M12 ---------- -->
+  <div class="cell">
+    <div class="cap"><span class="cap-n">M12</span><span class="cap-t">定价 · 一个付费档</span></div>
+    <div class="dev phone col">
+      <div class="wxcap"><i></i><b></b></div>
+      <div class="status"><span>21:04</span><span class="r">5G · 62%</span></div>
+      <div class="wxnav">定价</div>
+      <div class="fl">
+
+        <div class="pseg"><b>免费</b><em>你现在在这档</em><span class="pr num">¥0</span><span class="tag">当前</span></div>
+        <div class="prow"><span class="nm">AI 录入(语音转写 / 拍照识别打标)</span><span class="v">30 次/月</span></div>
+        <div class="prow"><span class="nm">AI 代发提问</span><span class="v">5 次/月</span></div>
+        <div class="prow"><span class="nm">手动记录(记做题 / 粘一段自己挂考点)</span><span class="v un">不限</span></div>
+        <div class="prow"><span class="nm">骨架树 · 覆盖 · 盲区诊断</span><span class="v un">不限</span></div>
+        <div class="prow"><span class="nm">导出 Markdown / CSV / JSON</span><span class="v un">不限</span></div>
+        <div class="prow"><span class="nm">MCP / CLI 只读接入</span><span class="v un">不限</span></div>
+
+        <div class="pseg"><b>记多点</b><em>记得多的月份</em><span class="pr num">¥9.9<s>/月</s></span><span class="btn p">开通</span></div>
+        <div class="prow"><span class="nm">AI 录入(语音转写 / 拍照识别打标)</span><span class="v">300 次/月</span></div>
+        <div class="prow"><span class="nm">AI 代发提问</span><span class="v">50 次/月</span></div>
+        <div class="prow"><span class="nm">手动记录(记做题 / 粘一段自己挂考点)</span><span class="v un">不限</span></div>
+        <div class="prow"><span class="nm">骨架树 · 覆盖 · 盲区诊断</span><span class="v un">不限</span></div>
+        <div class="prow"><span class="nm">导出 Markdown / CSV / JSON</span><span class="v un">不限</span></div>
+        <div class="prow"><span class="nm">MCP / CLI 只读接入</span><span class="v un">不限</span></div>
+
+        <div class="grp" style="margin-top:9px">免费档为什么也给这四行「不限」<span class="r">4</span></div>
+        <div class="row sm"><span class="nm off" style="font-size:12px">骨架树 · 覆盖 · 盲区诊断</span><span class="t3" style="font-size:10.5px;flex:none">锁了等于压住自己在看的数</span></div>
+        <div class="row sm"><span class="nm off" style="font-size:12px">导出 md / csv / json</span><span class="t3" style="font-size:10.5px;flex:none">要钱的话「数据是你的」就是空话</span></div>
+        <div class="row sm"><span class="nm off" style="font-size:12px">MCP / CLI 只读</span><span class="t3" style="font-size:10.5px;flex:none">招牌,不指望它赚钱</span></div>
+        <div class="row sm"><span class="nm off" style="font-size:12px">手动记录</span><span class="t3" style="font-size:10.5px;flex:none">额度用尽只停 AI,记照样能记</span></div>
+
+        <div class="sp"></div>
+
+        <div class="px" style="padding-top:11px;padding-bottom:11px">
+          <div class="note">这一页只有次数差,没有能力差。<br>代发提问代你调外部模型 <span class="mono">DeepSeek deepseek-v4-chat</span>,答案原样透出。产品不产出学科内容,不判断对错。</div>
+        </div>
+        <div class="fixbar"><span>不自动扣费,到期就停</span><span class="r">每月手动续 · 不代扣</span></div>
+
+      </div>
+      <div class="homebar"><i></i></div>
+    </div>
+    <div class="ann">
+      <b>档位不是并排的圆角卡片。</b>手机窄屏放不下多列表格是表面理由,真正的理由是:圆角卡片定价页是全世界最标准的 SaaS 写法,
+      也正是这套设计要甩掉的东西。改成<b>纵向三段</b> —— 段头一条 <span class="m">bg3</span> 色带(档名 + 价格 + 操作),段内六行权益,
+      <span class="m">18</span> 行权益落在一屏里,一根发丝线一条。<br>
+      三段的权益<b>逐字相同</b>,只有右边的值不同,所以能竖着扫下来对照。免费段后四行全是「不限」并且用最亮的一级文字色 ——
+      <span class="rl">盲区诊断永不锁</span>、<span class="rl">导出永不锁</span>在界面上的物理形态就是这四个字,不是「部分」,不是「试用」。<br>
+      付费档叫<b>记多点</b>,不叫基础版 / 专业版 —— 名字得说清楚买的是什么(次数),不是身份。<br>
+      酸性绿只出现一次:¥9.9 那个「开通」。没有「最受欢迎」角标,没有「立省 40%」。<br>
+      底部常驻条不随内容滚走:<span class="rl">不自动扣费,到期就停</span>。自动续费(委托代扣)需要企业主体 + 微信支付认证客服电话 + 标准费率,
+      且结算周期不调整还要求最近 4 自然周去重付费用户 ≥300、投诉率 ≤0.05% —— 本期开不了,那就把手动续写成卖点。
+    </div>
+  </div>
+
+  <!-- ---------- M13 ---------- -->
+  <div class="cell">
+    <div class="cap"><span class="cap-n">M13</span><span class="cap-t">支付 · 微信虚拟支付</span></div>
+    <div class="dev phone col">
+      <div class="wxcap"><i></i><b></b></div>
+      <div class="status"><span>21:06</span><span class="r">5G · 62%</span></div>
+      <div class="wxnav">支付</div>
+      <div class="fl">
+
+        <div class="grp">商品<span class="r">一次性购买</span></div>
+        <div class="row lg">
+          <span class="two"><b>记多点 · <span class="num">1</span> 个月</b><em>AI 录入 <span class="num">300</span> 次/月 · AI 代发提问 <span class="num">50</span> 次/月</em></span>
+          <span class="num" style="font-size:16px">¥9.90</span>
+        </div>
+        <div class="row sm"><span class="nm off">订单号</span><span class="num t2" style="font-size:11.5px">KD26082500461</span></div>
+        <div class="row sm"><span class="nm off">有效期</span><span class="num t2" style="font-size:11.5px">2026-08-25 → 2026-09-25</span></div>
+
+        <div class="grp">买完之后额度变成<span class="r">当月立即生效</span></div>
+        <div class="row sm">
+          <span class="nm off" style="font-size:12px">AI 录入</span>
+          <span class="num t3" style="font-size:11.5px">30</span>
+          <span class="mono t3" style="font-size:11px">→</span>
+          <span class="num" style="font-size:12.5px">300</span>
+          <span class="t3" style="font-size:10.5px">次/月</span>
+        </div>
+        <div class="row sm">
+          <span class="nm off" style="font-size:12px">AI 代发提问</span>
+          <span class="num t3" style="font-size:11.5px">5</span>
+          <span class="mono t3" style="font-size:11px">→</span>
+          <span class="num" style="font-size:12.5px">50</span>
+          <span class="t3" style="font-size:10.5px">次/月</span>
+        </div>
+        <div class="row sm">
+          <span class="nm off" style="font-size:11.5px">手动记录 / 骨架树 / 盲区 / 导出 / MCP</span>
+          <span class="mono" style="font-size:11px">本来就不限</span>
+        </div>
+
+        <div class="grp">支付方式</div>
+        <div class="row lg">
+          <span class="pick on"></span>
+          <span class="two"><b>微信支付</b><em>小程序虚拟支付接口 · 全程不跳出小程序</em></span>
+          <span class="tag">唯一方式</span>
+        </div>
+
+        <div class="px" style="padding-top:12px">
+          <div class="code"><b>接口</b>  微信小程序虚拟支付
+<b>类目</b>  会员订阅 · 虚拟商品
+<b>同价</b>  iOS / Android 同为 <b>¥9.90</b></div>
+        </div>
+
+        <div class="px" style="padding-top:12px">
+          <div class="note">iOS 那 <span class="num">12%</span> 苹果佣金由我们自己承担,不做分端差价 —— 换台手机买,价格还是这个数。</div>
+        </div>
+
+        <div class="px" style="padding-top:12px">
+          <div class="note">一次性购买,不签约、不代扣,到 <span class="num">2026-09-25</span> 就停。<br>账单里只有商品名和金额,没有你记了什么。</div>
+        </div>
+
+        <div class="sp"></div>
+
+        <div class="payzone">
+          <div style="display:flex;align-items:baseline">
+            <span class="t2" style="font-size:12px">需支付</span>
+            <span class="num" style="font-size:22px;margin-left:auto">¥9.90</span>
+          </div>
+          <div class="btn p lg blk" style="height:44px;font-size:14px;margin-top:12px">微信支付</div>
+          <div class="t3" style="font-size:10.5px;text-align:center;margin-top:10px">支付由微信完成 · 不签约、不代扣</div>
+        </div>
+
+      </div>
+      <div class="homebar"><i></i></div>
+    </div>
+    <div class="ann">
+      <b>整屏只有一个出口,就是底部那颗「微信支付」。</b>没有任何一个入口指向网页版、公众号、H5 或站外收银台,也没有任何一处让你换台设备再付 ——
+      <span class="rl">引导用户到站外完成支付是明令违规</span>,小程序必须自带完整支付路径。这不是设计取舍,是能不能过审的问题。<br>
+      <span class="m">.code</span> 块把合规事实摊开而不是藏进协议:<b>走的是微信小程序虚拟支付接口</b>。2026-04-01 起全终端强制接入,
+      会员订阅与 AI 点数被明确列为虚拟商品。<br>
+      iOS 渠道那 <span class="m">12%</span> 苹果佣金(2026-08 调研,当年从 15% 降下来,会变)由我方承担,<b>不做分端差价</b> —— 各端同价 ¥9.90。
+      分端定价省下的钱,不值得用户在两个设备上看到两个价格时的那一秒困惑。<br>
+      「买完之后额度变成」把 <span class="m">30→300</span>、<span class="m">5→50</span> 摊开,第三行写死「本来就不限」:
+      买的是 AI 次数,买不到也买不走<span class="rl">手动记录 / 骨架树 / 盲区诊断 / 导出 / MCP</span>。<br>
+      订单摘要只有商品名、金额、订单号、有效期。<span class="rl">不碰内容</span>在账单上的形态是:这里根本没有一个字段能装下你记了什么。
+    </div>
+  </div>
+
+  <!-- ---------- M14 ---------- -->
+  <div class="cell">
+    <div class="cap"><span class="cap-n">M14</span><span class="cap-t">额度用尽 · 拦截</span></div>
+    <div class="dev phone col">
+      <div class="wxcap"><i></i><b></b></div>
+      <div class="status"><span>21:01</span><span class="r">5G · 63%</span></div>
+      <div class="wxnav">今日</div>
+      <div class="fl" style="position:relative">
+
+        <div class="px" style="padding-top:13px;padding-bottom:11px;border-bottom:1px solid var(--hair)">
+          <div style="display:flex;align-items:flex-end;gap:22px">
+            <div>
+              <span class="lbl">今天记了</span>
+              <div class="big s2">2<s>条</s></div>
+            </div>
+            <div>
+              <span class="lbl">覆盖</span>
+              <div class="big s2">44<s>%</s></div>
+            </div>
+            <div style="margin-left:auto;text-align:right">
+              <span class="lbl">没碰过</span>
+              <div class="big s2">10<s>个</s></div>
+            </div>
+          </div>
+          <div class="meter tall" style="margin-top:12px">
+            <i style="width:16.7%;background:var(--s-stable)"></i>
+            <i style="width:11.1%;background:var(--s-weak)"></i>
+            <i style="width:11.1%;background:var(--s-rusty)"></i>
+            <i style="width:5.6%;background:var(--s-touch)"></i>
+            <i style="width:55.5%;background:var(--s-empty)"></i>
+          </div>
+          <div class="lg-row" style="margin-top:8px">
+            <s class="lgi"><span class="sd stable"></span>稳 3</s>
+            <s class="lgi"><span class="sd weak"></span>弱 2</s>
+            <s class="lgi"><span class="sd rusty"></span>生疏 2</s>
+            <s class="lgi"><span class="sd touch"></span>仅接触 1</s>
+            <s class="lgi"><span class="sd empty"></span>空白 10</s>
+          </div>
+        </div>
+
+        <div class="row act">
+          <span class="ico mic">
+            <i style="left:2px;height:6px"></i><i style="left:7px;height:12px"></i><i style="left:12px;height:8px"></i>
+          </span>
+          <span class="two"><b>语音记</b><em>边听课边说一句,不用打字</em></span>
+        </div>
+        <div class="row act">
+          <span class="ico cam"><i></i></span>
+          <span class="two"><b>拍照记</b><em>讲义、错题本、屏幕都行</em></span>
+        </div>
+        <div class="row act">
+          <span class="ico lst">
+            <i style="top:3px;width:14px"></i><i style="top:7.5px;width:9px"></i><i style="top:12px;width:12px"></i>
+          </span>
+          <span class="two"><b>记做题</b><em>练了几道,对了几道</em></span>
+        </div>
+
+        <div class="ov"></div>
+
+        <div class="sheet" style="position:absolute;left:0;right:0;bottom:0">
+
+          <div style="height:14px;display:flex;align-items:center;justify-content:center">
+            <i style="display:block;width:34px;height:3px;border-radius:2px;background:var(--hair2)"></i>
+          </div>
+
+          <div class="row" style="border-top:1px solid var(--hair)">
+            <span class="tag w">额度用完</span>
+            <span class="nm off" style="font-size:11.5px">你按的是「语音记」</span>
+            <span class="num red" style="font-size:12px">30 / 30</span>
+          </div>
+
+          <div class="px" style="padding-top:14px;padding-bottom:12px">
+            <div style="font-size:15px;font-weight:500;line-height:1.55">这是本月第 <span class="num">31</span> 次 AI 录入。</div>
+            <div class="meter tall" style="margin-top:11px"><i style="width:100%;background:var(--red)"></i></div>
+            <div class="qsub"><span>免费档 AI 录入 <span class="num">30</span> 次/月,已用满</span><span class="r">9 月 1 日 00:00 归零</span></div>
+          </div>
+
+          <div class="grp">三条路<span class="r">哪条都行</span></div>
+          <div class="row act">
+            <span class="two"><b>开通「记多点」<span class="num">¥9.9</span>/月</b><em>AI 录入 <span class="num">300</span> 次/月 · 代发提问 <span class="num">50</span> 次/月</em></span>
+            <span class="btn p">去开通</span>
+          </div>
+          <div class="row act">
+            <span class="two"><b>改用手动记 · 不消耗额度</b><em>记做题 / 粘一段自己挂考点,一样进覆盖</em></span>
+            <span class="btn" style="border-color:var(--hair2);color:var(--tx)">记做题</span>
+            <span class="btn" style="border-color:var(--hair2);color:var(--tx)">粘一段</span>
+          </div>
+          <div class="row act">
+            <span class="two"><b>什么都不做,等重置</b><em><span class="num">9</span> 月 <span class="num">1</span> 日 <span class="num">00:00</span> 归零 · 还有 <span class="num">7</span> 天</em></span>
+            <span class="mono t3" style="font-size:10.5px">不用操作</span>
+          </div>
+
+          <div class="grp">没被限制的<span class="r">额度只管 AI 那两件事</span></div>
+          <div class="row sm"><span class="nm off">骨架树 · 覆盖 · 盲区诊断</span><span class="mono" style="font-size:11px">不限</span></div>
+          <div class="row sm"><span class="nm off">导出 Markdown / CSV / JSON</span><span class="mono" style="font-size:11px">不限</span></div>
+          <div class="row sm"><span class="nm off">手动记录 · MCP / CLI 只读</span><span class="mono" style="font-size:11px">不限</span></div>
+
+          <div class="px" style="padding-top:11px;padding-bottom:13px">
+            <div class="note">额度用完 ≠ 记不了。停下的只有 AI 录入和 AI 代发提问,手动记随便记,盲区和导出一直开着。</div>
+          </div>
+
+        </div>
+
+      </div>
+      <div class="tabbar">
+        <s class="on"><u></u>今日</s>
+        <s><u class="half"></u>记录</s>
+        <s><u class="dot"></u>我的</s>
+      </div>
+      <div class="homebar"><i></i></div>
+    </div>
+    <div class="ann">
+      <b>三条路等高、等宽、同一层级。</b>升级(¥9.9)拿走这一屏唯一的酸性绿,但降级路径「改用手动记」用的是<b>同样 56px 的通栏行、同样大小的两颗按钮</b>,
+      而且按钮是<b>真出口</b> —— 记做题 / 粘一段,点下去就能记,不是一行免责小字。<span class="rl">额度用尽 ≠ 记不了</span>只有做成可点的东西才成立。<br>
+      第三条路是「什么都不做」:明写 9 月 1 日 00:00 归零、还有 7 天。给一条不花钱也不动手的路,拦截才不像勒索。<br>
+      沉在下面的「没被限制的」三行是这一屏真正的承重墙:<b>骨架树 · 覆盖 · 盲区诊断 / 导出 / 手动记录 · MCP 全部「不限」</b>。
+      被额度管住的永远只有 AI 录入与 AI 代发这两件<b>要花我们钱</b>的事。<br>
+      抽屉高 <span class="m">511px</span>,压在 <span class="m">664px</span> 的首页上,顶上留出的 <span class="m">153px</span> 正好是
+      <b>覆盖 44% · 没碰过 10 个 · 五态计量条</b>那一整栏 —— 被拦下的是这一次 AI 调用,盲区那三个数一格都没被遮。
+      抽屉不遮微信胶囊,也不遮原生 tabBar:两者都是原生层。<br>
+      时间线是连着的:<span class="m">M11 20:58</span>(28/30)→ 又记了两笔 → <b>本屏 21:01 第 31 次被拦</b> →
+      <span class="m">M12 21:04</span> 看定价 → <span class="m">M13 21:06</span> 下单 <span class="m">KD26082500461</span>。
+    </div>
+  </div>
+
+</div>
+
+</div>
+</body>
+</html>

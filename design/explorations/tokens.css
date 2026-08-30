@@ -1,0 +1,318 @@
+/* ============================================================
+   考点答题卡 · 设计令牌
+   ------------------------------------------------------------
+   语言承自 kaodian-demo.html:纸、墨、印章红、宋体标题、2px 直角。
+   不引入蓝色主色,不用 emoji 当图标,不用阴影,不用大圆角。
+
+   一条反常规的配色决定:
+   在常规仪表盘里绿色=好、红色=坏。这里没有绿色,只有一个印章红,
+   它同时用于「练过但弱」和「整块空白」——因为这两件事是同一类信息:
+   需要你回头看的地方。盲区不是错误状态,是这个产品唯一的输出。
+   ============================================================ */
+
+:root{
+  /* 纸与墨 */
+  --paper:#E9EBE5;      /* 底纸 */
+  --paper-2:#F3F4F0;    /* 面板 */
+  --paper-3:#FFFFFF;    /* 输入聚焦 */
+  --ink:#14171A;        /* 正文 / 实心 */
+  --graphite:#3A4046;   /* 次级 / 已练稳 */
+  --mist:#8C948F;       /* 弱文字 / 久未复习 */
+  --line:#C9CDC4;       /* 描边 */
+  --line-2:#DDE0D9;     /* 更浅描边 */
+  --seal:#C0332B;       /* 印章红 · 全稿唯一强调色 */
+  --seal-soft:#F0DCD9;  /* 印章红淡底 */
+
+  /* 展板画布 */
+  --canvas:#14171A;
+  --canvas-2:#1C2024;
+
+  --sans:"PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,sans-serif;
+  --song:"Songti SC","STSong","Source Han Serif SC","Noto Serif SC","SimSun",serif;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+
+  --r:2px;              /* 全站唯一圆角 */
+}
+
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--canvas);
+  color:var(--ink);
+  font-family:var(--sans);
+  -webkit-font-smoothing:antialiased;
+  line-height:1.6;
+}
+
+/* ============ 展板外壳 ============ */
+.deck{padding:56px 40px 96px;max-width:1560px;margin:0 auto}
+.deck-head{border-bottom:2px solid #2E3339;padding-bottom:30px;margin-bottom:48px}
+.deck-kicker{
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.24em;text-transform:uppercase;
+  color:var(--seal);margin-bottom:14px;
+}
+.deck-title{
+  font-family:var(--song);font-size:34px;font-weight:700;letter-spacing:.04em;
+  color:#F3F4F0;line-height:1.3;margin:0;
+}
+.deck-sub{
+  font-size:13.5px;color:#8C948F;line-height:1.95;margin-top:16px;max-width:940px;
+}
+.deck-sub b{color:#D7DBD4;font-weight:600}
+.deck-formula{
+  font-family:var(--mono);font-size:12px;color:#8C948F;letter-spacing:.06em;
+  margin-top:20px;border-left:2px solid var(--seal);padding-left:13px;line-height:1.9;
+}
+.deck-formula b{color:#F3F4F0}
+
+.grid{display:flex;flex-wrap:wrap;gap:56px}
+.cell{display:flex;flex-direction:column}
+
+/* 屏幕题注 */
+.cap{display:flex;align-items:baseline;gap:11px;margin-bottom:8px}
+.cap-n{
+  font-family:var(--mono);font-size:10.5px;font-weight:700;letter-spacing:.16em;
+  color:var(--seal);
+}
+.cap-t{font-family:var(--song);font-size:16px;font-weight:700;color:#F3F4F0;letter-spacing:.03em}
+.cap-d{font-size:12.5px;color:#8C948F;line-height:1.85;margin-bottom:18px;max-width:660px}
+.cap-d.wide{max-width:1080px}
+.cap-d b{color:#D7DBD4}
+
+/* 屏幕脚注 —— 约束追溯 */
+.note{
+  margin-top:14px;border-left:2px solid var(--seal);padding:11px 0 11px 14px;
+  font-size:12px;color:#8C948F;line-height:1.9;max-width:660px;
+}
+.note.wide{max-width:1080px}
+.note b{color:#D7DBD4}
+
+/* ============ 设备外框 ============ */
+/* 手机 375×812 */
+.phone{
+  width:375px;height:812px;background:var(--paper);
+  border:9px solid #2A2F35;border-radius:34px;overflow:hidden;
+  display:flex;flex-direction:column;position:relative;flex:none;
+}
+.notch{
+  position:absolute;top:0;left:50%;transform:translateX(-50%);
+  width:150px;height:26px;background:#2A2F35;border-radius:0 0 15px 15px;z-index:20;
+}
+.statusbar{
+  height:42px;flex:none;display:flex;align-items:flex-end;padding:0 20px 5px;
+  font-size:12.5px;font-weight:600;color:var(--ink);z-index:21;position:relative;
+}
+.statusbar .r{margin-left:auto;display:flex;gap:5px;font-family:var(--mono);font-size:11px}
+/* 微信胶囊 87×32 —— 小程序导航栏必须避让 */
+.capsule{
+  position:absolute;right:14px;top:6px;width:87px;height:32px;
+  border:1px solid var(--line);border-radius:16px;background:rgba(255,255,255,.55);
+  display:flex;align-items:center;justify-content:space-around;z-index:22;
+}
+.capsule i{display:block;width:3px;height:3px;border-radius:50%;background:var(--graphite)}
+.capsule .sep{width:1px;height:15px;background:var(--line)}
+.navbar{
+  height:44px;flex:none;display:flex;align-items:center;padding:0 16px;position:relative;
+  font-family:var(--song);font-size:16px;font-weight:700;letter-spacing:.04em;
+}
+.screen{flex:1;overflow:hidden;display:flex;flex-direction:column}
+.homebar{
+  height:22px;flex:none;display:flex;align-items:center;justify-content:center;
+}
+.homebar::after{content:"";width:126px;height:4px;border-radius:3px;background:var(--ink);opacity:.28}
+
+/* iPad */
+.ipad{background:#2A2F35;border-radius:22px;padding:11px;position:relative;flex:none;align-self:flex-start}
+.ipad::after{
+  content:"";position:absolute;left:50%;bottom:4px;transform:translateX(-50%);
+  width:108px;height:3px;border-radius:3px;background:#4A5058;
+}
+.ipad-scr{background:var(--paper);border-radius:12px;overflow:hidden;position:relative}
+.land{width:1194px;height:834px}
+.port{width:834px;height:1112px}
+.ios-bar{
+  height:24px;display:flex;align-items:center;padding:0 18px;
+  font-family:var(--mono);font-size:11px;color:var(--graphite);position:relative;z-index:5;
+}
+.ios-bar .r{margin-left:auto;display:flex;gap:7px}
+
+/* 桌面浏览器 */
+.win{background:#22262B;border-radius:8px 8px 0 0;overflow:hidden;flex:none;align-self:flex-start}
+.win-bar{height:34px;display:flex;align-items:center;gap:7px;padding:0 13px;background:#2A2F35}
+.dot{width:10px;height:10px;border-radius:50%;display:block}
+.win-url{
+  flex:1;margin-left:11px;height:21px;background:#14171A;border-radius:3px;
+  display:flex;align-items:center;padding:0 11px;
+  font-family:var(--mono);font-size:10.5px;color:#7E8A80;
+}
+
+/* ============ 纸面通用件 ============ */
+.mono{font-family:var(--mono)}
+.song{font-family:var(--song)}
+
+/* 报纸头 */
+.masthead{padding:20px 0 12px;border-bottom:2px solid var(--ink)}
+.masthead .kicker{
+  font-family:var(--mono);font-size:9.5px;letter-spacing:.22em;text-transform:uppercase;
+  color:var(--seal);margin-bottom:7px;
+}
+.masthead h1{
+  font-family:var(--song);font-size:26px;font-weight:700;letter-spacing:.06em;
+  margin:0;line-height:1.25;
+}
+.masthead .sub{font-size:12px;color:var(--mist);margin-top:5px;line-height:1.55}
+
+/* 分节头 */
+.sec-head{
+  display:flex;align-items:baseline;justify-content:space-between;
+  border-bottom:1px solid var(--line);padding-bottom:6px;margin-bottom:12px;
+}
+.sec-head h2{
+  font-family:var(--song);font-size:15.5px;font-weight:700;margin:0;letter-spacing:.05em;
+}
+.sec-head .meta{
+  font-family:var(--mono);font-size:10px;color:var(--mist);letter-spacing:.14em;
+  text-transform:uppercase;
+}
+
+/* 小标签 */
+.chip{
+  font-family:var(--mono);font-size:10.5px;border:1px solid var(--line);
+  background:var(--paper-2);padding:3px 8px;border-radius:var(--r);color:var(--graphite);
+  display:inline-block;
+}
+.chip.on{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.chip.seal{background:var(--seal);color:#fff;border-color:var(--seal)}
+
+/* 按钮 */
+.go{
+  width:100%;background:var(--ink);color:var(--paper);border:none;
+  padding:13px;font-size:14.5px;border-radius:var(--r);letter-spacing:.08em;
+  font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px;
+}
+.go.seal{background:var(--seal);color:#fff}
+.go.ghost{background:transparent;border:1px solid var(--line);color:var(--graphite)}
+.mini{
+  background:transparent;border:1px solid var(--line);color:var(--graphite);
+  font-size:11.5px;padding:5px 10px;border-radius:var(--r);font-family:inherit;
+  display:inline-flex;align-items:center;gap:5px;
+}
+.mini.pri{border-color:var(--graphite);color:var(--ink)}
+.mini.on{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.mini.seal{background:var(--seal);color:#fff;border-color:var(--seal)}
+
+/* 面板 */
+.panel{background:var(--paper-2);border:1px solid var(--line);border-radius:var(--r);padding:13px 14px}
+
+/* ============ 答题卡涂格 —— 产品的签名视觉 ============ */
+.bub{
+  display:flex;flex-direction:column;align-items:center;gap:5px;
+  padding:2px 0;border-radius:var(--r);
+}
+.dot{
+  width:26px;height:26px;border-radius:50%;
+  border:1.5px solid var(--graphite);
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--mono);font-size:9.5px;color:var(--mist);flex:none;
+}
+.bub .lab{
+  font-size:9px;color:var(--mist);text-align:center;line-height:1.25;
+  max-width:52px;letter-spacing:-.01em;
+}
+/* 六态 —— 与 demo 一致 */
+.dot.untouched{background:transparent;border-style:dashed;border-color:var(--line)}
+.dot.seen     {background:linear-gradient(to top,var(--graphite) 50%,transparent 50%)}
+.dot.stale    {background:linear-gradient(to top,var(--mist) 50%,transparent 50%);border-color:var(--mist)}
+.dot.weak     {background:var(--seal);border-color:var(--seal);color:#fff}
+.dot.solid    {background:var(--graphite);border-color:var(--graphite);color:var(--paper)}
+.dot.mastered {background:var(--graphite);border-color:var(--graphite);color:var(--paper);opacity:.5}
+.dot.lg{width:34px;height:34px;font-size:11px}
+.dot.sm{width:19px;height:19px;font-size:8px;border-width:1.2px}
+
+.legend{display:flex;flex-wrap:wrap;gap:9px 15px;margin-top:12px}
+.lg{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--graphite)}
+.lg i{width:13px;height:13px;border-radius:50%;border:1.5px solid var(--graphite);display:block;flex:none}
+.lg i.untouched{border-style:dashed;border-color:var(--line);background:transparent}
+.lg i.seen{background:linear-gradient(to top,var(--graphite) 50%,transparent 50%)}
+.lg i.stale{background:linear-gradient(to top,var(--mist) 50%,transparent 50%);border-color:var(--mist)}
+.lg i.weak{background:var(--seal);border-color:var(--seal)}
+.lg i.solid{background:var(--graphite)}
+
+/* 覆盖度 */
+.cover{display:flex;align-items:flex-end;gap:13px}
+.cover .big{font-family:var(--song);font-size:44px;line-height:.9;font-weight:700}
+.cover .big span{font-size:18px;margin-left:2px}
+.cover .txt{font-size:12px;color:var(--mist);padding-bottom:5px;line-height:1.5}
+.cover .txt b{color:var(--seal);font-family:var(--mono)}
+.bar{height:5px;background:var(--line);overflow:hidden;margin-top:9px;display:flex}
+.bar i{display:block;height:100%}
+.b-solid{background:var(--graphite)}
+.b-weak{background:var(--seal)}
+.b-seen{background:var(--mist)}
+
+/* 上下文黑块 —— 「问 AI 时带上的东西」 */
+.ctxbox{
+  background:var(--ink);color:#D7DBD4;border-radius:var(--r);
+  padding:14px 15px;font-family:var(--mono);font-size:11px;line-height:1.8;
+  white-space:pre-wrap;word-break:break-word;
+}
+.ctxbox b{color:#fff;font-weight:600}
+.ctxbox .cm{color:#7E8A80}
+.ctxbox .sl{color:#E2857E}
+
+/* 缺口条目 */
+.gap{
+  border:1px solid var(--line);background:var(--paper-2);
+  padding:12px 13px;margin-bottom:8px;border-radius:var(--r);
+  display:flex;gap:11px;align-items:flex-start;
+}
+.gap .rank{font-family:var(--mono);font-size:11px;color:var(--seal);padding-top:2px;min-width:16px}
+.gap .name{font-size:14.5px;font-weight:600;letter-spacing:.02em}
+.gap .why{font-size:11.5px;color:var(--graphite);margin-top:3px;line-height:1.55}
+.gap .acts{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+
+/* 导图 */
+.root{
+  display:inline-block;background:var(--ink);color:var(--paper);
+  font-family:var(--song);font-size:16px;font-weight:700;letter-spacing:.05em;
+  padding:7px 14px;border-radius:var(--r);
+}
+.root em{font-style:normal;font-family:var(--mono);font-size:10px;color:var(--mist);margin-left:9px}
+.branches{border-left:2px solid var(--ink);margin-left:15px}
+.branch{position:relative;padding-left:17px;margin-bottom:3px}
+.branch::before{content:'';position:absolute;left:0;top:16px;width:13px;height:2px;background:var(--ink)}
+.branch.cold::before{background:var(--seal)}
+.bhead{display:flex;align-items:center;gap:9px;padding:6px 0}
+.bname{font-size:14px;font-weight:600;letter-spacing:.02em;flex:none}
+.bstat{font-family:var(--mono);font-size:10.5px;color:var(--mist);flex:none}
+.bmini{flex:1;height:4px;background:var(--line);min-width:28px}
+.bmini i{display:block;height:100%;background:var(--graphite)}
+.bwarn{font-size:11px;color:var(--seal);margin:-2px 0 5px;letter-spacing:.02em}
+.leaves{padding:2px 0 7px 4px;border-left:1px dashed var(--line);margin-left:6px}
+.leaf{display:flex;align-items:center;gap:8px;padding:3px 0 3px 11px;position:relative}
+.leaf::before{content:'';position:absolute;left:0;top:50%;width:8px;height:1px;background:var(--line)}
+.lname{flex:1;min-width:0;font-size:13px;color:var(--ink)}
+.lname em{font-style:normal;font-family:var(--mono);font-size:9.5px;color:var(--mist);margin-left:6px}
+.star{color:var(--seal);font-size:13px;opacity:.3;flex:none}
+.star.on{opacity:1}
+
+/* 键值行 */
+.kv{
+  display:flex;justify-content:space-between;font-size:12.5px;
+  padding:7px 0;border-bottom:1px solid var(--line);
+}
+.kv span:last-child{font-family:var(--mono);color:var(--graphite)}
+
+/* 表 */
+.tbl{width:100%;border-collapse:collapse;font-size:12.5px}
+.tbl th{
+  text-align:left;font-family:var(--mono);font-size:9.5px;font-weight:400;color:var(--mist);
+  letter-spacing:.13em;text-transform:uppercase;padding:0 10px 7px;
+  border-bottom:1px solid var(--line);
+}
+.tbl td{padding:9px 10px;border-bottom:1px solid var(--line-2);vertical-align:middle}
+
+.footnote{
+  font-size:10.5px;color:var(--mist);line-height:1.7;
+  border-top:1px solid var(--line);padding-top:10px;
+}

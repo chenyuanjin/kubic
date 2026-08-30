@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>考点盲区 · 全端界面设计 · 风格 A</title>
+<link rel="stylesheet" href="tokens.css">
+<style>
+.hero{border-bottom:1px solid #212326;padding-bottom:34px;margin-bottom:14px}
+.hero h1{font-size:30px;font-weight:600;margin:0 0 14px;letter-spacing:.01em}
+.hero .sub{font-size:14px;color:#8A8A8E;line-height:1.95;max-width:1000px}
+.hero .sub b{color:#D4D4D8;font-weight:600}
+.stat{display:flex;border:1px solid #232529;border-radius:3px;margin:26px 0 0;overflow:hidden}
+.stat .st{flex:1;padding:15px 18px;border-right:1px solid #232529}
+.stat .st:last-child{border-right:none}
+.stat .k{font-family:var(--mono);font-size:10px;letter-spacing:.11em;color:#61666E;text-transform:uppercase}
+.stat .v{font-family:var(--mono);font-size:27px;color:#E6E7EA;margin-top:7px;letter-spacing:-.02em}
+.stat .v s{text-decoration:none;font-size:12px;color:#61666E;margin-left:4px}
+.stat .d{font-size:11.5px;color:#8A8A8E;margin-top:5px;line-height:1.6}
+tableb{display:none}
+.tb{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:4px}
+.tb th{text-align:left;font-family:var(--mono);font-size:10px;letter-spacing:.11em;color:#61666E;
+  text-transform:uppercase;font-weight:400;padding:0 12px 8px 0;border-bottom:1px solid #232529;white-space:nowrap}
+.tb td{padding:8px 12px 8px 0;border-bottom:1px solid #1A1C1F;color:#9BA0A8;vertical-align:top;line-height:1.65}
+.tb td.n{font-family:var(--mono);font-size:11px;color:#C9F24D;white-space:nowrap;width:44px}
+.tb td.s{color:#E6E7EA}
+.tb td.m{font-family:var(--mono);font-size:11.5px;color:#9BA0A8;white-space:nowrap}
+.tb tr:hover td{background:#111214}
+.cols{display:flex;gap:40px;align-items:flex-start;flex-wrap:wrap}
+.col{flex:1;min-width:330px}
+.col h3{font-size:13.5px;font-weight:600;color:#E6E7EA;margin:0 0 4px;
+  display:flex;align-items:baseline;gap:9px}
+.col h3 s{text-decoration:none;font-family:var(--mono);font-size:10.5px;color:#61666E;
+  letter-spacing:.08em;font-weight:400}
+.col .lead{font-size:11.5px;color:#61666E;line-height:1.75;margin:0 0 14px}
+.warn{border:1px solid #3A2320;background:#150F0E;border-radius:3px;padding:17px 20px;margin:30px 0 0}
+.warn h4{margin:0 0 9px;font-size:13px;color:#FF6B5A;font-weight:600;
+  display:flex;align-items:center;gap:9px}
+.warn h4 s{text-decoration:none;font-family:var(--mono);font-size:10px;letter-spacing:.13em;
+  border:1px solid rgba(255,107,90,.4);border-radius:2px;padding:2px 6px;font-weight:400}
+.warn p{margin:0 0 8px;font-size:12.5px;color:#9BA0A8;line-height:1.9}
+.warn p:last-child{margin-bottom:0}
+.warn b{color:#D4D4D8;font-weight:600}
+.warn code{font-family:var(--mono);font-size:11.5px;color:#C9C9CE}
+.lk{display:flex;gap:9px;flex-wrap:wrap;margin-top:16px}
+.lk a{text-decoration:none;height:30px;padding:0 13px;border:1px solid #232529;border-radius:3px;
+  display:inline-flex;align-items:center;gap:8px;font-size:12px;color:#9BA0A8;background:#0E0F11}
+.lk a:hover{border-color:#2E3137;color:#E6E7EA}
+.lk a i{font-style:normal;font-family:var(--mono);font-size:10px;color:#C9F24D}
+.rule{display:flex;gap:11px;padding:7px 0;border-bottom:1px solid #1A1C1F;font-size:12.5px;
+  color:#9BA0A8;line-height:1.6}
+.rule i{font-style:normal;font-family:var(--mono);font-size:11px;color:#61666E;width:17px;flex:none}
+.rule b{color:#E6E7EA;font-weight:600}
+</style></head>
+<body><div class="deck">
+
+<div class="hero">
+  <h1>考点盲区 · 全端界面设计</h1>
+  <div class="sub">
+    风格 <b>A「极客暗色 · 命令条驱动」</b>。五端共 <b>94 屏</b>,一套 <code class="m">tokens.css</code>,数据逐字一致。<br>
+    这套骨架的选择依据是一条调研结论:<b>「AI 味」的根源在页面骨架层,不在配色。</b>
+    <code class="m">左侧固定菜单 + 顶部面包屑 + 卡片 + 表格</code> 这套后台骨架,涂成什么颜色都还是它 ——
+    前两版失败都是在样式层打补丁。所以这一版<b>把骨架换掉了</b>:没有侧边栏,没有面包屑,没有卡片,导航靠 ⌘K。
+  </div>
+  <div class="stat">
+    <div class="st"><div class="k">Web PC</div><div class="v">36<s>屏</s></div>
+      <div class="d">PC + Mac · 分析端 · 1280×800</div></div>
+    <div class="st"><div class="k">微信小程序</div><div class="v">14<s>屏</s></div>
+      <div class="d">纯采集端 · 不做复盘 · 375×812</div></div>
+    <div class="st"><div class="k">H5 移动网页</div><div class="v">19<s>屏</s></div>
+      <div class="d">采集 + 复盘 · 375×812</div></div>
+    <div class="st"><div class="k">iPad</div><div class="v">13<s>屏</s></div>
+      <div class="d">核心场景 · 横 1194×834 / 竖 834×1112</div></div>
+    <div class="st"><div class="k">原生 App</div><div class="v">12<s>屏</s></div>
+      <div class="d">新增形态决定 · 关卡 2 后</div></div>
+    <div class="st"><div class="k">共享设计系统</div><div class="v">1<s>份</s></div>
+      <div class="d">tokens.css · 五态 · 零 emoji</div></div>
+  </div>
+  <div class="lk">
+    <a href="desktop.html"><i>D</i> Web PC · 浏览器 + PWA</a>
+    <a href="miniprogram.html"><i>M</i> 微信小程序</a>
+    <a href="h5.html"><i>H</i> H5 移动网页</a>
+    <a href="pad.html"><i>P</i> iPad</a>
+    <a href="app.html"><i>A</i> 原生 App</a>
+    <a href="tokens.css"><i>CSS</i> 设计系统</a>
+  </div>
+</div>
+
+<!-- ═══════════════ 屏幕索引 ═══════════════ -->
+<div class="sec"><h2>一 · 屏幕索引</h2><span class="sub">94 屏 · 编号连续</span></div>
+<div class="cols">
+
+  <div class="col">
+    <h3>Web PC <s>D1 – D36 · 浏览器 + PWA 安装态</s></h3>
+    <p class="lead">产品价值真正发生的地方。差集在这里被看见。<br>
+      PC 与 Mac 内容完全一致,只有窗口外壳不同 —— 所以主体屏只画一遍,平台差异集中在 D13。</p>
+    <table class="tb">
+      <tr><td class="n">D1</td><td class="s">登录</td><td>手机号验证码 / 微信扫码</td></tr>
+      <tr><td class="n">D2</td><td class="s">哪些你已经学过</td><td>冷启动,减少「假空白」</td></tr>
+      <tr><td class="n">D3</td><td class="s">主屏</td><td>18 个考点一屏看全</td></tr>
+      <tr><td class="n">D4</td><td class="s">⌘K 命令面板</td><td>它就是导航栏</td></tr>
+      <tr><td class="n">D5</td><td class="s">考点详情</td><td>四统计字段 + 跨来源时间线</td></tr>
+      <tr><td class="n">D6</td><td class="s">记一笔</td><td>粘 / 拖图 / 记做题 / 语音</td></tr>
+      <tr><td class="n">D7</td><td class="s">打标确认</td><td>闭集候选 + 丢掉出口</td></tr>
+      <tr><td class="n">D8</td><td class="s">问 AI 时带上的东西</td><td>上下文组装,讲解外包</td></tr>
+      <tr><td class="n">D9</td><td class="s">导出</td><td>Markdown / CSV / JSON</td></tr>
+      <tr><td class="n">D10</td><td class="s">MCP / CLI</td><td>只读接入</td></tr>
+      <tr><td class="n">D11</td><td class="s">设置</td><td>含注销删除 + AI 公示</td></tr>
+      <tr><td class="n">D12</td><td class="s">离线与降级</td><td>记录动作永不失败</td></tr>
+      <tr><td class="n">D13</td><td class="s">平台差异对照</td><td>同一屏,两个壳</td></tr>
+      <tr><td class="n">D14</td><td class="s">定价 · 一个付费档</td><td>分栏密集行,免费列四行「不限」</td></tr>
+      <tr><td class="n">D15</td><td class="s">收银台</td><td>微信扫码 · 买前额度对照表</td></tr>
+      <tr><td class="n">D16</td><td class="s">支付结果</td><td>成功与「没扣款」并排</td></tr>
+      <tr><td class="n">D17</td><td class="s">会员与额度</td><td>只报次数,不评价学习</td></tr>
+      <tr><td class="n">D18</td><td class="s">订单与发票</td><td>六列写死,没有第七列</td></tr>
+      <tr><td class="n">D19</td><td class="s">额度用尽 · 拦截</td><td>三条路等宽 · 盲区树没被遮死</td></tr>
+      <tr><td class="n">D20</td><td class="s">考点树 · 就地改名</td><td>改名不断历史,记录挂 code</td></tr>
+      <tr><td class="n">D21</td><td class="s">删不掉 · 归档</td><td>有记录就不许删;归档让比值仍诚实</td></tr>
+      <tr><td class="n">D22</td><td class="s">新增考点</td><td>只能逐个加,没有批量导入</td></tr>
+      <tr><td class="n">D23</td><td class="s">账号合并</td><td>两个账号会让盲区凭空多出来</td></tr>
+      <tr><td class="n">D24</td><td class="s">第一天 · 零记录</td><td>18 个全空心 · 5 组整块空白</td></tr>
+      <tr><td class="n">D25</td><td class="s">验证码 · 五种失败与防刷</td><td>五种失败说五句话 · 滑块在发送前</td></tr>
+      <tr><td class="n">D26</td><td class="s">登录设备 · 单条吊销</td><td>吊销立即生效 · ro_ 只读令牌独立</td></tr>
+      <tr><td class="n">D27</td><td class="s">注销账号 · 先导出再删</td><td>删除时点待律师稿,界面留白</td></tr>
+      <tr><td class="n">D28</td><td class="s">支付结果未知 · 主动查单</td><td>第三态 · 退款后额度口径待定</td></tr>
+      <tr><td class="n">D29</td><td class="s">浏览器里 · 怎么装到桌面</td><td>D1–D28 是 PWA 窗口态,不是原生壳</td></tr>
+      <tr><td class="n">D30</td><td class="s">题型 · 新建 / 改名 / 调顺序</td><td>树的第二层,此前一屏都没有</td></tr>
+      <tr><td class="n">D31</td><td class="s">考点换题型 · 题型删不掉</td><td>挪空白进同一组会少一条红分组头</td></tr>
+      <tr><td class="n">D32</td><td class="s">一条记录记错了</td><td>删掉可能让考点退回空白</td></tr>
+      <tr><td class="n">D33</td><td class="s">对话 · 工具调用敞开</td><td>6 个工具全只读 · EFFECT 为零</td></tr>
+      <tr><td class="n">D34</td><td class="s">越界了会怎样</td><td><span style="color:#FF6B5A">三道防线今天只有两道</span></td></tr>
+      <tr><td class="n">D35</td><td class="s">会话管理</td><td>图片不进会话记录 · 无鉴权无频控</td></tr>
+      <tr><td class="n">D36</td><td class="s">三种失败 · done 帧</td><td>漏发只在出错时表现为永远转圈</td></tr>
+    </table>
+  </div>
+
+  <div class="col">
+    <h3>微信小程序 <s>M1 – M14 · 采集端</s></h3>
+    <p class="lead"><b style="color:#D4D4D8">纯采集,不做复盘。</b>复盘场景(iPad 边看课边记、PC 复盘)在小程序上体验是残的 ——
+      这是已定的产品决策,不是本次取舍。盲区诊断在这里<b style="color:#D4D4D8">只作为一个跳转入口存在</b>(M3 底栏 / M10)。</p>
+    <table class="tb">
+      <tr><td class="n">M1</td><td class="s">微信授权登录</td><td>说清要什么、不要什么</td></tr>
+      <tr><td class="n">M2</td><td class="s">手机号绑定</td><td>跨端账号锚点</td></tr>
+      <tr><td class="n">M3</td><td class="s">首页 · 今日</td><td>三个主动作 + 今日记录</td></tr>
+      <tr><td class="n">M4</td><td class="s">语音记 · 录音中</td><td>实时转写</td></tr>
+      <tr><td class="n">M5</td><td class="s">语音记 · 识别结果</td><td>转写完即丢,不留原文</td></tr>
+      <tr><td class="n">M6</td><td class="s">拍照记 · 识别中</td><td>原图不出这台设备</td></tr>
+      <tr><td class="n">M7</td><td class="s">打标确认</td><td>低置信度 · 三个出口</td></tr>
+      <tr><td class="n">M8</td><td class="s">记做题</td><td>练几道 / 对几道</td></tr>
+      <tr><td class="n">M9</td><td class="s">离线队列</td><td>没网也能记</td></tr>
+      <tr><td class="n">M10</td><td class="s">我的</td><td>会员入口 / 导出 / AI 公示 / 注销</td></tr>
+      <tr><td class="n">M11</td><td class="s">会员与额度</td><td>本月用量 · 不消耗额度的事</td></tr>
+      <tr><td class="n">M12</td><td class="s">定价 · 一个付费档</td><td>纵向分段带,不是并排卡片</td></tr>
+      <tr><td class="n">M13</td><td class="s">支付</td><td>小程序虚拟支付 · 不跳出</td></tr>
+      <tr><td class="n">M14</td><td class="s">额度用尽 · 拦截</td><td>升级 / 手动记 / 等重置</td></tr>
+    </table>
+  </div>
+
+  <div class="col">
+    <h3>H5 移动网页 <s>H1 – H19 · 含 IPAD</s></h3>
+    <p class="lead">功能完整,采集与复盘都做。<br>
+      分阶段计划里<b style="color:#D4D4D8">第一批真实用户用的是它,不是小程序</b> ——
+      小程序要备案,会把 3–5 周的等待拖进关键路径。</p>
+    <table class="tb">
+      <tr><td class="n">H1</td><td class="s">登录</td><td>手机号 / 微信双通道</td></tr>
+      <tr><td class="n">H2</td><td class="s">总览 · 骨架树</td><td>移动端 18 考点</td></tr>
+      <tr><td class="n">H3</td><td class="s">考点详情</td><td>四字段 + 时间线</td></tr>
+      <tr><td class="n">H4</td><td class="s">先补这几个</td><td>Top 5 + 我已掌握</td></tr>
+      <tr><td class="n">H5</td><td class="s">记一笔</td><td>底部抽屉 · 四种方式</td></tr>
+      <tr><td class="n">H6</td><td class="s">打标确认</td><td>闭集候选</td></tr>
+      <tr><td class="n">H7</td><td class="s">跨来源时间线</td><td>按天分组 / 按来源筛</td></tr>
+      <tr><td class="n">H8</td><td class="s">问 AI 时带上的东西</td><td>复制上下文</td></tr>
+      <tr><td class="n">H9</td><td class="s">导出与接入</td><td>三格式 + MCP 只读</td></tr>
+      <tr><td class="n">H10</td><td class="s">设置</td><td>注销与数据删除</td></tr>
+      <tr><td class="n">H11</td><td class="s">iPad 竖屏</td><td>834×1112 · 双栏</td></tr>
+      <tr><td class="n">H12</td><td class="s">iPad 横屏</td><td><b style="color:#C9F24D">边看课边记 · 核心场景</b></td></tr>
+      <tr><td class="n">H13</td><td class="s">定价 · 一个付费档</td><td>三条分段带,不是三张卡片</td></tr>
+      <tr><td class="n">H14</td><td class="s">收银台</td><td>JSAPI / H5 支付 · 就地闭环</td></tr>
+      <tr><td class="n">H15</td><td class="s">会员与账单</td><td>手动续费 · 账单无学习内容</td></tr>
+      <tr><td class="n">H16</td><td class="s">额度用尽 · 拦截</td><td>三条路 · 四行「不限」</td></tr>
+      <tr><td class="n">H17</td><td class="s">首次进入 · 哪些你已经学过</td><td>差集的第一个漏洞在这里补上</td></tr>
+      <tr><td class="n">H18</td><td class="s">验证码异常与防刷</td><td>D25 的移动版 · 四组失败</td></tr>
+      <tr><td class="n">H19</td><td class="s">对话面(移动版)</td><td>屏越小,可信度越要显式证明</td></tr>
+    </table>
+  </div>
+  <div class="col">
+    <h3>iPad <s>P1 – P13 · 核心场景 + 完整功能</s></h3>
+    <p class="lead"><b style="color:#D4D4D8">「边看网课边截图」是这个产品被点名的核心场景。</b>原先只是 H5 稿的两个断点(H11 / H12),这一份独立出来。<br>
+      <b style="color:#D4D4D8">P1 – P6 的理由是 iPad 有 H5 拿不到的能力</b> —— 每一屏都要回答「这件事在手机上做不到」。<br>
+      <b style="color:#D4D4D8">P7 – P13 是本轮补齐的另一半</b> —— 登录、详情、出口、支付、订单、设置。这半边不追求 iPad 独有,追求的是与其余四端<b style="color:#D4D4D8">同一套骨架、同一份数据</b>。</p>
+    <table class="tb">
+      <tr><td class="n">P1</td><td class="s">分屏 · 课在左记在右</td><td>Split View · 记一笔时视频不暂停</td></tr>
+      <tr><td class="n">P2</td><td class="s">截屏拖进来就入队</td><td>跨 App 拖放 · 网页版要五步</td></tr>
+      <tr><td class="n">P3</td><td class="s">Apple Pencil 圈一道题</td><td>圈出来的范围就是送进识别的范围</td></tr>
+      <tr><td class="n">P4</td><td class="s">竖屏 · 18 个考点一屏看全</td><td>整块空白需要连续性,滚动会切断</td></tr>
+      <tr><td class="n">P5</td><td class="s">Slide Over 悬浮</td><td>不切换 App 就能记</td></tr>
+      <tr><td class="n">P6</td><td class="s">妙控键盘 · ⌘ 也成立</td><td>并明说了哪两个不成立</td></tr>
+      <tr><td class="n">P7</td><td class="s">登录 · 手机号 / 扫码</td><td>iPad 是扫码体验最好的一端</td></tr>
+      <tr><td class="n">P8</td><td class="s">首次进入 · 哪些你已经学过</td><td>18 个一屏勾完,不做分步向导</td></tr>
+      <tr><td class="n">P9</td><td class="s">考点详情 · 跨来源时间线</td><td>五家来源一条线 · 两列没有第三列</td></tr>
+      <tr><td class="n">P10</td><td class="s">出口 · 问 AI / 导出 / 只读</td><td>不做教研是功能,不是免责</td></tr>
+      <tr><td class="n">P11</td><td class="s">定价与扫码支付</td><td>各端同价 · 不做分端差价</td></tr>
+      <tr><td class="n">P12</td><td class="s">会员额度与订单</td><td>只报次数,不评价学习</td></tr>
+      <tr><td class="n">P13</td><td class="s">设置 · 原图 / 阈值 / AI 公示</td><td>三处「固定」比开关本身重要</td></tr>
+    </table>
+  </div>
+
+  <div class="col">
+    <h3>原生 App <s>A1 – A12 · iOS / Android</s></h3>
+    <p class="lead"><b style="color:#FF6B5A">这是一次新增的形态决定,文档集里没有它。</b>已定的是三端:H5/PWA 主形态、桌面先用 PWA 安装(桌面壳「先不做」)、小程序只做采集入口。<br>
+      桌面壳被判「先不做」的规则可以照搬:<b style="color:#D4D4D8">要出现 PWA 拿不到的本地能力需求,而且不止一个。</b>所以 <b style="color:#D4D4D8">A1 – A6</b> 每一屏都必须是 PWA 与小程序都拿不到的能力。<br><b style="color:#D4D4D8">A7 – A12 是另一半</b>:登录、内购、订单、设置 —— 不追求 App 独有,但其中的差异<b style="color:#D4D4D8">不是设计出来的,是上架规则逼出来的</b>。</p>
+    <table class="tb">
+      <tr><td class="n">A1</td><td class="s">从任何 App 分享进来</td><td>系统分享面板 · 不用打开 App</td></tr>
+      <tr><td class="n">A2</td><td class="s">锁屏就能说一句</td><td>锁屏组件 + 灵动岛</td></tr>
+      <tr><td class="n">A3</td><td class="s">息屏也在录</td><td>后台录音 · 浏览器切后台即断</td></tr>
+      <tr><td class="n">A4</td><td class="s">盲区做到哪一层</td><td><span style="color:#FF6B5A">这一屏 web 也能做,不构成理由</span></td></tr>
+      <tr><td class="n">A5</td><td class="s">权限的代价</td><td>相册权限一个都不要</td></tr>
+      <tr><td class="n">A6</td><td class="s">上架带来的新账单</td><td><span style="color:#FF6B5A">内购抽成高于现有测算那一档</span></td></tr>
+      <tr><td class="n">A7</td><td class="s">登录 · 以及 4.8 那道题</td><td>微信登录触发,须再给一个等价选项</td></tr>
+      <tr><td class="n">A8</td><td class="s">通知 · 只发两类</td><td>没有任何「把你唤回来」的推送</td></tr>
+      <tr><td class="n">A9</td><td class="s">时间线 · 跨来源记录</td><td>与其余各端同构,不做差异化</td></tr>
+      <tr><td class="n">A10</td><td class="s">内购 · 系统弹窗接管</td><td>恢复购买是必须项 · 价格从价格点里选</td></tr>
+      <tr><td class="n">A11</td><td class="s">订单 · 一半不在我们这儿</td><td>发票 / 退款 / 取消订阅在平台那边</td></tr>
+      <tr><td class="n">A12</td><td class="s">设置 · 删除账号必须在这儿</td><td>已确认的硬性规则,发邮件不算</td></tr>
+    </table>
+  </div>
+
+</div>
+
+<!-- ═══════════════ 骨架规则 ═══════════════ -->
+<div class="sec"><h2>二 · 骨架规则</h2><span class="sub">违反即失去风格,不是审美问题</span></div>
+<div class="cols">
+  <div class="col">
+    <div class="rule"><i>01</i><div><b>没有左侧固定菜单。</b>导航靠顶部命令条(⌘K)+ 分组行。</div></div>
+    <div class="rule"><i>02</i><div><b>没有面包屑。</b>位置信息压进命令条左侧的 scope 段。</div></div>
+    <div class="rule"><i>03</i><div><b>没有卡片。</b>信息靠 1px 发丝线分隔,不靠圆角容器包裹。</div></div>
+    <div class="rule"><i>04</i><div><b>零阴影。</b><code class="m" style="font-size:11px">box-shadow</code> 只允许 <code class="m" style="font-size:11px">inset</code> 作选中指示。</div></div>
+    <div class="rule"><i>05</i><div><b>圆角 ≤ 3px。</b>例外只有设备外壳与状态点。</div></div>
+  </div>
+  <div class="col">
+    <div class="rule"><i>06</i><div><b>零 emoji。</b>全文实测 0 个。图标一律 CSS 几何形或 mono 字形。</div></div>
+    <div class="rule"><i>07</i><div><b>字体强制配对。</b>正文 Helvetica Neue / 苹方,数字与快捷键 SF Mono。不许一族打天下。</div></div>
+    <div class="rule"><i>08</i><div><b>酸性绿 <code class="m" style="font-size:11px">#C9F24D</code> 是唯一强调色。</b>只给当前主操作和序号。</div></div>
+    <div class="rule"><i>09</i><div><b>快捷键徽标常驻</b>,不是 hover 才出现。这是「工具感」的主要信号。</div></div>
+    <div class="rule"><i>10</i><div><b>密度是优点。</b>行高 34px,一屏看全 18 个考点。</div></div>
+  </div>
+</div>
+
+<!-- ═══════════════ 红线 → 界面 ═══════════════ -->
+<div class="sec"><h2>三 · 红线怎么长在界面上</h2><span class="sub">约束通过结构体现,不靠说教文案</span></div>
+<table class="tb" style="max-width:1180px">
+  <tr><th style="width:150px">红线</th><th style="width:118px">出处</th><th>界面上的物理形态</th></tr>
+  <tr><td class="s">永不判断对错</td><td class="m">01 §2.2</td>
+    <td>只说「有没有、几次、多久前」。正确率一栏永远跟着一句 <b style="color:#D4D4D8">「你自己填的数」</b> —— 它是记录,不是判分。</td></tr>
+  <tr><td class="s">不做教研</td><td class="m">01 §2.2</td>
+    <td>没有任何解析。要讲解就把上下文复制出去交给外部模型(D8 / H8)—— <b style="color:#D4D4D8">边界作为功能出货,不作为免责声明</b>。</td></tr>
+  <tr><td class="s">不碰内容</td><td class="m">01 §2.2</td>
+    <td>时间线结构写死三列:来源名 / 时间 / 类型,<b style="color:#D4D4D8">没有第四列可以装课程内容</b>。H12 那块播放区只有一个三角和「在原来的 App 里」。</td></tr>
+  <tr><td class="s">原图不上云</td><td class="m">01 §2.3 · 09 坑二</td>
+    <td>base64 内联,过一次即弃,禁用 Files API。M6 / D7 显式提示。D11 把「原图上云」标为<b style="color:#D4D4D8">固定不做</b>。</td></tr>
+  <tr><td class="s">宁缺毋滥</td><td class="m">01 §2.2</td>
+    <td>D7 / M7 / H6 都有<b style="color:#D4D4D8">明确的「都不像,丢掉」出口</b>,且低置信度候选<b style="color:#D4D4D8">不预选</b> —— 默认动作就是不打标。</td></tr>
+  <tr><td class="s">闭集分类</td><td class="m">09 坑一</td>
+    <td>候选标注「来自你自己的考点树」。模型输出是节点 ID 或「不匹配」,<b style="color:#D4D4D8">不自由生成标签</b>。</td></tr>
+  <tr><td class="s">丢标签 ≠ 丢记录</td><td class="m">08 §1.3.7</td>
+    <td>三个出口而非两个:就它 / <b style="color:#D4D4D8">先不打标,只存来源和时间</b> / 整条丢掉。记录动作本身永不失败。</td></tr>
+  <tr><td class="s">MCP 只读</td><td class="m">01 §2.2</td>
+    <td>D10 里 <code class="m" style="font-size:11px">kd add</code> 直接返回 <code class="m" style="font-size:11px">error: 只读</code>。写端点在契约层面就不存在。</td></tr>
+  <tr><td class="s">完全可导出</td><td class="m">01 §2.2</td>
+    <td>MD / CSV / JSON 全量,带实时预览。数据是你的。</td></tr>
+  <tr><td class="s">生成式 AI 公示</td><td class="m">09 §五 · 法定</td>
+    <td><b style="color:#FF6B5A">这是本次新增的界面需求。</b>五端各有一处公示:腾讯云一句话识别 / <code class="m" style="font-size:11px">deepseek-v4-flash-vision-exp</code> / 登记编号:待登记。</td></tr>
+</table>
+
+<!-- ═══════════════ 数据契约 ═══════════════ -->
+<div class="sec"><h2>四 · 数据契约</h2><span class="sub">五端逐字一致 · 山东省考 · 行测 · 资料分析</span></div>
+<div class="cols">
+  <div class="col" style="max-width:560px">
+    <table class="tb">
+      <tr><th>指标</th><th>值</th><th>含义</th></tr>
+      <tr><td>考点总数</td><td class="m">18</td><td>不是 148 —— 148 是整个行测</td></tr>
+      <tr><td>有记录</td><td class="m">8</td><td>覆盖 44%</td></tr>
+      <tr><td>空白</td><td class="m" style="color:#FF6B5A">10</td><td>盲区 = 骨架 − 行为</td></tr>
+      <tr><td>整块空白</td><td class="m" style="color:#FF6B5A">2 组</td><td>倍数与比较 0/3 · 效应类 0/2</td></tr>
+    </table>
+    <p class="lead" style="margin-top:13px">
+      <b style="color:#D4D4D8">两组整块空白是刻意构造的。</b>骨架树相对扁平清单的<b style="color:#D4D4D8">唯一优势</b>就是能表达
+      「整块题型都没碰过」—— 如果示例数据里每组都有记录,这棵树就证明不了自己。所以它由分组头表达,不用图表。
+    </p>
+  </div>
+  <div class="col" style="max-width:520px">
+    <table class="tb">
+      <tr><th>状态</th><th>数</th><th>判据(全部在能力边界内)</th></tr>
+      <tr><td class="s">稳</td><td class="m">3</td><td>练过且近期</td></tr>
+      <tr><td class="s" style="color:#FF6B5A">弱</td><td class="m">2</td><td>练过,但自填正确率低</td></tr>
+      <tr><td class="s">生疏</td><td class="m">2</td><td>练过,但 &gt;30 天</td></tr>
+      <tr><td class="s">仅接触</td><td class="m">1</td><td>听过看过,没练</td></tr>
+      <tr><td class="s">空白</td><td class="m">10</td><td>无任何记录</td></tr>
+    </table>
+    <p class="lead" style="margin-top:13px">
+      <b style="color:#D4D4D8">「仅接触」是本次补的第五态。</b>原稿只有四态,把「听过课但没练」和「完全没碰过」混为一谈 ——
+      而这两者在盲区计算里意义完全不同。<br>
+      五态<b style="color:#D4D4D8">全部可由「有没有 / 几次 / 多久前」推出</b>,没有一个需要判断对错。
+    </p>
+  </div>
+</div>
+
+<!-- ═══════════════ 会员与额度 ═══════════════ -->
+<div class="sec"><h2>五 · 会员与额度</h2><span class="sub">一个付费档 · 详见 docs/11-商业化与额度设计.md · D14–D19 / M11–M14 / H13–H16</span></div>
+<div class="cols">
+  <div class="col" style="max-width:660px">
+    <table class="tb">
+      <tr><th>权益</th><th style="width:74px">免费</th><th style="width:110px">记多点 ¥9.9</th></tr>
+      <tr><td class="s">AI 录入 <span class="t3">语音转写 / 拍照识别打标</span></td>
+        <td class="m">30 次/月</td><td class="m">300 次/月</td></tr>
+      <tr><td class="s">AI 代发提问 <span class="t3">组装上下文 + 代调外部模型</span></td>
+        <td class="m">5 次/月</td><td class="m">50 次/月</td></tr>
+      <tr><td class="s">手动记录 <span class="t3">记做题 / 粘一段自己挂考点</span></td>
+        <td class="m" style="color:#C9F24D">不限</td><td class="m">不限</td></tr>
+      <tr><td class="s">骨架树 · 覆盖 · 盲区诊断</td>
+        <td class="m" style="color:#C9F24D">不限</td><td class="m">不限</td></tr>
+      <tr><td class="s">导出 Markdown / CSV / JSON</td>
+        <td class="m" style="color:#C9F24D">不限</td><td class="m">不限</td></tr>
+      <tr><td class="s">MCP / CLI 只读接入</td>
+        <td class="m" style="color:#C9F24D">不限</td><td class="m">不限</td></tr>
+    </table>
+    <p class="lead" style="margin-top:13px">
+      <b style="color:#D4D4D8">计费的是成本,不是价值。</b>收费维度只有两个,都是真实产生按次外部账单的动作。
+      差集计算、骨架树、诊断的边际成本近似为零,所以永远不收费。<b style="color:#D4D4D8">这条原则决定了以后任何新功能该不该计费。</b>
+    </p>
+  </div>
+  <div class="col" style="max-width:500px">
+    <div class="rule"><i>01</i><div><b>盲区诊断永不上锁。</b>北极星指标是「主动查看盲区的人数」——
+      把它放进付费墙,等于用收费压住自己唯一的指标。</div></div>
+    <div class="rule"><i>02</i><div><b>导出永不上锁。</b>导出一旦要钱,「数据是你的」就是空话。</div></div>
+    <div class="rule"><i>03</i><div><b>额度用尽 ≠ 记不了。</b>拦的只有「替你转写、替你打标、替你去问」这三件事,
+      手动记录任何时候都能记。</div></div>
+    <div class="rule"><i>04</i><div><b>只做手动续费。</b>委托代扣需企业主体 + 认证客服电话 + 4 周去重付费 ≥300 且投诉率 ≤0.05%,
+      冷启动够不上。界面上写成<b style="color:#D4D4D8">「不自动扣费,到期就停」</b>。</div></div>
+    <div class="rule"><i>05</i><div><b>各端同价,不做分端差价。</b>iOS 那 12% 苹果佣金我方承担 ——
+      分端差价本身就是一条指向外部支付的箭头,而那是微信明令禁止的。</div></div>
+    <div class="rule"><i>06</i><div><b>毛利率</b>非 iOS <span class="m">77%</span>,iOS <span class="m">66%</span>(满额消耗、毛利/售价口径)。
+      安全倍数 <span class="m">6.4×</span> —— 砍掉上层档位顺带把最紧的一格从 4.5× 放宽到了这里。</div></div>
+  </div>
+</div>
+
+<div class="warn" style="border-color:#3A3320;background:#141109">
+  <h4 style="color:#E8C24D"><s style="border-color:rgba(232,194,77,.4)">排期冲突</s> 额度不能在关卡 2 之前生效</h4>
+  <p><b>免费档 30 次/月 ≈ 日均 1 次,而关卡 0 的判据是「日均 ≥3 条」。</b>
+    额度只要提前生效,关卡 0 必然不通过 —— 不是因为地基不成立,是因为额度把它卡住了。</p>
+  <p>所以支付与额度界面的最早时点是<b>关卡 2 通过之后</b>,阶段 0–2 一律不启用额度(阶段 2 那 10 个用户是免费测试)。
+    已登记为 <code>R-37</code>。</p>
+</div>
+
+<!-- ═══════════════ 技术栈 ═══════════════ -->
+<div class="sec"><h2>六 · 技术栈</h2><span class="sub">详见 docs/10-技术架构与接口契约.md</span></div>
+<table class="tb" style="max-width:1180px">
+  <tr><th style="width:118px">层</th><th style="width:230px">选型</th><th>说明</th></tr>
+  <tr><td class="s">后端</td><td class="m">Spring Boot 3.5.3 · Java 21</td>
+    <td>取自 <code class="m" style="font-size:11px">Step2/geo/geo-server</code> 的<b style="color:#D4D4D8">技术选型</b>。
+      <b style="color:#FF6B5A">不复制任何一行 <code class="m" style="font-size:11px">com.fenbi.*</code> 代码</b> —— 那是公司代码,01 §3 是零交集。新 groupId 独立。</td></tr>
+  <tr><td class="s">服务形态</td><td class="m">单体 · 不拆微服务</td>
+    <td><b style="color:#D4D4D8">前后端代码分离,服务不分离。</b>2–3 人团队,拆服务的运维成本换不来收益。拆分触发条件写在 docs/10。</td></tr>
+  <tr><td class="s">前端</td><td class="m">另选,不用 ng-zorro</td>
+    <td><code class="m" style="font-size:11px">geo-frontend</code> 的 Angular 14 + ng-zorro 默认习语正是
+      <code class="m" style="font-size:11px">Sider + Breadcrumb + Card + Table</code> —— <b style="color:#FF6B5A">就是本设计要甩掉的那套骨架</b>。你只指定了后端,前端选型与理由见 docs/10。</td></tr>
+  <tr><td class="s">识别链路</td><td class="m">腾讯云 ASR + 多模态闭集</td>
+    <td>见 docs/09。图片一步到位比「OCR + LLM 打标」便宜 29–95 倍,且<b style="color:#D4D4D8">少一个环节</b>,原图只经过一个服务。必须走接口层抽象保留切换点(实验模型)。</td></tr>
+</table>
+
+<!-- ═══════════════ 诚实标注 ═══════════════ -->
+<div class="warn">
+  <h4><s>先读这个</s> 这套稿子跑在关卡 0 前面</h4>
+  <p>doc 04 阶段 0 写的是 <code>不做界面,不做账号,不做数据库设计</code>。而这是 94 屏界面加两套登录,现在还加了一整套收费流程 —— 收费屏比关卡 0 更靠前,这件事本身就是 §盲区二 的复发。
+    doc 03 §盲区二 把这个模式点了名:<b>注意力流向能做的部分,不流向最不确定的部分</b> —— 一打轮产品打磨,而「冷启动的第一千人」没动过。</p>
+  <p><b>所以这套稿子的诚实用法很窄:</b>D6 / D7 / M4 / M6 作为阶段 0 自用采集工具的参照,H12 作为核心场景的验证,整套作为阶段 2 那 10 个真实用户的沟通材料。
+    <b>它不是开工许可。</b>关卡 0 的判据没变也买不到:两周、日均 ≥3 条、「懒得记」次数下降。</p>
+  <p><b>仍然没关的:</b><code>L-A4</code> 生成式 AI 走登记还是备案 —— docs/09 把它从「可能卡死方向」缩到「大概率走登记」,但需要律师书面闭环一次。
+    界面上那句「登记编号:待登记」就是这个未关闭项的占位。</p>
+</div>
+
+</div></body></html>

@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>考点答题卡 · iPad(核心场景端)</title>
+<link rel="stylesheet" href="tokens.css">
+<style>
+.col{padding:0 34px}
+.mast{padding:16px 0 0}
+.mast .kicker{font-family:var(--mono);font-size:10px;letter-spacing:.24em;text-transform:uppercase;
+  color:var(--seal);margin-bottom:7px}
+.mast h1{font-family:var(--song);font-size:26px;font-weight:700;letter-spacing:.07em;margin:0}
+.mast .sub{font-size:12px;color:var(--mist);margin-top:5px}
+.rule{border-bottom:2px solid var(--ink);margin-top:12px}
+.nav{display:flex;border-bottom:1px solid var(--line)}
+.nv{padding:9px 15px 9px 0;margin-right:15px;font-size:13px;color:var(--graphite);position:relative}
+.nv.on{font-weight:700;color:var(--ink)}
+.nv.on::after{content:"";position:absolute;left:0;right:15px;bottom:-1px;height:2px;background:var(--seal)}
+.two{display:flex;gap:26px}
+.two>*{min-width:0}
+.hint{font-size:11.5px;color:var(--mist);line-height:1.65}
+.wall{background:var(--paper-2);border:1px solid var(--line);border-radius:var(--r);padding:18px 20px}
+.wgrp{margin-bottom:16px}.wgrp:last-child{margin-bottom:0}
+.wgrp-h{display:flex;align-items:baseline;gap:10px;margin-bottom:10px}
+.wgrp-n{font-size:13px;font-weight:700;letter-spacing:.04em}
+.wgrp-s{font-family:var(--mono);font-size:10.5px;color:var(--mist)}
+.wgrp-w{font-family:var(--mono);font-size:10.5px;color:var(--seal)}
+.wrow{display:flex;gap:26px;flex-wrap:wrap}
+.wall .bub .lab{font-size:10px;max-width:66px}
+/* 触控:44pt 下限 */
+.tbtn{
+  min-height:44px;padding:0 18px;border-radius:var(--r);font-size:14.5px;
+  border:1px solid var(--line);background:var(--paper-2);color:var(--ink);
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;font-family:inherit;
+}
+.tbtn.ink{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.tbtn.seal{background:var(--seal);color:#fff;border-color:var(--seal)}
+.tbtn.big{min-height:54px;font-size:15.5px;letter-spacing:.06em}
+.divider{width:9px;background:#B9BFB6;display:flex;align-items:center;justify-content:center;flex:none}
+.divider::after{content:"";width:3px;height:42px;border-radius:2px;background:#8C948F}
+.wave{display:flex;align-items:center;gap:2.5px;height:42px}
+.wave i{width:3px;background:var(--graphite);border-radius:1px;display:block}
+.wave i.q{background:var(--line)}
+.redline{border:1px solid var(--seal);background:var(--seal-soft);border-radius:var(--r);padding:13px 15px}
+.redline .h{font-size:13px;font-weight:700;color:var(--seal);line-height:1.55}
+.redline .p{font-size:11.5px;color:#8A3A33;line-height:1.75;margin-top:6px}
+.trow{display:flex;align-items:center;gap:12px;height:50px;border-bottom:1px solid var(--line-2);padding:0 2px}
+.stat4{display:flex;border:1px solid var(--line);background:var(--paper-2);border-radius:var(--r)}
+.st{flex:1;padding:13px 15px;border-right:1px solid var(--line)}
+.st:last-child{border-right:none}
+.st .v{font-family:var(--song);font-size:25px;font-weight:700;line-height:1}
+.st .v em{font-style:normal;font-size:13px;margin-left:2px}
+.st .k{font-size:11px;color:var(--mist);margin-top:5px}
+.ctxsm{font-size:10.5px;line-height:1.8}
+</style></head>
+<body><div class="deck">
+<div class="deck-head">
+  <div class="deck-kicker">03 · iPad · 核心场景端</div>
+  <div class="deck-title">边看网课边截图 —— 文档点名的第一场景</div>
+  <div class="deck-sub">
+    §2.4 推翻小程序时只给了一句理由:<b>核心场景是 iPad 上边看网课边截图、PC 上复盘导图,小程序在这两个端上体验是残的。</b>
+    所以 iPad 不是把网页缩一缩,它是这个产品被设计出来的原因。
+    横屏做分屏采集与复盘,竖屏做纸质笔记拍照。可点区域按 iOS 44pt 下限重制,
+    <b>PC 上靠悬停才出现的信息在这里全部常驻</b> —— 触控没有 hover 态,这是必须的改写,不是可选的优化。
+  </div>
+  <div class="deck-formula">采集发生在左手边 · 空白呈现在右手边 · 中间隔着一条 Split View 分隔线</div>
+</div>
+<div class="grid" style="flex-direction:column;gap:60px">
+
+<!-- ========== P1 分屏 ========== -->
+<div class="cell"><div class="cap"><span class="cap-n">P1</span><span class="cap-t">Split View 分屏采集(横屏 1194×834)</span></div>
+<div class="cap-d wide">左边是任意来源的网课,右边常驻采集面板。采集必须在不离开课程的前提下完成——§2.3 说「没人会切出去打字」,同一句话也适用于切 App。</div>
+<div class="ipad"><div class="ipad-scr land">
+  <div class="ios-bar" style="background:var(--ink);color:#8C948F">
+    9:41 <span style="margin-left:9px">周五 8月21日</span><span class="r">•••• ᯤ 82%</span></div>
+  <div style="display:flex;height:810px">
+    <div style="width:64%;background:#0C0E11;display:flex;flex-direction:column">
+      <div style="height:30px;background:var(--ink);display:flex;align-items:center;padding:0 14px;gap:9px">
+        <span style="width:8px;height:8px;border-radius:50%;background:#3A4046"></span>
+        <span style="font-size:11px;color:#7E8A80">B站 · 资料分析 倍数与比较(第 3 讲)</span>
+        <span style="margin-left:auto;font-family:var(--mono);font-size:10px;color:#4A5058">
+          第三方应用 · 本工具不读取其内容</span></div>
+      <div style="flex:1;display:flex;align-items:center;justify-content:center;position:relative">
+        <div style="text-align:center;color:#3A4046">
+          <div class="song" style="font-size:34px;letter-spacing:.1em">课程画面</div>
+          <div style="font-size:11px;margin-top:8px;color:#2E3339">
+            本工具不抓取、不转录、不存储此区域的任何内容</div></div>
+        <div style="position:absolute;left:0;right:0;bottom:0;height:40px;background:rgba(0,0,0,.5);
+             display:flex;align-items:center;padding:0 16px;gap:12px;color:#9AA3A8;
+             font-family:var(--mono);font-size:11px">
+          <span>❚❚</span><span>18:24 / 42:07</span>
+          <div style="flex:1;height:2px;background:#3A4046">
+            <div style="width:44%;height:100%;background:#C9CDC4"></div></div>
+          <span>1.5×</span></div></div>
+    </div>
+    <div class="divider"></div>
+    <div style="flex:1;background:var(--paper);display:flex;flex-direction:column">
+      <div style="padding:13px 18px 11px;border-bottom:2px solid var(--ink)">
+        <div style="display:flex;align-items:baseline;gap:9px">
+          <span class="song" style="font-size:17px;font-weight:700;letter-spacing:.06em">记一笔</span>
+          <span class="chip seal">B站UP主</span>
+          <span class="mono" style="margin-left:auto;font-size:10.5px;color:var(--mist)">本次 4 条</span></div></div>
+      <div style="padding:14px 18px;border-bottom:1px solid var(--line)">
+        <button class="tbtn ink big" style="width:100%;margin-bottom:9px">按住说一句</button>
+        <div style="display:flex;gap:9px">
+          <button class="tbtn" style="flex:1">截当前屏</button>
+          <button class="tbtn" style="flex:1">粘一段</button></div>
+        <div class="hint" style="margin-top:9px;text-align:center">
+          截屏只截左侧画面并做 OCR,原图 7 天后自动删除</div>
+      </div>
+      <div style="flex:1;padding:14px 18px;overflow:hidden">
+        <div class="mono" style="font-size:9.5px;letter-spacing:.14em;color:var(--mist);
+             text-transform:uppercase;margin-bottom:11px">本次会话 · 18 分钟</div>
+        <div style="display:flex;flex-direction:column;gap:9px">
+          <div class="panel">
+            <div style="display:flex;align-items:center;gap:8px">
+              <span class="dot sm untouched"></span>
+              <span style="color:var(--mist);font-size:11px">→</span>
+              <span class="dot sm seen"></span>
+              <span class="mono" style="font-size:10px;color:var(--mist);margin-left:4px">18:24 · 截图</span>
+              <span class="mono" style="margin-left:auto;font-size:10px;color:var(--seal)">+1</span></div>
+            <div style="font-size:13px;margin-top:8px;line-height:1.55">倍数计算 · 现期倍数与基期倍数</div></div>
+          <div class="panel">
+            <div style="display:flex;align-items:center;gap:8px">
+              <span class="dot sm untouched"></span>
+              <span style="color:var(--mist);font-size:11px">→</span>
+              <span class="dot sm seen"></span>
+              <span class="mono" style="font-size:10px;color:var(--mist);margin-left:4px">12:07 · 语音</span>
+              <span class="mono" style="margin-left:auto;font-size:10px;color:var(--seal)">+1</span></div>
+            <div style="font-size:13px;margin-top:8px;line-height:1.55">
+              翻番是乘 2ⁿ 不是乘 n,这个我一直记错</div></div>
+          <div class="panel" style="opacity:.55">
+            <div style="display:flex;align-items:center;gap:8px">
+              <span class="dot sm untouched" style="border-style:dashed"></span>
+              <span class="mono" style="font-size:10px;color:var(--mist);margin-left:4px">06:33 · 语音</span>
+              <span class="mono" style="margin-left:auto;font-size:10px;color:var(--mist)">丢弃</span></div>
+            <div style="font-size:13px;margin-top:8px;color:var(--mist)">老师说这个考点今年可能会变</div></div>
+        </div>
+      </div>
+      <div style="border-top:2px solid var(--ink);padding:13px 18px;background:var(--paper-2)">
+        <div style="display:flex;align-items:center;gap:11px">
+          <div style="flex:1">
+            <div style="font-size:12.5px;font-weight:700">这节课让空白少了 2 个</div>
+            <div class="mono" style="font-size:11px;color:var(--mist);margin-top:3px">还剩 8 / 18</div></div>
+          <div style="display:flex;gap:4px">
+            <span class="dot sm seen"></span><span class="dot sm seen"></span>
+            <span class="dot sm untouched"></span></div></div>
+      </div>
+    </div>
+  </div>
+</div></div>
+<div class="note wide">底部那条「这节课让空白少了 2 个」是全稿最重要的一处微交互。北极星是<b>主动查看盲区的人数</b> —— 想让人主动看,就得在他每记一条之后立刻回一次,而不是等他想起来去点菜单。<b>把北极星做进采集回路里,而不是做进报表里。</b></div>
+</div>
+
+<!-- ========== P2 浮层 ========== -->
+<div class="cell"><div class="cap"><span class="cap-n">P2</span><span class="cap-t">Slide Over 浮层 · 课程保持全屏</span></div>
+<div class="cap-d wide">分屏会压缩课程画面,有人不接受。浮层是更轻的第二档,记完自动滑走。<b style="color:#D7DBD4">同一个能力给两档形态,是因为摩擦是关卡 0 唯一的判据。</b></div>
+<div class="ipad"><div class="ipad-scr land">
+  <div style="height:834px;background:#0C0E11;position:relative;display:flex;
+       align-items:center;justify-content:center">
+    <div class="ios-bar" style="position:absolute;left:0;right:0;top:0;color:#7E8A80">
+      9:47<span class="r">•••• ᯤ 82%</span></div>
+    <div style="text-align:center;color:#3A4046">
+      <div class="song" style="font-size:40px;letter-spacing:.1em">课程保持全屏</div></div>
+    <div style="position:absolute;right:16px;top:42px;bottom:42px;width:330px;background:var(--paper);
+         border-radius:var(--r);display:flex;flex-direction:column;overflow:hidden;
+         border:1px solid #000">
+      <div style="padding:12px 18px 11px;border-bottom:2px solid var(--ink);display:flex;align-items:baseline;gap:9px">
+        <span class="song" style="font-size:16px;font-weight:700;letter-spacing:.06em">语音速记</span>
+        <span class="chip seal">B站UP主</span>
+        <span style="margin-left:auto;font-size:12px;color:var(--mist)">取消</span></div>
+      <div style="padding:24px 18px 0;display:flex;flex-direction:column;align-items:center">
+        <div style="display:flex;align-items:center;gap:7px">
+          <span style="width:7px;height:7px;border-radius:50%;background:var(--seal)"></span>
+          <span class="mono" style="font-size:24px;font-weight:600">00:14</span></div>
+        <div class="wave" style="margin-top:16px">
+          <i style="height:16%"></i><i style="height:33%"></i><i style="height:60%"></i>
+          <i style="height:84%"></i><i style="height:48%"></i><i style="height:97%"></i>
+          <i style="height:70%"></i><i style="height:38%"></i><i style="height:76%"></i>
+          <i style="height:53%"></i><i style="height:89%"></i><i style="height:42%"></i>
+          <i style="height:64%"></i><i class="q" style="height:28%"></i><i class="q" style="height:45%"></i>
+          <i class="q" style="height:19%"></i><i class="q" style="height:34%"></i>
+          <i class="q" style="height:12%"></i><i class="q" style="height:23%"></i>
+          <i class="q" style="height:16%"></i></div>
+      </div>
+      <div style="margin:18px 18px 0" class="panel">
+        <div class="mono" style="font-size:9.5px;letter-spacing:.14em;color:var(--mist);
+             text-transform:uppercase;margin-bottom:7px">转写中</div>
+        <div style="font-size:13.5px;line-height:1.7">
+          刚讲的贡献率,就是部分的增长量除以整体的增长量,别和拉动增长搞混……</div></div>
+      <div style="margin:16px 18px 0">
+        <div class="mono" style="font-size:9.5px;letter-spacing:.14em;color:var(--mist);
+             text-transform:uppercase;margin-bottom:9px">已认出</div>
+        <div style="display:flex;flex-direction:column;gap:9px">
+          <div style="display:flex;align-items:center;gap:9px">
+            <span class="dot sm untouched"></span>
+            <span style="font-size:13.5px;font-weight:600">贡献率</span>
+            <span class="chip seal" style="font-size:9.5px;padding:2px 6px">首次</span>
+            <span class="mono" style="margin-left:auto;font-size:11.5px">95%</span></div>
+          <div style="display:flex;align-items:center;gap:9px">
+            <span class="dot sm untouched"></span>
+            <span style="font-size:13.5px;font-weight:600">拉动增长</span>
+            <span class="chip seal" style="font-size:9.5px;padding:2px 6px">首次</span>
+            <span class="mono" style="margin-left:auto;font-size:11.5px">81%</span></div></div>
+      </div>
+      <div style="margin-top:auto;padding:15px 18px;border-top:1px solid var(--line)">
+        <div style="display:flex;align-items:center;gap:7px;margin-bottom:11px">
+          <span style="font-family:var(--mono);font-size:10px;color:var(--seal)">●</span>
+          <span style="font-size:11px;color:var(--mist);line-height:1.55">
+            转写完即丢弃音频,不留存、不上传</span></div>
+        <button class="tbtn ink" style="width:100%">停止并记下</button></div>
+    </div>
+  </div>
+</div></div>
+<div class="note wide">浮层里没有「保存到笔记本」这类动作,只有「停止并记下」。<b>笔记本要求用户先想清楚这条该放哪儿,记录只要求把痕迹留下</b> —— 归类由系统做,认不出就丢弃。少一次决策,就少一份摩擦。这两个考点正好补的是 W3 里那块整块空白的「效应类」。</div>
+</div>
+
+<!-- ========== P3 触控答题卡 ========== -->
+<div class="cell"><div class="cap"><span class="cap-n">P3</span><span class="cap-t">答题卡 + 详情 · 触控双栏(横屏)</span></div>
+<div class="cap-d wide">左边整张卡,右边选中考点的详情。PC 上四个统计字段要点进去才看得到,这里<b style="color:#D7DBD4">常驻不折叠</b>——触控没有 hover,信息必须一次给全。</div>
+<div class="ipad"><div class="ipad-scr land">
+  <div class="ios-bar">9:41<span class="r">•••• ᯤ 82%</span></div>
+  <div style="height:810px;display:flex;flex-direction:column">
+    <div class="col mast">
+      <div style="display:flex;align-items:flex-end">
+        <div><div class="kicker">山东省考 · 资料分析</div><h1>考点答题卡</h1></div>
+        <div style="margin-left:auto;display:flex;gap:6px;align-items:center">
+          <span class="chip">18 个考点</span><span class="chip seal">空白 10</span></div></div>
+      <div class="rule"></div>
+      <div class="nav"><div class="nv on">答题卡</div><div class="nv">导图</div>
+        <div class="nv">先补这几个</div><div class="nv">记录</div><div class="nv">来源</div></div>
+    </div>
+    <div class="col two" style="flex:1;padding-top:16px;padding-bottom:16px;overflow:hidden">
+      <div style="flex:1.15">
+        <div style="display:flex;align-items:flex-end;gap:14px;margin-bottom:13px">
+          <div class="cover"><div class="big">44<span>%</span></div>
+            <div class="txt">8 / 18 有记录<br>还有 <b>10</b> 个是空白</div></div>
+          <div style="flex:1;padding-bottom:4px">
+            <div class="bar"><i class="b-solid" style="width:16.7%"></i>
+              <i class="b-weak" style="width:11.1%"></i><i class="b-seen" style="width:16.7%"></i></div></div>
+        </div>
+        <div class="wall">
+          <div class="wgrp"><div class="wgrp-h"><span class="wgrp-n">增长类</span><span class="wgrp-s">4/7</span></div>
+            <div class="wrow">
+              <div class="bub"><span class="dot lg solid">12</span><span class="lab">增长率计算</span></div>
+              <div class="bub"><span class="dot lg weak">8</span><span class="lab">增长量计算</span></div>
+              <div class="bub"><span class="dot lg stale"></span><span class="lab">基期量计算</span></div>
+              <div class="bub"><span class="dot lg untouched"></span><span class="lab">现期量计算</span></div>
+              <div class="bub"><span class="dot lg stale"></span><span class="lab">间隔增长率</span></div>
+              <div class="bub"><span class="dot lg untouched"></span><span class="lab">年均增长率</span></div>
+              <div class="bub"><span class="dot lg untouched"></span><span class="lab">混合增长率</span></div></div></div>
+          <div class="wgrp"><div class="wgrp-h"><span class="wgrp-n">比重与平均</span><span class="wgrp-s">2/4</span></div>
+            <div class="wrow">
+              <div class="bub"><span class="dot lg solid">9</span><span class="lab">比重计算</span></div>
+              <div class="bub"><span class="dot lg solid">5</span><span class="lab">比重变化判断</span></div>
+              <div class="bub"><span class="dot lg untouched"></span><span class="lab">★平均数计算</span></div>
+              <div class="bub"><span class="dot lg untouched"></span><span class="lab">平均数增长率</span></div></div></div>
+          <div class="wgrp"><div class="wgrp-h">
+              <span class="wgrp-n" style="color:var(--seal)">倍数与比较</span>
+              <span class="wgrp-s" style="color:var(--seal)">0/3</span>
+              <span class="wgrp-w">整块空白</span></div>
+            <div class="wrow">
+              <div class="bub"><span class="dot lg untouched"></span><span class="lab">★倍数计算</span></div>
+              <div class="bub"><span class="dot lg untouched"></span><span class="lab">倍数变化</span></div>
+              <div class="bub"><span class="dot lg untouched"></span><span class="lab">同比与环比</span></div></div></div>
+          <div class="wgrp"><div class="wgrp-h">
+              <span class="wgrp-n" style="color:var(--seal)">效应类</span>
+              <span class="wgrp-s" style="color:var(--seal)">0/2</span>
+              <span class="wgrp-w">整块空白</span></div>
+            <div class="wrow">
+              <div class="bub"><span class="dot lg untouched"></span><span class="lab">贡献率</span></div>
+              <div class="bub"><span class="dot lg untouched"></span><span class="lab">拉动增长</span></div></div></div>
+          <div class="wgrp"><div class="wgrp-h"><span class="wgrp-n">速算与读材料</span><span class="wgrp-s">2/2</span></div>
+            <div class="wrow">
+              <div class="bub"><span class="dot lg weak">6</span><span class="lab">截位直除</span></div>
+              <div class="bub"><span class="dot lg seen"></span><span class="lab">材料定位速读</span></div></div></div>
+        </div>
+        <div class="legend" style="margin-top:11px">
+          <div class="lg"><i class="untouched"></i>未触达</div>
+          <div class="lg"><i class="seen"></i>仅接触</div>
+          <div class="lg"><i class="stale"></i>久未复习</div>
+          <div class="lg"><i class="weak"></i>练过但弱</div>
+          <div class="lg"><i class="solid"></i>练过且稳</div></div>
+      </div>
+      <div style="flex:1;display:flex;flex-direction:column">
+        <div style="display:flex;align-items:center;gap:11px">
+          <span class="dot lg weak">8</span>
+          <div><div style="font-size:11.5px;color:var(--mist)">增长类</div>
+            <div class="song" style="font-size:20px;font-weight:700;letter-spacing:.05em">增长量计算</div></div>
+          <span class="chip seal" style="margin-left:auto">练过但弱</span></div>
+        <div class="stat4" style="margin-top:14px">
+          <div class="st"><div class="v">8</div><div class="k">近五年出现</div></div>
+          <div class="st"><div class="v">11<em>省</em></div><div class="k">出现过的省份</div></div>
+          <div class="st"><div class="v">2025</div><div class="k">最近一次</div></div>
+          <div class="st"><div class="v">1.2</div><div class="k">每套卷题量</div></div></div>
+        <div style="margin-top:18px">
+          <div class="sec-head"><h2>你的记录</h2><div class="meta">跨来源 · 11 条</div></div>
+          <div class="trow"><span class="mono" style="font-size:12px;color:var(--mist);width:96px">08-21 09:41</span>
+            <span style="font-size:14px;font-weight:600;width:76px">粉笔</span>
+            <span style="font-size:13px;color:var(--graphite)">语音</span>
+            <span class="mono" style="margin-left:auto;font-size:11.5px;color:var(--mist)">今天</span></div>
+          <div class="trow"><span class="mono" style="font-size:12px;color:var(--mist);width:96px">08-19 20:12</span>
+            <span style="font-size:14px;font-weight:600;width:76px">自己刷题</span>
+            <span style="font-size:13px;color:var(--graphite)">4 道对 2 道</span>
+            <span class="mono" style="margin-left:auto;font-size:11.5px;color:var(--mist)">2 天</span></div>
+          <div class="trow"><span class="mono" style="font-size:12px;color:var(--mist);width:96px">08-14 19:48</span>
+            <span style="font-size:14px;font-weight:600;width:76px">粉笔</span>
+            <span style="font-size:13px;color:var(--graphite)">截图</span>
+            <span class="mono" style="margin-left:auto;font-size:11.5px;color:var(--mist)">7 天</span></div>
+          <div class="trow"><span class="mono" style="font-size:12px;color:var(--mist);width:96px">08-06 08:05</span>
+            <span style="font-size:14px;font-weight:600;width:76px">自己刷题</span>
+            <span style="font-size:13px;color:var(--graphite)">4 道对 2 道</span>
+            <span class="mono" style="margin-left:auto;font-size:11.5px;color:var(--mist)">15 天</span></div>
+        </div>
+        <div class="panel" style="margin-top:16px">
+          <div style="font-size:12px;color:var(--graphite);line-height:1.85">
+            正确率 <b>50%</b> 是你自己在「记做题」里填的数,<b>不是产品判出来的</b>。<br>
+            <span style="color:var(--mist)">本工具不碰答案,只回答有没有、几次、多久前。</span></div></div>
+        <div style="margin-top:auto;display:flex;gap:10px">
+          <button class="tbtn" style="flex:1">我已掌握</button>
+          <button class="tbtn ink" style="flex:1">记一次练习</button></div>
+      </div>
+    </div>
+  </div>
+</div></div>
+<div class="note wide">★ 与「我已掌握」都是用户自述,不是采集到的事实。§5.2 明说这个按钮<b>是补丁不是解法</b>,所以它在这一屏里既不改变涂格颜色、也不计入 44% —— 只用来把这一条从「先补这几个」里划掉。</div>
+</div>
+
+<!-- ========== P4 复盘 ========== -->
+<div class="cell"><div class="cap"><span class="cap-n">P4</span><span class="cap-t">周日复盘 · 通栏(横屏)</span></div>
+<div class="cap-d wide">§2.4 提到的另一半场景。差集摊开成一整行,来源分布和「先补这几个」并列 —— iPad 的横向空间刚好够把三件事放在一屏里不用滚。</div>
+<div class="ipad"><div class="ipad-scr land">
+  <div class="ios-bar">21:08<span class="r">•••• ᯤ 64%</span></div>
+  <div style="height:810px;display:flex;flex-direction:column">
+    <div class="col mast">
+      <div style="display:flex;align-items:flex-end">
+        <div><div class="kicker">8月15日 – 8月21日</div><h1>本周复盘</h1></div>
+        <div style="margin-left:auto;display:flex;gap:8px">
+          <button class="tbtn" style="min-height:36px;font-size:13px;padding:0 14px">带走数据</button></div></div>
+      <div class="rule"></div>
+      <div class="nav"><div class="nv">答题卡</div><div class="nv">导图</div>
+        <div class="nv on">复盘</div><div class="nv">记录</div><div class="nv">来源</div></div>
+    </div>
+    <div class="col" style="flex:1;padding-top:18px;overflow:hidden">
+      <!-- 差集通栏 -->
+      <div class="wall" style="display:flex;align-items:center;padding:20px 24px">
+        <div style="flex:1;text-align:center">
+          <div class="mono" style="font-size:9.5px;letter-spacing:.16em;color:var(--mist);
+               text-transform:uppercase">骨架层</div>
+          <div class="song" style="font-size:38px;font-weight:700;margin-top:6px;line-height:1">18</div>
+          <div style="font-size:11.5px;color:var(--mist);margin-top:4px">考点全集</div></div>
+        <div class="song" style="font-size:30px;color:var(--mist);padding:0 22px">−</div>
+        <div style="flex:1;text-align:center">
+          <div class="mono" style="font-size:9.5px;letter-spacing:.16em;color:var(--mist);
+               text-transform:uppercase">行为层</div>
+          <div class="song" style="font-size:38px;font-weight:700;margin-top:6px;line-height:1">8</div>
+          <div style="font-size:11.5px;color:var(--mist);margin-top:4px">本周 +2</div></div>
+        <div class="song" style="font-size:30px;color:var(--mist);padding:0 22px">=</div>
+        <div style="flex:1.1;text-align:center;background:var(--seal-soft);border:1px solid var(--seal);
+             border-radius:var(--r);padding:12px">
+          <div class="mono" style="font-size:9.5px;letter-spacing:.16em;color:var(--seal);
+               text-transform:uppercase">空白</div>
+          <div class="song" style="font-size:38px;font-weight:700;margin-top:6px;line-height:1;color:var(--seal)">10</div>
+          <div style="font-size:11.5px;color:#8A3A33;margin-top:4px">本周 −2</div></div>
+        <div style="width:1px;height:76px;background:var(--line);margin:0 24px"></div>
+        <div style="flex:1.3">
+          <div class="mono" style="font-size:9.5px;letter-spacing:.14em;color:var(--mist);
+               text-transform:uppercase;margin-bottom:9px">本周来源</div>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <div style="display:flex;align-items:center;gap:9px;font-size:12.5px">
+              <span style="width:62px">粉笔</span>
+              <div class="bar" style="flex:1;margin:0"><i class="b-solid" style="width:100%"></i></div>
+              <span class="mono" style="width:18px;text-align:right">8</span></div>
+            <div style="display:flex;align-items:center;gap:9px;font-size:12.5px">
+              <span style="width:62px">B站UP主</span>
+              <div class="bar" style="flex:1;margin:0"><i class="b-solid" style="width:62%"></i></div>
+              <span class="mono" style="width:18px;text-align:right">5</span></div>
+            <div style="display:flex;align-items:center;gap:9px;font-size:12.5px">
+              <span style="width:62px">自己刷题</span>
+              <div class="bar" style="flex:1;margin:0"><i class="b-solid" style="width:50%"></i></div>
+              <span class="mono" style="width:18px;text-align:right">4</span></div></div></div>
+      </div>
+      <div class="two" style="margin-top:18px">
+        <div style="flex:1.4">
+          <div class="sec-head"><h2>先补这几个</h2><div class="meta">频次 × 状态权重</div></div>
+          <div class="gap"><div class="rank">01</div><div style="flex:1">
+            <div class="name">增长量计算</div>
+            <div class="why">练了 8 道,对 4 道,正确率 50%。</div></div>
+            <span class="dot weak">8</span></div>
+          <div class="gap"><div class="rank">02</div><div style="flex:1">
+            <div class="name">平均数计算</div>
+            <div class="why">示例数据里近五年考了 6 次。你还没有任何记录。</div></div>
+            <span class="dot untouched"></span></div>
+          <div class="gap"><div class="rank">03</div><div style="flex:1">
+            <div class="name">截位直除</div>
+            <div class="why">练了 6 道,对 2 道,正确率 33%。</div></div>
+            <span class="dot weak">6</span></div>
+          <div class="gap" style="margin-bottom:0"><div class="rank">04</div><div style="flex:1">
+            <div class="name">现期量计算</div>
+            <div class="why">示例数据里近五年考了 5 次。你还没有任何记录。</div></div>
+            <span class="dot untouched"></span></div>
+        </div>
+        <div style="flex:1;display:flex;flex-direction:column;gap:14px">
+          <div style="border:1px solid var(--seal);background:var(--seal-soft);
+               border-radius:var(--r);padding:15px 17px">
+            <div style="font-size:13.5px;font-weight:700;color:var(--seal);line-height:1.55">
+              两组整块空白</div>
+            <div style="font-size:12px;color:#8A3A33;line-height:1.8;margin-top:9px">
+              倍数与比较(3 个)、效应类(2 个)。示例数据里这两类近五年合计出现 <b>18</b> 次,
+              而你的记录里一条都没有。</div>
+            <div style="font-size:12px;color:#8A3A33;line-height:1.8;margin-top:9px;
+                 border-top:1px solid #DCC0BC;padding-top:9px">
+              不是学漏了两个点,<b>是整类题从没进过你的备考视野</b>。</div></div>
+          <div class="panel" style="flex:1">
+            <div class="mono" style="font-size:9.5px;letter-spacing:.14em;color:var(--mist);
+                 text-transform:uppercase;margin-bottom:10px">最久没碰</div>
+            <div class="kv"><span>间隔增长率</span><span>33 天</span></div>
+            <div class="kv"><span>基期量计算</span><span>32 天</span></div>
+            <div class="kv" style="border-bottom:none"><span>材料定位速读</span><span>6 天</span></div>
+            <div style="font-size:11px;color:var(--mist);line-height:1.7;margin-top:11px">
+              只按「多久前」排,<b style="color:var(--graphite)">不做遗忘曲线提醒</b> ——
+              那需要判断你掌握到什么程度,超出能力边界。</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div></div>
+<div class="note wide">「最久没碰」刻意<b>不做成艾宾浩斯复习提醒</b>。遗忘曲线要求判断掌握程度,那是 §2.2 明令不做的「对不对」。这里只呈现「多久前」,推断留给用户和外接模型 —— 边界一旦松一次,后面每个功能都会想松。</div>
+</div>
+
+<!-- ========== P5 竖屏拍照 ========== -->
+<div class="cell"><div class="cap"><span class="cap-n">P5</span><span class="cap-t">纸质笔记拍照 · 竖屏(834×1112)</span></div>
+<div class="cap-d wide">§2.3 场景表的第四行:纸质笔记 → 拍照。竖屏贴合 A4 比例。这一屏是<b style="color:#D7DBD4">图片留存红线</b>在设计上最完整的一次表达。</div>
+<div class="ipad"><div class="ipad-scr port">
+  <div class="ios-bar">20:14<span class="r">•••• ᯤ 71%</span></div>
+  <div style="height:1088px;display:flex;flex-direction:column">
+    <div class="col mast" style="padding-bottom:0">
+      <div style="display:flex;align-items:flex-end">
+        <div><div class="kicker">INPUT</div><h1>拍照记录</h1></div>
+        <div style="margin-left:auto;display:flex;gap:6px;align-items:center">
+          <span class="chip seal">纸质笔记</span><span class="chip">改</span></div></div>
+      <div class="rule"></div>
+    </div>
+    <div class="col" style="flex:1;padding-top:18px;display:flex;flex-direction:column;gap:16px">
+      <div style="border:1px solid var(--line);border-radius:var(--r);overflow:hidden">
+        <div style="height:248px;background:var(--paper-2);display:flex;align-items:center;
+             justify-content:center;position:relative">
+          <div style="text-align:center;color:var(--mist)">
+            <div class="song" style="font-size:30px;letter-spacing:.08em">纸质笔记原图</div>
+            <div style="font-size:11px;margin-top:7px">示意</div></div>
+          <span style="position:absolute;top:11px;left:11px;font-family:var(--mono);font-size:10px;
+                background:var(--graphite);color:var(--paper);padding:4px 9px;border-radius:var(--r)">
+            OCR 已完成</span>
+          <span style="position:absolute;top:11px;right:11px;font-family:var(--mono);font-size:10px;
+                background:var(--ink);color:var(--paper);padding:4px 9px;border-radius:var(--r)">
+            原图 6d 23h 后删除</span></div>
+        <div class="redline" style="border:none;border-top:1px solid var(--seal);border-radius:0;
+             display:flex;align-items:flex-start;gap:13px">
+          <div style="flex:1">
+            <div class="h">原图只在这台 iPad 上放 7 天</div>
+            <div class="p">不上传云端、不参与同步、不可分享。只有抽出的文字和考点标签会保存。<br>
+              这条线第一天不定,后面改不回来 —— 否则这个产品会变成盗版课件的托管方。</div></div>
+          <button class="tbtn" style="min-height:38px;font-size:12.5px;padding:0 13px;
+                  border-color:var(--seal);color:var(--seal);background:#fff">立即删除原图</button></div>
+      </div>
+      <div>
+        <div class="sec-head"><h2>抽出的文字</h2><div class="meta">OCR · 可编辑</div></div>
+        <div style="font-size:14px;line-height:1.9;color:var(--ink)">
+          倍数问题:现期倍数 = A ÷ B,注意题目问「是几倍」还是「多几倍」。<br>
+          基期倍数要先各自还原到基期再相除,不能直接用现期倍数除以增长率之比。<br>
+          翻番:翻 n 番 = 乘以 2ⁿ,不是乘以 n。</div>
+      </div>
+      <div style="flex:1;display:flex;flex-direction:column">
+        <div class="sec-head"><h2>认出 3 个考点</h2><div class="meta">认不出的默认丢弃</div></div>
+        <div style="display:flex;flex-direction:column;gap:9px">
+          <div style="display:flex;align-items:center;gap:13px;height:50px;padding:0 15px;
+               background:var(--paper-2);border:1px solid var(--graphite);border-radius:var(--r)">
+            <span style="width:19px;height:19px;border-radius:var(--r);background:var(--graphite);
+                  color:var(--paper);display:flex;align-items:center;justify-content:center;
+                  font-size:12px;flex:none">✓</span>
+            <span class="dot sm untouched"></span>
+            <span style="font-size:14.5px;font-weight:600">倍数计算</span>
+            <span class="chip seal" style="font-size:9.5px;padding:2px 6px">首次触达</span>
+            <span class="mono" style="margin-left:auto;font-size:12.5px">96%</span></div>
+          <div style="display:flex;align-items:center;gap:13px;height:50px;padding:0 15px;
+               background:var(--paper-2);border:1px solid var(--graphite);border-radius:var(--r)">
+            <span style="width:19px;height:19px;border-radius:var(--r);background:var(--graphite);
+                  color:var(--paper);display:flex;align-items:center;justify-content:center;
+                  font-size:12px;flex:none">✓</span>
+            <span class="dot sm untouched"></span>
+            <span style="font-size:14.5px;font-weight:600">倍数变化</span>
+            <span class="chip seal" style="font-size:9.5px;padding:2px 6px">首次触达</span>
+            <span class="mono" style="margin-left:auto;font-size:12.5px">93%</span></div>
+          <div style="display:flex;align-items:center;gap:13px;height:50px;padding:0 15px;
+               background:var(--paper-2);border:1px solid var(--graphite);border-radius:var(--r)">
+            <span style="width:19px;height:19px;border-radius:var(--r);background:var(--graphite);
+                  color:var(--paper);display:flex;align-items:center;justify-content:center;
+                  font-size:12px;flex:none">✓</span>
+            <span class="dot sm untouched"></span>
+            <span style="font-size:14.5px;font-weight:600">同比与环比</span>
+            <span class="chip seal" style="font-size:9.5px;padding:2px 6px">首次触达</span>
+            <span class="mono" style="margin-left:auto;font-size:12.5px">88%</span></div>
+          <div style="display:flex;align-items:center;gap:13px;height:50px;padding:0 15px;
+               background:var(--seal-soft);border:1px dashed var(--seal);border-radius:var(--r)">
+            <span style="width:19px;height:19px;border-radius:var(--r);border:1.5px dashed var(--seal);
+                  background:#fff;flex:none"></span>
+            <span style="font-size:14.5px;color:#8A3A33">「注意题目问法」— 没有对应考点</span>
+            <span style="margin-left:auto;font-size:12.5px;color:var(--seal);text-decoration:underline">手动挂</span></div>
+        </div>
+        <div style="font-size:12px;color:#8A3A33;line-height:1.8;margin-top:11px;
+             background:var(--seal-soft);border-radius:var(--r);padding:11px 13px">
+          <b>认不出来的就丢掉,不硬归类。</b>归错会让覆盖度失真,而覆盖度是这个产品唯一的输出。</div>
+        <div class="panel" style="margin-top:14px;display:flex;align-items:center;gap:12px">
+          <div style="display:flex;gap:5px">
+            <span class="dot sm untouched"></span><span class="dot sm untouched"></span>
+            <span class="dot sm untouched"></span></div>
+          <span style="color:var(--mist);font-size:12px">→</span>
+          <div style="display:flex;gap:5px">
+            <span class="dot sm seen"></span><span class="dot sm seen"></span>
+            <span class="dot sm seen"></span></div>
+          <div style="flex:1;font-size:12px;color:var(--graphite);line-height:1.6;margin-left:6px">
+            <b>倍数与比较</b>这一整组会从<br>整块空白变成 3/3</div></div>
+        <div style="margin-top:auto;padding-top:16px;display:flex;gap:11px">
+          <button class="tbtn" style="flex:1">全部丢弃</button>
+          <button class="tbtn ink" style="flex:2">记下这 3 个</button></div>
+      </div>
+    </div>
+  </div>
+</div></div>
+<div class="note wide">这一拍把「倍数与比较」从 <b>0/3</b> 推到 <b>3/3</b>,整组不再是空白。设计上这是闭环的收口:P4 指出的最大缺口,由 P5 的一次拍照填上,而填补的证据立刻回流到 P1 底部那条实时反馈里。三屏共用同一份状态,不是三张各自好看的示意图。</div>
+</div>
+
+</div></div></body></html>

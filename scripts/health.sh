@@ -31,8 +31,18 @@ dirty=$(git status --porcelain | wc -l | tr -d ' ')
 # ③ 带宽被占 —— Android SDK 下载曾把 GitHub 拖到 5.8s,影响所有人
 hog=$(ps aux | grep -iE "sdkmanager|gradle.*download" | grep -v grep | wc -l | tr -d ' ')
 [[ "$hog" -gt 0 ]] && alert "有 $hog 个疑似占带宽的下载进程在跑" || say "无占带宽进程"
-gh_t=$(curl -s -o /dev/null -w '%{time_total}' -m 20 https://github.com 2>/dev/null || echo 99)
-awk -v t="$gh_t" 'BEGIN{exit !(t>4)}' && alert "GitHub 响应 ${gh_t}s(>4s,疑似带宽被占)" || say "GitHub ${gh_t}s"
+# 慢要分辨是【本机带宽被占】还是【到 GitHub 的线路劣化】——处置完全不同:
+# 前者杀进程,后者只能等或换路。2026-08-30 误报过一次「疑似带宽被占」,
+# 实测 github 12s 而 api.github.com / npm / 百度都 1-3s,是 GitHub 专属劣化。
+gh_t=$(curl -s -o /dev/null -w '%{time_total}' -m 25 https://github.com 2>/dev/null || echo 99)
+if awk -v t="$gh_t" 'BEGIN{exit !(t>8)}'; then
+  ref_t=$(curl -s -o /dev/null -w '%{time_total}' -m 15 https://www.baidu.com 2>/dev/null || echo 99)
+  if awk -v r="$ref_t" 'BEGIN{exit !(r>5)}'; then
+    alert "整体网络慢:github ${gh_t}s / 参照 ${ref_t}s —— 查本机是否有下载占带宽"
+  else
+    alert "GitHub 线路劣化:github ${gh_t}s 而参照点 ${ref_t}s 正常 —— 非本机问题,git 操作会很慢"
+  fi
+else say "GitHub ${gh_t}s"; fi
 
 # ④ Multica 可达 + 是否有活在跑
 if curl -s -m 8 http://127.0.0.1:20226/health 2>/dev/null | grep -q '"status":"running"'; then

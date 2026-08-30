@@ -46,7 +46,14 @@ A **decision record that has grown a working prototype**. Chinese-language Markd
 cd web && npm run lint             # oxlint
 cd web && npm run build            # tsc -b && vite build
 cd web && npm run test:boundary    # 能力边界文案扫描(R-05)
+./shell/build.sh                   # 桌面壳(macOS)。唯一允许的构建入口 —— 步骤 ①.1 校验 cargo 生效源,
+                                   # 绕过去会让依赖走公司私服(`R-111`,与 server/build.sh 拦的是同一件事)
 ```
+
+`shell/` 是 **Tauri 2 桌面壳,当前只有 macOS**:把 `web/dist` 内嵌进二进制,自己起回环静态服务 + `/api` 反代。
+**`web/` 与 `server/` 零改动是它的约束** —— `build.sh` 步骤 ③ 用 `git status` 当场校验,有 diff 就拒绝构建。
+契约在 `docs/18`,端的完整矩阵在 `docs/19`。⚠️ **它没有 `[lib]` 目标,所以 iOS / Android 现在编不出来** ——
+Tauri 2 的移动端入口是 `lib.rs` 的 `run()`,不走 `main.rs`;见 `00` §2.6 E4。
 
 `build.sh` requires `~/.m2/settings-side.xml` and refuses to run if it points at a private mirror or carries credentials. **Never bypass it.**
 
@@ -66,11 +73,10 @@ Current state (2026-08-28): the backend is **four Maven modules** with ~480 gree
 
 Read `00` before adding, moving, renumbering, or freezing any document. Its §六 is the action checklist; its §五 is the red line that forbids any template field, example, placeholder, or appendix capable of holding a question stem.
 
-Three things `00` records that are not obvious from the tree:
+Two things `00` records that are not obvious from the tree:
 
-- **Three documents live only on branches** and are invisible to a reader of the trunk — one of them (`19-多端选型与端矩阵`, on `KUBI-71`) has already overturned `10` §4.3/§4.4. See `00` §2.2.
-- **`docs/15` is a number collision** — the trunk's Agent 框架 and `KUBI-62`'s 壳技术方案 both claim it. See `00` §2.3.
-- **The trunk is `v1`** — decided by a human on 2026-08-30 (`00` §2.4-①). Branch `KUBI-<n>-<slug>` off `origin/v1`, target PRs at `v1`, and write baselines as `基线:origin/v1 @ <SHA7>,fetch 于 <时间>`. `main` is left as-is — 14 documents and 6,567 lines behind, not fast-forwarded, not deleted. ⚠️ **`origin/HEAD` still points at `main`** until a repo admin changes the GitHub default branch, so a fresh clone still lands on the near-empty branch — see `00` §2.6 E1.
+- **No document lives only on a branch any more** — all eight `KUBI-*` branches were merged into `v1` on 2026-08-30 and their refs deleted. Three numbering collisions were resolved in that pass, all with the same cause (branch baseline older than trunk, so the number was still free when it was written): `15` shell design → `18`, `17` raw-image storage → `21`, and risk ids `R-72`…`R-76` → `R-108`…`R-112`. See `00` §2.2 — including why the `R-74` collision produced **no git conflict at all**.
+- **The trunk is `v1`** — decided by a human on 2026-08-30 (`00` §2.4-①). Branch `KUBI-<n>-<slug>` off `origin/v1`, target PRs at `v1`, and write baselines as `基线:origin/v1 @ <SHA7>,fetch 于 <时间>`. `main` is left as-is — 17 documents and 8,737 lines behind, not fast-forwarded, not deleted. ⚠️ **`origin/HEAD` still points at `main`** until a repo admin changes the GitHub default branch, so a fresh clone still lands on the near-empty branch — see `00` §2.6 E1.
 
 **Never let the execution layer overwrite the decision layer.** `05` states it explicitly: "04 的关卡判据在这里一个字都不改." When new research contradicts a decision-layer document, record the correction downstream and annotate upstream — do not silently rewrite the original. Doc `04`'s cost table keeps its superseded ¥2,000 estimate with a pointer, exactly for this reason.
 

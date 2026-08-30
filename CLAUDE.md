@@ -70,7 +70,7 @@ Three things `00` records that are not obvious from the tree:
 
 - **Three documents live only on branches** and are invisible to a reader of the trunk — one of them (`19-多端选型与端矩阵`, on `KUBI-71`) has already overturned `10` §4.3/§4.4. See `00` §2.2.
 - **`docs/15` is a number collision** — the trunk's Agent 框架 and `KUBI-62`'s 壳技术方案 both claim it. See `00` §2.3.
-- **Which branch is the trunk is undecided** — `origin/HEAD` points at `main`, but `main` is 14 documents and 6,567 lines behind `v1`, and every `KUBI-*` branch forks from `v1`. See `00` §2.4-①.
+- **The trunk is `v1`** — decided by a human on 2026-08-30 (`00` §2.4-①). Branch `KUBI-<n>-<slug>` off `origin/v1`, target PRs at `v1`, and write baselines as `基线:origin/v1 @ <SHA7>,fetch 于 <时间>`. `main` is left as-is — 14 documents and 6,567 lines behind, not fast-forwarded, not deleted. ⚠️ **`origin/HEAD` still points at `main`** until a repo admin changes the GitHub default branch, so a fresh clone still lands on the near-empty branch — see `00` §2.6 E1.
 
 **Never let the execution layer overwrite the decision layer.** `05` states it explicitly: "04 的关卡判据在这里一个字都不改." When new research contradicts a decision-layer document, record the correction downstream and annotate upstream — do not silently rewrite the original. Doc `04`'s cost table keeps its superseded ¥2,000 estimate with a pointer, exactly for this reason.
 

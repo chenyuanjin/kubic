@@ -13,8 +13,15 @@ export PATH="/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PAT
 MULTICA="$(command -v multica || echo /usr/local/bin/multica)"
 TERSE=0; [[ "${1:-}" == "--terse" ]] && TERSE=1
 bad=0
+
+# 🔴 告警去重:同一组告警连续出现时不重复通知,只在【变化】时报。
+# 一个每 20 分钟重复喊同一句的监控,一天之后就被当成背景噪音 ——
+# 那时真出新问题也没人看。等人决定的状态不该反复喊,变了才喊。
+STATE_FILE="${TMPDIR:-/tmp}/kaodian-health-last.txt"
+BUF=""
+
 say(){ [[ $TERSE == 0 ]] && printf '  %s\n' "$*"; }
-alert(){ printf '⚠ %s\n' "$*"; bad=1; }
+alert(){ BUF="${BUF}⚠ $*"$'\n'; bad=1; }
 
 # ① 本地 vs 远端分叉 —— 8-29 攒了 20 个未推提交,所有 agent 在不存在的仓库上工作
 git fetch origin -q 2>/dev/null
@@ -111,5 +118,18 @@ gate(){ # $1=脚本名 $2=人话 $3=红线号
 gate test:boundary "能力边界扫描" "R-05"
 gate test:retention "原图留存测试" "R-04"
 
-[[ $bad == 0 && $TERSE == 0 ]] && echo "  ✓ 全部正常"
+# 输出与去重
+if [[ $TERSE == 1 ]]; then
+  # 用「告警指纹」比对:数字会变(响应秒数),所以剥掉数字再比
+  fp=$(printf '%s' "$BUF" | sed -E 's/[0-9]+([.][0-9]+)?//g')
+  last=$(cat "$STATE_FILE" 2>/dev/null || true)
+  if [[ "$fp" != "$last" ]]; then
+    printf '%s' "$BUF"
+    [[ -z "$BUF" && -n "$last" ]] && echo "✓ 之前的告警已消失,恢复正常"
+    printf '%s' "$fp" > "$STATE_FILE"
+  fi
+else
+  printf '%s' "$BUF"
+  [[ $bad == 0 ]] && echo "  ✓ 全部正常"
+fi
 exit $bad

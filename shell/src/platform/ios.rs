@@ -1,29 +1,51 @@
-//! iOS。本轮只要能构建、能装到模拟器、能打开首页(KUBI-66)。
+//! iOS。
+//!
+//! ⚠ 本轮(`KUBI-66`)的全部目标是「能构建、能装到模拟器、能打开首页」。
+//! 这个文件因此只有最小实现,**不是没写完,是不多写** —— `KUBI-66` 的原话:
+//! 「做多了反而要在后面删掉」。
 
 use std::path::PathBuf;
 
 use super::Platform;
 
 pub struct Ios {
-    base: PathBuf,
+    /// 由 Tauri 给出的 app 沙箱容器目录。
+    ///
+    /// 与 macOS 不同,这里【不】写死路径:iOS 的容器路径带一段随机 UUID,
+    /// 每次安装都不一样,写死是不可能的。
+    data_root: PathBuf,
 }
 
 impl Ios {
-    pub fn new(base: PathBuf) -> Self {
-        Self { base }
+    pub fn new(data_root: PathBuf) -> Self {
+        Self { data_root }
     }
 }
 
 impl Platform for Ios {
-    /// app 沙箱容器内。
-    fn archive_dir(&self) -> PathBuf {
-        self.base.join("archive")
+    fn data_root(&self) -> PathBuf {
+        self.data_root.clone()
     }
 
-    /// 系统不保证后台执行。返回 false 之后 `scheduler` 只在前台扫一次,
-    /// 并且界面上不承诺任何「到期自动处理」——
-    /// 做不出来的东西界面上不留承诺,与 web/README 同一条。
+    fn archive_dir(&self) -> PathBuf {
+        self.data_root.join("originals")
+    }
+
     fn background_timer_supported(&self) -> bool {
+        // 🔴 false,而且不打算变成 true。
+        // iOS 不保证后台执行,正确行为是【前台启动时扫一次】,并且不在界面上承诺
+        // 任何「到期自动处理」——「做不出来的东西,界面上不留承诺」(web/README.md)。
         false
+    }
+
+    fn describe_port_holder(&self, _port: u16) -> Option<String> {
+        // iOS 上没有 lsof,也没有「另一个进程占着这个端口」这种局面 ——
+        // 每个 app 在自己的沙箱里。查不出来就说查不出来,不编一个。
+        None
+    }
+
+    fn report_fatal(&self, title: &str, body: &str) {
+        // 移动端没有 osascript,也不该为一条本轮走不到的路径引一个原生对话框能力。
+        eprintln!("{title}\n{body}");
     }
 }

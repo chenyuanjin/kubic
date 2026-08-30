@@ -95,5 +95,5 @@ or am I finding those two daily numbers?**
 - **Gate criteria are pass/fail, not targets to tune toward.** 「产品不是变量,需求才是。」 Same gate failed three times is a fail (`R-10`). Never adjust the product because data landed near the line.
 - `04` and `08` are detailed only to the next gate — a 12-month plan was written once for a dead direction and thrown
   away whole. **Do not "help" by expanding later stages.** **Unresolved items stay unresolved**: a plausible inference does not close a ⚪ (`01` §5, `08` §四⚪).
-- Docs are Chinese, dense, declarative; flowcharts Mermaid; research carries an as-of date and names its sources
+- Docs are Chinese, dense, declarative; **flowcharts Mermaid, mind maps markmap** (a plain Markdown outline — [`22`](docs/22-产品模块脑图.md); Mermaid `mindmap` was dropped there because it cannot fold and overlaps past ~60 nodes, and the outline stays readable with no tooling); research carries an as-of date and names its sources
   **including where they disagree**. Full conventions → [`00`](docs/00-文档规范与目录.md).

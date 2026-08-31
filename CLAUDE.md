@@ -18,6 +18,7 @@ numbers that are gate 0's entire input, is empty.
 
 🔴 **[`docs/INDEX.md`](docs/INDEX.md) is the entry point** — reading routes, L0/L1/L2 tiers, the product-vs-technical
 split, gate ordering. **Never read `docs/` in number order**: the numbers are writing order, not reading order.
+Subdirs split by **reader** (`decisions/` `execution/` `product/` `technical/` `data/` `ops/`; `INDEX.md` + `00` at root) — but **the number, not the path, is a document's identity**: cite `` 见 `13` §6.9 ``, never a path (`00` §3.2).
 
 🔴 **[`docs/00`](docs/00-文档规范与目录.md) is the single source of truth for the document list** — pipeline, gate
 served, status, staleness rule, numbering ledger, open decisions. **Never re-add a document table here**; add a row to
@@ -29,7 +30,7 @@ never silently rewrite; superseded numbers stay with a pointer.
 ## Architecture Quick Ref
 
 `server/` is four Maven modules cut along the **real package-dependency direction**, acyclic — the two "deliberately"s
-are the point, and why there is no `kaodian-common` ([`13`](docs/13-后端系统设计与组件接入.md) §二):
+are the point, and why there is no `kaodian-common` ([`13`](docs/technical/13-后端系统设计与组件接入.md) §二):
 
 | Module | Contains | Depends on |
 |---|---|---|
@@ -40,7 +41,7 @@ are the point, and why there is no `kaodian-common` ([`13`](docs/13-后端系统
 
 `shell/` is a **Tauri 2 desktop shell, macOS only**: embeds `web/dist`, serves it over loopback, proxies `/api`.
 **Zero changes to `web/` and `server/` is its constraint** — `build.sh` step ③ enforces it with `git status`. ⚠️ No
-`[lib]` target, so **iOS / Android do not build** (`00` §2.6 E4). Detail → [`10`](docs/10-技术架构与接口契约.md) contracts · [`18`](docs/18-壳技术方案：Tauri%202%20包现有%20Web%20工程.md) shell · [`19`](docs/19-多端选型与端矩阵.md) client matrix
+`[lib]` target, so **iOS / Android do not build** (`00` §2.6 E4). Detail → [`10`](docs/technical/10-技术架构与接口契约.md) contracts · [`18`](docs/technical/18-壳技术方案：Tauri%202%20包现有%20Web%20工程.md) shell · [`19`](docs/technical/19-多端选型与端矩阵.md) client matrix
 
 ## Commands
 
@@ -62,7 +63,7 @@ prompts, not just 「你好」** (`R-88`): one needing a tool (「我的覆盖�
 
 ## Critical Rules
 
-Settled invariants — **flag a conflict rather than working around it**. Full text at the pointer; the lower-blast-radius ones (开放性 / 形态与范围 / 生意形态) are in [`01`](docs/01-项目现状与决策记录.md) §2.4 · §三 and [`11`](docs/11-商业化与额度设计.md) §二.
+Settled invariants — **flag a conflict rather than working around it**. Full text at the pointer; the lower-blast-radius ones (开放性 / 形态与范围 / 生意形态) are in [`01`](docs/decisions/01-项目现状与决策记录.md) §2.4 · §三 and [`11`](docs/product/11-商业化与额度设计.md) §二.
 
 | Rule | One line | Source |
 |---|---|---|
@@ -76,7 +77,7 @@ Settled invariants — **flag a conflict rather than working around it**. Full t
 ## Delivery
 
 Multica workspace `kubicc`, prefix `KUBI`. Four gates, **a human stands only at the fourth** — how-to in
-[`17`](docs/17-Multica%20操作备忘.md), why in [`14`](docs/14-自动化交付工作流.md) §三. Binding on every agent:
+[`17`](docs/ops/17-Multica%20操作备忘.md), why in [`14`](docs/ops/14-自动化交付工作流.md) §三. Binding on every agent:
 
 - **Trunk is `v1`.** Branch `KUBI-<n>-<slug>` off `origin/v1`; PRs target `v1`; never commit to `v1` or `main` directly; declare `基线:origin/v1 @ <SHA7>,fetch 于 <时间>`. That string **is** the PR↔issue link — without it gate 1's result never reaches the issue.
 - **Agents advance an issue to `in_review`, never `done`.** An agent's conclusion is *input*, not judgment.
@@ -95,5 +96,5 @@ or am I finding those two daily numbers?**
 - **Gate criteria are pass/fail, not targets to tune toward.** 「产品不是变量,需求才是。」 Same gate failed three times is a fail (`R-10`). Never adjust the product because data landed near the line.
 - `04` and `08` are detailed only to the next gate — a 12-month plan was written once for a dead direction and thrown
   away whole. **Do not "help" by expanding later stages.** **Unresolved items stay unresolved**: a plausible inference does not close a ⚪ (`01` §5, `08` §四⚪).
-- Docs are Chinese, dense, declarative; **flowcharts Mermaid, mind maps markmap** (a plain Markdown outline — [`22`](docs/22-产品模块脑图.md); Mermaid `mindmap` was dropped there because it cannot fold and overlaps past ~60 nodes, and the outline stays readable with no tooling); research carries an as-of date and names its sources
+- Docs are Chinese, dense, declarative; **flowcharts Mermaid, mind maps markmap** (a plain Markdown outline — [`22`](docs/product/22-产品模块脑图.md); Mermaid `mindmap` was dropped there because it cannot fold and overlaps past ~60 nodes, and the outline stays readable with no tooling); research carries an as-of date and names its sources
   **including where they disagree**. Full conventions → [`00`](docs/00-文档规范与目录.md).

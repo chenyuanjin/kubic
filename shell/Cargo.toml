@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 rust-version = "1.80"
 publish = false
-description = "考点盲区桌面壳 —— 内嵌 web/dist,回环静态直出 + /api 反代(docs/18-壳技术方案)"
+description = "考点盲区桌面壳 —— 内嵌 web/dist,回环静态直出 + /api 反代(docs/technical/18-壳技术方案)"
 
 # 🔴 依赖表是一条能力边界的执行装置,不只是构建配置(docs/18 §六)。
 #

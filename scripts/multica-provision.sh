@@ -13,7 +13,7 @@
 #      重复检测(不加 --allow-duplicate,存在活动同名议题时会被拒绝)。
 #      因此本脚本可以安全重跑,只补建缺失的部分。
 #
-# 结构映射(来自 docs/08-总路线图.md):
+# 结构映射(来自 docs/execution/08-总路线图.md):
 #   三条线      → 3 个 project + 3 个父议题
 #   阶段        → --stage N 有序屏障组(整组完成才唤醒父议题 = 关卡判定)
 #   父子待办树  → 子议题
@@ -264,7 +264,7 @@ PROTO_DEV='
    后端 ./server/build.sh -q test    前端 (cd web && npm run lint && npm run build)
 3) 仓库装了 core.hooksPath=.githooks,两道闸:
    · 密钥/账号数据/原图缓存被强加 → 拒绝(R-04 / R-59)
-   · docs/01-04 决策层文档 → 需 ALLOW_DECISION_EDIT=1,且会在提交信息里留一条 trailer
+   · docs/decisions/01-04 决策层文档 → 需 ALLOW_DECISION_EDIT=1,且会在提交信息里留一条 trailer
    撞上闸时先想清楚再用出路,不要顺手加环境变量绕过去。
 4) 【你没有裁决权】做完把状态改 in_review,不改 done。
    multica issue status <id> in_review --no-start
@@ -324,7 +324,7 @@ $COMMON_GUARD"
 
 mk_agent "文档审核" codex gpt-5.6-sol high \
 "你是文档审核员,不写实现。审 docs/ 下的变更是否违反决策层。
-决策层 docs/01-04 不可被执行层覆盖:新调研与原决策冲突时,在下游记录更正并在上游加注,不得静默改写原文。
+决策层 docs/decisions/01-04 不可被执行层覆盖:新调研与原决策冲突时,在下游记录更正并在上游加注,不得静默改写原文。
 逐条核对 docs/08 §四风险登记册,尤其 🔴 红线 8 条。
 检查:是否把未验证的假设写成了结论;是否擅自展开了关卡2之后的排期(04明令不细化);
 '待确认'项是否被一个合理推理悄悄关闭了(推理不等于书面确认);

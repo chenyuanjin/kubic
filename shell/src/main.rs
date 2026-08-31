@@ -5,9 +5,13 @@
 //!
 //! <h2>这个文件里【没有】什么</h2>
 //!
-//! - 没有业务逻辑。壳不读请求体,所以它结构上不可能存下任何学习内容。
-//! - 没有 IPC 命令(`#[tauri::command]`)。装了 `@tauri-apps/api` 就要改 `web/package.json`,
-//!   而「现有 web 工程一行不改」是这份方案的约束(docs/18 §2.5)。
+//! - 没有业务逻辑。壳不认识考点、不认识记录。
+//!   ⚠️ 「壳不读请求体」这句话 **2026-08-31 起只对 `/api/*` 成立** ——
+//!   `/__local/rawimages/*` 会把原图写到本机磁盘上,那正是 `R-105` 要的。
+//!   代价与三处钉子写在 `local_server.rs` 顶部,不在这里重复。
+//! - 没有 IPC 命令(`#[tauri::command]`)。装了 `@tauri-apps/api` 就要给 `web/` 加一个
+//!   运行时依赖,而且原图过 IPC 只能先 base64 —— 那正是 `rawImageDb.ts` 选 IndexedDB
+//!   而不选 localStorage 时否掉的东西。原图存储走的是回环 HTTP,见 `local_server.rs`。
 //! - 没有 `#[cfg(target_os)]`。平台差异全在 `platform/` 下(§4.3),由 `build.sh` grep 拦死。
 //! - 没有托盘。托盘是那个**常驻进程**的可见表示(KUBI-64 人审裁定),
 //!   而常驻进程是 `KUBI-68` 的交付物 —— 现在做一个托盘,它代表的东西还不存在。
@@ -20,6 +24,7 @@
 mod config;
 mod local_server;
 mod platform;
+mod raw_image_store;
 mod scheduler;
 mod strings;
 
@@ -70,7 +75,22 @@ fn main() {
                 }
             };
 
-            let server = Arc::new(local_server::Server::new(cfg.upstream.as_deref())?);
+            // ③.5 🔴 原图目录的启动清理 —— 索引里没有的字节文件一律删。
+            //
+            // 它必须在开窗【之前】跑完:开窗之后前端随时可能 listMeta,而孤儿文件
+            // 恰恰是【索引里看不见的那些】—— 晚一秒清,就多一秒有一张【没有过期戳的原图】
+            // 躺在磁盘上,而没有过期戳 = 永不过期(R-04)。
+            //
+            // 清不掉不拒绝启动,和 `config` 那条不同:配置读不出来会毁数据(端口),
+            // 而这里清不掉只是【多留了几个字节文件】,下次启动还会再试一次。
+            // 🔴 一行日志都不打 —— 这条路径上的错误对象可能带着路径,而路径是设备信息。
+            let store_dir = platform.archive_dir();
+            let _ = raw_image_store::RawImageStore::new(store_dir.clone()).sweep_orphans();
+
+            let server = Arc::new(local_server::Server::new(
+                cfg.upstream.as_deref(),
+                store_dir,
+            )?);
             tauri::async_runtime::spawn(async move {
                 if let Err(e) = server.run(listener).await {
                     eprintln!("[shell] 回环服务停了:{e}");

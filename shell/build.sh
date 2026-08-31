@@ -22,7 +22,8 @@ set -euo pipefail
 cd "$(dirname "$0")"
 
 SHELL_DIR="$(pwd)"
-REPO_ROOT="$(cd .. && pwd)"
+# export:步骤 ③.5 的 python 堆文档要从环境里读它。
+export REPO_ROOT="$(cd .. && pwd)"
 CHECK_ONLY=0
 [ "${1:-}" = "--check" ] && CHECK_ONLY=1
 
@@ -189,6 +190,76 @@ if hits:
 print("  ✓ 主业公司零交集")
 PY
 
+# —— 1.6 本机原图存储的三条结构约束(KUBI-63 / R-105)——
+#
+# 🔴 2026-08-31 之前,壳「不读请求体」,所以它结构上不可能存下任何学习内容。
+# 加上 /__local/rawimages 之后这句话【只对 /api/* 成立】—— 壳会把原图写到磁盘上。
+# 换来的能力必须付代价,代价是下面这三条,它们让新增的那条路【可数、有名、跑不出去】。
+#
+# 与上面 1.3 / 1.4 同一条处理:先剥注释、并且只看 `#[cfg(test)]` 之前的部分。
+# docs/14 §9.10 那条教训第四次出现 —— 断言不能红在断言自己的说明上,
+# 也不能红在【为了证明这条约束成立而写的测试】上:
+# raw_image_store.rs 的测试里必然出现 expiresAt,那正是它证明「原样进、原样出」的方式。
+python3 - <<'PY'
+import re, sys, pathlib
+
+def production_code(p):
+    """剥掉行注释,并在第一个 #[cfg(test)] 处截断(测试模块按 Rust 惯例在文件末尾)。"""
+    lines = []
+    for line in p.read_text(encoding="utf-8").splitlines():
+        if "#[cfg(test)]" in line:
+            break
+        lines.append(re.sub(r"//.*$", "", line))
+    return lines
+
+FILES = sorted(pathlib.Path("src").rglob("*.rs"))
+bad = []
+
+# ① 壳读不到 expiresAt / storedAt —— 于是「该不该转归档」在壳里【写不出来】。
+#    元信息对壳是一块不透明的 JSON,它只认识 id(文件名)和 archivedAt(只写不读)。
+for p in FILES:
+    for i, code in enumerate(production_code(p), 1):
+        for term in ("expiresAt", "storedAt"):
+            if term in code:
+                bad.append(f"① {p}:{i}  出现 {term} —— 判据只有 rawImageCache.ts 一份")
+if bad:
+    print("拒绝构建 —— 壳读到了它不该认识的字段(docs/21 §9.3):", file=sys.stderr)
+    for b in bad: print("  ✗ " + b, file=sys.stderr)
+    print("\n  壳只认识 id 与 archivedAt。多认识一个字段,「到期判据只有一份」就不再由结构保证。", file=sys.stderr)
+    sys.exit(1)
+print("  ✓ 壳读不到 expiresAt / storedAt(已剥注释、已排除测试模块)")
+
+# ② 写盘只在两个模块里。原图是壳第一次往磁盘上写用户的东西,写入点必须可数且各有其名。
+WRITE_ALLOWED = {"src/raw_image_store.rs", "src/config.rs"}
+WRITE_CALLS = ("File::create", "fs::write", "OpenOptions", "create_dir_all", "fs::rename")
+bad = []
+for p in FILES:
+    if p.as_posix() in WRITE_ALLOWED:
+        continue
+    for i, code in enumerate(production_code(p), 1):
+        for c in WRITE_CALLS:
+            if c in code:
+                bad.append(f"② {p}:{i}  {c}")
+if bad:
+    print("拒绝构建 —— 壳的写盘点跑出了那两个模块(docs/21 §9.3):", file=sys.stderr)
+    for b in bad: print("  ✗ " + b, file=sys.stderr)
+    print("\n  写盘只允许在 raw_image_store.rs(原图)与 config.rs(端口)里。", file=sys.stderr)
+    print("  多一个没人知道的写入点,「原图只在用户自己的机器上」就少一道防线。", file=sys.stderr)
+    sys.exit(1)
+print(f"  ✓ 写盘点只在 {' / '.join(sorted(WRITE_ALLOWED))}")
+
+# ③ 原图那一层没有网络出口 —— 与 scheduler.rs 那条「不允许发起任何网络请求」同一手法。
+#    一个能上网的原图存储层就是红线「绝不上云、不同步、不共享」的现成破口。
+NET = ("hyper_util::client", "hyper::client", "reqwest", "TcpStream", "UdpSocket", "hyper_rustls")
+store = pathlib.Path("src/raw_image_store.rs")
+bad = [f"③ {store}:{i}  {n}" for i, code in enumerate(production_code(store), 1) for n in NET if n in code]
+if bad:
+    print("拒绝构建 —— 原图存储层出现了网络出口(docs/21 §9.3):", file=sys.stderr)
+    for b in bad: print("  ✗ " + b, file=sys.stderr)
+    sys.exit(1)
+print("  ✓ raw_image_store.rs 无网络出口")
+PY
+
 # —— 1.5 目标三元组的 std 装没装 ——
 case "$(uname -m)" in
   arm64|aarch64) TARGET="aarch64-apple-darwin" ;;
@@ -214,17 +285,100 @@ step "③ web 构建(走 web 自己的构建脚本)"
   npm run build
 )
 
-# 🔴 验收判据(docs/18 §十):web/ 与 server/ 的 diff 都必须是空的。
-# server/ 有 diff = 选了 §3.2 的 E 方案(往 CORS 白名单里加 tauri://)。
-# web/ 有 diff = 「现有 web 工程零改动」这条当场失效。
+# 🔴 server/ 零改动 —— 这条一个字没变。
+# server/ 有 diff = 选了 docs/18 §3.2 的 E 方案(往 CORS 白名单里加 tauri://),而那条没被选。
 if [ -d "$REPO_ROOT/.git" ] || git -C "$REPO_ROOT" rev-parse --git-dir >/dev/null 2>&1; then
-  DIRTY="$(git -C "$REPO_ROOT" status --porcelain -- web server)"
+  DIRTY="$(git -C "$REPO_ROOT" status --porcelain -- server)"
   if [ -n "$DIRTY" ]; then
     printf '%s\n' "$DIRTY" >&2
-    die "web/ 或 server/ 有改动 —— 「现有 web 工程零改动」是这份方案的约束(docs/18 §十)"
+    die "server/ 有改动 —— 壳不许要求服务端配合(docs/18 §十)"
   fi
-  echo "  ✓ web/ 与 server/ 零改动"
+  echo "  ✓ server/ 零改动"
 fi
+
+# ══════════════════════════ ③.5 形态分支可数 ══════════════════════════
+#
+# 🔴 2026-08-31:这一条【替换】了原先的「web/ 零改动」(docs/18 §十 / §2.5)。
+#
+# 原判据是一个【代理】:它真正想说的是「壳不许把 web 改出第二套」,
+# 而当形态分支的数量是 0 时,「一行都不改」恰好等价于这句话,还便宜得多。
+#
+# KUBI-63 之后那个数字必须是 1 —— 壳形态要用文件系统,判据层就得知道该拿哪个后端,
+# 而这件事没有任何办法在不碰 web/ 的前提下完成(壳没有 IPC,web 也不该为壳装一个)。
+# 代理一旦不再等价于它代理的那句话,该做的是【换成直接断言那句话】,不是把它删掉:
+#
+#   旧:web/ 的 git diff 必须是空的         —— 数字是 0 时成立,是 1 时永远红
+#   新:形态判断必须【恰好只在一个文件里】  —— 数字是几都成立,而且直接说的就是那句话
+#
+# 新判据比旧判据强的地方:旧判据挡不住「在 rawImageStore.ts 里写十个 if」,
+# 也挡不住有人在界面组件里加一句 window.__TAURI__ —— 只要那次改动被一起提交。
+step "③.5 形态分支可数(docs/21 §3.1)"
+python3 - <<'PY'
+import re, sys, pathlib, os
+
+WEB_SRC = pathlib.Path(os.environ["REPO_ROOT"]) / "web" / "src"
+# 🔴 唯一允许出现形态判断的文件。它就是 docs/21 §3.1 那个「唯一注入点」。
+INJECTION_POINT = "lib/rawImageStore.ts"
+# 线协议只允许出现在文件系统实现里。
+WIRE_OWNER = "lib/rawImageFs.ts"
+
+def code_lines(p):
+    """剥掉行注释与 JSDoc —— docs/14 §9.10 第五次:断言不能红在自己的说明上。
+    这些文件的注释要么整行以 // 开头,要么在 /** … */ 块里以 * 开头。"""
+    out = []
+    for i, line in enumerate(p.read_text(encoding="utf-8").splitlines(), 1):
+        s = line.strip()
+        if s.startswith(("//", "*", "/*")):
+            continue
+        out.append((i, re.sub(r"//.*$", "", line)))
+    return out
+
+# ① 形态判断:调用点必须恰好一处,而且在注入点那个文件里。
+CALL = "localRawImageStoreAvailable("
+callers, sniffs = [], []
+# 只列【不可能有第二种用法】的串。`navigator.userAgent` 不在这里 ——
+# `api/auth.ts` 拿它做登录会话的设备名(「Mac · Chrome」),那和存储形态无关,
+# 而一条天天误报的断言两天内就会被关掉,等于从来没有过
+# (web/scripts/capability-boundary-scan.mjs 顶部那段讲的是同一件事)。
+SNIFF = ("__TAURI", "isTauriShell")
+for p in sorted(WEB_SRC.rglob("*.ts")) + sorted(WEB_SRC.rglob("*.tsx")):
+    rel = p.relative_to(WEB_SRC).as_posix()
+    for i, code in code_lines(p):
+        if CALL in code and rel != WIRE_OWNER:      # 定义处不算调用
+            callers.append(f"{rel}:{i}")
+        for s in SNIFF:
+            if s in code:
+                sniffs.append(f"{rel}:{i}  {s}")
+        if "/__local/" in code and rel != WIRE_OWNER:
+            sniffs.append(f"{rel}:{i}  线协议路径跑出了 {WIRE_OWNER}")
+
+bad = []
+if len(callers) != 1 or not callers[0].startswith(INJECTION_POINT + ":"):
+    bad.append(f"形态判断有 {len(callers)} 处,应当恰好 1 处且在 {INJECTION_POINT}:{callers}")
+bad += sniffs
+
+# ② 真时钟只有一处 —— 这条性质随注入点一起从 rawImageDb.ts 搬过来,不因搬家而失效。
+clocks = [f"{p.relative_to(WEB_SRC).as_posix()}:{i}"
+          for p in sorted(WEB_SRC.glob("lib/rawImage*.ts"))
+          for i, code in code_lines(p) if "Date.now()" in code]
+if clocks != [c for c in clocks if c.startswith(INJECTION_POINT + ":")] or len(clocks) != 1:
+    bad.append(f"原图链路上的 Date.now() 有 {len(clocks)} 处,应当恰好 1 处且在 {INJECTION_POINT}:{clocks}")
+
+if bad:
+    print("拒绝构建 —— 形态分支不再可数(docs/21 §3.1):", file=sys.stderr)
+    for b in bad:
+        print("  ✗ " + b, file=sys.stderr)
+    print("\n  壳带来的是 RawImageBackend 的第二个实现,不是第二套逻辑。", file=sys.stderr)
+    print("  形态判断多一处,能力边界就少一道防线 —— 要加的话,先改 docs/21 §3.2 那张穷举表。", file=sys.stderr)
+    sys.exit(1)
+print(f"  ✓ 形态判断恰好 1 处({callers[0]});真时钟恰好 1 处({clocks[0]})")
+PY
+
+# ③.6 判据层仍然跑得进 node —— 22+ 条断言 + 后端契约 + 迁移,一条都不许因为这次改动掉队。
+(
+  cd "$REPO_ROOT/web"
+  npm run test:retention
+)
 
 # ══════════════════════════ ④ 产物校验 ══════════════════════════
 step "④ 产物校验"

@@ -2,7 +2,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
-import { sweepRawImagesOnStartup } from './lib/rawImageDb'
+import { sweepRawImagesOnStartup } from './lib/rawImageStore'
 
 /**
  * 🔴 到期原图的第一条触发 —— docs/08 `1.1.3.2`「到期自动归档」(2026-08-29 由「删除」改)。

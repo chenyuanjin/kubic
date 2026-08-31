@@ -47,16 +47,18 @@ pub trait Platform: Send + Sync {
     /// 原图放哪儿是 `KUBI-63` 的事,本文件只保证它们【同根】—— 一次备份带走全部。
     fn data_root(&self) -> PathBuf;
 
-    /// 归档目录。三端各自的沙箱位置,调用方不关心它在哪。
+    /// 原图目录。三端各自的沙箱位置,调用方不关心它在哪。
     ///
-    /// 🔴 消费方是 `KUBI-63`(原图存储)与 `KUBI-68`(到期转归档),两条都还没落地,
-    /// 所以本议题里它没有调用点。留着是因为 docs/18 §4.3 把签名定死在那儿了 ——
-    /// 让下游拿到的是一个已经存在的位置,而不是一句「你自己看着办」。
+    /// 🔴 **2026-08-31:`allow(dead_code)` 已经删掉 —— `KUBI-63` 接上了。**
+    /// 调用点只有一个:`main.rs` 把它交给 `local_server::Server::new`,
+    /// 再往下就只有 `raw_image_store::RawImageStore` 一个消费方。
+    /// 没有第二个入口能改这个值,**尤其没有「让用户自己选目录」的入口**。
     ///
-    /// `allow(dead_code)` 是这个事实的诚实写法,不是把警告扫掉:
-    /// 它现在**确实**没人调,而删掉它等于把 §4.3 的契约悄悄改了。
-    /// `KUBI-63` 接上之后,这一行 allow 要跟着删。
-    #[allow(dead_code)]
+    /// 🔴 **目录选在哪儿本身就是红线的物理落点**(`docs/21 §3.4`):
+    /// 不得落在 `~/Documents` / `~/Desktop` / `~/Pictures` ——
+    /// macOS 的 iCloud「桌面与文稿」同步默认可开,开着就等于原图自动上云,
+    /// 而且不报错、不出现在任何 review 里。macOS 上它是
+    /// `~/Library/Application Support/kaodian/originals`,不在任何默认同步范围内。
     fn archive_dir(&self) -> PathBuf;
 
     /// 本平台是否保证后台定时执行。iOS/Android 返回 false,

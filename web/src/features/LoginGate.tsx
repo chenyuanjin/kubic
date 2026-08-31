@@ -8,6 +8,8 @@ import {
   verifySmsCode,
   writeToken,
 } from '../api/auth'
+import { requestCaptcha } from '../lib/captchaPolicy'
+import { CAPTCHA_MODE, openTCaptcha } from '../lib/tcaptcha'
 import { Button, Kbd, Note, Tag } from '../ui/primitives'
 
 /**
@@ -28,16 +30,38 @@ import { Button, Kbd, Note, Tag } from '../ui/primitives'
  * 验证码通过那一刻,注册和登录是同一件事(docs/后端详设 §1.7)。
  * 少一个页面是次要的,<b>少一个「我到底注册过没有」的犹豫才是主要的</b> ——
  * 而这个犹豫恰好发生在用户离开成本最低的那一秒。
+ *
+ * <h2>🔴 「获取验证码」现在是<b>两步</b>:先过滑块,再发短信</h2>
+ *
+ * 滑块是这条链路上唯一真正的闸(单号 1/60s 与单 IP 20/日 都是纯计数,
+ * 换一批号换一批 IP 都不触发)。它在界面上的形态是:那颗按钮按下去<b>先弹一个框</b>。
+ * <p>
+ * 由此多出两种此前不存在的中间态,而它们都<b>不是</b>「发送失败」:
+ * <ul>
+ *   <li><b>用户把框关掉</b> —— 一次取消,灰字,按钮回到可按。红字会让人以为自己做错了什么</li>
+ *   <li><b>控件没加载出来</b> —— 说清楚是控件的事,并且给「再点一次」</li>
+ * </ul>
+ * 两种在改动之前都会表现成<b>按钮没反应</b>,而那是这一屏最不能出现的状态:
+ * 用户唯一能做的下一步是关掉页面。
  */
 export function LoginGate({ onDone }: { onDone: (r: LoginResponse) => void }) {
   const [step, setStep] = useState<'phone' | 'code'>('phone')
   const [phone, setPhone] = useState('')
   const [code, setCode] = useState('')
-  const [busy, setBusy] = useState(false)
+  /**
+   * 忙在<b>哪一步</b>,不只是「忙不忙」。
+   *
+   * <p>滑块弹出来的那段时间里按钮写着「发送中…」是错的:那一刻什么都没在发,
+   * 在等的是用户自己拖那一下。而用户会照着按钮上的字判断该不该继续等。
+   */
+  const [stage, setStage] = useState<null | 'captcha' | 'sending'>(null)
   const [failure, setFailure] = useState<CodeFailure | null>(null)
+  /** 不是失败的那一类中间态(目前只有「用户关掉了验证框」)。灰字,不是红字。 */
+  const [notice, setNotice] = useState<string | null>(null)
   const [devCode, setDevCode] = useState<string | null>(null)
   const [cooldown, setCooldown] = useState(0)
   const codeRef = useRef<HTMLInputElement>(null)
+  const busy = stage !== null
 
   // 60 秒重发倒计时。服务端那一侧是硬约束(单号 1/60s),这里只是别让用户白点。
   useEffect(() => {
@@ -50,11 +74,38 @@ export function LoginGate({ onDone }: { onDone: (r: LoginResponse) => void }) {
     if (step === 'code') codeRef.current?.focus()
   }, [step])
 
+  /**
+   * 先过滑块,再发短信。
+   *
+   * <p>🔴 <b>每一次发送都要重新过一遍</b>,包括「重发一条」——票据是一次性的,
+   * 复用上一张的结果是服务端判不通过,而那句话会被读成「验证码错了」。
+   */
   const send = useCallback(async () => {
-    setBusy(true)
     setFailure(null)
+    setNotice(null)
+    setStage('captcha')
     try {
-      const r = await sendSmsCode(phone)
+      const outcome = await requestCaptcha(CAPTCHA_MODE, openTCaptcha)
+
+      if (outcome.kind === 'closed') {
+        // 取消不是失败。一个字的红字都不给,按钮回到可按就够了。
+        setNotice('验证取消了,再点一次可以重来。')
+        return
+      }
+      if (outcome.kind === 'unavailable') {
+        // 🔴 一次都没发出去 —— 没有票据就不发请求,而不是发一个注定 400 的。
+        setFailure({
+          message: outcome.reason,
+          hint: outcome.retryable ? '再点一次「获取验证码」' : '这是构建配置的问题,再点也不会变',
+          offerResend: outcome.retryable,
+          clearInput: false,
+          blocked: false,
+        })
+        return
+      }
+
+      setStage('sending')
+      const r = await sendSmsCode(phone, outcome.pair)
       setDevCode(r.devCode)
       setCooldown(60)
       setStep('code')
@@ -62,14 +113,15 @@ export function LoginGate({ onDone }: { onDone: (r: LoginResponse) => void }) {
     } catch (err) {
       setFailure(readCodeFailure(err))
     } finally {
-      setBusy(false)
+      setStage(null)
     }
   }, [phone])
 
   const verify = useCallback(
     async (value: string) => {
-      setBusy(true)
+      setStage('sending')
       setFailure(null)
+      setNotice(null)
       try {
         const r = await verifySmsCode(phone, value, deviceLabel())
         writeToken(r.token)
@@ -82,7 +134,7 @@ export function LoginGate({ onDone }: { onDone: (r: LoginResponse) => void }) {
           codeRef.current?.focus()
         }
       } finally {
-        setBusy(false)
+        setStage(null)
       }
     },
     [phone, onDone],
@@ -128,6 +180,7 @@ export function LoginGate({ onDone }: { onDone: (r: LoginResponse) => void }) {
               className="w-full rounded-sm border border-hair bg-bg2 px-4 py-3 font-mono text-[15px] tracking-[0.08em] text-tx outline-none focus:border-acid"
             />
             {failure ? <Failure f={failure} /> : null}
+            {notice ? <Notice text={notice} /> : null}
             <div className="mt-5">
               <Button
                 variant="primary"
@@ -138,9 +191,10 @@ export function LoginGate({ onDone }: { onDone: (r: LoginResponse) => void }) {
                   if (phoneOk && !busy) void send()
                 }}
               >
-                {busy ? '发送中…' : '获取验证码'}
+                {stage === 'captcha' ? '等你完成验证…' : stage === 'sending' ? '发送中…' : '获取验证码'}
               </Button>
             </div>
+            <CaptchaModeNote />
             <div className="mt-5">
               <Note>
               没有单独的注册页。号码没见过就建账号,见过就登进去 —— 注册和登录是同一件事。
@@ -173,6 +227,7 @@ export function LoginGate({ onDone }: { onDone: (r: LoginResponse) => void }) {
             />
 
             {failure ? <Failure f={failure} /> : null}
+            {notice ? <Notice text={notice} /> : null}
 
             <div className="mt-4 flex items-center justify-between">
               {/* 🔴 这个按钮的有无,就是「五句话」在界面上的落点 —— 见 api/auth.ts 的 CodeFailure */}
@@ -188,7 +243,11 @@ export function LoginGate({ onDone }: { onDone: (r: LoginResponse) => void }) {
                   {cooldown > 0 ? `${cooldown} s 后可重发` : '重发一条'}
                 </button>
               )}
-              {busy ? <span className="font-mono text-[11px] text-t3">校验中…</span> : null}
+              {busy ? (
+                <span className="font-mono text-[11px] text-t3">
+                  {stage === 'captcha' ? '等你完成验证…' : '校验中…'}
+                </span>
+              ) : null}
             </div>
 
             {devCode ? (
@@ -231,6 +290,49 @@ export function LoginGate({ onDone }: { onDone: (r: LoginResponse) => void }) {
       </div>
     </div>
   )
+}
+
+/**
+ * 🔴 这次构建到底有没有接上滑块 —— <b>摆在按钮下面,不写在 README 里</b>。
+ *
+ * <p>没配 `CaptchaAppId` 时前端发的是占位串,而服务端
+ * `kaodian.auth.captcha.provider=disabled` 一律放行,于是整条流程<b>点得完</b>。
+ * 点得完和接通了在屏幕上长得一模一样,而这两者的差别是「短信费有没有上限」——
+ * 所以这一格必须存在,理由和 `devCode` 那一格是同一条:
+ * <b>本机开发的便利不该以「看不出它是本机开发」为代价。</b>
+ *
+ * <p>接上之后(`vendor`)这一格<b>不显示任何东西</b>:滑块本身会弹出来,那就是证据。
+ */
+function CaptchaModeNote() {
+  if (CAPTCHA_MODE.kind === 'vendor') return null
+  return (
+    <div className="mt-4 rounded-sm border border-dashed border-hair2 p-3">
+      <div className="flex items-center gap-2">
+        <Tag tone="warn">未接入</Tag>
+        <span className="font-mono text-[11px] text-t3">
+          {CAPTCHA_MODE.kind === 'bypass' ? '行为验证' : '行为验证配置有误'}
+        </span>
+      </div>
+      <div className="mt-2">
+        <Note>
+        {CAPTCHA_MODE.kind === 'bypass' ? (
+          <>
+          这次构建没有配 <span className="font-mono">VITE_KAODIAN_CAPTCHA_APP_ID</span>,
+          发出去的是占位串,<b>没有真的验过</b>。它能走通只是因为后端
+          <span className="font-mono"> captcha.provider=disabled</span> 一律放行。
+          </>
+        ) : (
+          CAPTCHA_MODE.reason
+        )}
+        </Note>
+      </div>
+    </div>
+  )
+}
+
+/** 不是失败的那一类中间态。灰字 —— 红字会让用户以为自己做错了什么。 */
+function Notice({ text }: { text: string }) {
+  return <p className="mt-3 text-[11px] leading-5 text-t3">{text}</p>
 }
 
 /** 失败那一行。红字说发生了什么,灰字说该做什么 —— 两句分开,因为它们是两件事。 */

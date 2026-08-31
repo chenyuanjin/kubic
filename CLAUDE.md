@@ -18,11 +18,11 @@ numbers that are gate 0's entire input, is empty.
 
 🔴 **[`docs/INDEX.md`](docs/INDEX.md) is the entry point** — reading routes, L0/L1/L2 tiers, the product-vs-technical
 split, gate ordering. **Never read `docs/` in number order**: the numbers are writing order, not reading order.
-Subdirs split by **reader** (`decisions/` `execution/` `product/` `technical/` `data/` `ops/`; `INDEX.md` + `00` at root) — but **the number, not the path, is a document's identity**: cite `` 见 `13` §6.9 ``, never a path (`00` §3.2).
+Subdirs split by **reader** (`decisions/` `execution/` `product/` `technical/` `data/` `ops/`, plus `misc/` as the last resort; `INDEX.md` + `00` at root) — but **the number, not the path, is a document's identity**: cite `` 见 `13` §6.9 ``, never a path (`00` §3.2). Filenames carry **no spaces and no full-width punctuation**. `misc/` takes two gates, never a dumping ground (`00` §3.2).
 
 🔴 **[`docs/00`](docs/00-文档规范与目录.md) is the single source of truth for the document list** — pipeline, gate
 served, status, staleness rule, numbering ledger, open decisions. **Never re-add a document table here**; add a row to
-`00` §二. Read `00` §六 before adding/moving/renumbering/freezing any `.md`, and `00` §五 for the red line forbidding
+`00` §二. Read `00` §六 before adding/moving/renumbering/freezing/**retiring** any `.md` (retiring is step 10 — the file stays, every pointer to it gets annotated), and `00` §五 for the red line forbidding
 any field, example, placeholder or appendix able to hold a question stem. **Never let the execution layer overwrite
 the decision layer** (`05`: 「04 的关卡判据在这里一个字都不改」): record corrections downstream, annotate upstream,
 never silently rewrite; superseded numbers stay with a pointer.
@@ -41,7 +41,7 @@ are the point, and why there is no `kaodian-common` ([`13`](docs/technical/13-�
 
 `shell/` is a **Tauri 2 desktop shell, macOS only**: embeds `web/dist`, serves it over loopback, proxies `/api`.
 **Zero changes to `web/` and `server/` is its constraint** — `build.sh` step ③ enforces it with `git status`. ⚠️ No
-`[lib]` target, so **iOS / Android do not build** (`00` §2.6 E4). Detail → [`10`](docs/technical/10-技术架构与接口契约.md) contracts · [`18`](docs/technical/18-壳技术方案：Tauri%202%20包现有%20Web%20工程.md) shell · [`19`](docs/technical/19-多端选型与端矩阵.md) client matrix
+`[lib]` target, so **iOS / Android do not build** (`00` §2.6 E4). Detail → [`10`](docs/technical/10-技术架构与接口契约.md) contracts · [`18`](docs/technical/18-壳技术方案-Tauri2包现有Web工程.md) shell · [`19`](docs/technical/19-多端选型与端矩阵.md) client matrix
 
 ## Commands
 
@@ -77,7 +77,7 @@ Settled invariants — **flag a conflict rather than working around it**. Full t
 ## Delivery
 
 Multica workspace `kubicc`, prefix `KUBI`. Four gates, **a human stands only at the fourth** — how-to in
-[`17`](docs/ops/17-Multica%20操作备忘.md), why in [`14`](docs/ops/14-自动化交付工作流.md) §三. Binding on every agent:
+[`17`](docs/ops/17-Multica操作备忘.md), why in [`14`](docs/ops/14-自动化交付工作流.md) §三. Binding on every agent:
 
 - **Trunk is `v1`.** Branch `KUBI-<n>-<slug>` off `origin/v1`; PRs target `v1`; never commit to `v1` or `main` directly; declare `基线:origin/v1 @ <SHA7>,fetch 于 <时间>`. That string **is** the PR↔issue link — without it gate 1's result never reaches the issue.
 - **Agents advance an issue to `in_review`, never `done`.** An agent's conclusion is *input*, not judgment.

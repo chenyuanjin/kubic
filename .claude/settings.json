@@ -1,9 +1,9 @@
 {
   "enabledPlugins": {
-    "tech-dept@ai-skills": false,
-    "live@ai-skills": false,
-    "zhibo@ai-skills": false,
-    "funny-share@ai-skills": false
+    "tech-dept@ai-skills": true,
+    "zhibo@ai-skills": true,
+    "funny-share@ai-skills": true,
+    "live@ai-skills": false
   },
   "permissions": {
     "deny": [
@@ -21,27 +21,11 @@
       "Skill(finance-screener)",
       "Skill(finance-stock-deep)",
       "Skill(finance-weekly)",
-      "Skill(tech-dept:auto-bug-analysis)",
-      "Skill(tech-dept:doc-management)",
-      "Skill(tech-dept:doc-skill-writing)",
-      "Skill(tech-dept:fenbi-create-git-tag)",
-      "Skill(tech-dept:fenbi-design-doc)",
-      "Skill(tech-dept:fenbi-dev-plan-tracker)",
-      "Skill(tech-dept:fenbi-gerrit-submit)",
-      "Skill(tech-dept:fenbi-gitlab-workflow)",
-      "Skill(tech-dept:kbase-publish)",
-      "Skill(tech-dept:md-to-docx)",
-      "Skill(tech-dept:mermaid-to-image)",
-      "Skill(tech-dept:project-doc-init)",
-      "Skill(tech-dept:tori-test-deploy)",
       "Skill(live:fenbi-gitlab-tori-migrate)",
       "Skill(live:fenbi-live-coding-standard)",
       "Skill(live:fenbi-live-jdk21-upgrade)",
       "Skill(live:fenbi-live-troubleshoot)",
-      "Skill(live:fenbi-sentry-upgrade)",
-      "Skill(zhibo:fenbi-research-report)",
-      "Skill(funny-share:codex-task-cli-runtime)",
-      "Skill(funny-share:opencode-cli-runtime)"
+      "Skill(live:fenbi-sentry-upgrade)"
     ]
   }
 }

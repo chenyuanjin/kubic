@@ -79,8 +79,11 @@ DENY_KEYS = {
 # 主业公司内部插件包。2026-08-31 人的决定:tech-dept / zhibo / funny-share
 # 保持开启,只关 live(见 docs/08 R-113 批注)。
 DENY_PLUGIN_PREFIX = ("live@",)
-# 明确留着的:agent-browser / opencli / find-skills(浏览器、外部 CLI、技能检索)
-# 以及 codex provider 根下的 fenbi-*(与上面那条决定同源,见 R-113)。
+# 非插件根(codex 的 ~/.codex/skills、共享的 ~/.agents/skills)下的公司内部技能。
+# 这是与 ai-skills 插件【不同的另一份拷贝】,2026-08-31 单独决定关掉。
+# 用前缀不用清单:公司那边再加一个 fenbi-xxx,下次跑就自动带上。
+DENY_KEY_PREFIX = ("fenbi-",)
+# 明确留着的:agent-browser / opencli / find-skills(浏览器、外部 CLI、技能检索)。
 
 
 def deny(s):
@@ -88,7 +91,8 @@ def deny(s):
         return False
     if s.get("root") == "plugin":
         return str(s.get("plugin") or "").startswith(DENY_PLUGIN_PREFIX)
-    return s.get("key") in DENY_KEYS
+    k = s.get("key") or ""
+    return k in DENY_KEYS or k.startswith(DENY_KEY_PREFIX)
 
 
 def fallback_instruction(a, want, prov):

@@ -5,10 +5,10 @@ import java.time.Instant;
 /**
  * 「这个账号可以被这个东西认出来」—— 一个通道一行。
  *
- * <p>唯一约束是 {@code (type, identifier)}(docs/10 §5.2)。它同时承担两件事:
+ * <p>唯一约束是 {@code (type, identifier)}(docs/技术架构 §5.2)。它同时承担两件事:
  * <ul>
  *   <li>登录:拿 {@code (type, identifier)} 查到 {@code userId},查不到就建号</li>
- *   <li>绑定:目标 identity 已属他人 → <b>返回可合并提示,不自动合并</b>(docs/10 §6.1)</li>
+ *   <li>绑定:目标 identity 已属他人 → <b>返回可合并提示,不自动合并</b>(docs/技术架构 §6.1)</li>
  * </ul>
  *
  * <h2>🔴 手机号这一行里没有手机号</h2>

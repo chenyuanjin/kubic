@@ -15,7 +15,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  *
  * <h2>为什么这条必须单独有个测试</h2>
  *
- * docs/10 §5.2「不建的表」逐字写着:「<b>任何音频表 —— {@code 1.1.1.5}:ASR 失败提示重录,
+ * docs/技术架构 §5.2「不建的表」逐字写着:「<b>任何音频表 —— {@code 1.1.1.5}:ASR 失败提示重录,
  * 不留存音频</b>」。{@code RecognitionController#transcribe} 那段代码确实一个字节都没往外写。
  * <p>
  * 但 {@code POST /records/{id}/audio} 是 <b>multipart</b>(契约就是这么写的),而
@@ -27,8 +27,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * 它不会报错,不会出现在任何 review 里,{@code ImageRetentionTest} 那两条源码扫描
  * <b>也一个字都扫不到</b> —— 因为写盘的那行代码在 Tomcat 里,不在这个仓库里。
  * <p>
- * docs/10 §8.1 禁令 5 说的是同一类破口(「应用层守住了,反代可能背着你落盘」),
- * docs/13 §七 把这种叫「<b>配置层</b>」——比类型层弱,但只要有一条断言盯着,它就不是纪律。
+ * docs/技术架构 §8.1 禁令 5 说的是同一类破口(「应用层守住了,反代可能背着你落盘」),
+ * docs/后端详设 §七 把这种叫「<b>配置层</b>」——比类型层弱,但只要有一条断言盯着,它就不是纪律。
  *
  * <h2>这条断言长什么样:三个数的大小关系</h2>
  *
@@ -67,7 +67,7 @@ class AudioRetentionTest {
                 🔴 spring.servlet.multipart.file-size-threshold 是 %d。
 
                 0 不是「不限制」,它是【一律先写成临时文件】—— 也就是说每一段上传的音频
-                都已经落在容器的临时目录里了,而 docs/10 §5.2 那一行写的是「不留存音频」。
+                都已经落在容器的临时目录里了,而 docs/技术架构 §5.2 那一行写的是「不留存音频」。
                 这条破口不在任何一行 Java 代码里,所以源码扫描一个字都扫不到。
                 """.formatted(multipart.getFileSizeThreshold()));
 

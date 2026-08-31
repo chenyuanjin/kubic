@@ -1,5 +1,5 @@
 # ── 壳的构建产物 ──
 target/
 
-# cargo tauri ios init / android init 生成,不进仓库(docs/18 §2.4)
+# cargo tauri ios init / android init 生成,不进仓库(docs/壳技术方案 §2.4)
 gen/

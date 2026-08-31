@@ -6,7 +6,7 @@
 
 # ── 🔴 密钥与运行时数据:绝不进仓库 ──
 # 默认落在 ~/.kaodian(仓库外),这里挡的是「有人把 kaodian.data.dir 指到仓库内」那一次。
-# auth-keys.properties 属于【数据】不属于配置(docs/13 §6.9 / R-59):
+# auth-keys.properties 属于【数据】不属于配置(docs/后端详设 §6.9 / R-59):
 # 换一把 HMAC 密钥 = 全部老用户静默登不回原账号。它进了仓库就等于公开。
 auth-keys.properties
 auth-accounts.json

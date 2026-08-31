@@ -4,7 +4,7 @@ import com.kaodian.server.api.support.ApiException;
 import org.springframework.http.MediaType;
 
 /**
- * 全量导出的三种写法 —— <b>md / csv / json</b>(docs/10 §6.5)。
+ * 全量导出的三种写法 —— <b>md / csv / json</b>(docs/技术架构 §6.5)。
  *
  * <h2>三个值是并列的,没有默认值</h2>
  *
@@ -45,7 +45,7 @@ public enum ExportFormat {
      *
      * <p>🔴 报错走 {@link ApiException#unknownValue},<b>回声必须截断</b> ——
      * {@code format} 是查询参数,没有 {@code @Size} 管得着它,原样回显等于给
-     * 「把一整段题干写进响应体和访问日志」开了一条最不起眼的路(01 §2.2 不碰内容)。
+     * 「把一整段题干写进响应体和访问日志」开了一条最不起眼的路(决策记录 §2.2 不碰内容)。
      */
     public static ExportFormat ofWireName(String s) {
         if (s != null) {

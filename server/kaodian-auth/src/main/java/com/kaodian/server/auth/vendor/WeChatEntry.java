@@ -22,7 +22,7 @@ package com.kaodian.server.auth.vendor;
  *       <td>开发者资质认证 ¥300(境内)+ 网站应用审核</td></tr>
  * </table>
  *
- * <b>三条全开 = 三笔认证费 + 三次审核。</b> 而 docs/10 §7.2 已定:
+ * <b>三条全开 = 三笔认证费 + 三次审核。</b> 而 docs/技术架构 §7.2 已定:
  * 阶段 2 只做手机号,微信整体在<b>关卡 2 后</b>。
  * 所以这三个枚举值今天的作用是<b>把位置留出来</b>,不是让人现在就去开通。
  */
@@ -32,7 +32,7 @@ public enum WeChatEntry {
      * 小程序 {@code wx.login} → {@code auth.code2Session}。
      *
      * <p>形态上最省事的一条(没有回跳、没有 state),但它排在最后 ——
-     * 小程序依赖 ICP 备案,而备案是 3-5 周的行政等待(docs/10 §7.2)。
+     * 小程序依赖 ICP 备案,而备案是 3-5 周的行政等待(docs/技术架构 §7.2)。
      */
     MINI_PROGRAM("mini_program"),
 

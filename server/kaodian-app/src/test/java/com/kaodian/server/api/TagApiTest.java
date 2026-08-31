@@ -50,7 +50,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * docs/10 §6.3 打标那四个端点的接口契约。
+ * docs/技术架构 §6.3 打标那四个端点的接口契约。
  *
  * <h2>这个文件验的是「送不进去」,不是「功能可用」</h2>
  *
@@ -148,7 +148,7 @@ class TagApiTest {
     @Test
     @DisplayName("召回出了候选、但服务端没有素材 → NO_MATERIAL,与「没认出来」分得开")
     void suggestWithoutMaterialSaysSo() throws Exception {
-        // 这是今天这个端点的常态,而它诚实地说明原因:原图与转写都不留存(01 §2.3 / 01 §2.2),
+        // 这是今天这个端点的常态,而它诚实地说明原因:原图与转写都不留存(决策记录 §2.3 / 决策记录 §2.2),
         // 服务端手里没有可再看一遍的东西。伪装成「模型没认出来」会让人去查模型,而模型没被调用过。
         mockMvc.perform(post("/api/records/t-2/tags/suggest").contentType(MediaType.APPLICATION_JSON)
                         .content("{}"))
@@ -277,7 +277,7 @@ class TagApiTest {
     // ———————————————————— 三、确认 ————————————————————
 
     @Test
-    @DisplayName("🔴 确认一条自动标签 → 写 confirmedAt,origin 仍然是 auto(docs/10 §6.3)")
+    @DisplayName("🔴 确认一条自动标签 → 写 confirmedAt,origin 仍然是 auto(docs/技术架构 §6.3)")
     void confirmDoesNotRewriteOrigin() throws Exception {
         // 直接往库里放一条 auto 标签:今天没有任何端点能造出 auto(suggest 拿不到素材),
         // 而 origin 不可变这条恰恰只有在 auto 上才验得出来。
@@ -448,7 +448,7 @@ class TagApiTest {
             return new CoverageReader(syllabus, store, tagStore, assertionStore, coverage, clock);
         }
 
-        /** 「我已掌握」。它不进覆盖度的分子(01 §5.2:补丁不是解法),但 CoverageReader 要读它。 */
+        /** 「我已掌握」。它不进覆盖度的分子(决策记录 §5.2:补丁不是解法),但 CoverageReader 要读它。 */
         @Bean
         AssertionStore assertionStore() {
             return new InMemoryAssertionStore();

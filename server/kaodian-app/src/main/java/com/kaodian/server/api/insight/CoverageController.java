@@ -43,14 +43,14 @@ public class CoverageController {
      *
      * <h2>没有 {@code orderBy} 参数</h2>
      *
-     * docs/10 §6.4 列了 {@code orderBy=recent5y_count},但排序口径现在只有一个:
+     * docs/技术架构 §6.4 列了 {@code orderBy=recent5y_count},但排序口径现在只有一个:
      * {@code 近五年频次 × 状态权重}({@code CoverageService.blindSpots})。
      * 开放排序参数等于把口径搬到调用方手里,而这个口径正是产品的判断本身 ——
      * <b>「先补这几个」如果每个客户端都能重排,它就不再是一个回答</b>。
      * 真需要第二种排序时,那是一次产品决定,不是一个查询参数。
      *
      * @param top 要几个。上限 100:这是一份「先补这几个」的清单,不是导出接口 ——
-     *            全量导出走 {@code /export}(docs/10 §6.5),那是另一件事
+     *            全量导出走 {@code /export}(docs/技术架构 §6.5),那是另一件事
      */
     @GetMapping("/blindspots")
     public BlindSpotsResponse blindSpots(

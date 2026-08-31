@@ -18,7 +18,7 @@ package com.kaodian.server.auth.vendor;
  *       <td>额度<b>不还</b> —— 短信可能已经在路上了,还回去等于允许再发一条</td></tr>
  * </table>
  *
- * <b>「不确定」一律按「已发生」处理</b>,与 docs/13 §1.10 订单那条「确认中不能就近归到失败」
+ * <b>「不确定」一律按「已发生」处理</b>,与 docs/后端详设 §1.10 订单那条「确认中不能就近归到失败」
  * 是同一条推理:两个方向的错误代价不对称,就朝代价小的那边倒。
  */
 public class SmsDeliveryException extends Exception {

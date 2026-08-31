@@ -23,7 +23,7 @@ import java.util.Set;
  * <h2>这个类里没有任何学科判断</h2>
  *
  * 全部运算只有三类:计数、比时间、把用户自己填的两个整数相除。
- * 没有判题、没有解析、没有难度模型、没有掌握度预测 —— 01 §2.2 的能力边界在这里是
+ * 没有判题、没有解析、没有难度模型、没有掌握度预测 —— 决策记录 §2.2 的能力边界在这里是
  * <b>算法上的事实</b>,不是一句承诺。
  */
 public class CoverageService {
@@ -32,7 +32,7 @@ public class CoverageService {
      * 盲区排序权重 —— 「先补这几个」用的就是它。
      *
      * <p>排序分 = {@code 近五年频次 × 状态权重}。两个因子都在能力边界内:
-     * 频次是真题统计事实(docs/07),状态由「有没有 / 几次 / 多久前」推出({@link NodeState})。
+     * 频次是真题统计事实(docs/数据线),状态由「有没有 / 几次 / 多久前」推出({@link NodeState})。
      *
      * <p><b>权重的排序逻辑:完全没碰过 > 听过没练 > 练了但用户说错得多 > 太久没碰 > 近期练过且用户说还行。</b>
      * 「仅接触」排在「弱」前面,因为听过课但一道题没练,比练过只是错得多更接近盲区 ——
@@ -57,7 +57,7 @@ public class CoverageService {
      * @param assertedAt 用户按下「我已掌握」的时刻;<b>没按过是 {@code null}</b>。
      *                   🔴 它<b>不参与</b> {@link #state} 的推导,也不参与覆盖率 ——
      *                   见 {@link UserAssertion} 与 {@link #summarize}。它是<b>独立状态</b>
-     *                   (docs/10 §5.2),摆在五态旁边,不是第六态
+     *                   (docs/技术架构 §5.2),摆在五态旁边,不是第六态
      */
     public record NodeCoverage(
             String code,
@@ -115,7 +115,7 @@ public class CoverageService {
         /**
          * <b>整块空白</b> —— 这个题型下一个考点都没碰过。
          *
-         * <p>01 §2.5:能表达「整块题型都没碰过」是树相对扁平清单的<b>唯一优势</b>。
+         * <p>决策记录 §2.5:能表达「整块题型都没碰过」是树相对扁平清单的<b>唯一优势</b>。
          * 界面上它由红色分组头承担,不用图表。
          */
         public boolean whollyEmpty() {
@@ -126,7 +126,7 @@ public class CoverageService {
     /**
      * 覆盖概览。北极星指标「主动查看盲区的人数」看的就是这一屏。
      *
-     * @param asserted 声明「我已掌握」的考点数 —— docs/10 §6.4:<b>断言单列不并入</b>。
+     * @param asserted 声明「我已掌握」的考点数 —— docs/技术架构 §6.4:<b>断言单列不并入</b>。
      *                 它<b>不是</b> {@link #covered} 的一部分,也<b>不是</b> {@link #empty}
      *                 的对立面:一个被声明的考点如果确实一条记录都没有,它<b>同时</b>
      *                 记在 {@code empty} 和这里。两个数相加没有意义,界面上也不该并排求和 ——
@@ -144,7 +144,7 @@ public class CoverageService {
          * 覆盖率。分母是考点总数,分子是有记录的考点数。
          *
          * <p>🔴 {@link #asserted} 没有出现在这个式子里,这是它整件事的重点:
-         * <b>按「我已掌握」不会让这个数动一下</b>(01 §5.2:补丁不是解法)。
+         * <b>按「我已掌握」不会让这个数动一下</b>(决策记录 §5.2:补丁不是解法)。
          */
         public double ratio() {
             return total == 0 ? 0 : (double) covered / total;
@@ -173,8 +173,8 @@ public class CoverageService {
      *
      * <h2>🔴 覆盖度的分子由标签数出来,不由记录数出来</h2>
      *
-     * docs/10 §6.4:「分子 = <b>{@code discarded=0}</b> 的触达节点数」;
-     * docs/10 §5.2:「{@code discarded=1} 即宁缺毋滥的落地:<b>可见,但不计覆盖度</b>」({@code P1-7})。
+     * docs/技术架构 §6.4:「分子 = <b>{@code discarded=0}</b> 的触达节点数」;
+     * docs/技术架构 §5.2:「{@code discarded=1} 即宁缺毋滥的落地:<b>可见,但不计覆盖度</b>」({@code P1-7})。
      * 落到这里就是 {@link #project} 里那一句 {@code countsInCoverage()} 的过滤 ——
      * 被丢弃的标签仍然查得到、看得见,只是不再把它那个考点算成「碰过」。
      * <p>
@@ -198,7 +198,7 @@ public class CoverageService {
      * 它<b>只被记在 {@link NodeCoverage#assertedAt} 上</b>,不参与 {@link NodeState#derive}、
      * 不改 {@code covered}、不改 {@code blindScore}。三处口径全在下游:
      * <table border="1">
-     *   <caption>断言在三处的落法(docs/10 §6.4 / §5.2)</caption>
+     *   <caption>断言在三处的落法(docs/技术架构 §6.4 / §5.2)</caption>
      *   <tr><th>口径</th><th>怎么落</th><th>在哪</th></tr>
      *   <tr><td>覆盖率<b>分子不变</b></td>
      *       <td>什么都不做 —— {@code covered} 只数 {@code state().covered()}</td>
@@ -241,7 +241,7 @@ public class CoverageService {
                 if (state.covered()) {
                     covered++;
                     // 🔴 这一句里没有 assertedAt。「我已掌握」不让任何考点变成「碰过」——
-                    //    01 §5.2:它是补丁不是解法,而一个能靠点按钮刷高的覆盖率
+                    //    决策记录 §5.2:它是补丁不是解法,而一个能靠点按钮刷高的覆盖率
                     //    与没有覆盖率是一样的。加一句 `|| asserted` 就是把补丁伪装成疗效。
                 }
 
@@ -332,7 +332,7 @@ public class CoverageService {
      *
      * <h2>🔴 「我已掌握」在这里<b>单列一格</b>,不并入任何一个已有的数</h2>
      *
-     * docs/10 §6.4:「分母 = level 3 节点数;分子 = {@code discarded=0} 的触达节点数;
+     * docs/技术架构 §6.4:「分母 = level 3 节点数;分子 = {@code discarded=0} 的触达节点数;
      * <b>断言单列不并入</b>」。所以下面 {@code asserted} 是自己数自己的一遍循环变量,
      * 它<b>不加进 {@code covered}</b>(那会让覆盖率因为点按钮而上升)、
      * <b>也不从 {@code empty} 里减掉</b>(那个考点确实还是一条记录都没有)、
@@ -379,7 +379,7 @@ public class CoverageService {
      *
      * <p>{@code STABLE} 权重为 0,自然落在最后,不需要额外过滤。
      *
-     * <h2>🔴 已经声明「我已掌握」的考点<b>排除在外</b>(docs/10 §6.4)</h2>
+     * <h2>🔴 已经声明「我已掌握」的考点<b>排除在外</b>(docs/技术架构 §6.4)</h2>
      *
      * 这是断言这个按钮<b>唯一真正做的事</b> —— 用户按它,要的就是这份清单别再提它。
      * 覆盖率不动、五态不动、分母不动,只有这一份清单短了一行。
@@ -398,7 +398,7 @@ public class CoverageService {
                 .thenComparingInt(flat::indexOf));          // 同分 → 树序
         return ordered.stream()
                 .filter(n -> n.blindScore() > 0)
-                .filter(n -> !n.asserted())      // 🔴 排除已断言节点(docs/10 §6.4),必须在 limit 之前
+                .filter(n -> !n.asserted())      // 🔴 排除已断言节点(docs/技术架构 §6.4),必须在 limit 之前
                 .limit(top)
                 .toList();
     }

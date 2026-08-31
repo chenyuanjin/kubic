@@ -159,7 +159,7 @@ public class FileAccountStore implements AccountStore {
             State next = state.copy();
             next.users.put(userId, u.deactivated(now));
             // 🔴 identity 一并摘掉。不摘的话,那个手机号永远登不回来也永远给不了别人 ——
-            // 而手机号是会被运营商回收的(docs/10 §7.1)。
+            // 而手机号是会被运营商回收的(docs/技术架构 §7.1)。
             // 摘掉之后,同一个号再来就是一次全新的注册,那正是「注销」该有的意思。
             next.identities.values().removeIf(i -> i.userId().equals(userId));
             next.phoneSecrets.remove(userId);
@@ -300,7 +300,7 @@ public class FileAccountStore implements AccountStore {
     private void persist(State next) {
         ObjectNode root = file.newRoot(
                 "账号 / 身份 / 手机号密文 / 合并留痕。",
-                "🔴 这里没有一个手机号明文:identifier 是 HMAC,phoneEnc 是 AES-GCM 密文(docs/10 §5.2)。",
+                "🔴 这里没有一个手机号明文:identifier 是 HMAC,phoneEnc 是 AES-GCM 密文(docs/技术架构 §5.2)。",
                 "主表不放任何登录凭证 —— 凭证一律在 identities 里,一个通道一行。",
                 "keyFingerprint 是盖在这份数据上的密钥指纹(R-59):它推不回密钥,只用来发现「换了密钥」。");
         ArrayNode users = root.putArray("users");

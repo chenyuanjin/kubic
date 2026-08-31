@@ -123,7 +123,7 @@ public class ApiException extends RuntimeException {
      * SyllabusAdminApiTest#rejectionMessagesDoNotEchoUnboundedInput}),
      * 只是鉴权这一侧当初没有接上。
      * <p>
-     * 🔴 更要紧的是<b>这个产品的输入里可能是一整段题干</b>(01 §2.2 不碰内容)——
+     * 🔴 更要紧的是<b>这个产品的输入里可能是一整段题干</b>(决策记录 §2.2 不碰内容)——
      * 原样回显等于让它出现在响应体和访问日志里。
      */
     public static ApiException unknownValue(String code, String what, String userInput) {

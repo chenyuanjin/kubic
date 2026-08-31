@@ -56,7 +56,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
- * 「记一笔」及其读侧 —— docs/10 §6.2 采集那张表。
+ * 「记一笔」及其读侧 —— docs/技术架构 §6.2 采集那张表。
  *
  * <h2>控制器不自己落库,一律走 {@link CaptureService}</h2>
  *
@@ -84,9 +84,9 @@ import java.util.stream.Collectors;
  * <h2>这条路不碰任何模型</h2>
  *
  * body 里已经有用户挑好的 {@code nodeCode},所以走的是 {@code CaptureService.capture} ——
- * 永不消耗额度、永不受识别故障影响(docs/11 §二「额度用尽 ≠ 记不了」)。
+ * 永不消耗额度、永不受识别故障影响(docs/商业化设计 §二「额度用尽 ≠ 记不了」)。
  * 语音/拍照那条路是另一个端点,但它们最终落到同一个 {@code CaptureService},
- * 不是另开一条「识别成功才写入」的路径(docs/08 §1.3.7)。
+ * 不是另开一条「识别成功才写入」的路径(docs/总路线图 §1.3.7)。
  */
 @RestController
 @RequestMapping("/api/records")
@@ -143,7 +143,7 @@ public class RecordController {
      * 服务端什么都没新建 —— 这时候还回 201 Created 是在说谎,而客户端凭这个状态码
      * 判断「我这次到底记上了没有」是最自然的写法。
      * <p>
-     * 两种情况都<b>不是错误</b>:重复提交不报错,是 docs/10 §6.2「{@code client_token} 幂等」
+     * 两种情况都<b>不是错误</b>:重复提交不报错,是 docs/技术架构 §6.2「{@code client_token} 幂等」
      * 的字面要求,也是离线队列敢重发的前提。
      */
     @PostMapping
@@ -159,7 +159,7 @@ public class RecordController {
     }
 
     /**
-     * 离线队列补传 —— docs/08 {@code R-32} 的防线落到接口上的那一段。
+     * 离线队列补传 —— docs/总路线图 {@code R-32} 的防线落到接口上的那一段。
      *
      * <h2>整批 400 与逐条失败的分界线</h2>
      *
@@ -240,7 +240,7 @@ public class RecordController {
      *
      * <h2>级联删标签 —— 契约的另一半,现在有对应物了</h2>
      *
-     * docs/10 §6.2 的原文是「<b>级联删标签</b>,触发覆盖层重算」。
+     * docs/技术架构 §6.2 的原文是「<b>级联删标签</b>,触发覆盖层重算」。
      * 标签表落地之后这句话是真的要做的事:留着标签行不删,会剩下一批指向不存在记录的标签,
      * 而<b>下一个读它们的人未必也做「记录还在吗」这层过滤</b>——那时用户删了记录,
      * 盲区却不肯回来。
@@ -272,7 +272,7 @@ public class RecordController {
             throw new ApiException(HttpStatus.NOT_FOUND, "RECORD_NOT_FOUND",
                     "找不到这条记录 —— 它可能已经被删掉了。");
         }
-        tagStore.deleteByRecord(id);            // 级联删标签(docs/10 §6.2)
+        tagStore.deleteByRecord(id);            // 级联删标签(docs/技术架构 §6.2)
 
         CoverageReader.Snapshot snapshot = reader.read();
         NodeCoverage node = snapshot.node(deleted.nodeCode());
@@ -285,7 +285,7 @@ public class RecordController {
     // ---------------------------------------------------------------- 读
 
     /**
-     * 时间线,cursor 分页(docs/10 §6.2)。
+     * 时间线,cursor 分页(docs/技术架构 §6.2)。
      *
      * <p>与 {@code GET /api/timeline} 的分工写在 {@link RecordPageResponse} 的 javadoc 里 ——
      * <b>那一条是 §6.4 的聚合视图,这一条是采集线的读侧</b>,两个都留着。

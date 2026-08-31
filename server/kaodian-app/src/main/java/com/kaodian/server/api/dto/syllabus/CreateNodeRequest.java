@@ -19,7 +19,7 @@ import jakarta.validation.constraints.Size;
  *
  * <h2>🔴 二:父级只能是题型,没有 {@code parentNodeCode}</h2>
  *
- * 模块 → 题型 → 考点,<b>三层,不做第四层</b>(01 §2.5)。
+ * 模块 → 题型 → 考点,<b>三层,不做第四层</b>(决策记录 §2.5)。
  * 这条限制在这里的形态就是:请求体里根本没有一个能指向另一个考点的字段,
  * 而 {@link #rejectUnknownField} 保证多写一个也进不来。
  *
@@ -30,8 +30,8 @@ import jakarta.validation.constraints.Size;
  * 权威判定在 {@code FileSyllabusStore.validName}(它还会拒绝换行),这里只是提前给个清楚的报错。
  *
  * @param groupCode     挂到哪个题型下。必须是树里已有的题型 code
- * @param name          <b>自行归纳</b>的考点名,不沿用机构既有措辞(R-07 / docs/04 §1.2)
- * @param recent5yCount 近五年出现次数。统计事实(docs/07),也是盲区排序的权重之一
+ * @param name          <b>自行归纳</b>的考点名,不沿用机构既有措辞(R-07 / docs/实施路径 §1.2)
+ * @param recent5yCount 近五年出现次数。统计事实(docs/数据线),也是盲区排序的权重之一
  */
 public record CreateNodeRequest(
 

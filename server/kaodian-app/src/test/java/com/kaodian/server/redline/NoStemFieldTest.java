@@ -27,7 +27,7 @@ import static java.util.Map.entry;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * 🔴 R-01 的防回归断言 —— <b>线上库不存在能装下题干的字段</b>(docs/08 §四 R-01,docs/07 §二)。
+ * 🔴 R-01 的防回归断言 —— <b>线上库不存在能装下题干的字段</b>(docs/总路线图 §四 R-01,docs/数据线 §二)。
  *
  * <h2>缺的从来不是约束</h2>
  *
@@ -60,11 +60,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * <h2>⚪ 白名单里还剩一行 {@link Reason#KNOWN_GAP}</h2>
  *
  * 那一行不是理由,是缺口。2026-08-27 收掉了七行({@code deviceLabel} × 4、{@code referrer} × 3,
- * docs/08 §四 R-73):三个登录请求体加了 {@code @Size},{@code SessionDto} 那一行改判为
+ * docs/总路线图 §四 R-73):三个登录请求体加了 {@code @Size},{@code SessionDto} 那一行改判为
  * {@link Reason#BOUNDED_UPSTREAM} —— 它是响应,加注解不校验任何东西,收口点在写入口。
  * <p>
  * 剩下的 {@code AccountDto#nickname} <b>没有跟着收</b>,理由写在那一行上。
- * 按 01 §5 的规矩,没解决的事摆在明面上,不拿一句漂亮话盖过去 ——
+ * 按 决策记录 §5 的规矩,没解决的事摆在明面上,不拿一句漂亮话盖过去 ——
  * 也不为了让表短一行就编一个上限出来。
  */
 class NoStemFieldTest {
@@ -115,7 +115,7 @@ class NoStemFieldTest {
      * 🔴 命中即失败,没有白名单。
      *
      * <p>这些词描述的都是<b>题目本身</b>,不是「碰过它」这件事。行为层只记
-     * 「有没有、几次、多久前」(01 §2.2 能力边界),这些词一个都用不上;
+     * 「有没有、几次、多久前」(决策记录 §2.2 能力边界),这些词一个都用不上;
      * 它们出现在字段名里,只有一个解释 —— 有人打算往库里存内容了。
      * <p>
      * 匹配的是小写化之后的<b>子串</b>,所以 {@code rawText / RAW_TEXT / questionStem} 一起覆盖。
@@ -185,7 +185,7 @@ class NoStemFieldTest {
          * ⚪ 这不是理由,是缺口。
          *
          * <p>写在这里的字段今天确实没有上限。摆出来是为了让它可数、可查
-         * (01 §5:没解决的事不拿话盖过去),不是为了让下一个字段有个地方可以挂。
+         * (决策记录 §5:没解决的事不拿话盖过去),不是为了让下一个字段有个地方可以挂。
          * <b>这一档不接受新增</b> —— 新字段要么有 {@code @Size},要么挑得出上面五个理由之一。
          *
          * <p>也不接受<b>为了让表短一行而编一个上限</b>:上限该由写入口的形状定,
@@ -350,13 +350,13 @@ class NoStemFieldTest {
             }
         }
         assertTrue(violations.isEmpty(), () -> """
-                🔴 R-01 被破坏 —— 线上库出现了名字在说「题目本身」的字段(docs/08 §四 R-01)。
+                🔴 R-01 被破坏 —— 线上库出现了名字在说「题目本身」的字段(docs/总路线图 §四 R-01)。
 
                 %s
 
                 这一条没有白名单,改名字也不算数:R-01 说的是「连预留位都不留」,
                 把 stem 改叫 detail 只是把红线降级成命名规范,库的形状一点没变。
-                真要加这个字段,先回 docs/08 §四把 R-01 改掉,再来改这个测试 —— 顺序不能反。
+                真要加这个字段,先回 docs/总路线图 §四把 R-01 改掉,再来改这个测试 —— 顺序不能反。
                 """.formatted(String.join("\n", violations)));
     }
 
@@ -383,7 +383,7 @@ class NoStemFieldTest {
             }
         }
         assertTrue(violations.isEmpty(), () -> """
-                🔴 R-01 被破坏 —— 出现了没有上限的自由文本(docs/08 §四 R-01,01 §2.2 不碰内容)。
+                🔴 R-01 被破坏 —— 出现了没有上限的自由文本(docs/总路线图 §四 R-01,决策记录 §2.2 不碰内容)。
 
                 %s
 

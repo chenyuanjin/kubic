@@ -60,18 +60,18 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * docs/10 §6.2 采集表最后两行的接口契约:{@code POST /records/{id}/image} 与 {@code /audio}。
+ * docs/技术架构 §6.2 采集表最后两行的接口契约:{@code POST /records/{id}/image} 与 {@code /audio}。
  *
  * <h2>这个文件验的大半是「送不进去」与「留不下来」,不是「功能可用」</h2>
  *
- * 这两个端点是 R-04 的落点,而 R-04 在 docs/08 §四 标着「<b>第一天不定就改不回来</b>」。
+ * 这两个端点是 R-04 的落点,而 R-04 在 docs/总路线图 §四 标着「<b>第一天不定就改不回来</b>」。
  * 所以下面的用例按三条线组织:
  * <ol>
  *   <li><b>形态</b> —— 图片必须是 JSON + base64,<b>multipart 打到 {@code /image} 上要被拒</b>。
- *       两个端点形态不同是刻意的(docs/10 §6.2 原文逐字不同),而<b>「统一一下」是最自然的重构</b></li>
+ *       两个端点形态不同是刻意的(docs/技术架构 §6.2 原文逐字不同),而<b>「统一一下」是最自然的重构</b></li>
  *   <li><b>不留存</b> —— 字节不进响应体、不进日志。日志那条是<b>运行时抓的</b>,
  *       不只是源码扫描({@code ImageRetentionTest} 那两条守的是源码形状)</li>
- *   <li><b>不失败</b> —— 识别怎么挂,那条记录都完好、都还能手动挂考点(docs/13 §1.5)</li>
+ *   <li><b>不失败</b> —— 识别怎么挂,那条记录都完好、都还能手动挂考点(docs/后端详设 §1.5)</li>
  * </ol>
  *
  * <h2>顺带钉住 {@code origin=auto} 这条路真的通了</h2>
@@ -174,7 +174,7 @@ class RecognitionApiTest {
     @Test
     @DisplayName("🔴 multipart 打到 /image 上 → 415,它不是一个会落盘的上传接口")
     void imageRefusesMultipart() throws Exception {
-        // docs/10 §6.2 原文:「🔴 JSON body,base64 内联,【不是 multipart 落盘】」。
+        // docs/技术架构 §6.2 原文:「🔴 JSON body,base64 内联,【不是 multipart 落盘】」。
         // multipart 的默认行为是把 part 写成临时文件 —— 这个端点连收都不收。
         mockMvc.perform(multipart("/api/records/t-1/image")
                         .file(new MockMultipartFile("image", "a.jpg", "image/jpeg", jpeg("x"))))
@@ -287,7 +287,7 @@ class RecognitionApiTest {
                 .andExpect(jsonPath("$.outcome").value("NOT_RECALLED"))
                 .andExpect(jsonPath("$.candidateCount").value(0));
 
-        assertEquals(0, tagger.calls(), "「召回不出来就不调模型,调了也只能瞎猜」(docs/13 §1.3)");
+        assertEquals(0, tagger.calls(), "「召回不出来就不调模型,调了也只能瞎猜」(docs/后端详设 §1.3)");
     }
 
     // ======================================================== 三、降级:识别挂了 ≠ 记录挂了
@@ -302,14 +302,14 @@ class RecognitionApiTest {
         mockMvc.perform(post("/api/records/t-1/image")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(bodyWith(jpeg("a"), jpeg("b"), jpeg("c"))))
-                // 回 503 会让前端把它当成一次失败去重试,而它没有失败(docs/13 §1.5)
+                // 回 503 会让前端把它当成一次失败去重试,而它没有失败(docs/后端详设 §1.5)
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.outcome").value("UNAVAILABLE"));
 
         assertEquals(1, tagger.calls(), "厂商挂了就别再试 5 次 —— 用户只会多等 5 倍时间");
 
         Touch survivor = tagging.findRecord("t-1");
-        assertNotNull(survivor, "🔴 识别不可用 ≠ 记录失败(docs/08 §1.3.7.1)");
+        assertNotNull(survivor, "🔴 识别不可用 ≠ 记录失败(docs/总路线图 §1.3.7.1)");
         // 「还能手动挂载」不是一句安慰:直接走打标服务验一次
         TaggingService.MountResult mounted = tagging.mount(survivor, RECALLED_NODE);
         assertTrue(mounted instanceof TaggingService.MountResult.Mounted,
@@ -439,7 +439,7 @@ class RecognitionApiTest {
         //    访问日志、进了前端缓存、进了任何一个把响应体存下来的中间层。
         assertFalse(body.contains(spoken),
                 "转写文本进了响应体 —— AudioRecognitionResponse 里本来就没有能装下它的位置,"
-                        + "出现它说明有人加了一个。先去 docs/10 §5.2「不建的表」那一行看一眼。\n" + body);
+                        + "出现它说明有人加了一个。先去 docs/技术架构 §5.2「不建的表」那一行看一眼。\n" + body);
         assertNoLogContains(spoken);
         assertTrue(tags.findAll().isEmpty(), "转写不产生标签 —— 「文字 → 考点」那一段还没建");
     }
@@ -533,7 +533,7 @@ class RecognitionApiTest {
                 assertFalse(rendered.contains(needle), () -> """
                         🔴 R-04 被破坏 —— 上传的字节出现在了日志里(级别 %s,logger %s)。
 
-                        docs/10 §8.1 禁令 3:「不把 base64 打进日志的任何级别」——
+                        docs/技术架构 §8.1 禁令 3:「不把 base64 打进日志的任何级别」——
                         一次 log.debug(request) 就等于把原图落了盘,而且落在最不容易想到的地方。
                         这条断言把根 logger 调到 TRACE 之后抓的,所以它管的是【任何级别】。
                         """.formatted(event.getLevel(), event.getLoggerName()));
@@ -642,7 +642,7 @@ class RecognitionApiTest {
             return new CoverageReader(syllabus, store, tagStore, assertionStore, coverage, clock);
         }
 
-        /** 「我已掌握」。它不进覆盖度的分子(01 §5.2:补丁不是解法),但 CoverageReader 要读它。 */
+        /** 「我已掌握」。它不进覆盖度的分子(决策记录 §5.2:补丁不是解法),但 CoverageReader 要读它。 */
         @Bean
         AssertionStore assertionStore() {
             return new InMemoryAssertionStore();
@@ -731,7 +731,7 @@ class RecognitionApiTest {
         }
     }
 
-    /** 与 {@code TagApiTest} 里那个同形 —— 接口契约测试不该被存储实现牵着走(docs/10 §2.2)。 */
+    /** 与 {@code TagApiTest} 里那个同形 —— 接口契约测试不该被存储实现牵着走(docs/技术架构 §2.2)。 */
     static final class InMemoryTouchStore implements TouchStore {
 
         private final List<Touch> touches = new ArrayList<>();

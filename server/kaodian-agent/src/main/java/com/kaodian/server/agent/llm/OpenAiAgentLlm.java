@@ -36,7 +36,7 @@ import java.util.concurrent.atomic.AtomicReference;
  * 真·模型实现。
  *
  * <p>🔴 <b>整个仓库里 {@code ChatModel} 只在这一个类的这一个字段上出现</b>
- * (另一处是 {@code recognize} 包将来的 {@code OpenAiVisionTagger},docs/13 §4.1)。
+ * (另一处是 {@code recognize} 包将来的 {@code OpenAiVisionTagger},docs/后端详设 §4.1)。
  * 这不是巧合,是 {@link AgentLlm} 那条接口存在的全部理由 —— 详见它的类注释。
  *
  * <h2>ReAct 循环在我们手里 —— 这一点起初判断错了</h2>

@@ -33,7 +33,7 @@ import javax.crypto.spec.SecretKeySpec;
  * 换来的是什么:两个接口({@code SendSms} / {@code DescribeCaptchaResult})的一次 POST。
  * 签名算法本身是公开且稳定的,整段实现不到一百行,而且<b>短信与验证码两个产品共用同一段</b>。
  * <p>
- * 这与 docs/13 §三 拒绝 {@code spring-ai-alibaba} 里程碑版是同一类判断:
+ * 这与 docs/后端详设 §三 拒绝 {@code spring-ai-alibaba} 里程碑版是同一类判断:
  * <b>为一次 HTTP 调用背一整棵依赖树,代价不在今天,在它哪天和别的东西冲突的那天。</b>
  *
  * <h2>🔴 Host 头不显式设置</h2>

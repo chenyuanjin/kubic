@@ -11,7 +11,7 @@ use super::Platform;
 ///
 /// Tauri 的 `app_data_dir()` 是 `~/Library/Application Support/<bundle-id>/`。
 /// 用它意味着**改一次 bundle identifier 就换一次数据目录**,而 identifier 现在
-/// 一定会改:签名主体要与域名实名一致(docs/18 §4.4),而域名(`L-A1`)还没注册。
+/// 一定会改:签名主体要与域名实名一致(docs/壳技术方案 §4.4),而域名(`L-A1`)还没注册。
 /// 到那天,用户的原图会安静地留在旧目录里,应用则在新目录里看到「一张都没有」。
 ///
 /// 所以数据路径**不挂在 identifier 上**。这同时让 KUBI-64 写进设计稿的那句

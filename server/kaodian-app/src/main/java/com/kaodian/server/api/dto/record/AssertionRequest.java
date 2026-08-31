@@ -8,7 +8,7 @@ import jakarta.validation.constraints.Size;
 /**
  * {@code POST/DELETE /assertions} 的请求体 —— <b>只接受一个考点 code。</b>
  *
- * <h2>🔴 契约原文就是「body 只接受 {@code nodeId}」(docs/10 §6.4)</h2>
+ * <h2>🔴 契约原文就是「body 只接受 {@code nodeId}」(docs/技术架构 §6.4)</h2>
  *
  * 与 {@link MountTagRequest} 同一副形状、同一套理由,只是那边是把记录挂到考点上,
  * 这边是给考点贴一句「我会了」。两条写入路径上都<b>没有一个能装下自由文本的位置</b>:
@@ -43,7 +43,7 @@ public record AssertionRequest(
      * 🔴 未定义字段一律拒绝。
      *
      * <p><b>{@code value} 收下就丢</b>:它是用户送来的原文,可能就是一整段题干。
-     * 异常里只带字段名(01 §2.2 不碰内容)。
+     * 异常里只带字段名(决策记录 §2.2 不碰内容)。
      */
     @JsonAnySetter
     void rejectUnknownField(String name, Object value) {

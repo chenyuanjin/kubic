@@ -10,7 +10,7 @@ import java.util.List;
  *
  * 没有 {@code trend}、{@code changeVsPrevious}、{@code streak}(连续天数)、
  * {@code best} / {@code worst}、{@code improved}。这不是「暂时不给」,是 {@code R-05}
- * 在聚合视图上的形状:<b>产品只报「有没有、几次、多久前」,不判断「对不对」</b>(01 §2.2)。
+ * 在聚合视图上的形状:<b>产品只报「有没有、几次、多久前」,不判断「对不对」</b>(决策记录 §2.2)。
  * <p>
  * 聚合视图是这条红线最松的一处 —— 一旦相邻两格的数摆在同一个数组里,
  * 「这周比上周多了 40%」就只差一次减法,而那句话是<b>产品在给用户下评语</b>。
@@ -18,7 +18,7 @@ import java.util.List;
  * {@code improved} 的那天,前端不写「进步了」反而成了额外的克制。
  * <p>
  * 同理这里<b>没有 {@code practiced} / {@code correct} / 正确率</b>。
- * docs/10 §5.2 撤掉 {@code practice_log} 那张表时给的理由逐字适用:
+ * docs/技术架构 §5.2 撤掉 {@code practice_log} 那张表时给的理由逐字适用:
  * 「按正确率排薄弱考点只差一条 SQL,而那正是 {@code R-05}」——
  * 每格一个正确率,「这周退步了」就是同一条 SQL 的另一种写法。
  *

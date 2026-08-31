@@ -10,7 +10,7 @@ import jakarta.validation.constraints.Size;
  *
  * <h2>🔴 没有 name、没有 label、没有 tag —— R-07 在接口层的实现</h2>
  *
- * docs/10 §6.3 原文:「body <b>只接受 {@code nodeId}</b>,不接受 {@code name}。
+ * docs/技术架构 §6.3 原文:「body <b>只接受 {@code nodeId}</b>,不接受 {@code name}。
  * <b>从树里选,不能新建。</b>」并且:「只要 API 上没有传入自由文本标签的通道,
  * 自由生成的考点就进不了库 —— 无论模型输出什么。」
  * <p>
@@ -44,7 +44,7 @@ public record MountTagRequest(
      * 🔴 R-07 的第二道锁 —— 未定义字段一律拒绝。
      *
      * <p><b>{@code value} 收下就丢</b>:它是用户送来的原文,可能就是一整段题干。
-     * 异常里只带字段名(01 §2.2 不碰内容)。
+     * 异常里只带字段名(决策记录 §2.2 不碰内容)。
      */
     @JsonAnySetter
     void rejectUnknownField(String name, Object value) {

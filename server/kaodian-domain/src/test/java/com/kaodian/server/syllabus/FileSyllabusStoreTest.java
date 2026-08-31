@@ -113,7 +113,7 @@ class FileSyllabusStoreTest {
                 nodeCount++;
                 for (String key : n.propertyNames()) {
                     assertTrue(allowedOnNode.contains(key),
-                            "考点上出现了契约之外的键(01 §2.2 不碰内容):" + key);
+                            "考点上出现了契约之外的键(决策记录 §2.2 不碰内容):" + key);
                 }
             }
         }
@@ -248,7 +248,7 @@ class FileSyllabusStoreTest {
         for (Method m : SyllabusStore.class.getDeclaredMethods()) {
             String name = m.getName().toLowerCase();
             assertFalse(name.contains("import") || name.contains("bulk") || name.contains("batch"),
-                    "🔴 不许出现批量导入考点体系的方法(R-07 / docs/04 §1.2):" + m.getName());
+                    "🔴 不许出现批量导入考点体系的方法(R-07 / docs/实施路径 §1.2):" + m.getName());
         }
     }
 
@@ -552,7 +552,7 @@ class FileSyllabusStoreTest {
      *
      * <p>理由不是洁癖:前端是按<b>名字</b>从命令面板挑考点的,面板上不显示题型 ——
      * 跨题型同名和同题型同名一样分不出来,记录会被劈到两个语义相同的 code 上,
-     * 覆盖率的分子被稀释。范围又是一个模块一个科目(01 §5.4),
+     * 覆盖率的分子被稀释。范围又是一个模块一个科目(决策记录 §5.4),
      * 18 个考点的树里冒出两个同名,那是命名错误,不是合法场景。
      */
     @Test
@@ -946,7 +946,7 @@ class FileSyllabusStoreTest {
         List<String> nodeFields = Arrays.stream(Syllabus.Node.class.getRecordComponents())
                 .map(RecordComponent::getName).toList();
         assertEquals(List.of("code", "name", "recent5yCount", "archived"), nodeFields,
-                "加字段前先回去看 01 §2.5 —— 三层是产品决定,不是实现细节");
+                "加字段前先回去看 决策记录 §2.5 —— 三层是产品决定,不是实现细节");
 
         for (RecordComponent c : Syllabus.Node.class.getRecordComponents()) {
             assertNotEquals(List.class, c.getType(), "考点下面不许挂列表,那就是第四层:" + c.getName());

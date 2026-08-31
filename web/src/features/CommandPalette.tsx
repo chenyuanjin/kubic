@@ -118,7 +118,7 @@ export function CommandPalette({
                 <Kbd>⌘N</Kbd>
               </Item>
               {/* 🔴 这一条是「管理<b>自己的</b>考点树」,不是「导入某家机构的考点体系」。
-                  后者在这个面板里、在整个产品里都没有入口(R-07 / docs/04 §1.2)。 */}
+                  后者在这个面板里、在整个产品里都没有入口(R-07 / docs/实施路径 §1.2)。 */}
               <Item
                 value="管理考点树 考点管理 增删改 题型 kaodian syllabus"
                 keywords={['guanli', 'syllabus', 'tree']}

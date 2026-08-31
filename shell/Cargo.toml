@@ -6,7 +6,7 @@ rust-version = "1.80"
 publish = false
 description = "考点盲区桌面壳 —— 内嵌 web/dist,回环静态直出 + /api 反代(docs/technical/18-壳技术方案)"
 
-# 🔴 依赖表是一条能力边界的执行装置,不只是构建配置(docs/18 §六)。
+# 🔴 依赖表是一条能力边界的执行装置,不只是构建配置(docs/壳技术方案 §六)。
 #
 # 这里【永远】不该出现的三类:
 #   ① 任何模型 SDK(openai / anthropic / ollama / spring-ai 的 rust 对应物……)
@@ -36,7 +36,7 @@ hyper-util = { version = "0.1", features = ["tokio", "server", "client-legacy", 
 http-body-util = "0.1"
 tokio = { version = "1", features = ["rt-multi-thread", "net", "time", "macros"] }
 
-# 上游是 https 时走【系统信任库】(docs/18 §3.4 规则 8)。
+# 上游是 https 时走【系统信任库】(docs/壳技术方案 §3.4 规则 8)。
 # 没有任何开关能关掉校验、加自定义 CA 或做证书固定 —— 那三件事都不提供接口,
 # 而不是提供了再劝人别用。
 hyper-rustls = { version = "0.27", default-features = false, features = [

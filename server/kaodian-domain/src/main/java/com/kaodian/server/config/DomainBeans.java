@@ -18,7 +18,7 @@ import java.time.Clock;
  * <h2>为什么差集服务在这里被声明成 bean,而不是在它自己的类上打注解</h2>
  *
  * {@link CoverageService} 是<b>纯领域对象</b> —— 它只做计数、比时间、两个整数相除。
- * 让它认识 Spring 没有任何好处,反而会把 docs/10 §2.2「包之间只通过接口调用」的边界弄脏:
+ * 让它认识 Spring 没有任何好处,反而会把 docs/技术架构 §2.2「包之间只通过接口调用」的边界弄脏:
  * {@code coverage} 包应该能在没有容器的情况下被直接 new 出来测试
  * ({@code CoverageServiceTest} 现在就是这么做的)。
  * <p>
@@ -51,7 +51,7 @@ public class DomainBeans {
     }
 
     /**
-     * 候选召回 —— 打标管线的第 ① 段(docs/13 §1.3)。
+     * 候选召回 —— 打标管线的第 ① 段(docs/后端详设 §1.3)。
      *
      * <p>与 {@link CoverageService} 同一个理由放在这里而不是打 {@code @Component}:
      * 它是<b>纯领域对象</b>(一棵树 + 一个字符串进,一组候选出),没有任何状态、
@@ -68,7 +68,7 @@ public class DomainBeans {
      *
      * <h2>为什么是在这里用一个 lambda 接起来,而不是让 {@code syllabus} 包直接依赖 {@code collect}</h2>
      *
-     * docs/10 §2.2:包之间只通过接口调用。{@code syllabus} 包不认识 {@code Touch},
+     * docs/技术架构 §2.2:包之间只通过接口调用。{@code syllabus} 包不认识 {@code Touch},
      * 它只需要两件事 —— 「这个考点上挂着几条记录」和「把它们搬到另一个考点去」。
      * 接口定义在 {@code syllabus} 侧({@link NodeRecordLedger}),实现由这里拼装,
      * 于是依赖方向始终是<b>行为层被骨架层使用,而不是骨架层认识行为层的数据结构</b>。

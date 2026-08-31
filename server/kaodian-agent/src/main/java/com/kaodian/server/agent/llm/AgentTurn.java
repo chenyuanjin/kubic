@@ -18,7 +18,7 @@ import java.util.List;
  * @param images       本轮附的图片字节。
  *                     🔴 <b>只有本轮有图</b> —— {@code history} 里【永远没有图】,
  *                     因为图不落盘(R-04),历史里只留「那一轮带了几张图」的文字痕迹。
- *                     这是多模态选型的已知代价,记在 docs/08 R-89
+ *                     这是多模态选型的已知代价,记在 docs/总路线图 R-89
  */
 public record AgentTurn(
         String runId,

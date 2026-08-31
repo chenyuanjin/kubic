@@ -36,7 +36,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  *
  * <h2>🔴 这里最重要的断言是「覆盖率一个字都没动」</h2>
  *
- * 01 §5.2:<b>「『我已掌握』按钮是补丁不是解法。」</b> 它是给「用户学了但没记」这个问题的
+ * 决策记录 §5.2:<b>「『我已掌握』按钮是补丁不是解法。」</b> 它是给「用户学了但没记」这个问题的
  * 一块创可贴,治的是「被工具冤枉了」这个感受,不是录入不完整这个病。
  * 所以它一旦进了覆盖度的分子,补丁就被当成了疗效 —— 那个百分比会因为<b>点按钮</b>而上升,
  * 而一个能靠自我声明刷高的覆盖率,和一个没有覆盖率的产品,价值是一样的。
@@ -112,7 +112,7 @@ class CoverageAssertionCaliberTest {
      * 写死的期望值在有人「顺手」把断言并进分子时,会被当成一个过时的数字直接改掉。
      */
     @Test
-    @DisplayName("🔴 按下「我已掌握」之后,覆盖率一个字都没动(01 §5.2:补丁不是解法)")
+    @DisplayName("🔴 按下「我已掌握」之后,覆盖率一个字都没动(决策记录 §5.2:补丁不是解法)")
     void assertingANodeDoesNotMoveTheCoverageRatio() {
         Summary before = service.summarize(groupsWith());
         // average-calc 是一个彻头彻尾的空白考点 —— 一条记录都没有,最容易被「按一下就算碰过」
@@ -120,8 +120,8 @@ class CoverageAssertionCaliberTest {
 
         assertEquals(before.total(), after.total(), "分母不该动 —— 那是归档干的事,不是断言");
         assertEquals(before.covered(), after.covered(),
-                "🔴 分子动了 —— 断言被算进了覆盖度。docs/10 §6.4:「分子 = discarded=0 的触达节点数」,"
-                        + "而声明不是触达。01 §5.2:「我已掌握」按钮是补丁不是解法");
+                "🔴 分子动了 —— 断言被算进了覆盖度。docs/技术架构 §6.4:「分子 = discarded=0 的触达节点数」,"
+                        + "而声明不是触达。决策记录 §5.2:「我已掌握」按钮是补丁不是解法");
         assertEquals(before.percent(), after.percent(), "那个大字必须一模一样");
         assertEquals(before.empty(), after.empty(),
                 "空白数不该动 —— 那个考点确实还是一条记录都没有,声明改不了这件事");
@@ -131,7 +131,7 @@ class CoverageAssertionCaliberTest {
                 "整块空白也是从记录推出来的");
 
         assertEquals(0, before.asserted());
-        assertEquals(1, after.asserted(), "唯一该变的就是这一个数(docs/10 §6.4:断言单列不并入)");
+        assertEquals(1, after.asserted(), "唯一该变的就是这一个数(docs/技术架构 §6.4:断言单列不并入)");
     }
 
     /**
@@ -176,7 +176,7 @@ class CoverageAssertionCaliberTest {
     void assertionIsASeparateStateNotASixthOne() {
         NodeCoverage n = node(groupsWith("average-calc"), "average-calc");
 
-        assertEquals(NodeState.EMPTY, n.state(), "🔴 状态还是空白 —— 断言不是第六态(docs/10 §5.2:独立状态)");
+        assertEquals(NodeState.EMPTY, n.state(), "🔴 状态还是空白 —— 断言不是第六态(docs/技术架构 §5.2:独立状态)");
         assertEquals(0, n.touchCount(), "触达次数不该被声明凭空加一");
         assertNull(n.latestAt(), "从没碰过,最近触达仍是 null");
         assertTrue(n.asserted());
@@ -186,7 +186,7 @@ class CoverageAssertionCaliberTest {
     // ———————————— 二、盲区榜排除已断言节点 ————————————
 
     @Test
-    @DisplayName("🔴 声明掌握之后,那个考点从盲区榜上消失(docs/10 §6.4:排除已断言节点)")
+    @DisplayName("🔴 声明掌握之后,那个考点从盲区榜上消失(docs/技术架构 §6.4:排除已断言节点)")
     void assertedNodesDisappearFromBlindSpots() {
         List<NodeCoverage> before = service.blindSpots(groupsWith(), 5);
         String top = before.get(0).code();

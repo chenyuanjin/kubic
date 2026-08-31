@@ -11,7 +11,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * 令牌方案 —— docs/10 §7.4 与 docs/13 §1.9。
+ * 令牌方案 —— docs/技术架构 §7.4 与 docs/后端详设 §1.9。
  *
  * <p>这里钉住的核心是那四个字:<b>立即失效</b>。它是不用 JWT 的全部理由,
  * 所以它必须有测试。

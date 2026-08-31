@@ -5,7 +5,7 @@ import { ApiUnavailableError, getJson, postJson } from './client'
  *
  * <h2>为什么令牌放 localStorage,不放 cookie</h2>
  *
- * 服务端的方案是不透明随机串 + `Authorization: Bearer`(server: docs/10 §7.4),
+ * 服务端的方案是不透明随机串 + `Authorization: Bearer`(server: docs/技术架构 §7.4),
  * 整条链路上<b>没有 cookie</b> —— `ApiCorsConfig` 里 `allowCredentials(false)` 就是这条的落点。
  * 那是有意的:没有 cookie 就没有 CSRF 这一整类问题,代价是 XSS 时令牌可读。
  * 而这个产品的 XSS 面本来就极小(不渲染任何用户提供的 HTML,记录里连富文本都没有)。
@@ -96,7 +96,7 @@ export function logout(): Promise<{ revoked: boolean }> {
  *
  * <h2>🔴 后面这一条才是关键</h2>
  *
- * server 的 docs/13 §1.8 把它写死成一条判据:<b>五种失败要说五句不同的话</b>。
+ * server 的 docs/后端详设 §1.8 把它写死成一条判据:<b>五种失败要说五句不同的话</b>。
  * 而界面上真正兑现这句话的地方不是文案,是<b>那个按钮</b> ——
  *
  * | 状态 | 说的话 | 按钮 |

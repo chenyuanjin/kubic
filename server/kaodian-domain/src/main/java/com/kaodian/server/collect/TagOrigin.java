@@ -5,7 +5,7 @@ import java.util.Locale;
 /**
  * 一条标签<b>从哪来</b> —— 不是它现在什么状态。
  *
- * <h2>🔴 写入后不可变(docs/10 §5.2 {@code record_tag} 那一行)</h2>
+ * <h2>🔴 写入后不可变(docs/技术架构 §5.2 {@code record_tag} 那一行)</h2>
  *
  * 契约原文:「{@code origin} 记的是这条标签从哪来,不是它现在什么状态 ——
  * 用户确认只写 {@code confirmed_at},不把 {@code auto} 改成 {@code manual}。
@@ -39,7 +39,7 @@ public enum TagOrigin {
     MANUAL;
 
     /**
-     * 落库与出接口时的写法 —— 契约里是小写的 {@code auto} / {@code manual}(docs/10 §5.2)。
+     * 落库与出接口时的写法 —— 契约里是小写的 {@code auto} / {@code manual}(docs/技术架构 §5.2)。
      *
      * <p>写成方法而不是给枚举加一个 {@code String wire} 字段,是上面「不给显示留位置」的同一条:
      * 字段会被人拿去装别的,方法不会。

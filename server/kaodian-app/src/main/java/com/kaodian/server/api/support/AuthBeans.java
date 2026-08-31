@@ -152,7 +152,7 @@ public class AuthBeans {
     }
 
     /**
-     * 微信。默认 {@link DisabledWeChatClient} —— <b>关卡 2 后才启用</b>(docs/10 §7.2)。
+     * 微信。默认 {@link DisabledWeChatClient} —— <b>关卡 2 后才启用</b>(docs/技术架构 §7.2)。
      *
      * <p>三条入口是三个不同的应用,各要一笔认证费与一次审核。
      * 在关卡 2 之前掏这笔钱,买的是一个还没被验证的方向。
@@ -183,7 +183,7 @@ public class AuthBeans {
      *
      * <p>{@link DisabledCaptchaVerifier} 一律放行,于是第①道闸消失;
      * 而第①道闸是这条链路上<b>唯一真正的闸</b> —— 单号 1/60s 与单 IP 20/日 都是纯计数,
-     * 换一批 IP、换一批号两条都不触发,而每一条短信都是真金白银(docs/13 §1.8)。
+     * 换一批 IP、换一批号两条都不触发,而每一条短信都是真金白银(docs/后端详设 §1.8)。
      * <p>
      * 默认组合(假短信 + 不校验)是安全的:没有账单可刷。
      * 危险的只有<b>真短信 + 不校验</b>这一种组合,而它恰好是「先把短信配上,
@@ -197,7 +197,7 @@ public class AuthBeans {
             throw new IllegalStateException("""
                     拒绝启动:短信已切到真实供应商,但行为验证仍是 disabled。
                     这是唯一一种会被无限刷短信费的组合 —— 纯计数频控挡不住换 IP 换号的分布式刷。
-                    请配置 kaodian.auth.captcha.provider=tencent 及其四个配置项(docs/13 §1.8)。""");
+                    请配置 kaodian.auth.captcha.provider=tencent 及其四个配置项(docs/后端详设 §1.8)。""");
         }
         if (!sender.isReal()) {
             log.warn("鉴权链路处于开发模式:不发真短信、不校验滑块。仅限本机。");

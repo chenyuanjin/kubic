@@ -10,12 +10,12 @@ import java.util.List;
  *
  * <h2>🔴 有导出,没有导入 —— 这条边界是有意的</h2>
  *
- * 01 §2.6 要的是完整数据导出(Markdown / CSV / JSON),那是对用户的承诺:
+ * 决策记录 §2.6 要的是完整数据导出(Markdown / CSV / JSON),那是对用户的承诺:
  * <b>你的东西你随时能拿走。</b> 所以这个端点存在。
  * <p>
  * 但它<b>没有对称的导入端点</b>,而且不打算有。一个接受任意树形 JSON 的
  * 「批量导入考点体系」端点,现实中的第一个用途一定是把某个机构的目录页整块拷进来 ——
- * 而 R-07 / docs/04 §1.2 要求<b>考点标签自行归纳、不沿用机构既有体系与措辞</b>。
+ * 而 R-07 / docs/实施路径 §1.2 要求<b>考点标签自行归纳、不沿用机构既有体系与措辞</b>。
  * 那不是一条能靠「用的时候注意点」守住的线:只要通道在,它就会被用。
  * <p>
  * 恢复自己的备份走的是另一条路:把导出的文件放回 {@code ~/.kaodian/syllabus.json}
@@ -26,10 +26,10 @@ import java.util.List;
  * <h2>导出的内容里同样没有内容</h2>
  *
  * 名称、层级、近五年频次、归档标记,四样。没有题干、没有解析、没有任何机构的课程内容 ——
- * 这棵树从来就没装过它们(01 §2.2 / docs/07)。
+ * 这棵树从来就没装过它们(决策记录 §2.2 / docs/数据线)。
  *
  * @param subject 这棵树是哪个省、哪门考试、哪个模块
- * @param groups  题型 → 考点,两层。<b>没有第三层嵌套</b>,因为不做第四层(01 §2.5)
+ * @param groups  题型 → 考点,两层。<b>没有第三层嵌套</b>,因为不做第四层(决策记录 §2.5)
  */
 public record SyllabusExportResponse(
         SubjectDto subject,
@@ -42,7 +42,7 @@ public record SyllabusExportResponse(
     /**
      * 导出里的一个考点。
      *
-     * <p>🔴 <b>没有 {@code children}</b> —— 第四层在数据结构上就不存在(01 §2.5),
+     * <p>🔴 <b>没有 {@code children}</b> —— 第四层在数据结构上就不存在(决策记录 §2.5),
      * 导出格式作为「放回去还能读」的那一份,自然也不给它留位置。
      */
     public record ExportNodeDto(String code, String name, int recent5yCount, boolean archived) {}

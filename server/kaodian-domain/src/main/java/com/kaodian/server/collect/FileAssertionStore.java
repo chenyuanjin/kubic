@@ -258,7 +258,7 @@ public class FileAssertionStore implements AssertionStore {
             ObjectNode root = MAPPER.createObjectNode();
             ArrayNode comment = root.putArray("_comment");
             comment.add("「我已掌握」—— 每一行是「用户声明他会某个考点」。");
-            comment.add("🔴 这里的每一行都【不计入覆盖度】(01 §5.2:补丁不是解法)。");
+            comment.add("🔴 这里的每一行都【不计入覆盖度】(决策记录 §5.2:补丁不是解法)。");
             comment.add("作用只有两个:从盲区榜里排除,和在概览里单列一格。那个百分比一个字都不动。");
             comment.add("它不是归档 —— 归档把考点从分母里拿掉,这里留在分母里(见 UserAssertion)。");
             ArrayNode arr = root.putArray("assertions");

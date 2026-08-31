@@ -6,7 +6,7 @@ import jakarta.validation.constraints.Size;
 import java.util.List;
 
 /**
- * {@code GET /api/records} 的一页 —— <b>原始记录的时间线,cursor 分页</b>(docs/10 §6.2)。
+ * {@code GET /api/records} 的一页 —— <b>原始记录的时间线,cursor 分页</b>(docs/技术架构 §6.2)。
  *
  * <h2>🔴 它和 {@code GET /api/timeline} 不是一个东西,两个都要留着</h2>
  *
@@ -33,7 +33,7 @@ import java.util.List;
  *
  * <h2>为什么 cursor 不是 offset</h2>
  *
- * docs/10 §六 的统一约定:「分页用 cursor 不用 offset」。理由在这个产品上很实:
+ * docs/技术架构 §六 的统一约定:「分页用 cursor 不用 offset」。理由在这个产品上很实:
  * 时间线是<b>倒序</b>的,而用户翻页的同时还在记新的一笔。offset 分页下,
  * 新记一笔会把整个列表往后推一格 —— 第二页的第一条正好是第一页看过的最后一条,
  * 而中间那条<b>永远不会被看到</b>。cursor 锚在一条具体记录上,新记的落在它前面,不影响往后翻。

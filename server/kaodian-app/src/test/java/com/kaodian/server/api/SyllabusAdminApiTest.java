@@ -144,7 +144,7 @@ class SyllabusAdminApiTest {
         assertEquals(List.of("groupCode", "name", "recent5yCount"),
                 Arrays.stream(CreateNodeRequest.class.getRecordComponents())
                         .map(RecordComponent::getName).toList(),
-                "父级只能是题型 —— 加字段前先回去看 01 §2.5");
+                "父级只能是题型 —— 加字段前先回去看 决策记录 §2.5");
 
         for (String field : List.of("parentNodeCode", "parentCode", "children", "subNodes", "nodes")) {
             mockMvc.perform(json(post("/api/syllabus/nodes"), """
@@ -526,7 +526,7 @@ class SyllabusAdminApiTest {
      *
      * <p>前端是按<b>名字</b>从命令面板挑考点的,面板上只显示名字与状态、<b>不显示题型</b>。
      * 两个同名考点在用户眼里就是同一个,记录会被劈到两个语义相同的 code 上:
-     * 覆盖率的分子被稀释,「整块空白」跟着失真 —— 而覆盖率是这个产品唯一的那个数(01 §2.2)。
+     * 覆盖率的分子被稀释,「整块空白」跟着失真 —— 而覆盖率是这个产品唯一的那个数(决策记录 §2.2)。
      */
     @Test
     @DisplayName("🔴 考点重名 → 409 NAME_TAKEN:同题型如此,【跨题型】同样如此")
@@ -822,7 +822,7 @@ class SyllabusAdminApiTest {
         for (Class<?> req : requestDtos()) {
             for (RecordComponent c : req.getRecordComponents()) {
                 assertFalse(subtreeFields.contains(c.getName()),
-                        req.getSimpleName() + " 不允许一次提交一棵子树(R-07 / docs/04 §1.2):" + c.getName());
+                        req.getSimpleName() + " 不允许一次提交一棵子树(R-07 / docs/实施路径 §1.2):" + c.getName());
             }
         }
     }
@@ -894,7 +894,7 @@ class SyllabusAdminApiTest {
             return new CoverageReader(syllabus, store, tagStore, assertionStore, coverage, clock);
         }
 
-        /** 「我已掌握」。它不进覆盖度的分子(01 §5.2:补丁不是解法),但 CoverageReader 要读它。 */
+        /** 「我已掌握」。它不进覆盖度的分子(决策记录 §5.2:补丁不是解法),但 CoverageReader 要读它。 */
         @Bean
         AssertionStore assertionStore() {
             return new InMemoryAssertionStore();

@@ -35,7 +35,7 @@ import { Button, GroupHeader, Kbd, Note, Tag } from '../ui/primitives'
  * <p>
  * ⚠️ <b>这里没有替产品发明绕法</b>(比如先落一条挂到「未分类」的假考点再改挂)——
  * 那会凭空造出一种需要在界面上表达的记录状态,或者让主标签变成可变的。
- * 两条出路都得有人选,见 docs/08 §四 `R-85`。
+ * 两条出路都得有人选,见 docs/总路线图 §四 `R-85`。
  */
 export function CaptureSheet({
   groups,
@@ -80,7 +80,7 @@ export function CaptureSheet({
   /**
    * 形式由「哪个入口有内容」推出,不额外做一个单选框让用户再选一次。
    *
-   * 🔴 <b>带图时 `PHOTO` 排在 `DRILL` 前面,这一条是被 docs/10 §8.2 定的。</b>
+   * 🔴 <b>带图时 `PHOTO` 排在 `DRILL` 前面,这一条是被 docs/技术架构 §8.2 定的。</b>
    * 那张表的最后一行:服务端关于图片能知道的<b>全部信息</b>是
    * `record_event.capture_type='photo'` 这一个枚举值。带了图却记成 `DRILL`,
    * 那一个字节的信息就<b>永远没有别的地方能补</b> —— 库里没有任何图片字段。
@@ -132,7 +132,7 @@ export function CaptureSheet({
     }
 
     /* 🔴 图是在记录之后送的,而且送失败<b>不回滚那条记录</b>。
-       docs/13 §1.5:降级方向是「少功能」,不是「少记录」。
+       docs/后端详设 §1.5:降级方向是「少功能」,不是「少记录」。
        把它显示成「没记下来」会让用户去重记一遍 —— 于是库里多一条重复记录,
        而覆盖率算的是「几次」,重复记录正好污染那一列。 */
     try {
@@ -274,7 +274,7 @@ export function CaptureSheet({
               「替你听、替你截」,不行。所以这里只有一个接收区,没有任何「开始捕捉」。
 
               🔴 这一段整个搬到 RawImageDrop 里去了,因为它不只是一个接收区:
-              同意点、倒计时、立即删除三样都挂在 docs/08 `1.1.3` 的 UI 审核项上,
+              同意点、倒计时、立即删除三样都挂在 docs/总路线图 `1.1.3` 的 UI 审核项上,
               和「记一笔」这一屏其余部分不是同一件事,混在一个组件里两边都会被改坏。 */}
           <RawImageDrop pendingIds={pendingImageIds} onPendingIdsChange={setPendingImageIds} busy={busy} />
 

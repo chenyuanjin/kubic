@@ -60,16 +60,16 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 
 /**
- * 鉴权端点 —— docs/10 §6.1 那张表的落地。
+ * 鉴权端点 —— docs/技术架构 §6.1 那张表的落地。
  *
  * <h2>这里没有 {@code /auth/register}</h2>
  *
  * 契约里没有,以后也不会有。{@link #verify} 通过的那一刻,号码没见过就建号、见过就登进去
- * (docs/13 §1.7)。
+ * (docs/后端详设 §1.7)。
  *
  * <h2>控制器不含规则</h2>
  *
- * docs/13 §二:{@code api} 包只做「收参数、翻 DTO、出错误码」。
+ * docs/后端详设 §二:{@code api} 包只做「收参数、翻 DTO、出错误码」。
  * 四道闸的顺序在 {@link SmsCodeService},建号与合并在 {@link AccountService} ——
  * <b>controller 可以再写一个,service 只有这一个。</b>
  * 这里唯一的实质工作是把 sealed 的结果类型翻成错误码与人话,
@@ -95,7 +95,7 @@ public class AuthController {
      *
      * <p>它叫 {@code SmsRateLimiter},但管的其实是<b>「按次外部账单」这一类动作</b> ——
      * 短信 0.03 元一条、微信换手机号 0.03 元一次,两者是同一类东西
-     * (`11` §3.2:不进额度,由频控与滑块管住)。键上加前缀区分,计数空间各自独立。
+     * (`商业化设计` §3.2:不进额度,由频控与滑块管住)。键上加前缀区分,计数空间各自独立。
      */
     private final SmsRateLimiter limiter;
 
@@ -183,7 +183,7 @@ public class AuthController {
         return new RefreshResponse(session.token().expiresAt());
     }
 
-    /** 退出这一台 —— <b>只吊销当前令牌</b>(docs/10 §6.1)。 */
+    /** 退出这一台 —— <b>只吊销当前令牌</b>(docs/技术架构 §6.1)。 */
     @PostMapping("/logout")
     public java.util.Map<String, Object> logout(HttpServletRequest http) {
         String header = http.getHeader("Authorization");
@@ -245,13 +245,13 @@ public class AuthController {
      *   ③ 换手机号                      ← <b>0.03 元/次,这一步开始花钱</b>
      * </pre>
      *
-     * 与验证码四道闸完全同构(docs/13 §1.8):<b>拦要拦在花钱那一步之前。</b>
+     * 与验证码四道闸完全同构(docs/后端详设 §1.8):<b>拦要拦在花钱那一步之前。</b>
      * 反过来写 —— 先换手机号再限流 —— 前面那道闸就只是在给账单排队。
      * <p>
      * 频控键用 openid 而不是手机号,是因为<b>手机号要花完那 0.03 元才知道</b>。
      * 这正是第①步必须在前面的原因:它免费,而且它产出了限流所需的身份。
      *
-     * <p>⚠ 这条路径 docs/10 §6.1 那张表里<b>没有</b> —— 它写于手机号快速验证未纳入考虑时。
+     * <p>⚠ 这条路径 docs/技术架构 §6.1 那张表里<b>没有</b> —— 它写于手机号快速验证未纳入考虑时。
      * 这是新增,不是对既有条目的改写。
      */
     @PostMapping("/wechat/phone-login")
@@ -321,7 +321,7 @@ public class AuthController {
                 session.userId(), IdentityType.PHONE, passed.phoneHmac(), passed.phone()));
     }
 
-    /** 已登录账号绑微信 —— docs/10 §7.1 说这是<b>最顺的那条路径,产品应主动引导走这条</b>。 */
+    /** 已登录账号绑微信 —— docs/技术架构 §7.1 说这是<b>最顺的那条路径,产品应主动引导走这条</b>。 */
     @PostMapping("/bind/wechat")
     public BindResponse bindWeChat(CurrentSession session, @Valid @RequestBody BindWeChatRequest req) {
         requireWeChatEnabled();
@@ -366,7 +366,7 @@ public class AuthController {
     /**
      * 六种终态 → 六句不同的话。
      *
-     * <p>docs/13 §1.8 那张表列的就是合并成一句「验证码错误」的代价:
+     * <p>docs/后端详设 §1.8 那张表列的就是合并成一句「验证码错误」的代价:
      * 用户拿着过期的码反复输,把自己输到锁定。
      */
     private SmsCodeService.VerifyOutcome.Passed requirePassed(SmsCodeService.VerifyOutcome outcome) {
@@ -421,7 +421,7 @@ public class AuthController {
                 r.isNewAccount(),
                 masked,
                 // 🔴 没有手机号 = 这个人下次换个入口进来可能又多一个账号(R-33)。
-                // 引导补绑是最顺的那条路,比事后走合并便宜得多(docs/10 §7.1)。
+                // 引导补绑是最顺的那条路,比事后走合并便宜得多(docs/技术架构 §7.1)。
                 masked == null,
                 r.splitMergeToken());
     }
@@ -452,9 +452,9 @@ public class AuthController {
     private void requireWeChatEnabled() {
         if (!wechat.isReal()) {
             // 503 而不是 404:端点存在,只是这个阶段还没开。
-            // docs/10 §7.2:阶段 2 只做手机号,微信在关卡 2 后。
+            // docs/技术架构 §7.2:阶段 2 只做手机号,微信在关卡 2 后。
             throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE, "WECHAT_NOT_ENABLED",
-                    "微信登录尚未开放(docs/10 §7.2:关卡 2 后)。");
+                    "微信登录尚未开放(docs/技术架构 §7.2:关卡 2 后)。");
         }
     }
 
@@ -479,7 +479,7 @@ public class AuthController {
     }
 
     /**
-     * 把时点说成人话 —— <b>「请稍后再试」只惩罚真实用户</b>(docs/13 §1.8)。
+     * 把时点说成人话 —— <b>「请稍后再试」只惩罚真实用户</b>(docs/后端详设 §1.8)。
      *
      * <p>刷子不会因为文案含糊而少刷,而真实用户会因为不知道要等多久而反复点、
      * 把自己撞进下一道限制。

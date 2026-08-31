@@ -10,7 +10,7 @@ package com.kaodian.server.auth.vendor;
  * <p>
  * 理由和 {@code Touch} 里没有内容字段是同一条:<b>不是不填,是不建这个位置</b>。
  * 昵称头像唯一的用途是让个人中心好看一点,代价是从此持有一批用户的画像数据 ——
- * 而 01 §2.2 的能力边界里没有一条需要知道用户是谁。
+ * 而 决策记录 §2.2 的能力边界里没有一条需要知道用户是谁。
  * <p>
  * 于是网页授权其实可以只要 {@code snsapi_base}……但那样拿不到 unionid。
  * 所以 scope 仍然是 {@code snsapi_userinfo},<b>只是拿到的信息我们只留 unionid 与 openid</b>。

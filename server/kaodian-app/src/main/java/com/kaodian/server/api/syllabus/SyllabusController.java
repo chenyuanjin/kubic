@@ -31,7 +31,7 @@ public class SyllabusController {
     }
 
     /**
-     * 骨架树 + 覆盖,单模块整棵树一次返回(docs/10 §6.4),前端不做懒加载。
+     * 骨架树 + 覆盖,单模块整棵树一次返回(docs/技术架构 §6.4),前端不做懒加载。
      *
      * <h2>没有 {@code withCoverage=false} 这个开关</h2>
      *
@@ -39,7 +39,7 @@ public class SyllabusController {
      * 加这个参数只会多出一条谁都不该走的分支。
      *
      * @param subject 可选。只是一道断言:传了就必须等于当前载入的那个模块。
-     *                <b>一个模块、一个学科起步</b>(01 §Scope),两棵树同时冷启动被明确称为
+     *                <b>一个模块、一个学科起步</b>(决策记录 §Scope),两棵树同时冷启动被明确称为
      *                2–3 人团队的灾难 —— 所以这里不是「选科目」,是「确认没选错」
      */
     @GetMapping("/tree")

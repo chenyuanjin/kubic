@@ -52,11 +52,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * docs/10 §6.4 最后一行:{@code POST/DELETE /assertions} —— 「我已掌握」/ 取消。
+ * docs/技术架构 §6.4 最后一行:{@code POST/DELETE /assertions} —— 「我已掌握」/ 取消。
  *
  * <h2>🔴 这个文件验的第一件事是「那个大字没变」</h2>
  *
- * 01 §5.2:<b>「『我已掌握』按钮是补丁不是解法。」</b> 所以这两个端点最重要的性质不是它们做了什么,
+ * 决策记录 §5.2:<b>「『我已掌握』按钮是补丁不是解法。」</b> 所以这两个端点最重要的性质不是它们做了什么,
  * 是它们<b>没做什么</b> —— 按下去之后覆盖率一个字不动。
  * <p>
  * 「没做什么」的失败方式是无声的:把断言并进分子,接口全绿、界面更好看、用户更满意,
@@ -122,8 +122,8 @@ class AssertionApiTest {
         String after = summaryBody();
 
         assertEquals((int) JsonPath.read(before, "$.percent"), (int) JsonPath.read(after, "$.percent"),
-                "🔴 覆盖率因为点了一次按钮而变了 —— docs/10 §6.4:「分子 = discarded=0 的触达节点数」,"
-                        + "而声明不是触达。01 §5.2:「我已掌握」按钮是补丁不是解法");
+                "🔴 覆盖率因为点了一次按钮而变了 —— docs/技术架构 §6.4:「分子 = discarded=0 的触达节点数」,"
+                        + "而声明不是触达。决策记录 §5.2:「我已掌握」按钮是补丁不是解法");
         assertEquals((int) JsonPath.read(before, "$.covered"), (int) JsonPath.read(after, "$.covered"));
         assertEquals((int) JsonPath.read(before, "$.total"), (int) JsonPath.read(after, "$.total"),
                 "分母不该动 —— 把考点从分母里拿掉那是【归档】,是另一件事(R-49)");
@@ -135,7 +135,7 @@ class AssertionApiTest {
 
         assertEquals(0, (int) JsonPath.read(before, "$.asserted"));
         assertEquals(1, (int) JsonPath.read(after, "$.asserted"),
-                "唯一该变的就是这一格(docs/10 §6.4:断言单列不并入)");
+                "唯一该变的就是这一格(docs/技术架构 §6.4:断言单列不并入)");
     }
 
     /**
@@ -210,7 +210,7 @@ class AssertionApiTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.groups[*].nodes[?(@.code == '" + BLANK_NODE + "')].assertedAt",
                         Matchers.contains(Matchers.notNullValue())))
-                // 🔴 状态还是空白 —— 断言是独立状态,不是第六态(docs/10 §5.2)
+                // 🔴 状态还是空白 —— 断言是独立状态,不是第六态(docs/技术架构 §5.2)
                 .andExpect(jsonPath("$.groups[*].nodes[?(@.code == '" + BLANK_NODE + "')].state",
                         Matchers.contains("EMPTY")));
     }
@@ -505,7 +505,7 @@ class AssertionApiTest {
         @Override
         public Touch append(Touch touch) {
             throw new AssertionError("🔴 「我已掌握」写了一条记录 —— 那是让覆盖率上升的另一条路,"
-                    + "而它比直接改分子更难被发现(01 §5.2:补丁不是解法)");
+                    + "而它比直接改分子更难被发现(决策记录 §5.2:补丁不是解法)");
         }
 
         @Override

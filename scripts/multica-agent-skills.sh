@@ -77,7 +77,7 @@ DENY_KEYS = {
     "finance-screener", "finance-stock-deep", "finance-weekly",
 }
 # 主业公司内部插件包。2026-08-31 人的决定:tech-dept / zhibo / funny-share
-# 保持开启,只关 live(见 docs/08 R-113 批注)。
+# 保持开启,只关 live(见 docs/总路线图 R-113 批注)。
 DENY_PLUGIN_PREFIX = ("live@",)
 # 非插件根(codex 的 ~/.codex/skills、共享的 ~/.agents/skills)下的公司内部技能。
 # 这是与 ai-skills 插件【不同的另一份拷贝】,2026-08-31 单独决定关掉。

@@ -16,7 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 全量导出的<b>唯一那份数据</b> —— md / csv / json 三种写法都从它渲染(docs/10 §6.5)。
+ * 全量导出的<b>唯一那份数据</b> —— md / csv / json 三种写法都从它渲染(docs/技术架构 §6.5)。
  *
  * <h2>为什么三种格式共用一个 record,而不是各写各的</h2>
  *
@@ -53,10 +53,10 @@ import java.util.List;
  *                      摆出来是为了让「有没有被截断」这件事<b>不用信任、可以核对</b>
  * @param nodes         参与差集的考点,按树的顺序摊平
  * @param archivedNodes 已归档的考点。<b>它们不在差集里,但必须在导出里</b> ——
- *                      docs/13 {@code R-49}:「归档可以无声刷高覆盖率」,
+ *                      docs/后端详设 {@code R-49}:「归档可以无声刷高覆盖率」,
  *                      而三条对策之一就是「导出带完整归档清单」。少了这一段,
  *                      导出就成了那句无声的同谋
- * @param assertedNodes 声明「我已掌握」的考点 —— docs/10 §5.2 {@code user_assertion}
+ * @param assertedNodes 声明「我已掌握」的考点 —— docs/技术架构 §5.2 {@code user_assertion}
  *                      那一行的最后四个字:<b>「导出时可区分」</b>。
  *                      <p>
  *                      它是 {@code nodes} 的一个子集(不像 {@code archivedNodes} 那样是补集):
@@ -87,7 +87,7 @@ public record ExportResponse(
      * 从一次覆盖度快照拼出整份导出。
      *
      * <p>参数摊开写而不是直接收 {@code CoverageReader.Snapshot},是为了不让 {@code api.dto}
-     * 反过来依赖 {@code api} ——「包之间只通过接口调用」(docs/10 §2.2),
+     * 反过来依赖 {@code api} ——「包之间只通过接口调用」(docs/技术架构 §2.2),
      * 而 DTO 是被组装的一方,不该认识组装它的那个人。
      *
      * @param touches 行为层原始记录,<b>调用方给什么就导什么</b>:这里没有任何过滤、

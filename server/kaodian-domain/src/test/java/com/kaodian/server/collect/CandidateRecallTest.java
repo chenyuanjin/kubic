@@ -13,7 +13,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * 候选召回的规则测试 —— 打标管线第 ① 段(docs/13 §1.3)。
+ * 候选召回的规则测试 —— 打标管线第 ① 段(docs/后端详设 §1.3)。
  *
  * <h2>为什么召回值得被逐条钉住,而不是「跑通就行」</h2>
  *
@@ -21,7 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * 正确答案就压根不在选项里 —— 而后一种失败是<b>无声的</b>:界面上表现为「识别率低」,
  * 没人会想到去查召回。
  * <p>
- * 更要紧的是 docs/13 §1.3 那句:「<b>没有候选就没有『集』可闭</b>」。
+ * 更要紧的是 docs/后端详设 §1.3 那句:「<b>没有候选就没有『集』可闭</b>」。
  * 闭集不是「给模型一个提示」,是整条 R-07 的物理基础 —— 候选集就是模型被允许输出的全集。
  * 一旦有人给它加一条「召回为空就送整棵树」的兜底,闭集还在,但「闭」这件事已经没有意义了。
  * 那条兜底看起来只是提高覆盖,实际是把一次没有依据的猜测送进覆盖度。
@@ -101,7 +101,7 @@ class CandidateRecallTest {
     @DisplayName("🔴 来源名里没有线索 → 召回为空。空就是空,不回落到整棵树")
     void aSourceNameWithNoSignalRecallsNothing() {
         // 这五个是种子里真实存在的来源名。它们全都召回不出东西 —— 这不是实现将就,
-        // 是当前数据形态的真实上限:服务端手里关于一条记录的字只有来源名(01 §2.2 不碰内容)。
+        // 是当前数据形态的真实上限:服务端手里关于一条记录的字只有来源名(决策记录 §2.2 不碰内容)。
         // 诚实地出空,让调用方停在「未分类」,好过送整棵树去让模型猜一个。
         for (String sourceName : List.of(
                 "粉笔 · 资料分析系统班 L12",
@@ -160,7 +160,7 @@ class CandidateRecallTest {
     }
 
     @Test
-    @DisplayName("上限就是 docs/13 说的「缩到 5–10 个」的上界,不是一个可以随手往上调的数")
+    @DisplayName("上限就是 docs/后端详设 说的「缩到 5–10 个」的上界,不是一个可以随手往上调的数")
     void theCandidateCeilingIsTen() {
         // 这是一条绊线。改它本身是允许的,但候选一多,模型「在里面挑一个」就退化成「在里面猜一个」,
         // 而阈值挡不住一次自信的猜测 —— 所以改之前得先有评测数据,不是因为「识别老是不出结果」顺手放宽。

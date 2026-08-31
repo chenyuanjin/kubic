@@ -14,7 +14,7 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 
 /**
- * 全量导出 —— <b>{@code GET /api/export?format=md|csv|json}</b>(docs/10 §6.5)。
+ * 全量导出 —— <b>{@code GET /api/export?format=md|csv|json}</b>(docs/技术架构 §6.5)。
  *
  * <h2>为什么挂在 {@code /api/export},而不是 {@code /api/syllabus/export} 底下</h2>
  *
@@ -55,7 +55,7 @@ import java.time.format.DateTimeFormatter;
  *
  * 来源只是一个名字,考点是我们自行归纳的 code 与名称,统计是我们自己算的数。
  * <b>机构的课程内容一个字都没有</b> —— 不是导出时过滤掉的,是上游根本没有这样的字段
- * (01 §2.2 不碰内容 / docs/10 §5.1「不是不填,是不建这个列」)。
+ * (决策记录 §2.2 不碰内容 / docs/技术架构 §5.1「不是不填,是不建这个列」)。
  * 题干同理(R-01):数据模型里没有,这里也就无处可拼。
  *
  * <h2>控制器里没有一行渲染逻辑</h2>
@@ -86,7 +86,7 @@ public class ExportController {
      *
      * <h2>为什么带 {@code Content-Disposition}</h2>
      *
-     * 「你的东西你随时能拿走」(01 §2.6)在浏览器里要能<b>真的落到硬盘上</b>,
+     * 「你的东西你随时能拿走」(决策记录 §2.6)在浏览器里要能<b>真的落到硬盘上</b>,
      * 而不是在标签页里渲染成一屏文本再让用户另存为。
      * <p>
      * ⚪ 一个已知的小缺口:{@code Content-Disposition} 不是简单响应头,跨域场景下前端 JS

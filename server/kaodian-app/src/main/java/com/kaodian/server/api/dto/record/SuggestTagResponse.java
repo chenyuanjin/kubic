@@ -8,7 +8,7 @@ import jakarta.validation.constraints.Size;
 import java.util.List;
 
 /**
- * 一次补标的答复 —— docs/10 §6.3:「响应是 {@code nodeId + confidence} 或 {@code NO_MATCH}」。
+ * 一次补标的答复 —— docs/技术架构 §6.3:「响应是 {@code nodeId + confidence} 或 {@code NO_MATCH}」。
  *
  * <h2>两个端点共用这一个形状</h2>
  *
@@ -24,7 +24,7 @@ import java.util.List;
  *
  * {@code RecordController} 里「识别不可用」映射成 503,因为在那条路上<b>记录会落不下去</b>。
  * 这里不一样:<b>记录早就在库里了</b>,补标失败什么都没损坏,用户还可以手动挂载。
- * docs/13 §1.5 那句「降级方向是『少功能』,不是『少记录』」落到状态码上就是这条区别 ——
+ * docs/后端详设 §1.5 那句「降级方向是『少功能』,不是『少记录』」落到状态码上就是这条区别 ——
  * 回 503 会让前端把它当成一次失败去重试,而它没有失败,它只是这次没认出来。
  * <p>
  * 于是五种结局全部由 {@code outcome} 承担,{@code message} 是给界面直接用的那句话。
@@ -36,7 +36,7 @@ import java.util.List;
  * @param confidence     模型自报的分。<b>没匹配上也带着它</b> ——
  *                       「0.42 分被阈值丢掉」和「什么都没认出来」得能分开
  * @param candidateCount 这次召回出了几个候选。<b>0 表示压根没调模型</b>
- *                       (docs/13 §1.3:「召回不出来就不调模型,调了也只能瞎猜」)
+ *                       (docs/后端详设 §1.3:「召回不出来就不调模型,调了也只能瞎猜」)
  * @param tag            落下的那条标签;没落下时为 {@code null}
  */
 public record SuggestTagResponse(

@@ -12,15 +12,15 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * 打标管线的调用方 —— docs/13 §1.3 那张图从上到下走一遍。
+ * 打标管线的调用方 —— docs/后端详设 §1.3 那张图从上到下走一遍。
  *
  * <h2>🔴 这个类是调用方,不是裁决者</h2>
  *
  * 阈值裁决({@link RecognitionResult#of})与出口自检({@link VisionTagger#enforceClosedSet})
- * 都写在<b>接口层的静态方法</b>上,理由是 docs/13 §1.3 那句:「换厂商换的是实现类,
+ * 都写在<b>接口层的静态方法</b>上,理由是 docs/后端详设 §1.3 那句:「换厂商换的是实现类,
  * 换不掉这条线」。所以这里<b>原样调用它们,一行都不重写</b> ——
  * 在这里补一个「顺手放宽一点」的判断,等于把红线从接口层搬到了一个业务类里,
- * 而 docs/09 坑三要的切换点就顺带把红线也切换掉了。
+ * 而 docs/识别链路 坑三要的切换点就顺带把红线也切换掉了。
  *
  * <h2>四段里有三段的作用是「丢掉」</h2>
  *
@@ -31,12 +31,12 @@ import java.util.UUID;
  *       不硬凑最接近的考点</li>
  *   <li><b>出口自检</b>({@code enforceClosedSet}) —— code 不在候选集里一律降级 NO_MATCH</li>
  * </ol>
- * 这不是保守,是 01 §2.2 宁缺毋滥的技术形态:<b>覆盖度失真的话,这个产品就没有指标了。</b>
+ * 这不是保守,是 决策记录 §2.2 宁缺毋滥的技术形态:<b>覆盖度失真的话,这个产品就没有指标了。</b>
  *
  * <h2>⚪ 今天没有可以送进模型的素材,而这不是实现偷懒</h2>
  *
  * {@link #suggest} 的 {@code material} 是图片/音频字节。<b>服务端一份都没有留</b> ——
- * 原图内联送一次即弃(01 §2.3 / docs/09 坑二),转写文本用完即弃,
+ * 原图内联送一次即弃(决策记录 §2.3 / docs/识别链路 坑二),转写文本用完即弃,
  * {@link Touch} 结构上就没有能装下它们的字段。
  * <p>
  * 于是 {@code POST /records/{id}/tags/suggest} 这条<b>事后补标</b>的路今天走到第 ② 段就停:
@@ -45,7 +45,7 @@ import java.util.UUID;
  * ({@code StubVisionTagger} 的类注释写的就是这件事)。
  * <p>
  * 完整那条路(带着字节走完四段)在这个方法里是实现好的,而且<b>现在有 HTTP 入口了</b>:
- * docs/10 §6.2 的 {@code POST /records/{id}/image} 已落地
+ * docs/技术架构 §6.2 的 {@code POST /records/{id}/image} 已落地
  * ({@code RecognitionController#recognizePhotos}),它把这次上传的原图字节递进来,
  * 命中时<b>真的落一行 {@code origin=auto} 的标签</b>。
  * <p>
@@ -169,11 +169,11 @@ public class TaggingService {
     // ---------------------------------------------------------------- 写
 
     /**
-     * 触发一次闭集分类 —— docs/13 §1.3 的四段。
+     * 触发一次闭集分类 —— docs/后端详设 §1.3 的四段。
      *
      * <h2>🔴 这个方法签名里没有任何「调用方指定的标签文本」</h2>
      *
-     * docs/10 §6.3:「<b>请求体不接受调用方指定标签文本。</b>候选由服务端召回」。
+     * docs/技术架构 §6.3:「<b>请求体不接受调用方指定标签文本。</b>候选由服务端召回」。
      * 落到这里就是:候选<b>只能</b>从 {@link CandidateRecall} 出来,
      * 参数表里没有 {@code List<Candidate>}、没有 {@code hint}、没有 {@code label}。
      * 没有这个位置,「让前端传几个候选进来省一次召回」这条路就不存在。
@@ -181,14 +181,14 @@ public class TaggingService {
      * <h2>🔴 图片字节只在内存里过一次</h2>
      *
      * 与 {@code CaptureService#captureFromPhoto} 同一条:进来、内联送模型、方法返回即释放。
-     * <b>不落盘、不进对象存储、不打进任何级别的日志</b>(docs/10 §8.1 五条禁令)。
+     * <b>不落盘、不进对象存储、不打进任何级别的日志</b>(docs/技术架构 §8.1 五条禁令)。
      * 这个方法里刻意<b>没有任何请求日志</b> —— 一次 {@code log.debug} 就等于把原图落了盘。
      *
      * @param material 要分类的字节;{@code null} 或空表示<b>服务端没有素材</b>(见类注释),
      *                 此时直接返回 {@link Outcome#NO_MATERIAL},不调模型
      */
     public Suggestion suggest(Touch touch, byte[] material, String mimeType) {
-        // ① 候选召回。🔴 空就是空 —— 不回落到整棵树,「调了也只能瞎猜」(docs/13 §1.3)
+        // ① 候选召回。🔴 空就是空 —— 不回落到整棵树,「调了也只能瞎猜」(docs/后端详设 §1.3)
         List<VisionTagger.Candidate> candidates = recall.recall(syllabus.current(), touch.sourceName());
         if (candidates.isEmpty()) {
             return new Suggestion(Outcome.NOT_RECALLED, null, 0.0, 0);
@@ -204,7 +204,7 @@ public class TaggingService {
             recognition = VisionTagger.enforceClosedSet(
                     visionTagger.classify(material, mimeType, candidates), candidates);
         } catch (RecognitionUnavailableException e) {
-            // 🔴 识别不可用 ≠ 记录失败(docs/08 §1.3.7.1)。记录早就落地了,
+            // 🔴 识别不可用 ≠ 记录失败(docs/总路线图 §1.3.7.1)。记录早就落地了,
             //    这里什么都不写、什么都不删,用户照样能手动挂载。
             return new Suggestion(Outcome.UNAVAILABLE, null, 0.0, candidates.size());
         }
@@ -237,7 +237,7 @@ public class TaggingService {
     }
 
     /**
-     * 手动挂一个考点 —— docs/10 §6.3「body <b>只接受 {@code nodeId}</b>,不接受 {@code name}。
+     * 手动挂一个考点 —— docs/技术架构 §6.3「body <b>只接受 {@code nodeId}</b>,不接受 {@code name}。
      * 从树里选,不能新建。」
      *
      * <p>校验只有一条,和 {@code CaptureService#mountAndAppend} 是同一条:
@@ -273,7 +273,7 @@ public class TaggingService {
     }
 
     /**
-     * 确认一条标签 —— <b>只写 {@code confirmed_at}</b>(docs/10 §6.3)。
+     * 确认一条标签 —— <b>只写 {@code confirmed_at}</b>(docs/技术架构 §6.3)。
      *
      * <p>🔴 不改 {@code origin}:变更由 {@link RecordTag#confirm} 完成,
      * 而那个方法的签名里没有能传进新 origin 的位置;{@link RecordTagStore#put} 在写入侧再核一遍。
@@ -300,7 +300,7 @@ public class TaggingService {
     }
 
     /**
-     * 级联删标签 —— docs/10 §6.2 {@code DELETE /records/{id}} 的另一半。
+     * 级联删标签 —— docs/技术架构 §6.2 {@code DELETE /records/{id}} 的另一半。
      *
      * @return 删掉了几行
      */
@@ -329,7 +329,7 @@ public class TaggingService {
      *
      * <p>🔴 <b>先按记录取全集,再在里面找 id</b>,不是直接拿 id 查库。
      * 直接查库的写法会让「拿着别人记录的 tagId 来确认」成功一次 ——
-     * 今天是单用户所以看不出区别,而多用户是已经排好期的事(docs/10 §7)。
+     * 今天是单用户所以看不出区别,而多用户是已经排好期的事(docs/技术架构 §7)。
      * 顺带,主标签本来就不在库里,直接查库压根找不到它。
      */
     private RecordTag tagWithId(Touch touch, String tagId) {

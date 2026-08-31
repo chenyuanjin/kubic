@@ -175,7 +175,7 @@ class FileRecordTagStoreTest {
                 "origin", "confirmedAt", "discarded"}) {
             assertTrue(onDisk.contains("\"" + key + "\""), "少了键 " + key + ":" + onDisk);
         }
-        assertTrue(onDisk.contains("\"auto\""), "origin 按契约写小写(docs/10 §5.2)");
+        assertTrue(onDisk.contains("\"auto\""), "origin 按契约写小写(docs/技术架构 §5.2)");
     }
 
     private void write(String json) throws IOException {

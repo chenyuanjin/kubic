@@ -18,7 +18,7 @@
 //! 「有 body 但不是 JSON —— 最常见的成因是 /api 压根没被反代出去,
 //! 静态服务器把 index.html 当兜底返回了」。前端能识别这个故障,前提是壳不制造它。
 //!
-//! 零 `#[cfg]` —— 这是判据(docs/18 §4.1),这个文件里出现一个 `#[cfg(target_os)]`,隔离就已经破了。
+//! 零 `#[cfg]` —— 这是判据(docs/壳技术方案 §4.1),这个文件里出现一个 `#[cfg(target_os)]`,隔离就已经破了。
 
 use std::convert::Infallible;
 use std::net::{Ipv4Addr, SocketAddr, TcpListener as StdTcpListener};
@@ -174,7 +174,7 @@ impl Server {
         }
     }
 
-    /// `{code, message, traceId}` —— 与服务端错误体同形(docs/10 §六)。
+    /// `{code, message, traceId}` —— 与服务端错误体同形(docs/技术架构 §六)。
     ///
     /// 形状对不上的话,`client.ts` 里那条「code 给程序分支、message 给人看」的分支会失效。
     fn error(&self, status: StatusCode, code: &str, message: &str) -> Response<Body> {

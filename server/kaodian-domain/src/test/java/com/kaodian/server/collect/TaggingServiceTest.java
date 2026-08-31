@@ -26,7 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * 打标管线的行为测试 —— docs/13 §1.3 那张图从上到下走一遍。
+ * 打标管线的行为测试 —— docs/后端详设 §1.3 那张图从上到下走一遍。
  *
  * <h2>立场:每条用例先回答「这一步<b>没有</b>发生会怎样」</h2>
  *
@@ -102,7 +102,7 @@ class TaggingServiceTest {
     // ———————————————— 一、召回为空就不调模型 ————————————————
 
     @Test
-    @DisplayName("🔴 召回为空 → 标为未分类,连模型都不调(docs/13 §1.3:调了也只能瞎猜)")
+    @DisplayName("🔴 召回为空 → 标为未分类,连模型都不调(docs/后端详设 §1.3:调了也只能瞎猜)")
     void anEmptyRecallNeverReachesTheModel() {
         Touch touch = given("t-1", "growth-rate", SILENT_SOURCE);
         Suggestion suggestion = serviceWith(new ForbiddenTagger()).suggest(touch, MATERIAL, "image/jpeg");
@@ -169,7 +169,7 @@ class TaggingServiceTest {
     }
 
     @Test
-    @DisplayName("🔴 模型编了一个候选集外的 code → 出口自检拦掉,一条标签都不落(docs/09 坑一)")
+    @DisplayName("🔴 模型编了一个候选集外的 code → 出口自检拦掉,一条标签都不落(docs/识别链路 坑一)")
     void aHallucinatedCodeNeverBecomesATag() {
         // 「机构标准表述-增长率速算」听上去像个正经考点,这正是幻觉的危险之处。
         // 唯一的判据是它在不在这次送进去的候选集里 —— 不是它看起来合不合理。
@@ -196,7 +196,7 @@ class TaggingServiceTest {
     }
 
     @Test
-    @DisplayName("🔴 模型挂了 → 记录还在、标签一条没动、还能手动挂(docs/08 §1.3.7.1)")
+    @DisplayName("🔴 模型挂了 → 记录还在、标签一条没动、还能手动挂(docs/总路线图 §1.3.7.1)")
     void anUnavailableModelBreaksNothing() {
         Touch touch = given("t-1", "growth-rate", RECALLING_SOURCE);
         TaggingService service = serviceWith(new DeadTagger());
@@ -275,7 +275,7 @@ class TaggingServiceTest {
     // ———————————————— 四、确认与丢弃 ————————————————
 
     @Test
-    @DisplayName("🔴 确认一条自动标签:只写 confirmed_at,origin 仍然是 auto(docs/10 §6.3)")
+    @DisplayName("🔴 确认一条自动标签:只写 confirmed_at,origin 仍然是 auto(docs/技术架构 §6.3)")
     void confirmingDoesNotRewriteOrigin() {
         Touch touch = given("t-1", "growth-rate", RECALLING_SOURCE);
         TaggingService service = serviceWith(new CountingTagger(RecognitionResult.of("interval-growth", 0.91)));
@@ -364,7 +364,7 @@ class TaggingServiceTest {
     @Test
     @DisplayName("🔴 拿一个不属于这条记录的 tagId 来确认/丢弃 → null,不会改到别人的标签")
     void aTagIdFromAnotherRecordIsNotFound() {
-        // 今天是单用户所以看不出区别,而多用户是已经排好期的事(docs/10 §7)。
+        // 今天是单用户所以看不出区别,而多用户是已经排好期的事(docs/技术架构 §7)。
         // 直接拿 id 查库的写法会让「拿着别人记录的 tagId 来确认」成功一次。
         Touch mine = given("t-1", "growth-rate", SILENT_SOURCE);
         Touch other = given("t-2", "share-calc", SILENT_SOURCE);
@@ -382,7 +382,7 @@ class TaggingServiceTest {
     }
 
     @Test
-    @DisplayName("级联删标签:删记录时把它名下的行一起收走(docs/10 §6.2)")
+    @DisplayName("级联删标签:删记录时把它名下的行一起收走(docs/技术架构 §6.2)")
     void deletingARecordTakesItsTagsAlong() {
         Touch touch = given("t-1", "growth-rate", SILENT_SOURCE);
         Touch other = given("t-2", "share-calc", SILENT_SOURCE);

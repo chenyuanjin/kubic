@@ -27,7 +27,7 @@ import java.util.function.UnaryOperator;
 /**
  * {@link SyllabusStore} 的阶段 0/1 实现 —— <b>一个 JSON 文件,没有数据库。</b>
  *
- * <p>与 {@code FileTouchStore} 是同一套做法,理由也是同一个(docs/10 §零:
+ * <p>与 {@code FileTouchStore} 是同一套做法,理由也是同一个(docs/技术架构 §零:
  * 数据层落库最早到阶段 1 的 {@code 1.2.4})。两个文件放在同一个目录里,
  * <b>把 {@code ~/.kaodian} 拷走就是全部数据</b> —— 骨架和行为一起,缺一个另一个就没意义。
  *
@@ -38,7 +38,7 @@ import java.util.function.UnaryOperator;
  * <p>
  * 于是即便有人手工往 {@code syllabus.json} 里给某个考点塞了一段解析,它<b>到不了任何地方</b> ——
  * 既读不进来,也不会因为 {@link Syllabus.Node} 将来多了个字段就悄悄流回文件。
- * 这与 {@code FileTouchStore} 是同一条思路:不给内容留位置(01 §2.2 / docs/10 §5.1)。
+ * 这与 {@code FileTouchStore} 是同一条思路:不给内容留位置(决策记录 §2.2 / docs/技术架构 §5.1)。
  *
  * <h2>🔴 坏文件必须响亮失败</h2>
  *
@@ -428,7 +428,7 @@ public class FileSyllabusStore implements SyllabusStore {
      * <b>不能整个名字都是看不见的字符</b>。
      *
      * <p>控制字符里最要紧的是<b>换行</b> —— 一个带换行的「考点名」几乎只可能是
-     * 有人把一段题干或一段讲义贴了进来。名字是名字,不是放内容的地方(01 §2.2)。
+     * 有人把一段题干或一段讲义贴了进来。名字是名字,不是放内容的地方(决策记录 §2.2)。
      *
      * <h2>🔴 看不见的字符<b>直接拒绝,不是规范化掉</b></h2>
      *
@@ -506,8 +506,8 @@ public class FileSyllabusStore implements SyllabusStore {
      *   <li><b>前端按名字挑考点</b>。命令面板上只有名字与状态,<b>不显示题型</b> ——
      *       跨题型同名和同题型同名一样分不出来,记录会被劈到两个语义相同的 code 上,
      *       覆盖率的分子被稀释,「整块空白」跟着失真。而覆盖率是这个产品唯一的那个数
-     *       (01 §2.2 宁缺毋滥)。</li>
-     *   <li><b>范围是一个模块一个科目</b>(01 §5.4)。18 个考点的树里出现两个同名,
+     *       (决策记录 §2.2 宁缺毋滥)。</li>
+     *   <li><b>范围是一个模块一个科目</b>(决策记录 §5.4)。18 个考点的树里出现两个同名,
      *       是命名错误,不是合法场景。真要区分,应该起两个不同的名字
      *       (「增长率计算」vs「增长率速算」),而不是靠所在题型去区分 ——
      *       靠题型区分的名字,一旦 {@code moveNode} 换个题型就自相矛盾了。</li>
@@ -674,7 +674,7 @@ public class FileSyllabusStore implements SyllabusStore {
      * 播种。
      *
      * <p>🔴 种子是<b>我们自己归纳的一棵树</b>,不是从任何机构的目录页拷来的
-     * (R-07 / docs/04 §1.2)。播完之后它就是用户自己的树了 ——
+     * (R-07 / docs/实施路径 §1.2)。播完之后它就是用户自己的树了 ——
      * 用户改名、增删、调序,种子文件再也不会覆盖它({@link #ensureLoaded} 只在文件不存在时播)。
      */
     private static Syllabus readSeed() {
@@ -695,7 +695,7 @@ public class FileSyllabusStore implements SyllabusStore {
         ObjectNode o = MAPPER.createObjectNode();
         o.put("code", n.code());
         o.put("name", n.name());
-        o.put("recent5yCount", n.recent5yCount());   // 统计事实,不是内容(docs/07)
+        o.put("recent5yCount", n.recent5yCount());   // 统计事实,不是内容(docs/数据线)
         if (n.archived()) {
             o.put("archived", true);                 // 没归档就不写这个键,文件更干净
         }
@@ -715,7 +715,7 @@ public class FileSyllabusStore implements SyllabusStore {
             ArrayNode comment = root.putArray("_comment");
             comment.add("骨架层 —— 你自己维护的考点树:模块 → 题型 → 考点,三层。");
             comment.add("🔴 只有名称、层级、近五年频次。没有题干、没有解析、没有任何机构的课程内容。");
-            comment.add("🔴 考点名自行归纳,不沿用任何机构既有体系与措辞(R-07 / docs/04 §1.2)。");
+            comment.add("🔴 考点名自行归纳,不沿用任何机构既有体系与措辞(R-07 / docs/实施路径 §1.2)。");
             comment.add("code 是主键:改名不动 code,所以改名不会断掉任何历史记录。");
 
             ObjectNode s = root.putObject("subject");

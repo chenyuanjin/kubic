@@ -13,7 +13,7 @@ import java.util.Base64;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * 微信联合登录 —— docs/10 §7.1 那张场景表,以及表里<b>没有</b>写到的两条。
+ * 微信联合登录 —— docs/技术架构 §7.1 那张场景表,以及表里<b>没有</b>写到的两条。
  *
  * <p>表里写的是「unionid 已存在 → 直接登录;不存在 → 建新账号」。
  * 但 unionid <b>不是从第一天就有的</b>,于是有一条它没覆盖的路:

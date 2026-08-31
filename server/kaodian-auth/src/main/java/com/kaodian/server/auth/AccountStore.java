@@ -9,7 +9,7 @@ import java.util.Optional;
  *
  * <h2>规则放在 store,不放在 controller</h2>
  *
- * docs/13 §二 已经写死的两条纪律之一:<b>controller 可以再写一个,store 只有这一个。</b>
+ * docs/后端详设 §二 已经写死的两条纪律之一:<b>controller 可以再写一个,store 只有这一个。</b>
  * 所以「同一个 identity 不能挂到两个账号上」这类不变式在这里兑现,
  * 不在接口层靠自觉。
  */
@@ -35,7 +35,7 @@ public interface AccountStore {
      * 给已有账号加一条 identity(绑手机号 / 绑微信)。
      *
      * @throws IdentityTakenException 目标 identity 已属他人 —— <b>调用方据此返回可合并提示,
-     *                                不自动合并</b>(docs/10 §6.1)
+     *                                不自动合并</b>(docs/技术架构 §6.1)
      */
     void addIdentity(UserIdentity identity, PhoneNumberSecret phoneSecret);
 
@@ -48,7 +48,7 @@ public interface AccountStore {
     /**
      * 执行合并:{@code from} 的全部 identity 改挂到 {@code to},{@code from} 标记注销,写留痕。
      *
-     * <p><b>不可逆。</b> 调用方必须先走过预览与二次确认(docs/10 §7.1)。
+     * <p><b>不可逆。</b> 调用方必须先走过预览与二次确认(docs/技术架构 §7.1)。
      */
     AccountMergeLog merge(String fromUserId, String toUserId, int movedRecordCount, Instant now);
 

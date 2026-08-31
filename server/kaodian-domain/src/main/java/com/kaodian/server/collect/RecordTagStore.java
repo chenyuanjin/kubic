@@ -3,7 +3,7 @@ package com.kaodian.server.collect;
 import java.util.List;
 
 /**
- * 标签层的存储契约 —— docs/10 §5.2 的 {@code record_tag} 表。
+ * 标签层的存储契约 —— docs/技术架构 §5.2 的 {@code record_tag} 表。
  *
  * <h2>库里存的<b>不是</b>全部标签</h2>
  *
@@ -17,7 +17,7 @@ import java.util.List;
  *
  * <h2>为什么先是接口,而且现在的实现是一个文件</h2>
  *
- * 与 {@link TouchStore} 逐字同理:docs/10 §零 写明数据层落库最早到阶段 1 的 {@code 1.2.4}。
+ * 与 {@link TouchStore} 逐字同理:docs/技术架构 §零 写明数据层落库最早到阶段 1 的 {@code 1.2.4}。
  * 到那天换成 JDBC 只是多一个实现类,{@code CoverageService} 一行不用改。
  *
  * <h2>🔴 这个接口上没有「改标签」这个方法</h2>
@@ -46,7 +46,7 @@ public interface RecordTagStore {
      *   <caption>为什么是这三个</caption>
      *   <tr><th>字段</th><th>改了会怎样</th></tr>
      *   <tr><td>{@code origin}</td>
-     *       <td>docs/10 §5.2:确认写 {@code confirmed_at},<b>不把 auto 改成 manual</b>。
+     *       <td>docs/技术架构 §5.2:确认写 {@code confirmed_at},<b>不把 auto 改成 manual</b>。
      *           改了,准确率口径(标对的/标了的)的分母会随用户的每一次确认缩水,
      *           指标恒等于 0 而不报错</td></tr>
      *   <tr><td>{@code recordId}</td>
@@ -64,7 +64,7 @@ public interface RecordTagStore {
     RecordTag put(RecordTag tag);
 
     /**
-     * 删掉某条记录名下的全部标签行 —— docs/10 §6.2 {@code DELETE /records/{id}} 的「<b>级联删标签</b>」。
+     * 删掉某条记录名下的全部标签行 —— docs/技术架构 §6.2 {@code DELETE /records/{id}} 的「<b>级联删标签</b>」。
      *
      * <p>不级联会留下一批指向不存在记录的标签行。今天它们进不了覆盖度
      * ({@code CoverageService} 只认得上记录的标签),所以这不是一条会算错数的路;

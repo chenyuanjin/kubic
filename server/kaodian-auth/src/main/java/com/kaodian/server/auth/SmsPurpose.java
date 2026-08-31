@@ -13,10 +13,10 @@ package com.kaodian.server.auth;
  */
 public enum SmsPurpose {
 
-    /** 登录。号码没见过就建号(docs/13 §1.7 注册即登录)。 */
+    /** 登录。号码没见过就建号(docs/后端详设 §1.7 注册即登录)。 */
     LOGIN("login"),
 
-    /** 给已登录账号绑手机号。<b>目标号已属他人 → 返回可合并提示,不自动合并</b>(docs/10 §6.1)。 */
+    /** 给已登录账号绑手机号。<b>目标号已属他人 → 返回可合并提示,不自动合并</b>(docs/技术架构 §6.1)。 */
     BIND("bind");
 
     private final String wireName;

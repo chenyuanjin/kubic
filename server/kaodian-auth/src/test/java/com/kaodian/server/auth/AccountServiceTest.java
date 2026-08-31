@@ -13,7 +13,7 @@ import java.util.Base64;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * 注册即登录、绑定、合并、注销 —— docs/13 §1.7 与 docs/10 §7.1。
+ * 注册即登录、绑定、合并、注销 —— docs/后端详设 §1.7 与 docs/技术架构 §7.1。
  *
  * <p>其中最要紧的一条是 {@link #signupLedgerSurvivesMerge}:
  * <b>合并会把已经发生过的注册从主表里抹掉</b>,而关卡 3 的判据是「累计」。

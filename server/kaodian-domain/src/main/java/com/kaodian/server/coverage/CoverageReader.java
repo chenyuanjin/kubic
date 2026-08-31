@@ -52,9 +52,9 @@ public class CoverageReader {
      *                 用户新增一个考点之后覆盖率的分母不动,<b>而且不会报错</b>。
      *                 这正是「新增考点后分母 +1」那条测试守着的东西
      * @param tagStore 标签层。<b>覆盖度的分子从这里出来</b>({@code discarded=0} 的那些,
-     *                 docs/10 §6.4)。它和行为层必须在<b>同一次读取</b>里取齐 —— 见 {@link #read}
+     *                 docs/技术架构 §6.4)。它和行为层必须在<b>同一次读取</b>里取齐 —— 见 {@link #read}
      * @param assertionStore 「我已掌握」。🔴 <b>覆盖度的分子<u>不</u>从这里出来</b> ——
-     *                 它只做两件事:让盲区榜少一行、让概览多一格(docs/10 §6.4
+     *                 它只做两件事:让盲区榜少一行、让概览多一格(docs/技术架构 §6.4
      *                 「断言单列不并入」/「排除已断言节点」)。为什么不并入见 {@link UserAssertion}。
      *                 它必须和另外两层在<b>同一次读取</b>里取齐,理由同上
      */
@@ -91,7 +91,7 @@ public class CoverageReader {
     }
 
     /**
-     * 读一次全量。18 个考点的规模下没有分页的必要,单模块整棵树一次返回(docs/10 §6.4)。
+     * 读一次全量。18 个考点的规模下没有分页的必要,单模块整棵树一次返回(docs/技术架构 §6.4)。
      *
      * <p><b>树只在这里问一次</b>,然后随快照一路传下去。同一个请求里问两次,
      * 中间要是恰好有一次编辑落盘,顶上的百分比就会和树上的格子对不上 ——
@@ -110,7 +110,7 @@ public class CoverageReader {
         //    采集那一刻的主标签是推出来的。派生规则只有 RecordTag.effectiveTagsOf 一处。
         List<RecordTag> tags = RecordTag.effectiveTagsOf(touches, tagStore.findAll());
 
-        // 「我已掌握」也在这一次读取里取齐。它不进覆盖度的分子(01 §5.2:补丁不是解法),
+        // 「我已掌握」也在这一次读取里取齐。它不进覆盖度的分子(决策记录 §5.2:补丁不是解法),
         // 但盲区榜要按它过滤、概览要按它单列一格 —— 两处都得看到同一份声明,
         // 否则会出现「榜上没有它,概览里也没算它」这种谁都解释不了的一屏。
         List<UserAssertion> assertions = assertionStore.findAll();

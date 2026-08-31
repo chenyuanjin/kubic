@@ -66,7 +66,7 @@ public class AgentLlmConfig {
      * 🔴 <b>整个应用里 {@code ChatModel} 的唯一注入点。</b>
      *
      * <p>用 {@link ObjectProvider} 而不是直接注入:密钥没配时我们要能拿到「没有可用模型」
-     * 这个事实,而不是让上下文在装配期就失败。docs/13 §4.2 记过一次实测 ——
+     * 这个事实,而不是让上下文在装配期就失败。docs/后端详设 §4.2 记过一次实测 ——
      * 没给 api-key 时上下文会炸在 {@code OpenAiAudioSpeechModel} 上;
      * 那个模型现在已经被 {@code spring.autoconfigure.exclude} 排掉了,
      * 但「不要把可选的外部依赖做成硬装配」这条教训照样适用。

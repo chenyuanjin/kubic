@@ -54,10 +54,10 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 /**
- * 鉴权端点的契约 —— docs/10 §6.1 那张表。
+ * 鉴权端点的契约 —— docs/技术架构 §6.1 那张表。
  *
  * <p>这里断言的不是「能跑通」,是<b>四种失败给的是四句不同的话、
- * 而且每一句都带着准确的时点</b>。合并成一句「验证码错误」的代价见 docs/13 §1.8。
+ * 而且每一句都带着准确的时点</b>。合并成一句「验证码错误」的代价见 docs/后端详设 §1.8。
  */
 @WebMvcTest(controllers = {AuthController.class, AccountController.class})
 @Import({AuthApiTest.TestBeans.class, ApiExceptionHandler.class, AuthWebConfig.class, ApiCorsConfig.class})

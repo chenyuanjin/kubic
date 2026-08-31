@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 副业项目构建入口 —— 唯一允许的构建方式(docs/10 §1.3)
+# 副业项目构建入口 —— 唯一允许的构建方式(docs/技术架构 §1.3)
 #
 # 为什么不能直接用 ./mvnw:
 #   本机 ~/.m2/settings.xml 配着公司私服镜像。直接构建会让依赖流量走公司内网 ——
@@ -16,7 +16,7 @@ SIDE_SETTINGS="$HOME/.m2/settings-side.xml"
 SIDE_REPO="$HOME/.m2/repo-side"
 export JAVA_HOME="${JAVA_HOME:-/Library/Java/JavaVirtualMachines/jdk-21.jdk/Contents/Home}"
 
-[ -f "$SIDE_SETTINGS" ] || { echo "缺少 $SIDE_SETTINGS,见 docs/10 §1.3" >&2; exit 1; }
+[ -f "$SIDE_SETTINGS" ] || { echo "缺少 $SIDE_SETTINGS,见 docs/技术架构 §1.3" >&2; exit 1; }
 
 # —— 隔离校验 ——
 # 只看【生效的配置】,不看注释:注释里为了说明反例会出现内网地址,那不是配置。
@@ -49,7 +49,7 @@ if re.search(r"<username>|<password>", effective):
     bad.append("<servers> 里出现凭据:公共镜像不需要登录,出现凭据说明指向了私服")
 
 if bad:
-    print("拒绝构建 —— 依赖源未通过隔离校验(docs/10 §1.3):", file=sys.stderr)
+    print("拒绝构建 —— 依赖源未通过隔离校验(docs/技术架构 §1.3):", file=sys.stderr)
     for b in bad:
         print("  ✗ " + b, file=sys.stderr)
     sys.exit(1)

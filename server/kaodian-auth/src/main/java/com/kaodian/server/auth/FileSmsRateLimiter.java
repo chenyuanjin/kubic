@@ -35,13 +35,13 @@ public class FileSmsRateLimiter implements SmsRateLimiter {
 
     private static final String FILE_NAME = "auth-sms-quota.json";
 
-    /** docs/10 §6.1:单号 1/60s。 */
+    /** docs/技术架构 §6.1:单号 1/60s。 */
     private static final Duration PER_PHONE_COOLDOWN = Duration.ofSeconds(60);
 
-    /** docs/10 §6.1:单号 10/日。 */
+    /** docs/技术架构 §6.1:单号 10/日。 */
     private static final int PER_PHONE_DAILY = 10;
 
-    /** docs/10 §6.1:单 IP 20/日。 */
+    /** docs/技术架构 §6.1:单 IP 20/日。 */
     private static final int PER_IP_DAILY = 20;
 
     private final AuthJsonFile file;
@@ -149,7 +149,7 @@ public class FileSmsRateLimiter implements SmsRateLimiter {
 
     private void persist(Map<String, Counter> nextPhones, Map<String, Counter> nextIps) {
         ObjectNode root = file.newRoot(
-                "短信频控计数。单号 1/60s · 10/日,单 IP 20/日(docs/10 §6.1)。",
+                "短信频控计数。单号 1/60s · 10/日,单 IP 20/日(docs/技术架构 §6.1)。",
                 "🔴 这两道闸挡的是账单,不是坏人 —— 挡坏人的是第①道滑块。",
                 "手机号只有 HMAC。IP 是明文,它本来就在每一条访问日志里。");
         ArrayNode ps = root.putArray("phones");

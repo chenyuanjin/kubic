@@ -16,7 +16,7 @@ import java.util.Set;
  * 骨架树 JSON 的<b>唯一解析器</b> —— classpath 上的种子和 {@code ~/.kaodian/syllabus.json}
  * 走的是同一段代码。
  *
- * <p>阶段 0/1 骨架层就是一个 JSON 文件 —— docs/10 §零:「阶段 0 是本地文件夹 + 纯文本」,
+ * <p>阶段 0/1 骨架层就是一个 JSON 文件 —— docs/技术架构 §零:「阶段 0 是本地文件夹 + 纯文本」,
  * 数据层落库最早也要到阶段 1 的 {@code 1.2.4}。现在没有数据库,也不需要。
  *
  * <h2>这个类<b>只解析名称、层级、频次、归档标记</b></h2>
@@ -133,7 +133,7 @@ public final class SyllabusLoader {
                 }
                 // 先过 validName 再查重名:这两条是不同的线。
                 // 唯一性防的是「两个考点看起来一样」;validName 防的是「名字字段里装的根本不是名字」——
-                // 带换行、超长的「考点名」几乎只可能是有人把一段题干或讲义贴了进来(01 §2.2 不碰内容)。
+                // 带换行、超长的「考点名」几乎只可能是有人把一段题干或讲义贴了进来(决策记录 §2.2 不碰内容)。
                 // 原来只查了唯一性,于是手工改过的文件能把一整段题干当名字载进来。
                 String nodeName = validNameOrBroken(
                         requiredText(n, "name", origin), origin, "考点 " + nodeCode);

@@ -45,7 +45,7 @@
 	<properties>
 		<java.version>21</java.version>
 		<!--
-			spring-ai 版本单点。docs/13 §三 的结论:2.0.1 GA 配 Boot 4.1.1,
+			spring-ai 版本单点。docs/后端详设 §三 的结论:2.0.1 GA 配 Boot 4.1.1,
 			【不引】spring-ai-alibaba(其 2.0.0-M1.1 在类加载期炸,R-50)。
 			DeepSeek / 百炼都提供 OpenAI 兼容端点,一个 starter 靠 base-url 覆盖两家。
 		-->

@@ -125,7 +125,7 @@ class FileTouchStoreTest {
             count++;
             for (String key : t.propertyNames()) {
                 assertTrue(allowed.contains(key),
-                        "种子里出现了契约之外的键(01 §2.2 不碰内容):" + key);
+                        "种子里出现了契约之外的键(决策记录 §2.2 不碰内容):" + key);
                 assertFalse(forbidden.contains(key), "禁止的键:" + key);
             }
         }

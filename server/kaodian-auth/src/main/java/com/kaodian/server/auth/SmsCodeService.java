@@ -13,7 +13,7 @@ import java.time.Instant;
 import java.util.Optional;
 
 /**
- * 验证码的发与验 —— docs/13 §1.8 那两张图的全部实现。
+ * 验证码的发与验 —— docs/后端详设 §1.8 那两张图的全部实现。
  *
  * <h2>四道闸的顺序就是这个类的全部要点</h2>
  *
@@ -24,7 +24,7 @@ import java.util.Optional;
  *   ④ 调运营商发短信          → <b>这一步开始花钱</b>
  * </pre>
  *
- * 契约(docs/10 §6.1)把这五条约束都列全了,<b>但没有写它们的先后</b> ——
+ * 契约(docs/技术架构 §6.1)把这五条约束都列全了,<b>但没有写它们的先后</b> ——
  * 而顺序恰恰是这件事的全部。把①挪到④后面,前三道闸就只是在给账单排队。
  *
  * <h2>四种终态,四句不同的话</h2>
@@ -37,7 +37,7 @@ public class SmsCodeService {
 
     private static final Logger log = LoggerFactory.getLogger(SmsCodeService.class);
 
-    /** docs/10 §6.1:5 分钟有效。 */
+    /** docs/技术架构 §6.1:5 分钟有效。 */
     public static final Duration CODE_TTL = Duration.ofMinutes(5);
 
     private static final int CODE_DIGITS = 6;
@@ -164,7 +164,7 @@ public class SmsCodeService {
 
         // 🔴 先看看用户拿的是不是【上一条】—— 那是「请用最新收到的那一条」,不是「你输错了」。
         // 这一步必须在计错误次数之前:说成输错的话,用户会对着旧码反复输,
-        // 而他手机里其实躺着一条能用的新码(docs/13 §1.8)。
+        // 而他手机里其实躺着一条能用的新码(docs/后端详设 §1.8)。
         // 顺带:它【不计入错误次数】—— 拿着自己刚收到过的码不是在猜。
         //
         // 但作废槽里的码同样会过期。一条三天前的旧码回「请用最新收到的那一条」是误导 ——
@@ -292,7 +292,7 @@ public class SmsCodeService {
     /**
      * 校验的结果 —— <b>六种,不是一个 boolean</b>。
      *
-     * <p>docs/13 §1.8 的那张表列了合并成一句话的后果。用 sealed interface 表达,
+     * <p>docs/后端详设 §1.8 的那张表列了合并成一句话的后果。用 sealed interface 表达,
      * 是为了让「回一句笼统的话」这个选项在类型层面就不存在:
      * 调用方必须逐个分支处理,漏一个编译不过。
      */

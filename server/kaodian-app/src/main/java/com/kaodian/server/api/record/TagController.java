@@ -35,7 +35,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 /**
- * 打标 —— docs/10 §6.3 那张表的四个端点。
+ * 打标 —— docs/技术架构 §6.3 那张表的四个端点。
  *
  * <h2>🔴 四个端点里没有一个能收下一段标签文字</h2>
  *
@@ -54,7 +54,7 @@ import java.util.List;
  *       <td>同上。置 {@code discarded},<b>可见但不计覆盖度</b></td></tr>
  * </table>
  * 「只要 API 上没有传入自由文本标签的通道,自由生成的考点就进不了库 ——
- * 无论模型输出什么」(docs/10 §6.3)。
+ * 无论模型输出什么」(docs/技术架构 §6.3)。
  *
  * <h2>控制器不自己写标签,一律走 {@link TaggingService}</h2>
  *
@@ -82,7 +82,7 @@ public class TagController {
     }
 
     /**
-     * 触发一次闭集分类(docs/13 §1.3 的四段)。
+     * 触发一次闭集分类(docs/后端详设 §1.3 的四段)。
      *
      * <h2>🔴 全部结局都是 200,理由写在 {@link SuggestTagResponse} 上</h2>
      *
@@ -91,13 +91,13 @@ public class TagController {
      *
      * <h2>⚪ {@code material} 传的是 {@code null},这不是没写完</h2>
      *
-     * 服务端手里<b>一份可送进模型的素材都没有</b>:原图内联送一次即弃(01 §2.3 / docs/09 坑二),
-     * 转写文本用完即弃,{@code Touch} 结构上没有能装下它们的字段(01 §2.2 不碰内容)。
+     * 服务端手里<b>一份可送进模型的素材都没有</b>:原图内联送一次即弃(决策记录 §2.3 / docs/识别链路 坑二),
+     * 转写文本用完即弃,{@code Touch} 结构上没有能装下它们的字段(决策记录 §2.2 不碰内容)。
      * 拿零字节去调一次视觉模型是「假装成功」的另一种写法,所以这里明确地不给素材,
      * 由 {@code TaggingService} 回一个 {@code NO_MATERIAL} 说清原因。
      * <p>
      * 带着字节走完四段的那条路在 {@code TaggingService.suggest} 里是实现好的,而且
-     * <b>现在有 HTTP 入口了</b>:docs/10 §6.2 的 {@code POST /records/{id}/image}
+     * <b>现在有 HTTP 入口了</b>:docs/技术架构 §6.2 的 {@code POST /records/{id}/image}
      * ({@link RecognitionController#recognizePhotos})。两个端点共用
      * {@link SuggestTagResponse} 这一个答复形状,区别只在于<b>手里有没有素材</b>。
      * <p>
@@ -132,7 +132,7 @@ public class TagController {
     }
 
     /**
-     * 手动挂载。<b>body 只接受 {@code nodeCode},不接受名字</b>(docs/10 §6.3)。
+     * 手动挂载。<b>body 只接受 {@code nodeCode},不接受名字</b>(docs/技术架构 §6.3)。
      *
      * <h2>201 与 200 的区别是「新挂了没有」,不是「成功了没有」</h2>
      *
@@ -159,10 +159,10 @@ public class TagController {
     }
 
     /**
-     * 确认 —— 写 {@code confirmed_at},计入覆盖度。🔴 <b>不改 {@code origin}</b>(docs/10 §6.3)。
+     * 确认 —— 写 {@code confirmed_at},计入覆盖度。🔴 <b>不改 {@code origin}</b>(docs/技术架构 §6.3)。
      *
      * <p>「计入覆盖度」不是这次确认新增的效果:一条没被丢弃的标签本来就在分子里
-     * (docs/10 §6.4「分子 = {@code discarded=0} 的触达节点数」)。这句契约陈述的是
+     * (docs/技术架构 §6.4「分子 = {@code discarded=0} 的触达节点数」)。这句契约陈述的是
      * <b>确认不会让它掉出覆盖度</b> —— 与丢弃相对。所以这个端点前后覆盖率通常不变,
      * 那是对的,不是没生效。
      */

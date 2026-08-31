@@ -9,7 +9,7 @@ import com.kaodian.server.syllabus.NodeRecordLedger;
  *
  * 骨架层需要知道两件事才能守住删除守则:「这个考点上挂着几条记录」和
  * 「把它们搬到另一个考点去」。它<b>不需要、也不该</b>知道 {@code Touch} 长什么样 ——
- * docs/10 §2.2:包之间只通过接口调用。
+ * docs/技术架构 §2.2:包之间只通过接口调用。
  * <p>
  * 所以接口定义在 {@code syllabus} 侧,实现放在 {@code collect} 侧,依赖方向是
  * <b>行为层去满足骨架层的需求</b>,而不是骨架层反过来认识行为层的数据结构。

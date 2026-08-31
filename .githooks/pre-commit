@@ -2,18 +2,20 @@
 # 提交前闸门 · 两件事,都带出路
 #
 #   ① 敏感文件:密钥 / 账号数据 / 原图缓存,一律拦住(R-04 / R-59)
-#   ② 决策层文档 docs/decisions/01-04:允许改,但必须显式声明,且在提交历史里留痕
+#   ② 决策层文档 docs/decisions/ 下的全部四份:允许改,但必须显式声明,且在提交历史里留痕
 #
 # 出路是刻意留的 —— R-67 记过:没有出路的守卫,会被撞上它的人在半夜关掉。
 # 但用掉出路这件事本身必须留痕,所以 ② 的覆盖会在 commit-msg 里写成一条 trailer。
 set -uo pipefail
 
-# 🔴 必须关掉 core.quotepath:开着的话中文路径会变成 "docs/01-\346..." 这种八进制转义,
+# 🔴 必须关掉 core.quotepath:开着的话中文路径会变成 "docs/\346\226\207..." 这种八进制转义,
 # 而本仓库的文档【全是中文名】—— 决策层那道闸会静默失效,看起来一直在放行。
 #
-# 🔴 同一种静默失效的第二种成因:文档【搬了目录】而这里的正则没跟着改。
-# 2026-08-31 方案 B 分目录时,决策层从 docs/01-04 移到 docs/decisions/ ——
-# 下面那条正则当时若不跟改,这道闸会一声不响地放行所有决策层改动。改目录必查此处。
+# 🔴 同一种静默失效的第二种成因:文档【搬了目录或改了名】而这里的正则没跟着改。
+# 这条正则已经被同一种成因掐断过两次:2026-08-31 分目录(docs/01-04 → docs/decisions/),
+# 同日去编号(docs/decisions/01-04 → 文件名不再带号,其中一份还成了 INDEX.md)。
+# 现在匹配【整个目录】而不是文件名前缀 —— decisions/ 下的每一份都是决策层,不靠名字识别。
+# 改目录或改名必查此处:grep -rn 'docs/' .githooks scripts。
 staged() { git -c core.quotepath=false diff --cached --name-only --diff-filter=ACMR; }
 list_() { while IFS= read -r f; do [ -n "$f" ] && printf '    %s\n' "$f" >&2; done; }
 red()  { printf '\033[31m%s\033[0m\n' "$*" >&2; }
@@ -26,7 +28,7 @@ if [[ -n "$hits" ]]; then
   red "✗ 拒绝提交 —— 暂存区里有密钥/运行时数据/原图缓存:"
   printf '%s\n' "$hits" | list_
   dim ""
-  dim "  auth-keys.properties 属于【数据】不属于配置(docs/13 §6.9 / R-59)。"
+  dim "  auth-keys.properties 属于【数据】不属于配置(docs/后端详设 §6.9 / R-59)。"
   dim "  原图只允许本机短期缓存,仓库是「共享」的一种(R-04)。"
   dim ""
   dim "  确认是误判时:  ALLOW_SENSITIVE=1 git commit ..."
@@ -35,14 +37,14 @@ if [[ -n "$hits" ]]; then
 fi
 
 # ── ② 决策层文档 ──
-DEC="$(staged | grep -E '^docs/decisions/0[1-4]-' || true)"
+DEC="$(staged | grep -E '^docs/decisions/' || true)"
 rm -f "$(git rev-parse --git-dir)/DECISION_EDIT" 2>/dev/null
 if [[ -n "$DEC" ]]; then
   if [[ "${ALLOW_DECISION_EDIT:-}" != "1" ]]; then
     red "✗ 拒绝提交 —— 改动了决策层文档:"
       printf '%s\n' "$DEC" | list_
     dim ""
-    dim "  05 原文:「04 的关卡判据在这里一个字都不改」。"
+    dim "  执行清单 原文:「实施路径 的关卡判据在这里一个字都不改」。"
     dim "  新调研与原决策冲突时,在下游记录更正 + 在上游【加注指针】,不静默改写原文。"
     dim ""
     dim "  确实是加注/勘误时:  ALLOW_DECISION_EDIT=1 git commit ..."

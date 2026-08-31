@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# 壳的唯一构建入口(docs/18 §2.3)。
+# 壳的唯一构建入口(docs/壳技术方案 §2.3)。
 #
 # 为什么不能直接 `cargo tauri build`:
-#   Rust 是这个项目的第三条工具链,而 docs/10 §一 的隔离红线当时只写了 Maven 和 npm。
+#   Rust 是这个项目的第三条工具链,而 docs/技术架构 §一 的隔离红线当时只写了 Maven 和 npm。
 #   `~/.cargo/config.toml` 里一行 `[source.crates-io] replace-with = "公司源"`
 #   会让依赖静默走内网 —— 与 server/build.sh 拦的是同一件事,而且【在公司网络里不会报错】(R-111)。
 #
@@ -78,7 +78,7 @@ for p in candidates:
         bad.append(f"{p}: 生效配置里出现 token —— 公共镜像不需要凭据,出现凭据说明指向了私服")
 
 if bad:
-    print("拒绝构建 —— cargo 依赖源未通过隔离校验(R-111 / docs/10 §1.3):", file=sys.stderr)
+    print("拒绝构建 —— cargo 依赖源未通过隔离校验(R-111 / docs/技术架构 §1.3):", file=sys.stderr)
     for b in bad:
         print("  ✗ " + b, file=sys.stderr)
     print("\n  公共镜像 ≠ 公司私服:前者公开匿名、人人可用;后者在内网、要公司凭据。", file=sys.stderr)
@@ -87,7 +87,7 @@ if bad:
 print(f"  ✓ cargo 依赖源:{'、'.join(seen) if seen else '无本地覆盖配置(走官方源)'}")
 PY
 
-# —— 1.2 依赖黑名单(docs/18 §六)——
+# —— 1.2 依赖黑名单(docs/壳技术方案 §六)——
 # 同时扫 Cargo.toml 与 Cargo.lock:只扫前者的话,一个传递依赖就能绕过去。
 python3 - <<'PY'
 import re, sys, pathlib
@@ -95,7 +95,7 @@ import re, sys, pathlib
 # 单词段匹配(name 按 - 或 _ 切开之后逐段比),避免 "s3" 这类短串误伤。
 SEGMENTS = {
     # ① 模型 SDK —— 学科判断整个外包给用户自己接的模型;调模型的地方只有
-    #    server 的 recognize 与 agent.llm 两处(docs/13 §二)。壳不调任何模型。
+    #    server 的 recognize 与 agent.llm 两处(docs/后端详设 §二)。壳不调任何模型。
     "openai", "anthropic", "claude", "gemini", "ollama", "langchain",
     "tiktoken", "dashscope", "zhipu", "qianfan", "replicate",
     # ② 崩溃上报 / 遥测 —— 它会把数据送出这台机器,而红线的原话是「只存在他自己的机器上」。
@@ -121,7 +121,7 @@ for n in sorted(names):
         hits.append(n)
 
 if hits:
-    print("拒绝构建 —— 依赖黑名单命中(docs/18 §六):", file=sys.stderr)
+    print("拒绝构建 —— 依赖黑名单命中(docs/壳技术方案 §六):", file=sys.stderr)
     for h in hits:
         print("  ✗ " + h, file=sys.stderr)
     print("\n  壳不调用任何外部模型,不上报任何遥测,不碰任何云存储。", file=sys.stderr)
@@ -134,10 +134,10 @@ PY
 #
 # 🔴 这两条都【先剥注释再比】,不是原始 grep。
 #
-# docs/18 §4.3 写的判据是 `grep -rn 'cfg(target_os' shell/src --exclude-dir=platform`,
+# docs/壳技术方案 §4.3 写的判据是 `grep -rn 'cfg(target_os' shell/src --exclude-dir=platform`,
 # 而这条原样照抄的 grep 会红在【本仓库自己的合规注释】上 —— src/main.rs 与
 # src/local_server.rs 里各有一行「这里没有 cfg(target_os)」的声明,声明为了讲清楚
-# 必然要把被禁的那个串写出来。这不是新发现:docs/14 §9.10 记的三条设计教训第一条
+# 必然要把被禁的那个串写出来。这不是新发现:docs/交付工作流 §9.10 记的三条设计教训第一条
 # 就是「黑名单不能匹配本仓库自己写的合规声明」,而 server/build.sh 处理 XML 时
 # 也是先剥注释再取 <url>。同一条处理,第三次出现。
 #
@@ -156,13 +156,13 @@ for p in sorted(pathlib.Path("src").rglob("*.rs")):
         if "cfg(target_os" in code:
             bad.append(f"{p}:{i}  {line.strip()}")
 if bad:
-    print("拒绝构建 —— cfg(target_os) 出现在 src/platform/ 之外,三端隔离已经破了(docs/18 §4.3):", file=sys.stderr)
+    print("拒绝构建 —— cfg(target_os) 出现在 src/platform/ 之外,三端隔离已经破了(docs/壳技术方案 §4.3):", file=sys.stderr)
     for b in bad:
         print("  ✗ " + b, file=sys.stderr)
     sys.exit(1)
 print("  ✓ cfg(target_os) 只出现在 src/platform/ 下(已剥注释)")
 
-# ② 与主业公司零交集(docs/10 §1.5)
+# ② 与主业公司零交集(docs/技术架构 §1.5)
 #
 # 跳过 build.sh 自己:这两个词是它的模式串,扫自己必然命中。
 # 与上面同一条教训 —— 断言不能红在断言本身上。
@@ -182,7 +182,7 @@ for p in sorted(pathlib.Path(".").rglob("*")):
         if any(t in line.lower() for t in TERMS):
             hits.append(f"{p}:{i}  {line.strip()[:120]}")
 if hits:
-    print("拒绝构建 —— 壳里出现了主业公司相关字样(docs/10 §1.5):", file=sys.stderr)
+    print("拒绝构建 —— 壳里出现了主业公司相关字样(docs/技术架构 §1.5):", file=sys.stderr)
     for h in hits:
         print("  ✗ " + h, file=sys.stderr)
     sys.exit(1)
@@ -214,14 +214,14 @@ step "③ web 构建(走 web 自己的构建脚本)"
   npm run build
 )
 
-# 🔴 验收判据(docs/18 §十):web/ 与 server/ 的 diff 都必须是空的。
+# 🔴 验收判据(docs/壳技术方案 §十):web/ 与 server/ 的 diff 都必须是空的。
 # server/ 有 diff = 选了 §3.2 的 E 方案(往 CORS 白名单里加 tauri://)。
 # web/ 有 diff = 「现有 web 工程零改动」这条当场失效。
 if [ -d "$REPO_ROOT/.git" ] || git -C "$REPO_ROOT" rev-parse --git-dir >/dev/null 2>&1; then
   DIRTY="$(git -C "$REPO_ROOT" status --porcelain -- web server)"
   if [ -n "$DIRTY" ]; then
     printf '%s\n' "$DIRTY" >&2
-    die "web/ 或 server/ 有改动 —— 「现有 web 工程零改动」是这份方案的约束(docs/18 §十)"
+    die "web/ 或 server/ 有改动 —— 「现有 web 工程零改动」是这份方案的约束(docs/壳技术方案 §十)"
   fi
   echo "  ✓ web/ 与 server/ 零改动"
 fi
@@ -232,7 +232,7 @@ DIST="$REPO_ROOT/web/dist"
 [ -f "$DIST/index.html" ] || die "找不到 $DIST/index.html —— 前端没构建出来。
   (不先校验的话,下一步 include_dir! 报的是一句 Rust 宏错误,和「前端没构建」对不上号)"
 grep -q '/assets/' "$DIST/index.html" || die "dist/index.html 里没有引用 /assets/* ——
-  资源路径不是根绝对路径的话,壳里的回环直出会 404(docs/18 §2.2 事实 1)"
+  资源路径不是根绝对路径的话,壳里的回环直出会 404(docs/壳技术方案 §2.2 事实 1)"
 echo "  ✓ dist/index.html 存在且引用 /assets/*"
 
 # ══════════════════════════ ⑤ 规范 ══════════════════════════
@@ -261,5 +261,5 @@ APP="$SHELL_DIR/target/$TARGET/release/bundle/macos/考点盲区.app"
 printf '\n\033[32m打包完成\033[0m\n  %s\n' "$APP"
 printf '\n  拖进「应用程序」即可,双击能开。\n'
 printf '  🔴 ad-hoc 签名,自用。首次打开走一次「右键 → 打开」。\n'
-printf '     分发给别人才需要 Developer ID + 公证,而本轮没有分发(docs/18 §4.4)。\n'
+printf '     分发给别人才需要 Developer ID + 公证,而本轮没有分发(docs/壳技术方案 §4.4)。\n'
 printf '     不出 .dmg 的理由写在 tauri.conf.json5 的 bundle.targets 旁边。\n\n'

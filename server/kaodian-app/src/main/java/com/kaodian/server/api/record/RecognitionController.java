@@ -39,17 +39,17 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 两个上传端点 —— docs/10 §6.2 采集那张表最后缺的两行。
+ * 两个上传端点 —— docs/技术架构 §6.2 采集那张表最后缺的两行。
  *
  * <h2>🔴 这两个端点是 R-04 的落点,功能是顺带的</h2>
  *
- * R-04 在 docs/08 §四 上标着「<b>第一天不定就改不回来</b>」。这里所有看起来啰嗦的地方
+ * R-04 在 docs/总路线图 §四 上标着「<b>第一天不定就改不回来</b>」。这里所有看起来啰嗦的地方
  * ——形态不统一、不打一行日志、宁可拒收也不宽容——都是为了那一条,不是为了这两个功能好用。
  *
  * <h2>🔴 两个端点<b>形态不同,而且是刻意的</b></h2>
  *
  * <table border="1">
- *   <caption>docs/10 §6.2 的原文,逐字不同</caption>
+ *   <caption>docs/技术架构 §6.2 的原文,逐字不同</caption>
  *   <tr><th>端点</th><th>契约原文</th><th>落地形态</th></tr>
  *   <tr><td>{@code POST /records/{id}/audio}</td>
  *       <td>「multipart,<b>≤60s</b>({@code 1.1.1.4});转写完成后<b>服务端不留存音频</b>;失败提示重录」</td>
@@ -62,19 +62,19 @@ import java.util.List;
  *
  * <b>「不是 multipart <b>落盘</b>」这五个字是全部理由。</b> servlet 容器处理 multipart 的默认行为是
  * 把每个 part 写成一个临时文件({@code spring.servlet.multipart.file-size-threshold} 默认 {@code 0}
- * = 一律落盘),而 docs/10 §8.1 禁令 2 是「<b>服务端不写磁盘、不进对象存储、不建图片桶</b>」。
+ * = 一律落盘),而 docs/技术架构 §8.1 禁令 2 是「<b>服务端不写磁盘、不进对象存储、不建图片桶</b>」。
  * 图片走 multipart 就等于把 R-04 的成立与否<b>交给一个容器默认值</b> ——
  * 它不在你写的代码里,不会报错,也不会出现在任何 review 里(§8.1 禁令 5 说的是同一类破口)。
  * <p>
  * 音频这一侧还能用 multipart,是因为契约就是那么写的;它靠的是
  * {@code application.properties} 里<b>显式把 {@code file-size-threshold} 抬到上限之上</b>,
  * 由 {@code AudioRetentionTest} 钉住。那是<b>配置层</b>的保证,比图片那一侧的<b>形态层</b>保证弱一档
- * (docs/13 §七 的分级表)。⚠️ <b>不要把两者「统一」成同一种</b> ——
+ * (docs/后端详设 §七 的分级表)。⚠️ <b>不要把两者「统一」成同一种</b> ——
  * 统一的方向如果是「图片也改成 multipart」,那一次重构会直接踩线。
  *
  * <h2>🔴 这个文件里一行日志都没有</h2>
  *
- * docs/10 §8.1 禁令 3:「<b>不把 base64 打进日志的任何级别</b> —— 一次
+ * docs/技术架构 §8.1 禁令 3:「<b>不把 base64 打进日志的任何级别</b> —— 一次
  * {@code log.debug(request)} 就等于把原图落了盘,而且落在最不容易想到的地方。」
  * 所以这里连一个 {@code Logger} 字段都不声明:没有那个字段,就没有那一行。
  * {@code ImageRetentionTest#byteHandlingCallersNeverPersistBytes} 把这件事做成了机械校验 ——
@@ -88,7 +88,7 @@ import java.util.List;
  *
  * <h2>识别失败 ≠ 记录失败</h2>
  *
- * docs/13 §1.5:「<b>降级方向是『少功能』,不是『少记录』</b>」。
+ * docs/后端详设 §1.5:「<b>降级方向是『少功能』,不是『少记录』</b>」。
  * 这两个端点作用在一条<b>已经落地的记录</b>上,所以它们无论怎么失败,
  * 那条记录都完好、都还能手动挂考点({@code POST /records/{id}/tags})。
  * 于是识别侧的全部结局都是 200 —— 与 {@code TagController#suggest} 同一条理由:
@@ -105,7 +105,7 @@ public class RecognitionController {
     private final CoverageReader reader;
 
     /**
-     * 语音出口。<b>这里注入的是接口,不是某一家厂商</b> —— docs/09 坑三要的那个切换点。
+     * 语音出口。<b>这里注入的是接口,不是某一家厂商</b> —— docs/识别链路 坑三要的那个切换点。
      *
      * <p>默认装配到 {@code StubAsrClient},它诚实地抛
      * {@link RecognitionUnavailableException}(「还没接入」),于是这个端点今天唯一走得通的
@@ -122,7 +122,7 @@ public class RecognitionController {
     // ================================================================ 图片
 
     /**
-     * 上传图片识别 —— docs/10 §6.2「🔴 JSON body,base64 内联,不是 multipart 落盘。单次 ≤6 张」。
+     * 上传图片识别 —— docs/技术架构 §6.2「🔴 JSON body,base64 内联,不是 multipart 落盘。单次 ≤6 张」。
      *
      * <h2>🔴 这里不重写管线,只是把字节递进去</h2>
      *
@@ -156,7 +156,7 @@ public class RecognitionController {
      * <h2>🔴 字节的生命周期:进来、送一次、方法返回即释放</h2>
      *
      * 不落盘、不进对象存储、不建图片桶、不调厂商的 Files API、<b>不进任何级别的日志</b>
-     * (docs/10 §8.1 五条禁令 / docs/09 坑二)。这个方法里没有任何请求日志,也没有任何
+     * (docs/技术架构 §8.1 五条禁令 / docs/识别链路 坑二)。这个方法里没有任何请求日志,也没有任何
      * 把 {@code photos} 存到字段、缓存、静态 Map 里的写法 —— 它们全都是「短期留存」的另一种拼法。
      */
     @PostMapping("/image")
@@ -185,11 +185,11 @@ public class RecognitionController {
     // ================================================================ 音频
 
     /**
-     * 上传音频转写 —— docs/10 §6.2「multipart,<b>≤60s</b>;转写完成后<b>服务端不留存音频</b>;失败提示重录」。
+     * 上传音频转写 —— docs/技术架构 §6.2「multipart,<b>≤60s</b>;转写完成后<b>服务端不留存音频</b>;失败提示重录」。
      *
      * <h2>🔴 「不留存音频」在这里有三道,少一道都不成立</h2>
      * <ol>
-     *   <li><b>库里没有位置</b> —— docs/10 §5.2「不建的表」逐字:「任何音频表 —— {@code 1.1.1.5}:
+     *   <li><b>库里没有位置</b> —— docs/技术架构 §5.2「不建的表」逐字:「任何音频表 —— {@code 1.1.1.5}:
      *       ASR 失败提示重录,<b>不留存音频</b>」。{@link Touch} 里没有能装下它的字段</li>
      *   <li><b>容器不落临时文件</b> —— multipart 的默认行为是把 part 写成临时文件。
      *       {@code application.properties} 把 {@code file-size-threshold} 抬到 {@code max-file-size}
@@ -216,7 +216,7 @@ public class RecognitionController {
      *
      * <h2>转写成功之后会发生什么:今天什么都不会发生 ⚪</h2>
      *
-     * 「文字 → 考点」的闭集匹配属于打标管线({@code 08 §1.2.5}),<b>那一段还没建</b> ——
+     * 「文字 → 考点」的闭集匹配属于打标管线({@code 总路线图 §1.2.5}),<b>那一段还没建</b> ——
      * 这句话是 {@link AsrClient} 的类注释里写着的,不是这里的推断。
      * {@code TaggingService.suggest} 的第 ② 段是 {@code VisionTagger}(图 → 考点),
      * 把一段音频或一段文字塞给它是<b>另一条管线</b>,不是这个端点该顺手建的东西。
@@ -243,7 +243,7 @@ public class RecognitionController {
             //    而上面那道校验刚刚亲自确认过这段字节就是 PCM WAV。
             spoken = asr.transcribe(clip, WAV_MIME);
         } catch (RecognitionUnavailableException e) {
-            // 🔴 识别不可用 ≠ 记录失败(docs/08 §1.3.7.1)。记录早就落地了,
+            // 🔴 识别不可用 ≠ 记录失败(docs/总路线图 §1.3.7.1)。记录早就落地了,
             //    这里什么都不写、什么都不删。契约那句「失败提示重录」就落在这个分支上。
             //    异常本身不进日志:它的 message 里没有音频,但这个文件的纪律是一行日志都不写。
             return new AudioRecognitionResponse(AudioOutcome.UNAVAILABLE.name(),
@@ -270,7 +270,7 @@ public class RecognitionController {
         NOTHING_HEARD,
 
         /**
-         * ⚪ 转写出来了,但「文字 → 考点」的闭集匹配那一段还没建({@code 08 §1.2.5})。
+         * ⚪ 转写出来了,但「文字 → 考点」的闭集匹配那一段还没建({@code 总路线图 §1.2.5})。
          *
          * <p>界面:自己从树里挑一个。这一支<b>今天只有真实 ASR 接入后才走得到</b> ——
          * 它摆在这里是为了让那一天有人看见这句话,而不是让转写结果被悄悄丢掉。

@@ -23,7 +23,7 @@ import java.util.List;
  */
 public record AgentRequest(long userId, String sessionId, String message, List<byte[]> images) {
 
-    /** 单轮最多几张图。与 {@code RecognitionController} 的采集端点同档(docs/10 §6.2「单次 ≤6 张」)。 */
+    /** 单轮最多几张图。与 {@code RecognitionController} 的采集端点同档(docs/技术架构 §6.2「单次 ≤6 张」)。 */
     public static final int MAX_IMAGES = 6;
 
     /** 兼容无图调用点(单轮文字提问)。 */
@@ -54,7 +54,7 @@ public record AgentRequest(long userId, String sessionId, String message, List<b
      *
      * <p>2000 的理由与 {@code Touch.MAX_CLIENT_TOKEN_LENGTH} 同源:<b>把「问一句话」和
      * 「贴一段材料」分在两边</b>。资料分析一道题的材料就上千字,让它能整段贴进来,
-     * 就等于给了一条「把真题内容送进模型」的路 —— 而 07 §二 说的是线上库里不能有装题干的字段,
+     * 就等于给了一条「把真题内容送进模型」的路 —— 而 数据线 §二 说的是线上库里不能有装题干的字段,
      * 请求体同样不该成为那个字段的替身。
      */
     public static final int MAX_MESSAGE_LENGTH = 2000;

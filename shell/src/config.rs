@@ -21,7 +21,7 @@ use serde::{Deserialize, Serialize};
 /// 随机端口看起来更安全,其实两头不讨好 —— 可扫,而且每次一换就毁一次本地存储。
 pub const DEFAULT_PORT: u16 = 17840;
 
-/// 阶段 1/2 的上游是同一台机器上的另一个进程,不是另一个服务(docs/10 §2.2)。
+/// 阶段 1/2 的上游是同一台机器上的另一个进程,不是另一个服务(docs/技术架构 §2.2)。
 pub const DEFAULT_UPSTREAM: &str = "http://127.0.0.1:8080";
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -33,7 +33,7 @@ pub struct Config {
     ///
     /// `null` 表示**不接后端**:`/api/*` 一律 502,前端会整屏回退到它自带的离线示例数据,
     /// 并红字标明原因。这是 iOS/Android 脚手架(`KUBI-66` / `KUBI-67`)的形态 ——
-    /// 「不接后端不是偷懒,是不多做」(docs/18 §4.2)。
+    /// 「不接后端不是偷懒,是不多做」(docs/壳技术方案 §4.2)。
     #[serde(default = "default_upstream")]
     pub upstream: Option<String>,
 }

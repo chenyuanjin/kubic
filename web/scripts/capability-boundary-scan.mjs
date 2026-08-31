@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 /**
- * 能力边界文案扫描 —— docs/08 §四 R-05:产品永不判断「对不对」。
+ * 能力边界文案扫描 —— docs/总路线图 §四 R-05:产品永不判断「对不对」。
  *
  * <h2>这条扫描要防的到底是什么</h2>
  *
- * docs/08 给 UI 审核留的原话是判据本身:
+ * docs/总路线图 给 UI 审核留的原话是判据本身:
  * <b>「用户自己填的练习条数不算判定,产品替他判断对错才算。」</b>
  *
  * 所以「正确率」「rank」这类词在这个仓库里是<b>合法</b>的 ——
@@ -55,7 +55,7 @@ const SCAN_EXT = new Set(['.ts', '.tsx', '.js', '.jsx', '.mjs', '.css', '.html']
  * 先得推翻这句话,而不是往 allow 表里塞一行。
  */
 const HARD = [
-  // 教研本身。「不做教研」是 docs/01 的硬约束,学科判断整个外包给外部模型。
+  // 教研本身。「不做教研」是 docs/决策记录 的硬约束,学科判断整个外包给外部模型。
   // (「讲解」在灰名单,不在这里 —— 见下面 SOFT 里的说明。)
   '精讲',
   '详解',
@@ -99,7 +99,7 @@ const HARD = [
   '超越了',
   '学霸',
   '打败全国',
-  // 真题原文 / 答案。docs/07 §二 R-01:线上 schema 不许有能装下题干的字段。
+  // 真题原文 / 答案。docs/数据线 §二 R-01:线上 schema 不许有能装下题干的字段。
   '正确答案',
   '标准答案',
   '参考答案',
@@ -278,7 +278,7 @@ const stale = [...allow.values()].filter((it) => !used.has(`${it.file}\u0000${it
 
 if (hardHits.length === 0 && softHits.length === 0 && stale.length === 0) {
   process.stdout.write(
-    '\n能力边界扫描通过 —— docs/08 §四 R-05「产品永不判断对不对」\n' +
+    '\n能力边界扫描通过 —— docs/总路线图 §四 R-05「产品永不判断对不对」\n' +
       `  扫描 ${files.length} 个文件 / ${lines} 行(web/src)\n` +
       `  硬名单 ${HARD.length} 词,灰名单 ${SOFT.length} 词,豁免表 ${allow.size} 项(全部命中)\n\n`,
   )
@@ -286,7 +286,7 @@ if (hardHits.length === 0 && softHits.length === 0 && stale.length === 0) {
 }
 
 const out = []
-out.push('\n能力边界扫描未通过 —— docs/08 §四 R-05「产品永不判断对不对」')
+out.push('\n能力边界扫描未通过 —— docs/总路线图 §四 R-05「产品永不判断对不对」')
 out.push('判据:用户自己填的数不算判定,产品替他判断对错才算。\n')
 
 if (hardHits.length) {

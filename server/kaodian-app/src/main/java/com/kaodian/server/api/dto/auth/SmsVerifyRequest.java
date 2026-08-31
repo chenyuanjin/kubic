@@ -6,7 +6,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 /**
- * 验证码换令牌 —— <b>通过的那一刻,号码没见过就建号、见过就登进去</b>(docs/13 §1.7)。
+ * 验证码换令牌 —— <b>通过的那一刻,号码没见过就建号、见过就登进去</b>(docs/后端详设 §1.7)。
  *
  * <h2>🔴 两个自由文本字段都有上限,这个上限是防内容夹带的</h2>
  *

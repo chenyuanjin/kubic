@@ -98,7 +98,7 @@ td b{font-weight:600}
       你在哪儿学的不重要,重要的是考点覆盖到没有。<br>
       面向公考与考研备考人群的跨来源学习记录工具。覆盖<b>小程序采集端、iPad 核心场景端、网页分析端</b>
       三个形态,共 <b>20 个界面</b>。示例状态与 <span class="mono">kaodian-demo.html</span> 逐格一致,
-      每一屏都能回溯到 <span class="mono">docs/01–04</span> 里的一条具体约束。
+      每一屏都能回溯到 <span class="mono">docs/决策记录–04</span> 里的一条具体约束。
     </div>
     <div class="bigrule"></div>
     <div class="eq">
@@ -206,7 +206,7 @@ td b{font-weight:600}
     <div style="padding-top:36px">
       <div class="sec-t">约束追溯表</div>
       <div class="sec-d">
-        这些是 <span class="mono">docs/01</span> §2.2 与 §7 中标注「不改变」的 settled decision。
+        这些是 <span class="mono">docs/决策记录</span> §2.2 与 §7 中标注「不改变」的 settled decision。
         评审这份稿子的方式不是「好不好看」,而是<b>每一条约束能否在界面上被指出来</b>。
       </div>
       <table>
@@ -214,41 +214,41 @@ td b{font-weight:600}
           <th>设计上如何落地</th><th style="width:132px">对应屏</th></tr></thead>
         <tbody>
           <tr><td><b>能力边界</b><br><span style="font-size:11px;color:var(--mist)">不判断对错</span></td>
-            <td class="src">01 §2.2</td>
+            <td class="src">决策记录 §2.2</td>
             <td>21 屏里没有一处「你错了」「建议先学 X」。正确率 50% 这个数<b>是用户自己在「记做题」里填的</b>,不是产品判出来的 —— 记录用户报告的数字属于「几次」,判断答案对错才属于「对不对」。P4「最久没碰」只按时间排,<b>刻意不做遗忘曲线</b>。</td>
             <td class="src">W4 P3 P4</td></tr>
-          <tr><td><b>不做教研</b></td><td class="src">01 §2.2</td>
+          <tr><td><b>不做教研</b></td><td class="src">决策记录 §2.2</td>
             <td>W6「问 AI 时带上的东西」把这条边界<b>变成了功能而不是免责声明</b>:产品把你的画像拼成一段上下文,你粘进豆包或 DeepSeek。产品不回答问题,只负责让模型知道你是谁、学到哪了。</td>
             <td class="src">W6 M8</td></tr>
-          <tr><td><b>不碰内容</b></td><td class="src">01 §2.2</td>
+          <tr><td><b>不碰内容</b></td><td class="src">决策记录 §2.2</td>
             <td>流水表只有四列:时间、来源名称、方式、考点。<b>没有「内容」这一列,连预留位都没有。</b>P1 左侧第三方课程区域标注「本工具不抓取、不转录、不存储此区域的任何内容」。</td>
             <td class="src">W5 M7 P1</td></tr>
           <tr><td><b>图片留存红线</b><br><span style="font-size:11px;color:var(--mist)">第一天不定就改不回来</span></td>
-            <td class="src">01 §2.3</td>
+            <td class="src">决策记录 §2.3</td>
             <td>三处:① M1 登录<b>勾选同意那一行</b>就写明,不埋进隐私政策;② M5/P5 原图角上常驻 <span class="mono">原图 6d 23h 后删除</span>;③ 印章红块给出「立即删除原图」并写出理由 —— 否则产品会变成盗版课件的托管方。</td>
             <td class="src">M1 M5 P5</td></tr>
-          <tr><td><b>宁缺毋滥</b></td><td class="src">01 §2.2</td>
+          <tr><td><b>宁缺毋滥</b></td><td class="src">决策记录 §2.2</td>
             <td>「没认出来的」独立成区、<b>默认不勾选</b>,并写出后果。被丢弃的记录在流水里<b>保留可见但置灰</b>,不计入覆盖度 —— 让用户看见系统丢了什么,比悄悄丢掉更能建立对数字的信任。</td>
             <td class="src">M6 P5 W5</td></tr>
           <tr><td><b>形态</b><br><span style="font-size:11px;color:var(--mist)">Web 主,小程序已推翻</span></td>
-            <td class="src">01 §2.4 / §7</td>
+            <td class="src">决策记录 §2.4 / §7</td>
             <td>小程序被限定为<b>纯采集入口</b>,盲区诊断在其中只有入口没有实现。§2.4 的原判断因此未被触碰,<b>决策记录不需要改</b>。</td>
             <td class="src">M3 M8</td></tr>
           <tr><td><b>三层树</b><br><span style="font-size:11px;color:var(--mist)">不做第四层</span></td>
-            <td class="src">01 §2.5</td>
+            <td class="src">决策记录 §2.5</td>
             <td>模块 → 题型 → 考点,到此为止。整块空白的枝干<b>连接线变印章红</b>并加一行警告 —— 扁平列表只能说「漏了两个点」,树能说「漏了一整类」。</td>
             <td class="src">W3 W2 P3</td></tr>
-          <tr><td><b>四个统计字段</b></td><td class="src">01 §2.5</td>
+          <tr><td><b>四个统计字段</b></td><td class="src">决策记录 §2.5</td>
             <td>近五年出现次数 / 出现过的省份 / 最近一次出现年份 / 平均每套卷题量,在 W4 与 P3 常驻不折叠。四个都是纯统计,没有一个需要学科判断 —— 这是「不做教研」守得住的技术前提。</td>
             <td class="src">W4 P3</td></tr>
-          <tr><td><b>数据开放</b></td><td class="src">01 §2.2</td>
+          <tr><td><b>数据开放</b></td><td class="src">决策记录 §2.2</td>
             <td>W6 三种格式并列,下载前可见 Markdown 原文。并列一张「导出里有 / 导出里没有」对照 —— 没有的那栏全是内容类,<b>因为压根就没存</b>。</td>
             <td class="src">W6 M8</td></tr>
-          <tr><td><b>MCP 只读</b></td><td class="src">01 §2.6</td>
+          <tr><td><b>MCP 只读</b></td><td class="src">决策记录 §2.6</td>
             <td>可以 / 不可以两栏对照。令牌前缀 <span class="mono">kd_ro_</span> 把只读写进凭证本身。整屏只有两栏五个工具名 —— <b>刻意的欠设计</b>,两成精力就该占两成篇幅。</td>
             <td class="src">W7</td></tr>
           <tr><td><b>录入完整度</b><br><span style="font-size:11px;color:var(--mist)">已知未解决</span></td>
-            <td class="src">01 §5.2</td>
+            <td class="src">决策记录 §5.2</td>
             <td>demo 的引导问卷第三问「哪些你已经学过」被保留:<b>先让用户标出来,免得后面误判成没碰过。</b>这比在诊断页放一段免责声明更接近解法 —— 它减少误判,而不是解释误判。</td>
             <td class="src">M1 W2</td></tr>
           <tr><td><b>北极星</b><br><span style="font-size:11px;color:var(--mist)">主动查看盲区的人数</span></td>
@@ -355,9 +355,9 @@ td b{font-weight:600}
       <div class="warn">
         <div class="h">这份稿子跑在关卡 0 前面。这一点写在封面上,不等评审时才发现。</div>
         <div class="p">
-          <span class="mono">docs/04</span> 阶段 0 的原文是:<b>「不做界面,不做账号,不做数据库设计」</b>。
+          <span class="mono">docs/实施路径</span> 阶段 0 的原文是:<b>「不做界面,不做账号,不做数据库设计」</b>。
           而这份稿子恰好做了界面和账号。<br>
-          <span class="mono">docs/03</span> §盲区二 描述的正是这个动作:<b>注意力单向流向可执行的部分</b> ——
+          <span class="mono">docs/思考模式</span> §盲区二 描述的正是这个动作:<b>注意力单向流向可执行的部分</b> ——
           问题被识别后,人会自然流向「能动手做的部分」,而不是「最不确定的部分」。
           文档已经记录过一次后果:打磨了好几轮 demo,而一个真实用户都还没接触过。<br><br>
           所以这份稿子的正确用途只有两个:<br>
@@ -384,9 +384,9 @@ td b{font-weight:600}
             <td>陌生人自己找上门。这是唯一贯穿始终没被解决过的问题。</td><td>零成本能获客吗?</td></tr>
         </tbody></table>
       <div class="sec-d">
-        还有一件这份稿子<b>不能替代</b>的事,列在 <span class="mono">docs/04</span> 阶段 0 的阻塞项里:
+        还有一件这份稿子<b>不能替代</b>的事,列在 <span class="mono">docs/实施路径</span> 阶段 0 的阻塞项里:
         <b>生成式 AI 服务备案要求</b>。语音转写与 OCR 打标都属于面向公众提供的生成式能力,
-        文档原话是「查清楚再动手,别做完卡在审核」。这一项在 <span class="mono">docs/01</span> §5.5 仍是待查状态,
+        文档原话是「查清楚再动手,别做完卡在审核」。这一项在 <span class="mono">docs/决策记录</span> §5.5 仍是待查状态,
         <b>本设计稿没有、也无法关闭它</b>。
       </div>
     </div>
@@ -414,8 +414,8 @@ td b{font-weight:600}
       </div>
       <div class="fin">
         设计令牌见 <span class="mono">tokens.css</span> · 屏幕清单与约束追溯见 <span class="mono">README.md</span><br>
-        示例数据为演示用途,考点频次是占位数字,不代表真实统计。骨架层取 <span class="mono">docs/04</span> §1.1 推荐的起步模块:公考 · 资料分析。<br>
-        考点标签为本稿自行命名,<b>不沿用任何机构的既有体系与措辞</b> —— 对应 <span class="mono">docs/04</span> §1.2 的合规要求。
+        示例数据为演示用途,考点频次是占位数字,不代表真实统计。骨架层取 <span class="mono">docs/实施路径</span> §1.1 推荐的起步模块:公考 · 资料分析。<br>
+        考点标签为本稿自行命名,<b>不沿用任何机构的既有体系与措辞</b> —— 对应 <span class="mono">docs/实施路径</span> §1.2 的合规要求。
       </div>
     </div>
   </div>

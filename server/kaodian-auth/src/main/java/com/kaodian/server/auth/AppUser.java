@@ -3,7 +3,7 @@ package com.kaodian.server.auth;
 import java.time.Instant;
 
 /**
- * 一个账号 —— <b>主表不放任何登录凭证</b>(docs/10 §5.2)。
+ * 一个账号 —— <b>主表不放任何登录凭证</b>(docs/技术架构 §5.2)。
  *
  * <p>没有 {@code phone}、没有 {@code openid}、没有 {@code password}。
  * 凭证一律在 {@link UserIdentity} 里,一个通道一行。
@@ -11,11 +11,11 @@ import java.time.Instant;
  *
  * @param id        账号 id
  * @param nickname  昵称。可空 —— 手机号通道注册时根本没有昵称,而<b>逼用户起名会在
- *                  离开成本最低的那一秒多加一个页面</b>(docs/13 §1.7)
+ *                  离开成本最低的那一秒多加一个页面</b>(docs/后端详设 §1.7)
  * @param status    账号状态
  * @param createdAt 建号时刻。<b>关卡 3「累计 50 个陌生注册」的判据数据源</b>,见 {@link SignupLedger}
  * @param deletedAt 注销时刻;未注销为 {@code null}。
- *                  🔴 <b>软删之后什么时候硬删,本代码不定</b> —— docs/10 §6.1 明确把它留给
+ *                  🔴 <b>软删之后什么时候硬删,本代码不定</b> —— docs/技术架构 §6.1 明确把它留给
  *                  {@code L-A5} 的律师稿。这里只保证「注销后立刻登不进来、令牌全部失效」
  */
 public record AppUser(

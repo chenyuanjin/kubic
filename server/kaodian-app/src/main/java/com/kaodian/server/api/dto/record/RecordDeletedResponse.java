@@ -18,7 +18,7 @@ import jakarta.validation.constraints.Size;
  *
  * <h2>契约里的「级联删标签」现在有对应物了</h2>
  *
- * docs/10 §6.2 对这个端点的约束原文是「<b>级联删标签</b>,触发覆盖层重算」。
+ * docs/技术架构 §6.2 对这个端点的约束原文是「<b>级联删标签</b>,触发覆盖层重算」。
  * 后半句自动成立(见 {@code TouchStore#delete});前半句由
  * {@code RecordController#delete} 里那一句 {@code RecordTagStore.deleteByRecord} 兑现 ——
  * <b>这个响应体一个字都没改</b>,当初那段注释里「到时候要动的不是这个响应体」的判断是对的。

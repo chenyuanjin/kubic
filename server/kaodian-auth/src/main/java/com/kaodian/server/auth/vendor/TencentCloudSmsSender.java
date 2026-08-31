@@ -27,7 +27,13 @@ import java.util.Set;
  * <b>签名没批,第 9 周的登录写不出来,阶段 2 直接停在起点。</b>
  * <p>
  * 代码在今天写完不会让那件事提前一天完成 —— 报备是行政流程,不是工程任务。
- * 这个类存在的意义只是让「签名批下来的那天」只需要填四个配置项。
+ * 这个类存在的意义只是让「签名批下来的那天」<b>不必再动代码,只需要填配置</b>。
+ * <p>
+ * ⚠ 那一天要填的是 <b>11 项</b>,不是坊间说的四项:本类这一侧 5 项
+ * (secret-id / secret-key / sdk-app-id / sign-name / template-id),
+ * 加上配对红线强制的滑块 4 项,再加两个 {@code provider} 开关。
+ * 而拿到滑块那 4 项之前,还要先在控制台<b>单独开通验证码产品并建一个验证码应用</b>。
+ * 完整清单见 {@code application.properties} 的「签名批下来那天」模板段。
  */
 public class TencentCloudSmsSender implements SmsSender {
 

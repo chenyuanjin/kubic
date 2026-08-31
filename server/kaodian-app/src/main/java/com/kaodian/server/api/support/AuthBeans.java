@@ -104,7 +104,10 @@ public class AuthBeans {
     /**
      * 短信发送器。默认 {@link LoggingSmsSender} —— <b>不发真短信,不花一分钱</b>。
      *
-     * <p>切成真实供应商只需要改 {@code kaodian.auth.sms.provider=tencent} 并补齐四个配置项。
+     * <p>切成真实供应商要改 {@code kaodian.auth.sms.provider=tencent} 并补齐<b>五个</b>配置项
+     * (secret-id / secret-key / sdk-app-id / sign-name / template-id)。
+     * 注意 {@link #checkVendorPairing} 会连带要求滑块也切真 —— 那边还有四项,
+     * 合计十一项,完整清单见 {@code application.properties} 的「签名批下来那天」模板段。
      * 但那之前签名与模板必须已报备(各 1-3 个工作日,需主体资质)—— {@code R-34}。
      */
     @Bean

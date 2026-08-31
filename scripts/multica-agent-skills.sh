@@ -99,15 +99,31 @@ def fallback_instruction(a, want, prov):
     """runtime 关不掉技能时的退路:把清单写进 instructions。声明式,弱。"""
     HEAD = "━━━━━━ 不要用的技能 ━━━━━━"
     keys = sorted({s["key"] for s in want})
+    ins0 = (a.get("instructions") or "").rstrip()
     if not keys:
-        say("  " + D("· %s 该 runtime 没有命中判据的技能" % a["name"]))
-        return True
+        # 判据一个都没命中(比如技能已经从磁盘上删掉了)——
+        # 那段声明式清单就成了假话,撤掉。
+        cut = ins0.find(HEAD)
+        if cut == -1:
+            say("  " + D("· %s 该 runtime 没有命中判据的技能" % a["name"]))
+            return True
+        if DRY:
+            say("  " + G("✓ [预演] %s 撤掉已失效的声明式清单" % a["name"]))
+            return True
+        try:
+            api("/api/agents/%s" % a["id"], "PUT",
+                dict(a, instructions=ins0[:cut].rstrip()))
+            say("  " + G("✓ %s 撤掉声明式清单 —— 那些技能已经不在这个 runtime 里了" % a["name"]))
+            return True
+        except urllib.error.HTTPError as e:
+            say("  " + R("✗ %s 撤销失败 HTTP %s" % (a["name"], e.code)))
+            return False
     block = (HEAD + "\n"
              "你的 runtime(%s)不支持在平台上禁用技能,所以这一条只能靠你自己守 ——\n"
              "下面这些技能与本项目无关,任何情况下都不要调用:\n  %s\n"
              "需要浏览器就用 agent-browser,需要驱动外部 CLI 就用 opencli。"
              % (prov, "、".join(keys)))
-    ins = (a.get("instructions") or "").rstrip()
+    ins = ins0
     cut = ins.find(HEAD)
     if cut != -1:
         ins = ins[:cut].rstrip()

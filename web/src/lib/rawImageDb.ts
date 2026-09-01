@@ -32,27 +32,13 @@
  * <b>只有事务提交了才算存下</b>,请求成功但事务随后 abort 的那一瞬间不该被当成成功。
  */
 
-import { RawImageCache } from './rawImageCache'
+import { RawImageStorageError } from './rawImageCache'
 import type { RawImageBackend, RawImageMeta, StoredRawImage } from './rawImageCache'
 
 /** 库名带产品前缀:同源下可能还有别人的库,别撞。 */
 const DB_NAME = 'kaodian.rawimages'
 const DB_VERSION = 1
 const STORE = 'raw'
-
-/**
- * 本地缓存整个用不了时抛它(隐私模式、被策略禁用、配额拒绝)。
- *
- * <p>🔴 <b>这不是一次「记录失败」。</b> docs/后端详设 §1.5「降级方向是『少功能』,不是『少记录』」:
- * 缓存不上照样能把这张图送去识别一次(服务端本来就不落盘),照样能记下这一笔。
- * 界面要说的是「这张图没被本地缓存」,不是「记不下来」。
- */
-export class RawImageStorageError extends Error {
-  constructor(reason: string, cause?: unknown) {
-    super(reason, { cause })
-    this.name = 'RawImageStorageError'
-  }
-}
 
 /** 把一个 IDBRequest 包成 Promise。只在读路径上用 —— 写路径等的是事务提交,不是请求成功。 */
 function ask<T>(req: IDBRequest<T>): Promise<T> {
@@ -194,45 +180,26 @@ export const indexedDbRawImageBackend: RawImageBackend = {
 }
 
 /* ========================================================================== */
-/* 接线 —— 真后端 + 真时钟                                                      */
+/* 🔴 这个文件到此为止 —— 接线不在这儿                                          */
 /* ========================================================================== */
 
-/**
- * 全应用唯一的原图缓存实例。
+/*
+ * 2026-08-31 之前,下面还有一段:`export const rawImages = new RawImageCache({…})`
+ * 与 `sweepRawImagesOnStartup()`,也就是全应用唯一的实例和唯一的那句 `Date.now()`。
  *
- * <h2>🔴 这是整条链路里 `Date.now()` 出现的<b>唯一一处</b></h2>
+ * 🔴 它们搬去了 `rawImageStore.ts`,而搬家的理由是一条结构约束,不是整理:
  *
- * 判据层的时钟是注入的({@link RawImageCache} 的 `now`),就是为了让
- * `1.1.3.3`「改系统时间实测删除生效」能变成一条机器断言。
- * 那条纪律的代价是:真实时钟必须在某一处被绑上去 —— 就是这一行。
- * <b>再多一处 `Date.now()`,注入这件事就白做了</b>:测试拨动的是假时钟,
- * 而漏掉的那一处仍然读的是系统时间,于是测试绿着,行为却不受控。
- * <p>
- * 界面上算倒计时同样不许自己调 `Date.now()` —— 它读的是这里传下去的那一个。
+ *   接线留在这里 = 界面 `import { rawImages } from './rawImageDb'`
+ *                = 【界面 import 的是「IndexedDB 那个文件」】。
+ *
+ * 只有一种形态时这没什么;加上文件系统实现的那一刻,这行 import 就是分叉点 ——
+ * 要么界面里出现 `if`,要么这个文件里出现一个 `import { fsRawImageBackend }`,
+ * 而后者会让【两个存储实现互相认识】,依赖图当场从「两条平行的实现」变成一张网。
+ *
+ * 所以这个文件现在【只导出一个东西】:{@link indexedDbRawImageBackend}。
+ * 它是 RawImageBackend 的一个实现,仅此而已 —— 它不知道自己是不是被选中的那一个,
+ * 也不知道还有没有别的实现。`rawImageFs.ts` 那一侧同样如此。
+ *
+ * 「唯一一处 Date.now()」这条性质随注入点一起搬走,不因为搬家而失效:
+ *   grep -rn "Date.now()" web/src/lib/rawImage*   仍应只有一行。
  */
-export const rawImages = new RawImageCache({
-  backend: indexedDbRawImageBackend,
-  now: () => Date.now(),
-})
-
-/**
- * 🔴 到期删除的<b>第一条触发</b>:应用启动时扫一遍。由 `main.tsx` 调,一次。
- *
- * <h2>为什么不能只靠「存新图时顺带清」那一条</h2>
- *
- * 那条只在用户<b>再导一张图</b>时才会跑。而最需要被清掉的恰恰是
- * 「用户昨晚导了一批,今天没再导」的那批 —— 只有存图触发的话,它们要等到
- * 下一次导入才走,而下一次导入可能永远不来。
- *
- * <h2>失败为什么只是 swallow</h2>
- *
- * 隐私模式 / IndexedDB 被禁用时这里必然抛,而那种情况下<b>压根没有图可删</b>。
- * 让它把首屏炸掉,是用一个不存在的风险换一个真实的故障。
- * 🔴 catch 里<b>一行日志都不打</b> —— 这条链路上的异常对象可能带着行数据,
- * 而 docs/技术架构 §8.1 禁令 3 的客户端对应物是「不把原图相关的东西打进 console 的任何级别」。
- */
-export function sweepRawImagesOnStartup(): void {
-  void rawImages.sweep().catch(() => {
-    /* 本地缓存用不了 = 没有原图留在本机 = 这条红线自动成立,不需要惊动任何人 */
-  })
-}

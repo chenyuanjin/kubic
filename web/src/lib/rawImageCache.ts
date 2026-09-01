@@ -230,6 +230,32 @@ export class RawImageExpiryError extends Error {
   }
 }
 
+/**
+ * 本地存储整个用不了时抛它(隐私模式、被策略禁用、配额拒绝、目录没权限、磁盘满)。
+ *
+ * <p>🔴 <b>这不是一次「记录失败」。</b> docs/后端详设 §1.5「降级方向是『少功能』,不是『少记录』」:
+ * 缓存不上照样能把这张图送去识别一次(服务端本来就不落盘),照样能记下这一笔。
+ * 界面要说的是「这张图没被本地缓存」,不是「记不下来」。
+ *
+ * <h2>🔴 2026-08-31:它从 `rawImageDb.ts` 搬到这里,理由是一条结构约束</h2>
+ *
+ * 原先它定义在 IndexedDB 实现里。加上文件系统实现之后,
+ * `rawImageFs.ts` 要抛同一个类型,就得 `import` 一次 `rawImageDb.ts` ——
+ * <b>那会让两个存储实现互相认识</b>,而 `docs/原图存储 §3.1` 冻结的依赖图是
+ * 「两个存储实现各自只依赖判据层的类型,彼此不认识」。
+ * <p>
+ * 所以它搬到契约所在的这一层。判断它是不是该属于「判据」不重要,
+ * <b>它属于 {@link RawImageBackend} 的契约</b>(`docs/原图存储 §2.1` 的错误码表:
+ * 两个错误类型,不新增第三个),而契约就在这个文件里。
+ * <p>它不含任何 DOM 符号,所以搬进来不破坏这一层「跑得进 node」的性质。
+ */
+export class RawImageStorageError extends Error {
+  constructor(reason: string, cause?: unknown) {
+    super(reason, { cause })
+    this.name = 'RawImageStorageError'
+  }
+}
+
 /* ========================================================================== */
 /* 判据                                                                        */
 /* ========================================================================== */
@@ -285,11 +311,30 @@ function requireAtomicExpiry(row: StoredRawImage): void {
 /* 缓存本体                                                                    */
 /* ========================================================================== */
 
-/** 默认 id 生成器。`crypto.randomUUID` 在非安全上下文里没有,退回时间戳 + 随机数。 */
+/**
+ * 默认 id 生成器。`crypto.randomUUID` 在非安全上下文里没有,退回两段随机数。
+ *
+ * <h2>🔴 2026-08-31:退路里的 `Date.now()` 被换掉了,而这不是洁癖</h2>
+ *
+ * 原先这一行是 `` `${Date.now().toString(36)}-${随机}` ``。它<b>用时钟当熵源</b>,
+ * 不是当时刻,所以它没有制造过任何一个错误的到期判断。
+ * <p>
+ * 但它让「这条链路上 `Date.now()` 只出现一处」这句话<b>字面上是假的</b> ——
+ * 而那句话正是「时钟必须被注入」这条纪律唯一可执行的形态:
+ * `shell/build.sh` 步骤 ③.5 数的就是它。一条<b>数不准的断言等于没有断言</b>,
+ * 而「这一处是良性的、那一处不是」这种区分留不住 ——
+ * 下一个人只会看见判据层里有一个现成的 `Date.now()`,然后用它。
+ * <p>
+ * 换掉的代价:id 不再带时间前缀。**没有任何地方依赖那个前缀** ——
+ * 排序一律按 `expiresAt`({@link RawImageCache.list} / {@link evictBeyondCap}),
+ * 而且这条退路只在没有 `crypto.randomUUID` 的环境里走,同时活着的行不超过
+ * {@link RAW_IMAGE_MAX_ENTRIES} 条,两段随机足够。
+ */
 function defaultNewId(): string {
   const c: { randomUUID?: () => string } | undefined = globalThis.crypto
   if (typeof c?.randomUUID === 'function') return c.randomUUID()
-  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`
+  const seg = (): string => Math.random().toString(36).slice(2, 10)
+  return `${seg()}-${seg()}`
 }
 
 export interface RawImageCacheOptions {

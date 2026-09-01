@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { ACCEPTED_IMAGE_MIME, mib, rejectionFor } from '../api/recognize'
 import { RawImageExpiryError, remainingMs } from '../lib/rawImageCache'
 import type { RawImageMeta } from '../lib/rawImageCache'
-import { rawImages } from '../lib/rawImageDb'
+import { rawImages } from '../lib/rawImageStore'
 import { Button, GlyphIcon, GroupHeader, Note, Tag } from '../ui/primitives'
 
 /**
@@ -398,7 +398,7 @@ function countdown(ms: number): string {
  *
  * <p>这里写 `Date.now()` 是最自然的一行,而它会让倒计时和到期判断<b>各读一个时钟</b>。
  * 平时看不出差别,`1.1.3.3` 拨时间那一刻就会:一边动了,另一边没动。
- * 所以 `Date.now()` 在整条链路上只出现在 `rawImageDb.ts` 的那一处接线里。
+ * 所以 `Date.now()` 在整条链路上只出现在 `rawImageStore.ts` 的那一处接线里。
  */
 function nowFromCache(): number {
   return rawImages.currentTime()

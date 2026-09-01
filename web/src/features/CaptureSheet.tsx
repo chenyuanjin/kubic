@@ -4,7 +4,7 @@ import { useCreateRecord } from '../api/queries'
 import { useRecognizePhotos } from '../api/recognize'
 import type { DataSource, GroupView, TimelineItemDto, TouchKind } from '../api/types'
 import { KIND_LABEL } from '../lib/nodeState'
-import { rawImages } from '../lib/rawImageDb'
+import { rawImages } from '../lib/rawImageStore'
 import { RawImageDrop } from './RawImageDrop'
 import { Button, GroupHeader, Kbd, Note, Tag } from '../ui/primitives'
 

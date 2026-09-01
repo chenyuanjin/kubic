@@ -16,7 +16,7 @@ import jakarta.validation.constraints.Size;
  *
  * <h2>🔴 一:只接受 nodeCode,没有 name / label / tag</h2>
  *
- * 这是 R-07 在接口层的实现(docs/技术架构 §6.3):<b>只要 API 上没有传入自由文本标签的通道,
+ * 这是 R-07 在接口层的实现(docs/technical/INDEX.md §6.3):<b>只要 API 上没有传入自由文本标签的通道,
  * 自由生成的考点就进不了库 —— 无论模型输出什么。</b>
  * 光是「不定义这些字段」还不够,默认配置下 Jackson 会安静地忽略多余字段,
  * 于是 {@code {"tag":"我自己想的考点"}} 也返回 200,双方都以为它生效了。
@@ -48,7 +48,7 @@ import jakarta.validation.constraints.Size;
  *
  * <h2>{@code clientToken} 是第六个字段,而它没有破上面那三道锁</h2>
  *
- * 它是<b>客户端生成的去重键</b>,docs/技术架构 §6.2 的「{@code client_token} 幂等」。
+ * 它是<b>客户端生成的去重键</b>,docs/technical/INDEX.md §6.2 的「{@code client_token} 幂等」。
  * 加一个字段进来必须先回答「它会不会变成放内容的地方」,答案是不会 ——
  * 它有上限({@link Touch#MAX_CLIENT_TOKEN_LENGTH} = 64),而 64 装不下任何一道题的题干。
  * <b>这正是 R-01 想要的形状:不是靠约定它只放 id,是靠它放不下别的。</b>
@@ -57,7 +57,7 @@ import jakarta.validation.constraints.Size;
  * 需要它的只有断网时进了本地队列、之后走 {@code POST /records/batch} 补传的那些
  * ——那条路上它是<b>必填</b>(见 {@link BatchCreateRecordsRequest})。
  *
- * @param kind        怎么记的。手动三种永远可用 —— 额度用尽 ≠ 记不了(docs/商业化设计 §二)
+ * @param kind        怎么记的。手动三种永远可用 —— 额度用尽 ≠ 记不了(docs/product/商业化与额度设计.md §二)
  * @param sourceName  来源名。<b>只是个名字,不含该来源的任何内容</b>
  * @param nodeCode    挂到哪个考点。必须是骨架树里已存在的 code
  * @param practiced   练了几道,可空。<b>用户自己填的数</b>

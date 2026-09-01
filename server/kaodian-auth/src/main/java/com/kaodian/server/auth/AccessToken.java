@@ -3,7 +3,7 @@ package com.kaodian.server.auth;
 import java.time.Instant;
 
 /**
- * 一条会话 —— <b>库里只有 SHA-256,没有令牌原值</b>(docs/技术架构 §7.4)。
+ * 一条会话 —— <b>库里只有 SHA-256,没有令牌原值</b>(docs/technical/INDEX.md §7.4)。
  *
  * <p>所以「重新看一遍我的令牌」这件事在产品上不存在:签发时返回一次,
  * 丢了就重新签一条。这不是省事,是让<b>一次数据库泄露不等于一批账号被接管</b>。

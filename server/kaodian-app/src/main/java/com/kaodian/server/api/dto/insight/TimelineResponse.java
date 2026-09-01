@@ -6,7 +6,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 /**
- * {@code GET /api/timeline} —— <b>按天/周聚合的触达视图</b>(docs/技术架构 §6.4)。
+ * {@code GET /api/timeline} —— <b>按天/周聚合的触达视图</b>(docs/technical/INDEX.md §6.4)。
  *
  * <h2>🔴 它和 {@code GET /api/records} 不是一个东西,两个都要留着</h2>
  *
@@ -102,7 +102,7 @@ public record TimelineResponse(
      *
      * <h2>为什么不是「全都给我」</h2>
      *
-     * 全量那条路在 {@code /export}(docs/技术架构 §6.5「无删减、无水印、不限次数」)。
+     * 全量那条路在 {@code /export}(docs/technical/INDEX.md §6.5「无删减、无水印、不限次数」)。
      * 这个端点是「先看这段」,与 {@code /coverage/blindspots} 的 {@code top ≤ 100} 同一条纪律。
      */
     public static final int DEFAULT_BUCKETS = 30;

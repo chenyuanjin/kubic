@@ -22,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  *
  * <h2>为什么 agent 需要自己的边界断言</h2>
  *
- * docs/后端详设 §4.1 定过一条绿线:{@code ChatModel} / {@code ChatClient} 不得越过
+ * docs/technical/后端系统设计与组件接入.md §4.1 定过一条绿线:{@code ChatModel} / {@code ChatClient} 不得越过
  * {@code recognize} 的实现类,理由第三条是「任何人都能在别处 {@code @Autowired ChatModel}
  * 直接问模型,<b>能力边界就没有物理形态了</b>」。
  * <p>
@@ -115,7 +115,7 @@ class AgentBoundaryTest {
 
                 %s
 
-                这条守的是 docs/后端详设 §4.1 的绿线在 agent 侧的形态:模型接入必须封在 AgentLlm 接口后面,
+                这条守的是 docs/technical/后端系统设计与组件接入.md §4.1 的绿线在 agent 侧的形态:模型接入必须封在 AgentLlm 接口后面,
                 注入点保持可数。一旦 ChatModel / ChatClient 能在编排层、工具层被直接拿到,
                 「能力边界」就退回成一句写在提示词里的请求 —— 而提示词是模型可以不听的。
 
@@ -149,7 +149,7 @@ class AgentBoundaryTest {
                 而覆盖率是这个产品唯一的那个数(决策记录 §2.2)。
 
                 真要加写操作,那是一个产品决定,不是一次重构:
-                先在 docs/总路线图 §四 记一条风险,再决定 AgentToolBridge 那道门怎么放行。
+                先在 docs/execution/INDEX.md §四 记一条风险,再决定 AgentToolBridge 那道门怎么放行。
                 """.formatted(String.join("\n", effects)));
     }
 

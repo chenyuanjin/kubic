@@ -54,10 +54,10 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 /**
- * 鉴权端点的契约 —— docs/技术架构 §6.1 那张表。
+ * 鉴权端点的契约 —— docs/technical/INDEX.md §6.1 那张表。
  *
  * <p>这里断言的不是「能跑通」,是<b>四种失败给的是四句不同的话、
- * 而且每一句都带着准确的时点</b>。合并成一句「验证码错误」的代价见 docs/后端详设 §1.8。
+ * 而且每一句都带着准确的时点</b>。合并成一句「验证码错误」的代价见 docs/technical/后端系统设计与组件接入.md §1.8。
  */
 @WebMvcTest(controllers = {AuthController.class, AccountController.class})
 @Import({AuthApiTest.TestBeans.class, ApiExceptionHandler.class, AuthWebConfig.class, ApiCorsConfig.class})
@@ -160,7 +160,7 @@ class AuthApiTest {
         }
 
         /**
-         * 默认关着(关卡 2 后),但可以在单个用例里打开 —— 见 {@link AuthApiTest#WECHAT}。
+         * 默认关着(阶段 2 后),但可以在单个用例里打开 —— 见 {@link AuthApiTest#WECHAT}。
          *
          * <p>这么写是为了同时测两件事:关着时回 503,以及开着时那条一步登录的顺序。
          */
@@ -467,7 +467,7 @@ class AuthApiTest {
     }
 
     @Test
-    @DisplayName("关卡 3 的那个累计数读得到")
+    @DisplayName("阶段 3 的那个累计数读得到")
     void signupCount() throws Exception {
         login(freshPhone(10));
         mvc.perform(get("/api/account/signup-count"))

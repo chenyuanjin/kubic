@@ -6,7 +6,7 @@ import reactor.core.publisher.Flux;
 /**
  * 🔴 <b>模型出口。整个 agent 模块唯一被允许接触大模型的地方。</b>
  *
- * <h2>这条接口就是 docs/后端详设 §4.1 那条绿线在 agent 侧的形态</h2>
+ * <h2>这条接口就是 docs/technical/后端系统设计与组件接入.md §4.1 那条绿线在 agent 侧的形态</h2>
  *
  * §4.1 的原文规定 {@code ChatModel} / {@code ChatClient} 不得越过 {@code recognize} 的实现类,
  * 理由第三条是:「任何人都能在别处 {@code @Autowired ChatModel} 直接问模型,

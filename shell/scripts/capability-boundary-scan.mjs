@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * 能力边界文案扫描 —— 壳侧(docs/总路线图 §四 R-05:产品永不判断「对不对」)。
+ * 能力边界文案扫描 —— 壳侧(docs/execution/INDEX.md §四 R-05:产品永不判断「对不对」)。
  *
  * <h2>🔴 词表不在这个文件里,一个字都没有</h2>
  *
@@ -18,7 +18,7 @@
  *
  * <h2>扫哪些文件</h2>
  *
- * docs/壳技术方案 §六 的原话是「壳里所有面向用户的字符串集中在 shell/src/strings.rs 一个文件,
+ * docs/technical/壳技术方案-Tauri2包现有Web工程.md §六 的原话是「壳里所有面向用户的字符串集中在 shell/src/strings.rs 一个文件,
  * 因此只有一处要扫」。这里扫得比那句更宽:<b>src 全树 + tauri.conf.json5</b>。
  * 理由有两条 ——
  *   ① productName 在 tauri.conf.json5 里,它是货真价实的界面文案(菜单栏第一项就是它);
@@ -62,7 +62,7 @@ function fail(msg) {
  * 从 web 那份脚本里把一个数组按文本读出来。
  *
  * 先剥掉行注释再取字符串字面量 —— 那两个数组上面写着长长的入选理由,
- * 而理由里为了讲清楚必然会把被禁的词写出来(docs/交付工作流 §9.10 记的那条设计教训)。
+ * 而理由里为了讲清楚必然会把被禁的词写出来(docs/ops/INDEX.md §9.10 记的那条设计教训)。
  * 不剥注释的话,读出来的词表会比真词表多一堆。
  */
 function extractList(source, name) {
@@ -197,7 +197,7 @@ const stale = [...allow.values()].filter((it) => !used.has(`${it.file}\u0000${it
 
 if (hardHits.length === 0 && softHits.length === 0 && stale.length === 0) {
   process.stdout.write(
-    '\n能力边界扫描通过(壳)—— docs/总路线图 §四 R-05「产品永不判断对不对」\n' +
+    '\n能力边界扫描通过(壳)—— docs/execution/INDEX.md §四 R-05「产品永不判断对不对」\n' +
       `  扫描 ${files.length} 个文件 / ${lines} 行(shell/src + capabilities + tauri.conf.json5)\n` +
       `  词表现读自 ${WEB_SCAN_LABEL}:硬名单 ${HARD.length} 词,灰名单 ${SOFT.length} 词\n` +
       `  豁免表 ${allow.size} 项(全部命中)\n\n`,
@@ -206,7 +206,7 @@ if (hardHits.length === 0 && softHits.length === 0 && stale.length === 0) {
 }
 
 const out = []
-out.push('\n能力边界扫描未通过(壳)—— docs/总路线图 §四 R-05「产品永不判断对不对」')
+out.push('\n能力边界扫描未通过(壳)—— docs/execution/INDEX.md §四 R-05「产品永不判断对不对」')
 out.push('判据:用户自己填的数不算判定,产品替他判断对错才算。\n')
 
 if (hardHits.length) {

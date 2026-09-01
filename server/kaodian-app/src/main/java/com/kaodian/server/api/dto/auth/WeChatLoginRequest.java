@@ -6,7 +6,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 /**
- * 微信 code 换会话 —— <b>关卡 2 后</b>。
+ * 微信 code 换会话 —— <b>阶段 2 后</b>。
  *
  * @param entry {@code mini_program} / {@code official_h5} / {@code website_qr}。
  *              <b>三条是三个不同的应用,appid 不通用</b>;传错的表现是 {@code errcode 40029}

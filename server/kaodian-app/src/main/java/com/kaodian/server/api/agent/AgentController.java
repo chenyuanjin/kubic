@@ -116,7 +116,7 @@ public class AgentController {
      * @param sessionId 会话 id;不传则按单轮处理(不读历史)
      * @param images    附带的图片。
      *                  🔴 <b>JSON body + base64 内联,不是 multipart</b> —— 与
-     *                  {@code POST /records/{id}/image} 同一形态(docs/技术架构 §6.2)。
+     *                  {@code POST /records/{id}/image} 同一形态(docs/technical/INDEX.md §6.2)。
      *                  理由是形态本身:multipart 的 {@code file-size-threshold} 默认会把每个 part
      *                  先写成临时文件,那就等于原图落盘(R-04),而那一条不会报错、也不会
      *                  出现在任何 code review 里。base64 走 JSON 则全程在内存。

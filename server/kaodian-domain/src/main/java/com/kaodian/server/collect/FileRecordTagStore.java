@@ -106,7 +106,7 @@ public class FileRecordTagStore implements RecordTagStore {
 
             RecordTag existing = lookup(tag.id());
             if (existing != null) {
-                // 🔴 origin 是来源不是状态(docs/技术架构 §5.2)。这一句是它的第三道锁 ——
+                // 🔴 origin 是来源不是状态(docs/technical/INDEX.md §5.2)。这一句是它的第三道锁 ——
                 //    前两道在 RecordTag 上(record 没有 setter、confirm/discard 的签名里没有 origin 的位置),
                 //    但那两道只挡得住「顺着现有 API 走」的人。这一道挡的是自己 new 一个再 put 进来的写法。
                 if (existing.origin() != tag.origin()) {
@@ -114,7 +114,7 @@ public class FileRecordTagStore implements RecordTagStore {
                             "标签的 origin 写入后不可变:" + existing.origin().wireName()
                                     + " → " + tag.origin().wireName()
                                     + " —— 它记的是这条标签从哪来,不是它现在什么状态。"
-                                    + "用户确认只写 confirmed_at(docs/技术架构 §5.2)");
+                                    + "用户确认只写 confirmed_at(docs/technical/INDEX.md §5.2)");
                 }
                 if (!existing.recordId().equals(tag.recordId())) {
                     throw new IllegalArgumentException(

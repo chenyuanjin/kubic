@@ -7,7 +7,7 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {
     proxy: {
-      // 后端是同机的另一个进程,不是另一个服务(docs/技术架构 §2.2)。
+      // 后端是同机的另一个进程,不是另一个服务(docs/technical/INDEX.md §2.2)。
       // 生产由 Caddy 把 /api/* 反代到 :8080,dev 这里做同一件事 —— 让前端代码里
       // 永远只写相对路径 /api/*,不出现 host,也就不存在跨环境改地址这回事。
       '/api': {

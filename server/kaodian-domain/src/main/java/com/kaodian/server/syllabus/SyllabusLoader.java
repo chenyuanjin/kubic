@@ -16,7 +16,7 @@ import java.util.Set;
  * 骨架树 JSON 的<b>唯一解析器</b> —— classpath 上的种子和 {@code ~/.kaodian/syllabus.json}
  * 走的是同一段代码。
  *
- * <p>阶段 0/1 骨架层就是一个 JSON 文件 —— docs/技术架构 §零:「阶段 0 是本地文件夹 + 纯文本」,
+ * <p>阶段 0/1 骨架层就是一个 JSON 文件 —— docs/technical/INDEX.md §零:「阶段 0 是本地文件夹 + 纯文本」,
  * 数据层落库最早也要到阶段 1 的 {@code 1.2.4}。现在没有数据库,也不需要。
  *
  * <h2>这个类<b>只解析名称、层级、频次、归档标记</b></h2>

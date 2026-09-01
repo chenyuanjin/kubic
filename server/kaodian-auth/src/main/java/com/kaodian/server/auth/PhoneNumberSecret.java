@@ -1,7 +1,7 @@
 package com.kaodian.server.auth;
 
 /**
- * 一个手机号在库里的两种形态 —— <b>哈希用于查,密文用于发短信</b>(docs/技术架构 §5.2)。
+ * 一个手机号在库里的两种形态 —— <b>哈希用于查,密文用于发短信</b>(docs/technical/INDEX.md §5.2)。
  *
  * <p>这是整个后端唯一持有「能还原出手机号」的东西的地方。它不是一张表的行,
  * 而是 {@link PhoneCipher} 的输出:{@code hmac} 进 {@link UserIdentity#identifier},

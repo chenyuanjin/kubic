@@ -30,8 +30,8 @@ import jakarta.validation.constraints.Size;
  * 权威判定在 {@code FileSyllabusStore.validName}(它还会拒绝换行),这里只是提前给个清楚的报错。
  *
  * @param groupCode     挂到哪个题型下。必须是树里已有的题型 code
- * @param name          <b>自行归纳</b>的考点名,不沿用机构既有措辞(R-07 / docs/实施路径 §1.2)
- * @param recent5yCount 近五年出现次数。统计事实(docs/数据线),也是盲区排序的权重之一
+ * @param name          <b>自行归纳</b>的考点名,不沿用机构既有措辞(R-07 / docs/decisions/实施路径.md §1.2)
+ * @param recent5yCount 近五年出现次数。统计事实(docs/data/INDEX.md),也是盲区排序的权重之一
  */
 public record CreateNodeRequest(
 

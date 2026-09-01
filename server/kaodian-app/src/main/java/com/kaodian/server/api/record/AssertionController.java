@@ -26,7 +26,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.time.Clock;
 
 /**
- * 「我已掌握」/ 取消 —— docs/技术架构 §6.4 那张表的最后一行。
+ * 「我已掌握」/ 取消 —— docs/technical/INDEX.md §6.4 那张表的最后一行。
  *
  * <h2>🔴 这两个端点<b>动不了覆盖率</b>,这是它们最重要的性质</h2>
  *
@@ -55,7 +55,7 @@ import java.time.Clock;
  *
  * 归档把考点从<b>分母</b>里拿掉(比值仍然诚实,上下同时少一),断言把考点<b>留在分母里</b>、
  * 不进分子、单列一格。前者说「这个考点与我无关」,后者说「我会了,只是没记」。
- * 归档那一侧有一条单独的风险记录({@code docs/总路线图} §四 {@code R-49}:归档可无声刷高覆盖率);
+ * 归档那一侧有一条单独的风险记录({@code docs/execution/INDEX.md} §四 {@code R-49}:归档可无声刷高覆盖率);
  * 断言这一侧没有那条风险,<b>因为它根本不动那个比值</b>。
  * 两者不要混成一个概念 —— 混了之后,「取消归档」和「取消声明」会被写成同一个按钮,
  * 而它们恢复的是两个不同的东西。
@@ -84,7 +84,7 @@ public class AssertionController {
     }
 
     /**
-     * 我已掌握。<b>body 只接受 {@code nodeCode}</b>(docs/技术架构 §6.4)。
+     * 我已掌握。<b>body 只接受 {@code nodeCode}</b>(docs/technical/INDEX.md §6.4)。
      *
      * <h2>201 与 200 的区别是「新声明了没有」,不是「成功了没有」</h2>
      *

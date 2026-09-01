@@ -7,7 +7,7 @@ import jakarta.validation.constraints.Size;
 import java.time.Instant;
 
 /**
- * 一条标签的只读投影 —— docs/技术架构 §5.2 的 {@code record_tag} 出到接口上。
+ * 一条标签的只读投影 —— docs/technical/INDEX.md §5.2 的 {@code record_tag} 出到接口上。
  *
  * <h2>🔴 这里没有一个能装下标签文字的位置</h2>
  *
@@ -21,7 +21,7 @@ import java.time.Instant;
  * 不是给用户看的状态。配了中文名,下一步就是界面上出现「这条是自动的」,
  * 再下一步就是有人为了让提示好看去改它 —— 而它<b>写入后不可变</b>。
  *
- * @param countsInCoverage 这条算不算进覆盖度。判据只有 {@code discarded}(docs/技术架构 §6.4),
+ * @param countsInCoverage 这条算不算进覆盖度。判据只有 {@code discarded}(docs/technical/INDEX.md §6.4),
  *                         <b>不包括「确认过没有」</b> —— 见 {@link RecordTag#countsInCoverage}
  * @param primary          是不是采集那一刻挂上的那条。它不在库里存着,由记录推出来
  */

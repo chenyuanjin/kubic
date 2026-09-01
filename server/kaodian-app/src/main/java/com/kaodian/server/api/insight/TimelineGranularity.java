@@ -6,7 +6,7 @@ import java.time.LocalDate;
 import java.time.temporal.TemporalAdjusters;
 
 /**
- * 时间线聚合的两种粒度 —— <b>按天 / 按周</b>(docs/技术架构 §6.4「按天/周聚合触达」)。
+ * 时间线聚合的两种粒度 —— <b>按天 / 按周</b>(docs/technical/INDEX.md §6.4「按天/周聚合触达」)。
  *
  * <h2>只有这两个值,没有「月」也没有「自定义天数」</h2>
  *
@@ -70,7 +70,7 @@ public enum TimelineGranularity {
      *
      * 两个决定各有理由:
      * <ul>
-     *   <li><b>周一</b>:ISO-8601 的定义,而 docs/技术架构 §六 已经把「时间一律 ISO-8601」
+     *   <li><b>周一</b>:ISO-8601 的定义,而 docs/technical/INDEX.md §六 已经把「时间一律 ISO-8601」
      *       定成全局约定;中国大陆的日历也是周一起。挑周日起算会让服务端的「本周」
      *       和用户手机日历上的「本周」差一天,而这个差别只在跨周的那一天暴露出来。</li>
      *   <li><b>日历周,不是「最近 7 天」</b>:滑动窗口每天都在挪,于是<b>同一段历史

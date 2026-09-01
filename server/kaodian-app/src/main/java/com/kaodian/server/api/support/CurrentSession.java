@@ -25,13 +25,13 @@ public record CurrentSession(AccessToken token) {
      *
      * <p>🔴 但请注意它<b>不是</b> {@code ro_} 令牌的主要防线 —— 主要防线是
      * MCP/CLI 那一侧根本换不出写能力({@link TokenScope})。
-     * 这里是第二道:同一条纪律在 docs/技术架构 §6.5 已经用过一次,
+     * 这里是第二道:同一条纪律在 docs/technical/INDEX.md §6.5 已经用过一次,
      * <b>一道锁失效不该导致整条线失守</b>。
      */
     public void requireWrite() {
         if (!token.scope().canWrite()) {
             throw new ApiException(org.springframework.http.HttpStatus.FORBIDDEN, "READONLY_TOKEN",
-                    "这是只读令牌,换不出写能力。MCP 与 CLI 一律只读(docs/技术架构 §6.7.3)。");
+                    "这是只读令牌,换不出写能力。MCP 与 CLI 一律只读(docs/technical/INDEX.md §6.7.3)。");
         }
     }
 }

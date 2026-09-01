@@ -822,7 +822,7 @@ class SyllabusAdminApiTest {
         for (Class<?> req : requestDtos()) {
             for (RecordComponent c : req.getRecordComponents()) {
                 assertFalse(subtreeFields.contains(c.getName()),
-                        req.getSimpleName() + " 不允许一次提交一棵子树(R-07 / docs/实施路径 §1.2):" + c.getName());
+                        req.getSimpleName() + " 不允许一次提交一棵子树(R-07 / docs/decisions/实施路径.md §1.2):" + c.getName());
             }
         }
     }

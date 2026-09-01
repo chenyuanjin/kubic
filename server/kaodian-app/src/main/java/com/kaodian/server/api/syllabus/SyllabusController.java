@@ -31,7 +31,7 @@ public class SyllabusController {
     }
 
     /**
-     * 骨架树 + 覆盖,单模块整棵树一次返回(docs/技术架构 §6.4),前端不做懒加载。
+     * 骨架树 + 覆盖,单模块整棵树一次返回(docs/technical/INDEX.md §6.4),前端不做懒加载。
      *
      * <h2>没有 {@code withCoverage=false} 这个开关</h2>
      *

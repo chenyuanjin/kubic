@@ -27,7 +27,7 @@ import static java.util.Map.entry;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * 🔴 R-01 的防回归断言 —— <b>线上库不存在能装下题干的字段</b>(docs/总路线图 §四 R-01,docs/数据线 §二)。
+ * 🔴 R-01 的防回归断言 —— <b>线上库不存在能装下题干的字段</b>(docs/execution/INDEX.md §四 R-01,docs/data/INDEX.md §二)。
  *
  * <h2>缺的从来不是约束</h2>
  *
@@ -60,7 +60,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * <h2>⚪ 白名单里还剩一行 {@link Reason#KNOWN_GAP}</h2>
  *
  * 那一行不是理由,是缺口。2026-08-27 收掉了七行({@code deviceLabel} × 4、{@code referrer} × 3,
- * docs/总路线图 §四 R-73):三个登录请求体加了 {@code @Size},{@code SessionDto} 那一行改判为
+ * docs/execution/INDEX.md §四 R-73):三个登录请求体加了 {@code @Size},{@code SessionDto} 那一行改判为
  * {@link Reason#BOUNDED_UPSTREAM} —— 它是响应,加注解不校验任何东西,收口点在写入口。
  * <p>
  * 剩下的 {@code AccountDto#nickname} <b>没有跟着收</b>,理由写在那一行上。
@@ -350,13 +350,13 @@ class NoStemFieldTest {
             }
         }
         assertTrue(violations.isEmpty(), () -> """
-                🔴 R-01 被破坏 —— 线上库出现了名字在说「题目本身」的字段(docs/总路线图 §四 R-01)。
+                🔴 R-01 被破坏 —— 线上库出现了名字在说「题目本身」的字段(docs/execution/INDEX.md §四 R-01)。
 
                 %s
 
                 这一条没有白名单,改名字也不算数:R-01 说的是「连预留位都不留」,
                 把 stem 改叫 detail 只是把红线降级成命名规范,库的形状一点没变。
-                真要加这个字段,先回 docs/总路线图 §四把 R-01 改掉,再来改这个测试 —— 顺序不能反。
+                真要加这个字段,先回 docs/execution/INDEX.md §四把 R-01 改掉,再来改这个测试 —— 顺序不能反。
                 """.formatted(String.join("\n", violations)));
     }
 
@@ -383,7 +383,7 @@ class NoStemFieldTest {
             }
         }
         assertTrue(violations.isEmpty(), () -> """
-                🔴 R-01 被破坏 —— 出现了没有上限的自由文本(docs/总路线图 §四 R-01,决策记录 §2.2 不碰内容)。
+                🔴 R-01 被破坏 —— 出现了没有上限的自由文本(docs/execution/INDEX.md §四 R-01,决策记录 §2.2 不碰内容)。
 
                 %s
 

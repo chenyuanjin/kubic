@@ -2,7 +2,7 @@
  * 极薄的 fetch 封装。
  *
  * 只写相对路径 `/api/*`:dev 由 vite proxy 转到 :8080,生产由 Caddy 反代到同机 jar
- * (docs/技术架构 §2.2「一台机器上的两个进程,不是两个服务」)。所以这里没有 baseURL 配置,
+ * (docs/technical/INDEX.md §2.2「一台机器上的两个进程,不是两个服务」)。所以这里没有 baseURL 配置,
  * 也没有环境变量 —— 少一个能配错的地方。
  */
 
@@ -11,7 +11,7 @@
  *
  * <h2>为什么还带一个 {@link code}</h2>
  *
- * 服务端的错误体是 `{code, message, traceId}`(docs/技术架构 §六),而那个 `code` 是<b>稳定的、
+ * 服务端的错误体是 `{code, message, traceId}`(docs/technical/INDEX.md §六),而那个 `code` 是<b>稳定的、
  * 可被程序判断的</b>东西 —— `message` 是给人看的中文,随时可以改词。
  * 骨架层的删除守则正好需要这个分支:`409 NODE_HAS_RECORDS` 不该显示成一句「删除失败」,
  * 它得在界面上长出「把记录搬走」和「归档」两个按钮
@@ -117,7 +117,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
       })
     }
 
-    // 后端的错误体约定是 {code, message, traceId}(docs/技术架构 §六)。
+    // 后端的错误体约定是 {code, message, traceId}(docs/technical/INDEX.md §六)。
     // message 给人看,code 给程序分支 —— 两个都留着,不要只留一个。
     const body = readErrorBody(text)
     throw new ApiUnavailableError(body ? `${body.message}(HTTP ${res.status})` : `HTTP ${res.status}`, {

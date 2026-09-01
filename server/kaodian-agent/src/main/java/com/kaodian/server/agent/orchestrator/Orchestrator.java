@@ -103,7 +103,7 @@ public class Orchestrator {
         // 是靠这一层没有可用的容器。
         //
         // 代价是诚实的:下一轮回放历史时,模型看到的是「用户当时发过 2 张图」这句话,
-        // 而不是那两张图。它无法再看一眼。这个断裂记在 docs/总路线图 R-89,
+        // 而不是那两张图。它无法再看一眼。这个断裂记在 docs/execution/INDEX.md R-89,
         // 不要为了「体验连贯」把图存下来 —— 那正是 R-04 第一天定死、后面改不回来的那条。
         runRepo.appendMessage(new AgentMessage(
                 "m-" + UUID.randomUUID(), runId, AgentMessage.Role.USER, 0,

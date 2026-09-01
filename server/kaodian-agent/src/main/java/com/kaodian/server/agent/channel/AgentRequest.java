@@ -23,7 +23,7 @@ import java.util.List;
  */
 public record AgentRequest(long userId, String sessionId, String message, List<byte[]> images) {
 
-    /** 单轮最多几张图。与 {@code RecognitionController} 的采集端点同档(docs/技术架构 §6.2「单次 ≤6 张」)。 */
+    /** 单轮最多几张图。与 {@code RecognitionController} 的采集端点同档(docs/technical/INDEX.md §6.2「单次 ≤6 张」)。 */
     public static final int MAX_IMAGES = 6;
 
     /** 兼容无图调用点(单轮文字提问)。 */

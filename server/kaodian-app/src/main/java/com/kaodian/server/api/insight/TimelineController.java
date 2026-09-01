@@ -28,7 +28,7 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * 时间线聚合 —— 「我这段时间碰过些什么」(docs/技术架构 §6.4「按天/周聚合触达」)。
+ * 时间线聚合 —— 「我这段时间碰过些什么」(docs/technical/INDEX.md §6.4「按天/周聚合触达」)。
  *
  * <h2>🔴 这个端点只做统计,不做判断</h2>
  *

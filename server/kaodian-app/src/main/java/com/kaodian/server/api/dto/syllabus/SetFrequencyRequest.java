@@ -11,7 +11,7 @@ import jakarta.validation.constraints.NotNull;
  *
  * <h2>这是统计事实,不是难度、不是权重表</h2>
  *
- * {@code recent5yCount} 的含义只有一个:<b>这个考点近五年在真题里出现过几次</b>(docs/数据线)。
+ * {@code recent5yCount} 的含义只有一个:<b>这个考点近五年在真题里出现过几次</b>(docs/data/INDEX.md)。
  * 它不是「这题多难」,也不是「你该花多少时间」—— 那两样都属于教研,决策记录 §2.2 划在边界外。
  * 盲区排序用它做权重({@code blindScore = 频次 × 状态权重}),用的也正是它作为事实的那一面。
  *

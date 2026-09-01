@@ -36,7 +36,7 @@ import java.util.concurrent.ConcurrentMap;
  *
  * <h2>为什么是文件</h2>
  *
- * docs/技术架构 §零:数据层落库最早到阶段 1 的 {@code 1.2.4},阶段 0 是本地文件夹。
+ * docs/technical/INDEX.md §零:数据层落库最早到阶段 1 的 {@code 1.2.4},阶段 0 是本地文件夹。
  * agent 比那条线还要靠后 —— 它现在连一个真实用户都还没服务过。
  * 现在给它上一套库,买到的只是一个要运维的进程。理由与 {@code FileTouchStore} 逐字相同。
  *

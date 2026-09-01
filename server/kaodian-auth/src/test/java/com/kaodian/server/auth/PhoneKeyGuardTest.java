@@ -16,7 +16,7 @@ import static org.junit.jupiter.api.Assertions.*;
  *
  * <p>没有这道守卫时的表现是:接口全部 200、日志一条没有,
  * 而每一次登录都在建新账号 —— 老用户的记录留在再也查不到的旧账号上,
- * 同时 {@link SignupLedger} 上多出一批假注册(那是关卡 3 判据的数据源)。
+ * 同时 {@link SignupLedger} 上多出一批假注册(那是阶段 3 判据的数据源)。
  *
  * <p>所以这里最要紧的一个用例是 {@link #hmacLostButAesIntactHealsItself}:
  * <b>最常见的那种丢失本来就不该让任何人半夜爬起来。</b>
@@ -142,7 +142,7 @@ class PhoneKeyGuardTest {
 
         assertFalse(login.isNewAccount(), "🔴 这一行为 true 就意味着 R-59 正在发生");
         assertEquals(userId, login.user().id());
-        assertEquals(1, ledger.totalCount(), "关卡 3 的累计注册数不能凭空多一笔");
+        assertEquals(1, ledger.totalCount(), "阶段 3 的累计注册数不能凭空多一笔");
     }
 
     // —— 三、两把都变了 ——

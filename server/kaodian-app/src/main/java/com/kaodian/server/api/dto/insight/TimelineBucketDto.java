@@ -18,7 +18,7 @@ import java.util.List;
  * {@code improved} 的那天,前端不写「进步了」反而成了额外的克制。
  * <p>
  * 同理这里<b>没有 {@code practiced} / {@code correct} / 正确率</b>。
- * docs/技术架构 §5.2 撤掉 {@code practice_log} 那张表时给的理由逐字适用:
+ * docs/technical/INDEX.md §5.2 撤掉 {@code practice_log} 那张表时给的理由逐字适用:
  * 「按正确率排薄弱考点只差一条 SQL,而那正是 {@code R-05}」——
  * 每格一个正确率,「这周退步了」就是同一条 SQL 的另一种写法。
  *

@@ -60,7 +60,7 @@ export const KIND_LABEL: Record<TouchKind, string> = {
  * 会不会消耗 AI 录入额度。与 server 侧 TouchKind.consumesAiQuota() 一致。
  *
  * 界面上要看得见这条区分:额度用尽时停掉的只有前两种,后三种永远可用 ——
- * 「额度用尽 ≠ 记不了」(docs/商业化设计 §二)。
+ * 「额度用尽 ≠ 记不了」(docs/product/商业化与额度设计.md §二)。
  */
 export const KIND_USES_AI: Record<TouchKind, boolean> = {
   VOICE: true,

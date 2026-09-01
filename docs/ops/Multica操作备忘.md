@@ -1,6 +1,6 @@
 # Multica 操作备忘
 
-> **这份是查阅用的,不是决策层。** 交付流程的「为什么」在 `交付工作流`,agent 的职责在各自 instructions 里。
+> **这份是查阅用的,不是决策层。** 交付流程的「为什么」在 `自动化交付工作流 · 基于 Multica`,agent 的职责在各自 instructions 里。
 > 这里只放两样:**当前的 ID 表**,和**踩过的坑**。
 >
 > 每一条「坑」都真实卡过一次,不是可能出错的清单。写下来是因为它们全部属于
@@ -135,19 +135,19 @@ EOF
 # 状态 —— 位置参数,不是 --status
 mc issue status <id> todo [--no-start]
 
-# 建议题 —— stage 是关卡屏障(见下)
+# 建议题 —— stage 是阶段屏障(见下)
 mc issue create --title X --parent <pid> --stage 2 --description "..." --output json
 
 # 指派 —— --to 收 agent / squad / member 名字(模糊匹配)
 mc issue assign <id> --to 开发组 [--no-start]
 ```
 
-### `--stage N` = 关卡屏障
+### `--stage N` = 阶段屏障
 
 > Stage ordinal grouping this sub-issue into an ordered barrier group under its parent;
 > **the parent assignee is woken only when every sub-issue in a stage finishes.**
 
-一个 stage 全部完成才唤醒父议题的 assignee 去做判定 —— **这就是关卡,不用自己造。**
+一个 stage 全部完成才唤醒父议题的 assignee 去做判定 —— **这就是阶段屏障,不用自己造。**
 
 ---
 

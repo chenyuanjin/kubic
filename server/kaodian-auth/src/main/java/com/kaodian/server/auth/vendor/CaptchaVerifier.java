@@ -1,7 +1,7 @@
 package com.kaodian.server.auth.vendor;
 
 /**
- * 第①道闸 —— 行为验证 / 滑块(docs/后端详设 §1.8)。
+ * 第①道闸 —— 行为验证 / 滑块(docs/technical/后端系统设计与组件接入.md §1.8)。
  *
  * <h2>🔴 它必须在「发短信」之前,不是在「校验验证码」之前</h2>
  *

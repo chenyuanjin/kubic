@@ -5,7 +5,7 @@ import com.fasterxml.jackson.annotation.JsonAnySetter;
 import jakarta.validation.constraints.NotBlank;
 
 /**
- * 已登录账号绑手机号 —— <b>关卡 2 后</b>(docs/技术架构 §6.1)。
+ * 已登录账号绑手机号 —— <b>阶段 2 后</b>(docs/technical/INDEX.md §6.1)。
  *
  * <p>它仍然要走一次验证码({@code purpose=bind}),而不是「登录了就能随便绑」:
  * 绑定的是<b>一个能用来登录的凭证</b>,不验证等于允许给自己绑上别人的号。

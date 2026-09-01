@@ -1,7 +1,7 @@
 package com.kaodian.server.api.dto.common;
 
 /**
- * 统一错误体 —— docs/技术架构 §六:{@code {code, message, traceId}}。
+ * 统一错误体 —— docs/technical/INDEX.md §六:{@code {code, message, traceId}}。
  *
  * <h2>三个字段,一个都不多</h2>
  *

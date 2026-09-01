@@ -9,7 +9,7 @@ import jakarta.validation.constraints.NotBlank;
  *
  * <p>🔴 <b>{@code captchaTicket} 与 {@code captchaRandstr} 两个都必须接</b>。
  * 只接票据是接入腾讯云验证码时最常见的一个错 —— 校验会 100% 失败,
- * 然后往往被人「修」成失败也放行,于是第①道闸就没了(docs/后端详设 §1.8)。
+ * 然后往往被人「修」成失败也放行,于是第①道闸就没了(docs/technical/后端系统设计与组件接入.md §1.8)。
  *
  * @param phone         手机号,允许带空格与 {@code +86}
  * @param purpose       {@code login} 或 {@code bind}。防跨场景重放

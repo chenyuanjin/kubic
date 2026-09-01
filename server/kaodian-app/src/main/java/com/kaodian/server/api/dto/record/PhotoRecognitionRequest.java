@@ -14,7 +14,7 @@ import java.util.List;
  *
  * <h2>🔴 为什么这个端点是 JSON + base64,而音频那个是 multipart(两者形态不同是刻意的)</h2>
  *
- * docs/技术架构 §6.2 对这两行的原文<b>逐字不同</b>:
+ * docs/technical/INDEX.md §6.2 对这两行的原文<b>逐字不同</b>:
  * <ul>
  *   <li>音频:「multipart,≤60s;转写完成后<b>服务端不留存音频</b>;失败提示重录」</li>
  *   <li>图片:「🔴 <b>JSON body,base64 内联,不是 multipart 落盘。</b>
@@ -22,7 +22,7 @@ import java.util.List;
  * </ul>
  * 「不是 multipart <b>落盘</b>」这五个字就是全部理由。servlet 容器处理 multipart 的默认行为是
  * <b>把每个 part 写成一个临时文件</b>({@code file-size-threshold} 默认 0 = 一律落盘),
- * 而 docs/技术架构 §8.1 禁令 2 是「服务端不写磁盘、不进对象存储、不建图片桶」——
+ * 而 docs/technical/INDEX.md §8.1 禁令 2 是「服务端不写磁盘、不进对象存储、不建图片桶」——
  * <b>选 multipart 等于把红线的成立与否交给一个容器默认值</b>。
  * JSON body 走的是 Jackson 的字符流,没有任何一层会替你把它写到盘上。
  * <p>
@@ -33,7 +33,7 @@ import java.util.List;
  * <p>
  * ⚠️ <b>所以千万不要「统一」这两个端点的形态。</b> 把图片改成 multipart 是最自然的重构
  * (「两个上传接口为什么长得不一样?」),而它正好会踩 R-04 ——
- * 那条红线在 docs/总路线图 §四 上标着「<b>第一天不定就改不回来</b>」。
+ * 那条红线在 docs/execution/INDEX.md §四 上标着「<b>第一天不定就改不回来</b>」。
  * 反过来把音频改成 JSON+base64 倒是安全的,只是契约没那么写。
  *
  * <h2>🔴 base64 在这里<b>不是</b>一个 {@code String} 字段,这一点是被红线逼出来的</h2>
@@ -66,7 +66,7 @@ import java.util.List;
  *       当场红,报的 logger 就是上面那个</li>
  * </ul>
  * 这条最要紧的地方在于:<b>它不在我们写的任何一行代码里</b>。
- * docs/技术架构 §8.1 禁令 3 说的是「不把 base64 打进日志的任何级别」,而这一次打日志的是框架 ——
+ * docs/technical/INDEX.md §8.1 禁令 3 说的是「不把 base64 打进日志的任何级别」,而这一次打日志的是框架 ——
  * 源码扫描扫不到,code review 看不见,只有把级别调到 TRACE 跑一次才看得出来。
  * <b>选 {@code byte[]} 不是风格偏好,是它让这句框架日志无害。</b>
  *
@@ -83,7 +83,7 @@ import java.util.List;
  * {@code FAIL_ON_UNKNOWN_PROPERTIES} 被人关掉的那天会静默通过。
  *
  * @param photos 每个元素是一张图的<b>原始字节</b>(线上是一段纯 base64,不带 {@code data:} 前缀)。
- *               单次 ≤ {@link #MAX_PHOTOS} 张 —— docs/技术架构 §6.2「单次 ≤6 张(连拍合并,{@code 1.1.2.3})」
+ *               单次 ≤ {@link #MAX_PHOTOS} 张 —— docs/technical/INDEX.md §6.2「单次 ≤6 张(连拍合并,{@code 1.1.2.3})」
  */
 public record PhotoRecognitionRequest(
 
@@ -96,11 +96,11 @@ public record PhotoRecognitionRequest(
 ) {
 
     /**
-     * 单次最多几张 —— docs/技术架构 §6.2 逐字:「单次 ≤6 张(连拍合并,{@code 1.1.2.3})」。
+     * 单次最多几张 —— docs/technical/INDEX.md §6.2 逐字:「单次 ≤6 张(连拍合并,{@code 1.1.2.3})」。
      *
      * <p>{@code 1.1.2.3} 的场景是「听课连续截图」:6 张是<b>同一份材料的多张</b>,
      * 合并成<b>一条</b>记录,不是 6 条。上限的作用不只是省钱 ——
-     * base64 内联下每多一张,请求体就多几百 KB,而 docs/技术架构 §8.1 禁令 5 说得很清楚:
+     * base64 内联下每多一张,请求体就多几百 KB,而 docs/technical/INDEX.md §8.1 禁令 5 说得很清楚:
      * <b>反代可能背着你把超出缓冲区的请求体落盘</b>。请求体越小,那条最隐蔽的破口越窄。
      */
     public static final int MAX_PHOTOS = 6;
@@ -149,7 +149,7 @@ public record PhotoRecognitionRequest(
      * 🔴 R-07 的第二道锁 —— 未定义字段一律拒绝,<b>与 ObjectMapper 怎么配置无关</b>。
      *
      * <p><b>{@code value} 收下就丢</b>:它是用户送来的原文,可能就是一整段题干,
-     * 也可能就是那张图的 base64。异常里只带字段名(决策记录 §2.2 不碰内容 / docs/技术架构 §8.1 禁令 3)。
+     * 也可能就是那张图的 base64。异常里只带字段名(决策记录 §2.2 不碰内容 / docs/technical/INDEX.md §8.1 禁令 3)。
      */
     @JsonAnySetter
     void rejectUnknownField(String name, Object value) {

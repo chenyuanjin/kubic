@@ -26,7 +26,7 @@ import java.util.Set;
 import java.util.regex.Pattern;
 
 /**
- * 手机号的哈希与加解密 —— docs/技术架构 §5.2「手机号不明文落库」的全部实现。
+ * 手机号的哈希与加解密 —— docs/technical/INDEX.md §5.2「手机号不明文落库」的全部实现。
  *
  * <h2>两件事,两把密钥</h2>
  *
@@ -80,7 +80,7 @@ public class PhoneCipher {
      *
      * <p>不做「宽进严出」:一个格式不对的号收不到短信,而短信是要花钱的 ——
      * 在发送前就挡掉,比发出去再看运营商回什么便宜。
-     * 港澳台与海外不在阶段 2 范围内(docs/技术架构 §七 只写了国内签名与模板)。
+     * 港澳台与海外不在阶段 2 范围内(docs/technical/INDEX.md §七 只写了国内签名与模板)。
      */
     private static final Pattern CN_MOBILE = Pattern.compile("^1[3-9]\\d{9}$");
 

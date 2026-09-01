@@ -3,11 +3,11 @@ package com.kaodian.server.collect;
 import java.util.List;
 
 /**
- * 「我已掌握」的存储契约 —— docs/技术架构 §5.2 的 {@code user_assertion} 表。
+ * 「我已掌握」的存储契约 —— docs/technical/INDEX.md §5.2 的 {@code user_assertion} 表。
  *
  * <h2>为什么先是接口,而且现在的实现是一个文件</h2>
  *
- * 与 {@link TouchStore} / {@link RecordTagStore} 逐字同理:docs/技术架构 §零 写明数据层落库最早到
+ * 与 {@link TouchStore} / {@link RecordTagStore} 逐字同理:docs/technical/INDEX.md §零 写明数据层落库最早到
  * 阶段 1 的 {@code 1.2.4}。到那天换成 JDBC 只是多一个实现类。
  *
  * <h2>🔴 幂等在这一层,不在调用方</h2>
@@ -19,7 +19,7 @@ import java.util.List;
  * 放在存储层而不是让调用方「先查再写」,与 {@link TouchStore#append} 的理由是同一条:
  * 先查再写有一个窗口,而这个按钮在界面上就是<b>连点会重复发请求</b>的那一类。
  * 两个线程各自查到「没有」然后各自写一行,概览里那个「已声明 N 个」就会变成 N+1,
- * 而它是 docs/技术架构 §6.4 要求单列出来给用户看的那个数。
+ * 而它是 docs/technical/INDEX.md §6.4 要求单列出来给用户看的那个数。
  *
  * <h2>🔴 这个接口上没有任何以「考点名字」为参数的方法</h2>
  *
@@ -57,6 +57,6 @@ public interface AssertionStore {
      */
     boolean remove(String nodeCode);
 
-    /** 声明的总数。概览里单列的那一格就是它(docs/技术架构 §6.4:<b>断言单列不并入</b>)。 */
+    /** 声明的总数。概览里单列的那一格就是它(docs/technical/INDEX.md §6.4:<b>断言单列不并入</b>)。 */
     int count();
 }

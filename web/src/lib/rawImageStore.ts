@@ -14,7 +14,7 @@
  * <b>`web/src` 里除本文件外不许出现任何形态判断</b>。
  * 多一个没人知道的注入点,能力边界就少一道防线。
  *
- * <h2>依赖图(`docs/原图存储 §3.1` 冻结)</h2>
+ * <h2>依赖图(`docs/technical/原图存储-判据层与存储层.md §3.1` 冻结)</h2>
  *
  * <pre>
  *   界面 / main.tsx  ──▶  rawImageStore.ts  ──▶  rawImageCache.ts(判据层)
@@ -75,7 +75,7 @@ async function resolveBackend(): Promise<RawImageBackend> {
     await migrateRawImages(indexedDbRawImageBackend, fsRawImageBackend)
   } catch {
     /* 见上:没丢,下次启动重跑。这里【一行日志都不打】——
-       这条链路上的异常对象可能带着行数据,而 docs/技术架构 §8.1 禁令 3 的客户端对应物是
+       这条链路上的异常对象可能带着行数据,而 docs/technical/INDEX.md §8.1 禁令 3 的客户端对应物是
        「不把原图相关的东西打进 console 的任何级别」。 */
   }
   return fsRawImageBackend
@@ -144,7 +144,7 @@ export const rawImages = new RawImageCache({
  * 隐私模式 / IndexedDB 被禁用 / 壳的存储目录没权限时这里必然抛,
  * 而那几种情况下<b>压根没有图可扫</b>。让它把首屏炸掉,是用一个不存在的风险换一个真实的故障。
  * 🔴 catch 里<b>一行日志都不打</b> —— 这条链路上的异常对象可能带着行数据,
- * 而 docs/技术架构 §8.1 禁令 3 的客户端对应物是「不把原图相关的东西打进 console 的任何级别」。
+ * 而 docs/technical/INDEX.md §8.1 禁令 3 的客户端对应物是「不把原图相关的东西打进 console 的任何级别」。
  */
 export function sweepRawImagesOnStartup(): void {
   void rawImages.sweep().catch(() => {

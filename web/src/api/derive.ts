@@ -25,7 +25,7 @@ import type {
  * <h2>唯一一处「前端自己求的数」:每个考点的 practiced / correct</h2>
  *
  * 树接口(`NodeDto`)不返回做题数,那四个字段只在单点详情 `NodeDetailDto` 里有,
- * 而一屏 18 行不可能发 18 个详情请求(docs/技术架构 §6.4:整棵树一次返回)。
+ * 而一屏 18 行不可能发 18 个详情请求(docs/technical/INDEX.md §6.4:整棵树一次返回)。
  * 所以这两个数由 `GET /api/records` 那一页里<b>同一批原始记录</b>求和 —— 和 server 侧
  * `CoverageService.compute` 逐行同一个写法:只累加 `practiced > 0` 的那些,不做四舍五入。
  * <p>

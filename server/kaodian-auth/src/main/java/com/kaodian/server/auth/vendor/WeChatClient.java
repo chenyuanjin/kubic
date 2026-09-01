@@ -3,7 +3,7 @@ package com.kaodian.server.auth.vendor;
 /**
  * 微信侧的全部 HTTP 调用 —— <b>就这一个接口,别处不许再出现 {@code api.weixin.qq.com}</b>。
  *
- * <p>与 {@code recognize} 包「模型调用只能出现在那一层」是同一条纪律(docs/后端详设 §二),
+ * <p>与 {@code recognize} 包「模型调用只能出现在那一层」是同一条纪律(docs/technical/后端系统设计与组件接入.md §二),
  * 理由也一样:散开之后就没有切换点了,而微信的接口是会变的
  * (光是「换取手机号」这一件事,官方就已经废弃过一版旧组件)。
  *
@@ -45,7 +45,7 @@ public interface WeChatClient {
      *
      * <p>🔴 <b>但它是收费的:0.03 元/次成功调用,每个小程序 1000 次体验额度。</b>
      * 而且它<b>不进额度体系</b> —— 和短信一样,是注册环节的按次外部账单
-     * (docs/后端详设 §1.8 引 {@code 11} §3.2:对它计费等于对注册计费)。
+     * (docs/technical/后端系统设计与组件接入.md §1.8 引 {@code 11} §3.2:对它计费等于对注册计费)。
      * 所以它同样必须被频控与滑块管住,不能因为「体验好」就无限量开着。
      *
      * @param phoneCode 前端 {@code bindgetphonenumber} 回调里的动态令牌。<b>5 分钟有效,单次消费</b>

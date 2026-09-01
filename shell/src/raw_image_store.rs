@@ -37,7 +37,7 @@
 //!   <id>.tmp / index.tmp    ← 写到一半的残留,启动清理
 //! ```
 //!
-//! 🔴 **目录本身就是红线的物理落点**(`docs/原图存储 §3.4`):它落在应用数据目录,
+//! 🔴 **目录本身就是红线的物理落点**(`docs/technical/原图存储-判据层与存储层.md §3.4`):它落在应用数据目录,
 //! 不在 `~/Documents` / `~/Desktop` / `~/Pictures` —— macOS 的 iCloud「桌面与文稿」
 //! 同步默认可开,开着就等于原图自动上云,而且**不报错、不出现在任何 review 里**。
 //! 本模块**没有**接受外部目录的入口:`new` 只被 `main.rs` 调一次,参数来自 `platform`。
@@ -83,7 +83,7 @@ pub enum StoreError {
 impl StoreError {
     fn io(e: std::io::Error) -> Self {
         // 🔴 只留 io::Error 自己的描述,**不拼路径**。
-        // docs/技术架构 §8.2 明说路径也是设备信息,而这个字符串会进错误体。
+        // docs/technical/INDEX.md §8.2 明说路径也是设备信息,而这个字符串会进错误体。
         StoreError::Io(e.kind().to_string())
     }
 }
@@ -218,7 +218,7 @@ impl RawImageStore {
     ///
     /// 与 IndexedDB 实现逐字相同(`store.put(row)` 就是覆盖)。
     /// 🔴 刻意**不**在这一侧加一条「已存在就拒绝」—— 那会造出**第三处形态差异**,
-    /// 而 `docs/原图存储 §3.2` 把允许存在的差异穷举成了两处。两个实现行为一致比这一侧更聪明重要。
+    /// 而 `docs/technical/原图存储-判据层与存储层.md §3.2` 把允许存在的差异穷举成了两处。两个实现行为一致比这一侧更聪明重要。
     pub fn put(&self, id: &str, row: Row, bytes: &[u8]) -> Result<(), StoreError> {
         if !valid_id(id) {
             return Err(StoreError::BadId);
@@ -268,7 +268,7 @@ impl RawImageStore {
     /// | **先删字节后改索引** | 索引里几行读不出字节的残行 | ✅ `read` 返回 `None`,判据层照常处理 |
     ///
     /// 「用户手按的删就是真删」是这条链路上唯一不能打折的承诺,
-    /// 所以选**字节先走**的那一边;留下的元信息残行是 `docs/原图存储 §2.4` 已经判过不危险的那一种。
+    /// 所以选**字节先走**的那一边;留下的元信息残行是 `docs/technical/原图存储-判据层与存储层.md §2.4` 已经判过不危险的那一种。
     ///
     /// 删不存在的 id 不算错(幂等)。
     pub fn delete_many(&self, ids: &[String]) -> Result<(), StoreError> {
@@ -622,7 +622,7 @@ mod tests {
 
         // 🔴 字节已经不在磁盘上了 —— 即使索引这一步没能提交。
         assert!(!dir.join("bye.bin").exists());
-        // 索引里还留着那一行,而它 read 不出来 —— docs/原图存储 §2.4 判过的那种「不危险的残留」。
+        // 索引里还留着那一行,而它 read 不出来 —— docs/technical/原图存储-判据层与存储层.md §2.4 判过的那种「不危险的残留」。
         fs::remove_dir_all(dir.join("index.tmp")).unwrap();
         assert_eq!(s.list().unwrap().len(), 1);
         assert!(s.read("bye").unwrap().is_none());
@@ -725,7 +725,7 @@ mod tests {
 
     #[test]
     fn put_overwrites_the_same_id_instead_of_duplicating_it() {
-        // 与 IndexedDB 实现行为一致 —— 差异要可穷举,而 docs/原图存储 §3.2 只列了两处。
+        // 与 IndexedDB 实现行为一致 —— 差异要可穷举,而 docs/technical/原图存储-判据层与存储层.md §3.2 只列了两处。
         let dir = tmp_dir("overwrite");
         let s = RawImageStore::new(dir.clone());
         s.put("same", row("same", 1, None), b"first").unwrap();

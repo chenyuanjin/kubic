@@ -1,5 +1,5 @@
 /**
- * docs/技术架构 §8.1 禁令 3 的<b>客户端对应物</b>:不把原图打进 console 的任何级别。
+ * docs/technical/INDEX.md §8.1 禁令 3 的<b>客户端对应物</b>:不把原图打进 console 的任何级别。
  *
  * <h2>为什么这条必须是一条断言,不能是一句注释</h2>
  *
@@ -223,7 +223,7 @@ test('🔴 web/src 里没有任何一处把原图打进 console', () => {
   assert.deepEqual(
     violations,
     [],
-    `docs/技术架构 §8.1 禁令 3:\n${violations.map((v) => `  ${v.file} · ${v.detail}`).join('\n')}`,
+    `docs/technical/INDEX.md §8.1 禁令 3:\n${violations.map((v) => `  ${v.file} · ${v.detail}`).join('\n')}`,
   )
 })
 

@@ -3,7 +3,7 @@ package com.kaodian.server.auth;
 import java.time.Instant;
 
 /**
- * 第②③道闸 —— 频控(docs/后端详设 §1.8)。
+ * 第②③道闸 —— 频控(docs/technical/后端系统设计与组件接入.md §1.8)。
  *
  * <h2>它挡的是钱,不是登录</h2>
  *

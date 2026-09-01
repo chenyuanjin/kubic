@@ -13,7 +13,7 @@ import java.util.List;
  *
  * <h2>🔴 {@code asserted} 是<b>单独一格</b>,不与其它任何一个数相加</h2>
  *
- * docs/技术架构 §6.4:「分母 = level 3 节点数;分子 = {@code discarded=0} 的触达节点数;
+ * docs/technical/INDEX.md §6.4:「分母 = level 3 节点数;分子 = {@code discarded=0} 的触达节点数;
  * <b>断言单列不并入</b>」。它不在 {@code covered} 里、不从 {@code empty} 里扣、
  * 不占 {@code distribution} 的一格。<b>界面上它是并排的另一个数,不是这个百分比的一部分</b> ——
  * 「我已掌握」按钮是补丁不是解法(决策记录 §5.2),不能让那个大字因为点按钮而变大。

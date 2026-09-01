@@ -13,7 +13,7 @@ import java.util.Base64;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * 微信联合登录 —— docs/技术架构 §7.1 那张场景表,以及表里<b>没有</b>写到的两条。
+ * 微信联合登录 —— docs/technical/INDEX.md §7.1 那张场景表,以及表里<b>没有</b>写到的两条。
  *
  * <p>表里写的是「unionid 已存在 → 直接登录;不存在 → 建新账号」。
  * 但 unionid <b>不是从第一天就有的</b>,于是有一条它没覆盖的路:
@@ -207,7 +207,7 @@ class WeChatFederationTest {
         var r = service.loginByWeChatWithPhone(withUnion(OPENID_A), PHONE, "小程序", null);
 
         assertEquals(phoneAcc, r.user().id(),
-                "阶段 2 只有手机号通道,微信在关卡 2 后 —— 微信那个必然更晚建、更可能是空号");
+                "阶段 2 只有手机号通道,微信在阶段 2 后 —— 微信那个必然更晚建、更可能是空号");
         assertNotNull(r.splitMergeToken());
         assertTrue(accounts.findById(wxAcc).orElseThrow().isActive(), "仍然不自动合并");
     }

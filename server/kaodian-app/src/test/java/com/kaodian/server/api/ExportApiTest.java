@@ -48,7 +48,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * 把 docs/技术架构 §6.5 的三条承诺钉住:<b>无删减、无水印、不限次数</b>({@code 1.3.6.1}),
+ * 把 docs/technical/INDEX.md §6.5 的三条承诺钉住:<b>无删减、无水印、不限次数</b>({@code 1.3.6.1}),
  * 外加 {@code R-06} 的内容边界。
  *
  * <h2>为什么这三条值得各写一个测试</h2>
@@ -96,7 +96,7 @@ class ExportApiTest {
         m.put("nodes", List.of("考点 code", "考点", "题型 code", "题型", "近五年频次",
                 "状态代码", "状态", "触达次数", "练了几道", "对了几道", "正确率", "最近触达", "来源"));
         m.put("archived", List.of("考点 code", "考点", "题型 code", "题型", "近五年频次", "记录数"));
-        // 「我已掌握」—— docs/技术架构 §5.2 user_assertion 那一行的最后四个字:「导出时可区分」。
+        // 「我已掌握」—— docs/technical/INDEX.md §5.2 user_assertion 那一行的最后四个字:「导出时可区分」。
         // 每一列的值都来自已有的字段:前四列是骨架层的 code 与名字,末一列是用户按按钮那一刻。
         // 🔴 没有一列装得下机构的内容,也没有一列能写一句「为什么我觉得我会了」——
         //    那个字段一年后装的就是题干(R-01)。
@@ -251,7 +251,7 @@ class ExportApiTest {
 
                         §6.7 的额度只管 ai_capture / ai_ask 两类 —— 收的是替用户花出去的模型钱。
                         导出不调用任何模型,没有可收的东西。要给导出加计数之前,
-                        先回 docs/技术架构 §6.5 把「不限次数」改掉,顺序不能反。
+                        先回 docs/technical/INDEX.md §6.5 把「不限次数」改掉,顺序不能反。
                         """.formatted(bad, surface));
             }
         }
@@ -285,7 +285,7 @@ class ExportApiTest {
     }
 
     /**
-     * 🔴 docs/技术架构 §5.2 {@code user_assertion} 那一行的最后四个字:<b>「导出时可区分」</b>。
+     * 🔴 docs/technical/INDEX.md §5.2 {@code user_assertion} 那一行的最后四个字:<b>「导出时可区分」</b>。
      *
      * <h2>为什么这一条要在三种格式里各验一遍</h2>
      *
@@ -463,7 +463,7 @@ class ExportApiTest {
      * 把写侧的方法实现成「一调用就炸」,本身就是一条断言:哪天有人在导出路径上
      * 顺手 append 或 delete 了什么,这个测试会当场红,而不是安静地通过。
      * <p>
-     * 🔴 这也是 docs/技术架构 §6.5「MCP 只读」四道锁的同一条思路 ——
+     * 🔴 这也是 docs/technical/INDEX.md §6.5「MCP 只读」四道锁的同一条思路 ——
      * 导出是那五个只读 tool 之一,<b>只读要写进形状里,不能靠调用方自觉</b>。
      */
     static final class ReadOnlyTouchStore implements TouchStore {

@@ -9,7 +9,7 @@ import java.util.List;
  * <h2>为什么不用 {@code FileRecordTagStore} 顶上</h2>
  *
  * 与 {@code ApiContractTest.InMemoryTouchStore} 同一个理由:存储实现属于另一条线,
- * 它换成什么都不该影响接口契约(docs/技术架构 §2.2「包之间只通过接口调用」)。
+ * 它换成什么都不该影响接口契约(docs/technical/INDEX.md §2.2「包之间只通过接口调用」)。
  * 顺带避免接口测试往磁盘上写文件 —— 一个 {@code @WebMvcTest} 不该留下副作用。
  *
  * <h2>🔴 {@code put} 的那道拒绝<b>必须</b>在这里也实现一遍</h2>

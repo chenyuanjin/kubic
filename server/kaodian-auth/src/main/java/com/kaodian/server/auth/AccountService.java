@@ -17,7 +17,7 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * <h2>没有 {@code register()} 这个方法,以后也不会有</h2>
  *
- * docs/后端详设 §1.7:契约里没有 {@code /auth/register}。
+ * docs/technical/后端系统设计与组件接入.md §1.7:契约里没有 {@code /auth/register}。
  * {@link #loginByPhone} 里那一行 {@code create(...)} <b>就是「注册」</b>。
  * <p>
  * 少一个页面是次要的,少一个「我到底注册过没有」的犹豫才是主要的 ——
@@ -103,7 +103,7 @@ public class AccountService {
     }
 
     /**
-     * 微信通道登录 —— <b>关卡 2 后</b>。docs/技术架构 §7.1 那张场景表的落地。
+     * 微信通道登录 —— <b>阶段 2 后</b>。docs/technical/INDEX.md §7.1 那张场景表的落地。
      *
      * <h2>为什么要同时按 unionid 和 openid 查两次</h2>
      *
@@ -124,7 +124,7 @@ public class AccountService {
      *
      * <h2>两边查到<b>不同</b>账号时:登进 unionid 那个,并<b>建议</b>合并</h2>
      *
-     * 这说明分裂已经发生过了。绝不自动合并 —— docs/技术架构 §7.1 的理由是
+     * 这说明分裂已经发生过了。绝不自动合并 —— docs/technical/INDEX.md §7.1 的理由是
      * <b>「自动合并可能把两个人的记录并到一起,而那会让覆盖度彻底失真」</b>。
      * 这里只给一个一次性合并令牌,由用户显式发起。
      */
@@ -175,11 +175,11 @@ public class AccountService {
      *
      * <h2>🔴 两边都已存在但不是同一个账号时,登进<b>手机号</b>那个</h2>
      *
-     * 不是随便挑的:docs/技术架构 §7.2 已定<b>阶段 2 只做手机号,微信在关卡 2 后</b>。
+     * 不是随便挑的:docs/technical/INDEX.md §7.2 已定<b>阶段 2 只做手机号,微信在阶段 2 后</b>。
      * 所以微信那个账号必然更晚建、更可能是个刚建的空号,而记录大概率在手机号那边。
      * 登错一边的代价是用户打开就看见一个空白的盲区页 —— 而那正是这个产品的首屏。
      *
-     * <p>⚠ 这条路径<b>契约里没有</b>(docs/技术架构 §6.1 那张表写于手机号快速验证未纳入考虑时)。
+     * <p>⚠ 这条路径<b>契约里没有</b>(docs/technical/INDEX.md §6.1 那张表写于手机号快速验证未纳入考虑时)。
      * 它是新增的,不是对既有条目的改写。
      *
      * @param phone 微信已经验证过的手机号。<b>因此不再走一次短信验证码</b> ——
@@ -413,7 +413,7 @@ public class AccountService {
     }
 
     /**
-     * 已登录账号绑微信 —— docs/技术架构 §7.1:<b>最顺的那条路径,产品应主动引导走这条</b>。
+     * 已登录账号绑微信 —— docs/technical/INDEX.md §7.1:<b>最顺的那条路径,产品应主动引导走这条</b>。
      *
      * <h2>为什么它不只是 {@code bind(userId, WX_UNION, unionid)} 一行</h2>
      *
@@ -438,7 +438,7 @@ public class AccountService {
     // —— 合并 ——
 
     /**
-     * 预览 —— <b>只读,不产生副作用</b>(docs/技术架构 §6.1)。
+     * 预览 —— <b>只读,不产生副作用</b>(docs/technical/INDEX.md §6.1)。
      *
      * @param mergeToken {@link BindResult.TakenByAnother} 里那个一次性令牌
      */
@@ -475,11 +475,11 @@ public class AccountService {
      * 整个进程只有一份 {@code touches.json}。所以「把 A 的记录搬到 B」这件事
      * 在今天的数据模型里<b>无处可搬</b>。
      * <p>
-     * 把行为层改成多租户是一次独立的、比本模块更大的改动(docs/技术架构 §5.2 的 {@code record_event.user_id}),
+     * 把行为层改成多租户是一次独立的、比本模块更大的改动(docs/technical/INDEX.md §5.2 的 {@code record_event.user_id}),
      * 这里不顺手做半个 —— 半个的后果是「有些记录带 user_id 有些不带」,
      * 而那会让覆盖率的分子在某些账号上凭空少一截。
      * <p>
-     * 合并端点因此与微信登录一起被关在<b>关卡 2 后</b>的开关后面(docs/技术架构 §6.1)。
+     * 合并端点因此与微信登录一起被关在<b>阶段 2 后</b>的开关后面(docs/technical/INDEX.md §6.1)。
      */
     private int movableRecordCount(String fromUserId) {
         return 0;
@@ -513,7 +513,7 @@ public class AccountService {
     /**
      * 注销 —— <b>吊销全部令牌,摘掉全部 identity</b>。
      *
-     * <p>🔴 服务端数据的<b>硬删时点本层不定</b>。docs/技术架构 §6.1 明确把它留给 {@code L-A5} 的律师稿:
+     * <p>🔴 服务端数据的<b>硬删时点本层不定</b>。docs/technical/INDEX.md §6.1 明确把它留给 {@code L-A5} 的律师稿:
      * {@code 1.3.1.3.2} 的原文是「注销即删除」,而「软删 → T+7 硬删」是行业惯例(防误删)——
      * 后者把 08 的一条已写死的合规判据改松了,架构不能顺手替它做这个决定。
      * <p>
@@ -539,7 +539,7 @@ public class AccountService {
         return accounts.phoneSecretOf(userId).map(PhoneNumberSecret::masked);
     }
 
-    /** 关卡 3 的那个累计数。 */
+    /** 阶段 3 的那个累计数。 */
     public int totalSignups() {
         return signups.totalCount();
     }
@@ -566,7 +566,7 @@ public class AccountService {
     // —— 结果类型 ——
 
     /**
-     * @param isNewAccount 这一次是不是建了新号。<b>关卡 3 的判据靠它区分新老</b>,
+     * @param isNewAccount 这一次是不是建了新号。<b>阶段 3 的判据靠它区分新老</b>,
      *                     产品侧则据此决定要不要走引导
      * @param splitMergeToken 🔴 <b>登录成功的同时发现这个人在库里有两个账号</b>时的一次性合并令牌;
      *                        没有分裂则为 {@code null}。

@@ -5,7 +5,7 @@ import App from './App.tsx'
 import { sweepRawImagesOnStartup } from './lib/rawImageStore'
 
 /**
- * 🔴 到期原图的第一条触发 —— docs/总路线图 `1.1.3.2`「到期自动归档」(2026-08-29 由「删除」改)。
+ * 🔴 到期原图的第一条触发 —— docs/execution/INDEX.md `1.1.3.2`「到期自动归档」(2026-08-29 由「删除」改)。
  *
  * <h2>为什么这一行在 render <b>之前</b>,而且在 main.tsx 而不是某个组件里</h2>
  *

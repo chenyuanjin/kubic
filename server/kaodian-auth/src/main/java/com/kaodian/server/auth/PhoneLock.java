@@ -7,7 +7,7 @@ import java.time.Instant;
  *
  * <h2>为什么锁定挂在号上,不挂在账号上</h2>
  *
- * 锁定发生的那一刻<b>可能还没有账号</b> —— 注册即登录(docs/后端详设 §1.7),
+ * 锁定发生的那一刻<b>可能还没有账号</b> —— 注册即登录(docs/technical/后端系统设计与组件接入.md §1.7),
  * 账号是在验证码校验通过的那一瞬间才建的。挂在账号上意味着「猜一个陌生号的验证码」
  * 永远不会被锁定,而那正是要防的那件事。
  *
@@ -17,10 +17,10 @@ import java.time.Instant;
  */
 public record PhoneLock(String phoneHmac, int failedCount, Instant lockedUntil) {
 
-    /** 错满这个数就锁(docs/技术架构 §6.1)。 */
+    /** 错满这个数就锁(docs/technical/INDEX.md §6.1)。 */
     public static final int MAX_FAILURES = 5;
 
-    /** 锁多久(docs/后端详设 §1.8 的状态机)。 */
+    /** 锁多久(docs/technical/后端系统设计与组件接入.md §1.8 的状态机)。 */
     public static final java.time.Duration LOCK_WINDOW = java.time.Duration.ofMinutes(30);
 
     public PhoneLock {

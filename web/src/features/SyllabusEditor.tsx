@@ -18,7 +18,7 @@ import { Button, GroupHeader, InlineEdit, Kbd, MicroButton, Note, StateDot } fro
  *
  * <h2>为什么全部就地编辑,一个模态框都没有</h2>
  *
- * 阶段 1(docs/实施路径 §1.2)的主要工作是<b>反复校正命名</b>:一棵 18 个考点的树,
+ * 阶段 1(docs/decisions/实施路径.md §1.2)的主要工作是<b>反复校正命名</b>:一棵 18 个考点的树,
  * 名字要来回改十几轮才稳。每改一个名字弹一次窗、点一次确定,这件事在第三轮就会被放弃,
  * 而放弃校正命名 = 树是错的 = 上面那一整段。所以密度在这里是功能,不是审美。
  *
@@ -32,7 +32,7 @@ import { Button, GroupHeader, InlineEdit, Kbd, MicroButton, Note, StateDot } fro
  * <h2>🔴 三条红线在这一屏的形态</h2>
  *
  * <ul>
- * <li><b>考点自行命名</b>(R-07 / docs/实施路径 §1.2)—— 没有「从机构导入考点体系」这个入口,
+ * <li><b>考点自行命名</b>(R-07 / docs/decisions/实施路径.md §1.2)—— 没有「从机构导入考点体系」这个入口,
  *     `api/types.ts` 里连对应的请求类型都没有,服务端也明说以后不会有。
  *     有的是<b>导出</b>,它的反向操作是把文件放回 `~/.kaodian/syllabus.json`。
  * <li><b>只有三层</b>(决策记录 §2.5)—— 只有「新增题型」和「在题型下新增考点」两种新增。

@@ -8,7 +8,7 @@ import com.fasterxml.jackson.annotation.JsonAnySetter;
  *
  * <h2>🔴 「请求体不接受调用方指定标签文本」是靠没有字段实现的</h2>
  *
- * docs/技术架构 §6.3 对这个端点的约束原文:「<b>请求体不接受调用方指定标签文本。</b>
+ * docs/technical/INDEX.md §6.3 对这个端点的约束原文:「<b>请求体不接受调用方指定标签文本。</b>
  * 候选由服务端召回,响应是 {@code nodeId + confidence} 或 {@code NO_MATCH}」。
  * <p>
  * 把这句话写成校验(「如果传了 name 就报错」)是最自然的做法,也是最弱的:

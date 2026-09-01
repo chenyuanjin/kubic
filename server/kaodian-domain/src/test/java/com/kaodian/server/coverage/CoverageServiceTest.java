@@ -166,7 +166,7 @@ class CoverageServiceTest {
     }
 
     /**
-     * 第七个字段 {@code clientToken} 是去重键(docs/技术架构 §6.2「client_token 幂等」)。
+     * 第七个字段 {@code clientToken} 是去重键(docs/technical/INDEX.md §6.2「client_token 幂等」)。
      *
      * <p>它是这条记录上<b>唯一一个来自客户端的字符串</b>,所以它能进来必须有个硬理由:
      * 上限 {@link Touch#MAX_CLIENT_TOKEN_LENGTH} = 64,而 64 装不下任何一道题的题干,

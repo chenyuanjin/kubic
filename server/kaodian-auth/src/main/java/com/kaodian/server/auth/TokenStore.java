@@ -8,7 +8,7 @@ import java.util.Optional;
  *
  * <p>接口在这里、实现在 {@link FileTokenStore},与 {@code collect}/{@code syllabus}
  * 两个包同一形态:阶段 0/1 是一个 JSON 文件,{@code 1.2.4} 换 JDBC 时上层一行不动
- * (docs/技术架构 §零)。
+ * (docs/technical/INDEX.md §零)。
  */
 public interface TokenStore {
 
@@ -26,7 +26,7 @@ public interface TokenStore {
     /**
      * 吊销一个账号的全部令牌,返回吊销了几条。
      *
-     * <p>注销账号与「退出全部设备」都走它。<b>这是 docs/后端详设 §1.9 里
+     * <p>注销账号与「退出全部设备」都走它。<b>这是 docs/technical/后端系统设计与组件接入.md §1.9 里
      * 「立即失效」那四个字排除 JWT 的具体位置</b> —— JWT 在这一步无事可做。
      */
     int revokeAllOfUser(String userId, java.time.Instant now);

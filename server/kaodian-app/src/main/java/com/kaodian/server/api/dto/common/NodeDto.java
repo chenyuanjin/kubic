@@ -13,7 +13,7 @@ import java.time.Instant;
  * 就是这个字段表 —— <b>不是不填,是不建这个位置</b>。学科判断外包给外部模型,
  * 这个产品从不产出「这题该怎么做」。
  *
- * @param recent5yCount 近五年出现次数,统计事实(docs/数据线),也是「值不值得补」的权重
+ * @param recent5yCount 近五年出现次数,统计事实(docs/data/INDEX.md),也是「值不值得补」的权重
  * @param state         枚举名,前端按它分支与配色
  * @param stateLabel    中文名,前端直接显示,不硬编码
  * @param touchCount    我在这个考点上有几条记录

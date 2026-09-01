@@ -14,7 +14,7 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 
 /**
- * 全量导出 —— <b>{@code GET /api/export?format=md|csv|json}</b>(docs/技术架构 §6.5)。
+ * 全量导出 —— <b>{@code GET /api/export?format=md|csv|json}</b>(docs/technical/INDEX.md §6.5)。
  *
  * <h2>为什么挂在 {@code /api/export},而不是 {@code /api/syllabus/export} 底下</h2>
  *
@@ -55,7 +55,7 @@ import java.time.format.DateTimeFormatter;
  *
  * 来源只是一个名字,考点是我们自行归纳的 code 与名称,统计是我们自己算的数。
  * <b>机构的课程内容一个字都没有</b> —— 不是导出时过滤掉的,是上游根本没有这样的字段
- * (决策记录 §2.2 不碰内容 / docs/技术架构 §5.1「不是不填,是不建这个列」)。
+ * (决策记录 §2.2 不碰内容 / docs/technical/INDEX.md §5.1「不是不填,是不建这个列」)。
  * 题干同理(R-01):数据模型里没有,这里也就无处可拼。
  *
  * <h2>控制器里没有一行渲染逻辑</h2>

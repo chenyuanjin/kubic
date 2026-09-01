@@ -18,7 +18,7 @@ import java.util.UUID;
  *
  * <h2>🔴 记录动作永不失败</h2>
  *
- * docs/总路线图 §1.3.7.1 的原文:识别服务不可用时,<b>记录动作本身永不失败</b>;
+ * docs/execution/INDEX.md §1.3.7.1 的原文:识别服务不可用时,<b>记录动作本身永不失败</b>;
  * §1.3.7.2:打标服务不可用时,<b>记录先落地,标签异步补</b>。
  * <p>
  * 落到这里是一条很具体的分支顺序:<b>先看用户挑没挑考点,再看模型认没认出来。</b>
@@ -31,7 +31,7 @@ import java.util.UUID;
  *
  * <h2>🔴 挂载只认考点树里的 code</h2>
  *
- * {@code R-07} / docs/技术架构 §6.3:「body <b>只接受 {@code nodeId}</b>,不接受 {@code name}。
+ * {@code R-07} / docs/technical/INDEX.md §6.3:「body <b>只接受 {@code nodeId}</b>,不接受 {@code name}。
  * 从树里选,不能新建。」这里用 {@link Syllabus#node} 校验一遍 ——
  * <b>不在树里就拒绝,不会顺手建一个新考点</b>。
  * 只要没有一条通道能写进自由文本标签,自由生成的考点就进不了库,无论模型输出什么。
@@ -76,7 +76,7 @@ public class CaptureService {
      *
      * 没有 {@code text}、没有 {@code note}、没有 {@code transcript}。
      * 入参里若能装下一段文字,它迟早会被存下来 —— 决策记录 §2.2 不碰内容,
-     * docs/技术架构 §5.1「不是不往里填,是不建这个列」。
+     * docs/technical/INDEX.md §5.1「不是不往里填,是不建这个列」。
      *
      * @param kind        怎么记的
      * @param sourceName  来源名,如「粉笔 · 资料分析系统班 L12」。<b>只是个名字</b>
@@ -185,7 +185,7 @@ public class CaptureService {
      * 手动记一笔 —— {@link TouchKind#PASTE} / {@link TouchKind#DRILL} / {@link TouchKind#MANUAL}。
      *
      * <p><b>这条路不碰任何模型,因此永不消耗额度、永不受识别故障影响。</b>
-     * docs/商业化设计 §二「额度用尽 ≠ 记不了」的实现就是它一直在这儿。
+     * docs/product/商业化与额度设计.md §二「额度用尽 ≠ 记不了」的实现就是它一直在这儿。
      */
     public CaptureResult capture(CaptureRequest request) {
         CaptureResult replay = replayOf(request);
@@ -210,7 +210,7 @@ public class CaptureService {
      * 一次成功的写入不能因为重发一遍就变成失败,否则离线队列会永远卡在那一条上重试。
      * <p>
      * 🔴 顺带挡住的是钱:{@link #captureFromPhoto} 里这一步在<b>调模型之前</b>,
-     * 所以补传重发不会再花一次识别(docs/技术架构 §6.7.1「同一 idempotencyKey 重试不重复扣」)。
+     * 所以补传重发不会再花一次识别(docs/technical/INDEX.md §6.7.1「同一 idempotencyKey 重试不重复扣」)。
      *
      * @return 命中就返回 {@code Recorded(replayed = true)};没有去重键或没命中返回 {@code null}
      */
@@ -230,8 +230,8 @@ public class CaptureService {
      * <h2>🔴 图片只在内存里过一次</h2>
      *
      * 字节进来、转 base64 内联送给模型、方法返回即释放。
-     * <b>不落盘、不进对象存储、不建图片桶、不打进任何级别的日志</b>(docs/技术架构 §8.1 五条禁令),
-     * 也不调用厂商的 Files API(docs/识别链路 坑二 —— 它免费,看起来像白送的优化,
+     * <b>不落盘、不进对象存储、不建图片桶、不打进任何级别的日志</b>(docs/technical/INDEX.md §8.1 五条禁令),
+     * 也不调用厂商的 Files API(docs/data/识别链路选型.md 坑二 —— 它免费,看起来像白送的优化,
      * 而 决策记录 §2.3 那条红线「第一天不定,后面改不回来」)。
      * <p>
      * 这个方法里刻意<b>没有任何请求日志</b>:一次 {@code log.debug(request)}
@@ -256,12 +256,12 @@ public class CaptureService {
         RecognitionResult recognition = RecognitionResult.noMatch();
         boolean available = true;
         try {
-            // 出口处再核一遍候选集:模型可能吐回一个树里没有的 code(docs/识别链路 坑一的「编造考点」)。
+            // 出口处再核一遍候选集:模型可能吐回一个树里没有的 code(docs/data/识别链路选型.md 坑一的「编造考点」)。
             // 总路线图 §1.2.5.1.6:不是靠 prompt 里写一句,是在输出侧检。
             recognition = VisionTagger.enforceClosedSet(
                     visionTagger.classify(image, mimeType, candidates), candidates);
         } catch (RecognitionUnavailableException e) {
-            available = false;      // 识别挂了 ≠ 记录挂了(docs/总路线图 §1.3.7.1)
+            available = false;      // 识别挂了 ≠ 记录挂了(docs/execution/INDEX.md §1.3.7.1)
         }
 
         // 🔴 顺序是红线本身:先看用户挑没挑,再看模型认没认出来。
@@ -282,7 +282,7 @@ public class CaptureService {
      *
      * <p>现在是整棵树(单模块 18 个考点),够小。总路线图 §1.2.5.1.2 要的
      * 「先缩小到 5-10 个候选」是<b>省钱手段</b>,等考点上量再做;
-     * 而<b>闭集本身是红线</b>,一天都不能等 —— docs/识别链路 坑一说的
+     * 而<b>闭集本身是红线</b>,一天都不能等 —— docs/data/识别链路选型.md 坑一说的
      * 「候选召回不只是省钱手段,更是合规与准确性的实现方式」就是这个区别。
      */
     private List<VisionTagger.Candidate> candidates() {
@@ -316,7 +316,7 @@ public class CaptureService {
                 request.clientToken());
 
         // ⚪ 这里的时间戳是【服务端收到的时刻】,不是【用户离线记下的时刻】。
-        //    离线队列补传(docs/技术架构 §6.2 的 /records/batch)因此会把上午 9 点记的那一笔标成中午 12 点。
+        //    离线队列补传(docs/technical/INDEX.md §6.2 的 /records/batch)因此会把上午 9 点记的那一笔标成中午 12 点。
         //    补不了:请求体里没有 occurredAt,而那是有意的 —— CreateRecordRequest 的注释写着
         //    「让客户端自报会让『生疏』变成一个可以被随手改掉的状态,补录历史记录要做时单开端点」。
         //    这两条约束在补传这条路上直接冲突,本轮不自行裁定,已在交付说明里报上去。

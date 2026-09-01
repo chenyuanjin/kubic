@@ -11,7 +11,7 @@ import java.util.Optional;
  * <b>但那样一来 {@link SmsCode.State#SUPERSEDED} 这个终态永远观察不到</b>:
  * 用户拿着旧码来验,库里只剩新码,哈希对不上 → 回的是「验证码不对」。
  * <p>
- * 而 docs/后端详设 §1.8 明确要求这是<b>四句不同的话</b>里的一句:
+ * 而 docs/technical/后端系统设计与组件接入.md §1.8 明确要求这是<b>四句不同的话</b>里的一句:
  *
  * <table border="1">
  *   <caption>为什么不能合并</caption>
@@ -38,7 +38,7 @@ public interface SmsCodeStore {
      * 发出一条新码。
      *
      * <p><b>作废旧码这件事由 store 做,不由调用方做</b> —— 与「规则放在 store 而不是
-     * controller」是同一条(docs/后端详设 §二)。调用方少写一步就少一个能忘的地方。
+     * controller」是同一条(docs/technical/后端系统设计与组件接入.md §二)。调用方少写一步就少一个能忘的地方。
      */
     void issue(SmsCode code);
 

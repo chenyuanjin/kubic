@@ -6,7 +6,7 @@ import java.time.Instant;
  * 一次 Agent 调用的执行记录 —— 贯穿七个阶段的那条主线。
  *
  * <p><b>id 是 String,形如 {@code r-<uuid>}。</b>没有跟着 truman-ai 用 long 主键:
- * 那边的 long 里编码着分库 shard 信息,而我们这一层<b>没有库</b>(docs/技术架构 §零:阶段 0/1 是本地文件)。
+ * 那边的 long 里编码着分库 shard 信息,而我们这一层<b>没有库</b>(docs/technical/INDEX.md §零:阶段 0/1 是本地文件)。
  * 一个不承载 shard 语义的 long 只是一个更难读的字符串。
  * 前缀跟 {@code CaptureService} 的 {@code "t-" + UUID} 对齐,肉眼一看就知道是哪一类 id。
  *

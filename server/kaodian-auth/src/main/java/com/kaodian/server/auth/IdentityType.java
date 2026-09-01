@@ -5,17 +5,17 @@ package com.kaodian.server.auth;
  *
  * <h2>为什么是一张多态 identity 表,而不是 {@code app_user} 上的两个列</h2>
  *
- * docs/技术架构 §7.2:阶段 2 只做手机号,微信在关卡 2 后。但 {@code 1.3.1.2.2} 要求
+ * docs/technical/INDEX.md §7.2:阶段 2 只做手机号,微信在阶段 2 后。但 {@code 1.3.1.2.2} 要求
  * <b>阶段 2 就把 openid/unionid 的位置留出来</b>。
  * <p>
- * 「留位」不是加两个空列 —— 那样关卡 2 后接微信是一次表结构迁移;
+ * 「留位」不是加两个空列 —— 那样阶段 2 后接微信是一次表结构迁移;
  * 用多态 identity 表,接微信只是<b>插入一行数据</b>。两者的成本在今天一样低,
  * 在那天差一个数量级。
  *
  * <h2>🔴 账号的锚点是 {@code AppUser.id},不是这里的任何一个</h2>
  *
  * 手机号会被运营商回收,微信会被借用登录。把任何一个当成账号本身,
- * 都会在某一天把两个人的记录并到一起 —— 而覆盖率就是这个产品(docs/技术架构 §7.1)。
+ * 都会在某一天把两个人的记录并到一起 —— 而覆盖率就是这个产品(docs/technical/INDEX.md §7.1)。
  */
 public enum IdentityType {
 
@@ -23,7 +23,7 @@ public enum IdentityType {
      * 手机号。
      *
      * <p>🔴 {@code UserIdentity.identifier} 存的<b>不是手机号明文,是 HMAC</b>。
-     * docs/技术架构 §5.2 定的是「{@code phone_hash}(HMAC,唯一)用于查、{@code phone_enc}(AES)用于发短信」,
+     * docs/technical/INDEX.md §5.2 定的是「{@code phone_hash}(HMAC,唯一)用于查、{@code phone_enc}(AES)用于发短信」,
      * 而 {@code (type, identifier)} 唯一索引正好就是那个「用于查」。
      * 见 {@link PhoneCipher}。
      */
@@ -53,7 +53,7 @@ public enum IdentityType {
         this.wireName = wireName;
     }
 
-    /** 落盘与接口上用的名字,与 docs/技术架构 §5.2 的 {@code type} 取值逐字一致。 */
+    /** 落盘与接口上用的名字,与 docs/technical/INDEX.md §5.2 的 {@code type} 取值逐字一致。 */
     public String wireName() {
         return wireName;
     }

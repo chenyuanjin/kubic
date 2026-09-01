@@ -205,7 +205,7 @@ export interface TimelineItemDto {
  *
  * <h2>`/api/timeline` 在这份文件里<b>没有类型</b>,是故意的</h2>
  *
- * 那个端点现在返回按天/周分桶的聚合视图(docs/技术架构 §6.4,`{granularity, zone, from, to, buckets}`),
+ * 那个端点现在返回按天/周分桶的聚合视图(docs/technical/INDEX.md §6.4,`{granularity, zone, from, to, buckets}`),
  * <b>里面一条 items 都没有</b>。界面今天没有按天/周的图,把它抄下来等于凭空加一个功能。
  * 哪天真要画那张图了,再照着 `dto/TimelineResponse.java` 抄一份新类型进来,
  * 而不是把它和这个分页形状揉成一个 —— 两种需求塞进一个类型,结果是一堆互相排斥的可选字段。
@@ -271,7 +271,7 @@ export interface CreateRecordRequest {
  * <h2>🔴 没有「从机构导入考点体系」,以后也不会有</h2>
  *
  * 只有逐个新增。一个能一次提交整棵子树的端点,现实中的第一个用途一定是把某家机构的
- * 目录页整块拷进来 —— 而 R-07 / docs/实施路径 §1.2 要求考点自行归纳、不沿用机构既有体系与措辞。
+ * 目录页整块拷进来 —— 而 R-07 / docs/decisions/实施路径.md §1.2 要求考点自行归纳、不沿用机构既有体系与措辞。
  * <b>逐个新增很慢,慢正是要的效果。</b>
  * 导出是有的(`GET /api/syllabus/export`),它的反向操作是把文件放回 `~/.kaodian/syllabus.json`,
  * 不是一个接受任意树形 JSON 的接口。

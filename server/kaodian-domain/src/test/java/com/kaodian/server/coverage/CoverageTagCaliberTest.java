@@ -143,7 +143,7 @@ class CoverageTagCaliberTest {
     @Test
     @DisplayName("🔴 判据只有 discarded:没确认过的自动标签照样计,确认之后也不多计")
     void confirmationIsNotAConditionForCoverage() {
-        // docs/技术架构 §6.4:「分子 = discarded=0 的触达节点数」。
+        // docs/technical/INDEX.md §6.4:「分子 = discarded=0 的触达节点数」。
         // 把「没点确认」也算成不覆盖,等于要求用户对每条自动标签点一次才承认他学过 ——
         // 覆盖率会变成点击率,而北极星指标看的正是这一屏。
         List<Touch> touches = contractTouches();

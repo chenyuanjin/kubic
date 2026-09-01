@@ -26,7 +26,7 @@ import java.util.Optional;
  * <h2>🔴 这个文件里没有一个令牌原值</h2>
  *
  * 键是 SHA-256。把这个文件整个拷走,拿不到任何一个能用的令牌 —— 这是
- * docs/技术架构 §7.4「存 SHA-256 不存原值」在磁盘上的样子。
+ * docs/technical/INDEX.md §7.4「存 SHA-256 不存原值」在磁盘上的样子。
  */
 @Component
 public class FileTokenStore implements TokenStore {
@@ -165,7 +165,7 @@ public class FileTokenStore implements TokenStore {
         // 先落盘再改内存:写失败时内存与磁盘仍然一致(与 FileTouchStore 同一条纪律)。
         ObjectNode root = file.newRoot(
                 "会话令牌 —— 🔴 这里没有一个令牌原值,只有 SHA-256。",
-                "docs/技术架构 §7.4:签发时返回一次,不可再查看。");
+                "docs/technical/INDEX.md §7.4:签发时返回一次,不可再查看。");
         ArrayNode arr = root.putArray("tokens");
         for (AccessToken t : next.values()) {
             arr.add(toNode(t));

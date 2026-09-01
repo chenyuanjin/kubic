@@ -50,7 +50,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * docs/技术架构 §6.3 打标那四个端点的接口契约。
+ * docs/technical/INDEX.md §6.3 打标那四个端点的接口契约。
  *
  * <h2>这个文件验的是「送不进去」,不是「功能可用」</h2>
  *
@@ -277,7 +277,7 @@ class TagApiTest {
     // ———————————————————— 三、确认 ————————————————————
 
     @Test
-    @DisplayName("🔴 确认一条自动标签 → 写 confirmedAt,origin 仍然是 auto(docs/技术架构 §6.3)")
+    @DisplayName("🔴 确认一条自动标签 → 写 confirmedAt,origin 仍然是 auto(docs/technical/INDEX.md §6.3)")
     void confirmDoesNotRewriteOrigin() throws Exception {
         // 直接往库里放一条 auto 标签:今天没有任何端点能造出 auto(suggest 拿不到素材),
         // 而 origin 不可变这条恰恰只有在 auto 上才验得出来。

@@ -4,7 +4,7 @@ import com.kaodian.server.api.support.ApiException;
 import org.springframework.http.MediaType;
 
 /**
- * 全量导出的三种写法 —— <b>md / csv / json</b>(docs/技术架构 §6.5)。
+ * 全量导出的三种写法 —— <b>md / csv / json</b>(docs/technical/INDEX.md §6.5)。
  *
  * <h2>三个值是并列的,没有默认值</h2>
  *

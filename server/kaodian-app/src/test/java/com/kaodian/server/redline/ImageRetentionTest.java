@@ -41,7 +41,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  *
  * <h2>R-52:范围是「所有厂商的文件暂存」,不是「DeepSeek Files API」</h2>
  *
- * docs/总路线图 §四 {@code R-52} 把这条显式扩展了:百炼返回的 {@code oss://dashscope-instant/...}
+ * docs/execution/INDEX.md §四 {@code R-52} 把这条显式扩展了:百炼返回的 {@code oss://dashscope-instant/...}
  * (48h 有效)与已禁用的 Files API <b>等价</b>,容易被当成「不是 Files API 所以能用」。
  * 所以下面拦的是<b>行为</b>(把图交给厂商存起来再引用),不是某个厂商的名字。
  *
@@ -170,11 +170,11 @@ class ImageRetentionTest {
             new Forbidden("dashscope-instant", false,
                     "百炼临时文件存储的 bucket。48h 有效不等于没存,平台侧已经有副本了"),
             new Forbidden("oss://", false,
-                    "对象存储 URI。原图一旦有 URI 就意味着它在某个 bucket 里(R-04 / docs/总路线图 2.1.4.2)"),
+                    "对象存储 URI。原图一旦有 URI 就意味着它在某个 bucket 里(R-04 / docs/execution/INDEX.md 2.1.4.2)"),
             new Forbidden("dashscope", false,
                     "R-52:范围是所有厂商的文件暂存,不限 DeepSeek。百炼整个入口先拦下来"),
             new Forbidden("files.deepseek", false,
-                    "DeepSeek Files API 的域名 —— docs/识别链路 坑二直接点名的红线项"),
+                    "DeepSeek Files API 的域名 —— docs/data/识别链路选型.md 坑二直接点名的红线项"),
             new Forbidden("/files/upload", false,
                     "「先传上去拿个引用」的通用形状,与厂商无关"),
             new Forbidden("file_id", true,
@@ -208,7 +208,7 @@ class ImageRetentionTest {
         // 拆多模块后还多守一件事:少扫【一整个模块】同样会让这个数掉下来。
         assertTrue(scanned >= 50, "只扫到 " + scanned + " 个源文件,源码树定位坏了(roots=" + mainJavaRoots() + ")");
         assertTrue(hits.isEmpty(),
-                "🔴 原图绝不上云、不共享,含厂商图片暂存 API(docs/总路线图 §四 R-04、R-52)。"
+                "🔴 原图绝不上云、不共享,含厂商图片暂存 API(docs/execution/INDEX.md §四 R-04、R-52)。"
                         + "\n这条第一天不定就改不回来 —— 不要加白名单,改代码。\n" + String.join("\n", hits));
     }
 
@@ -383,7 +383,7 @@ class ImageRetentionTest {
      * 那天的现场大概是这样:调 DeepSeek / 百炼要拼 multipart,顺手 {@code Files.write} 存个临时文件;
      * 或者联调不通,加一句 {@code log.debug("req={}", body)} ——
      * 而 body 里就是那张图的 base64。两个动作都不改任何签名、不改任何接口,
-     * code review 里看起来都像「调试代码」。docs/技术架构 §8.1 的三条附带禁令
+     * code review 里看起来都像「调试代码」。docs/technical/INDEX.md §8.1 的三条附带禁令
      * (不写磁盘、不进对象存储、不把 base64 打进任何级别的日志)拦的就是这两下。
      * <p>
      * 所以拦得宽是故意的:连 {@code ByteArrayOutputStream}、连 {@code Path} 都不放行。
@@ -404,7 +404,7 @@ class ImageRetentionTest {
             new Forbidden("java.io.File", false, "识别链路里不该出现文件概念"),
             new Forbidden("Path", true, "识别链路里不该出现路径概念(VisionTagger 签名里就没有)"),
             new Forbidden("Paths", true, "同上"),
-            new Forbidden("bucket", true, "对象存储 —— 原图不进云(docs/总路线图 2.1.4.2)"));
+            new Forbidden("bucket", true, "对象存储 —— 原图不进云(docs/execution/INDEX.md 2.1.4.2)"));
 
     /** 出现在日志语句里就等于把图打进了日志。 */
     private static final List<String> RISKY_IN_LOG = List.of(
@@ -430,7 +430,7 @@ class ImageRetentionTest {
 
         assertTrue(hits.isEmpty(),
                 "🔴 tripwire 响了。这大概率意味着有人正在接真实的识别厂商实现 —— "
-                        + "停一下,重读 docs/总路线图 §四 R-04 与 docs/技术架构 §8.1:"
+                        + "停一下,重读 docs/execution/INDEX.md §四 R-04 与 docs/technical/INDEX.md §8.1:"
                         + "\n原图只在内存里过一次,不写磁盘、不进对象存储、不进任何级别的日志。\n"
                         + String.join("\n", hits));
     }
@@ -490,8 +490,8 @@ class ImageRetentionTest {
 
         assertTrue(hits.isEmpty(),
                 "🔴 tripwire 响了 —— 有人在原图/音频的【入口侧】写下了一条落盘或日志的路。"
-                        + "\n重读 docs/总路线图 §四 R-04 与 docs/技术架构 §8.1:原图只在内存里过一次,"
-                        + "不写磁盘、不进对象存储、不进任何级别的日志;音频同理(docs/技术架构 §5.2「不建的表」)。\n"
+                        + "\n重读 docs/execution/INDEX.md §四 R-04 与 docs/technical/INDEX.md §8.1:原图只在内存里过一次,"
+                        + "不写磁盘、不进对象存储、不进任何级别的日志;音频同理(docs/technical/INDEX.md §5.2「不建的表」)。\n"
                         + String.join("\n", hits));
     }
 
@@ -530,7 +530,7 @@ class ImageRetentionTest {
                 if (statement.contains(risky)) {
                     hits.add(display(file) + ":" + (i + 1)
                             + "  违反 R-04(不进日志)—— 日志语句里出现「" + risky
-                            + "」;一次 log.debug 就等于把原图落了盘(docs/技术架构 §8.1)"
+                            + "」;一次 log.debug 就等于把原图落了盘(docs/technical/INDEX.md §8.1)"
                             + "\n      >>> " + line.strip());
                     break;
                 }

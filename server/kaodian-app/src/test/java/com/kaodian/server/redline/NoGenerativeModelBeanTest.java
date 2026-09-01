@@ -29,7 +29,7 @@ import static org.junit.jupiter.api.Assertions.fail;
  *
  * 本仓库唯一一条<b>今天必然通过</b>的断言。此刻 {@code server/pom.xml} 里根本没有 spring-ai
  * (只有 webmvc / validation / json / lombok),所以扫描结果当然是零命中。
- * 它的全部价值在<b>将来的某一天</b>:{@code docs/后端详设} §三 已经定了要接
+ * 它的全部价值在<b>将来的某一天</b>:{@code docs/technical/后端系统设计与组件接入.md} §三 已经定了要接
  * {@code spring-ai 2.0.1 GA} + OpenAI 兼容端点,而
  * <b>{@code spring-ai-starter-model-openai} 会把 chat / embedding / image / audio-speech /
  * audio-transcription 整套模型一起自动装配</b>。加依赖的那一刻,这条断言从「空转」变成「唯一在看着的人」——
@@ -38,7 +38,7 @@ import static org.junit.jupiter.api.Assertions.fail;
  * <p>后门具体长什么样:一个装配好的 {@code OpenAiImageModel} 摆在容器里,
  * 「让模型画个图」在技术上随时可用 —— 它不需要任何人写一行新代码去「越界」,
  * 只需要有人 {@code @Autowired} 它一下。而<b>能力边界(只答「有没有、几次、多久前」)是这个产品的产品定义本身</b>,
- * 不是一条可以事后补的规范。防线写在 {@code docs/后端详设} §4.2:{@code spring.autoconfigure.exclude} 显式排除。
+ * 不是一条可以事后补的规范。防线写在 {@code docs/technical/后端系统设计与组件接入.md} §4.2:{@code spring.autoconfigure.exclude} 显式排除。
  *
  * <p><b>它红过。</b>写完当场往上下文里塞了一个叫 {@code openAiImageModel} 的假 bean,
  * 输出是:{@code 命中 .*ImageModel(匹配到 openAiImageModel)—— 文生图},
@@ -47,7 +47,7 @@ import static org.junit.jupiter.api.Assertions.fail;
  *
  * <h2>⚠ 这条 tripwire 可能不是「变红」,而是「起不来」</h2>
  *
- * {@code docs/后端详设} §三的实测记录:探针里<b>不给 api-key 时,上下文直接在
+ * {@code docs/technical/后端系统设计与组件接入.md} §三的实测记录:探针里<b>不给 api-key 时,上下文直接在
  * {@code OpenAiAudioSpeechModel} 启动失败</b>({@code At least one credential source must be specified})——
  * 因为那几个模型是<b>急切实例化</b>的。所以撞上 R-51 的人看到的很可能不是本类的断言失败,
  * 而是<b>整个测试套件的上下文加载失败</b>,报错里一个字也没提能力边界。
@@ -92,7 +92,7 @@ class NoGenerativeModelBeanTest {
             new Forbidden(".*ModerationModel", "内容审核 —— 它要求把内容送出去,而我们不碰内容"));
 
     /**
-     * 拿不到来源自动装配类时给的兜底修法,抄自 {@code docs/后端详设} §4.2。
+     * 拿不到来源自动装配类时给的兜底修法,抄自 {@code docs/technical/后端系统设计与组件接入.md} §4.2。
      * 类名以实际引入的 spring-ai 版本为准,动手时用 {@code --debug} 看一遍自动装配报告。
      */
     private static final String FALLBACK_EXCLUDE = """
@@ -145,7 +145,7 @@ class NoGenerativeModelBeanTest {
 
                     %s
                     背景:spring-ai 的 OpenAI starter 会把整套模型一起装配,我们只要 chat 一个。
-                    多出来的那几个不是浪费,是【技术上随时可用的越界能力】—— 见 docs/后端详设 §4.2、docs/总路线图 R-51。
+                    多出来的那几个不是浪费,是【技术上随时可用的越界能力】—— 见 docs/technical/后端系统设计与组件接入.md §4.2、docs/execution/INDEX.md R-51。
                     正确处置是排除掉它们,不是给它们补配置、更不是删掉本条断言。
                     """.formatted(hits.size(), String.join("\n", hits)));
         }
@@ -213,7 +213,7 @@ class NoGenerativeModelBeanTest {
                 🔴 application.properties 里已经出现 spring.ai 的 api-key,却没有 spring.autoconfigure.exclude。
 
                 这两行是一对:给了 key,OpenAI 那整套模型(image / speech / embedding / transcription)
-                就全部装配得起来且急切实例化 —— 能力边界当场多出一批后门(docs/总路线图 R-51)。
+                就全部装配得起来且急切实例化 —— 能力边界当场多出一批后门(docs/execution/INDEX.md R-51)。
                 在 application.properties 里补上(类名以实际 spring-ai 版本的自动装配报告为准):
 
                 %s
@@ -253,12 +253,12 @@ class NoGenerativeModelBeanTest {
      *
      * <p>exclude 的类名尽量从 bean 定义反推:模型 bean 是被某个 {@code @Configuration} 的
      * {@code @Bean} 方法造出来的,而那个 {@code @Configuration} 就是要 exclude 的自动装配类本身。
-     * 反推不出来时退回 {@code docs/后端详设} §4.2 的那份清单。
+     * 反推不出来时退回 {@code docs/technical/后端系统设计与组件接入.md} §4.2 的那份清单。
      */
     private String describe(String beanName, Class<?> type, Forbidden forbidden, String matchedName) {
         String source = sourceAutoConfiguration(beanName);
         String fix = (source == null)
-                ? "  修法(反推不出来源,用 docs/后端详设 §4.2 的清单,并用 --debug 核对一遍自动装配报告):\n"
+                ? "  修法(反推不出来源,用 docs/technical/后端系统设计与组件接入.md §4.2 的清单,并用 --debug 核对一遍自动装配报告):\n"
                   + FALLBACK_EXCLUDE.indent(4)
                 : "  修法:在 application.properties 追加\n"
                   + ("spring.autoconfigure.exclude=" + source).indent(6);

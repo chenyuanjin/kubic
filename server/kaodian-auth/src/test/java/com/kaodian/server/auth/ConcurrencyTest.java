@@ -129,7 +129,7 @@ class ConcurrencyTest {
         assertEquals(1, results.stream().filter(AccountService.LoginResult::isNewAccount).count(),
                 "只有一次算新注册");
         assertEquals(1, signups.totalCount(),
-                "🔴 关卡 3 的累计注册数不能因为用户连点两次就多记");
+                "🔴 阶段 3 的累计注册数不能因为用户连点两次就多记");
     }
 
     @Test

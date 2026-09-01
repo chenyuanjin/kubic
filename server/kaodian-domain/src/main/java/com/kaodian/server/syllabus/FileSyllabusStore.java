@@ -27,7 +27,7 @@ import java.util.function.UnaryOperator;
 /**
  * {@link SyllabusStore} 的阶段 0/1 实现 —— <b>一个 JSON 文件,没有数据库。</b>
  *
- * <p>与 {@code FileTouchStore} 是同一套做法,理由也是同一个(docs/技术架构 §零:
+ * <p>与 {@code FileTouchStore} 是同一套做法,理由也是同一个(docs/technical/INDEX.md §零:
  * 数据层落库最早到阶段 1 的 {@code 1.2.4})。两个文件放在同一个目录里,
  * <b>把 {@code ~/.kaodian} 拷走就是全部数据</b> —— 骨架和行为一起,缺一个另一个就没意义。
  *
@@ -38,7 +38,7 @@ import java.util.function.UnaryOperator;
  * <p>
  * 于是即便有人手工往 {@code syllabus.json} 里给某个考点塞了一段解析,它<b>到不了任何地方</b> ——
  * 既读不进来,也不会因为 {@link Syllabus.Node} 将来多了个字段就悄悄流回文件。
- * 这与 {@code FileTouchStore} 是同一条思路:不给内容留位置(决策记录 §2.2 / docs/技术架构 §5.1)。
+ * 这与 {@code FileTouchStore} 是同一条思路:不给内容留位置(决策记录 §2.2 / docs/technical/INDEX.md §5.1)。
  *
  * <h2>🔴 坏文件必须响亮失败</h2>
  *
@@ -674,7 +674,7 @@ public class FileSyllabusStore implements SyllabusStore {
      * 播种。
      *
      * <p>🔴 种子是<b>我们自己归纳的一棵树</b>,不是从任何机构的目录页拷来的
-     * (R-07 / docs/实施路径 §1.2)。播完之后它就是用户自己的树了 ——
+     * (R-07 / docs/decisions/实施路径.md §1.2)。播完之后它就是用户自己的树了 ——
      * 用户改名、增删、调序,种子文件再也不会覆盖它({@link #ensureLoaded} 只在文件不存在时播)。
      */
     private static Syllabus readSeed() {
@@ -695,7 +695,7 @@ public class FileSyllabusStore implements SyllabusStore {
         ObjectNode o = MAPPER.createObjectNode();
         o.put("code", n.code());
         o.put("name", n.name());
-        o.put("recent5yCount", n.recent5yCount());   // 统计事实,不是内容(docs/数据线)
+        o.put("recent5yCount", n.recent5yCount());   // 统计事实,不是内容(docs/data/INDEX.md)
         if (n.archived()) {
             o.put("archived", true);                 // 没归档就不写这个键,文件更干净
         }
@@ -715,7 +715,7 @@ public class FileSyllabusStore implements SyllabusStore {
             ArrayNode comment = root.putArray("_comment");
             comment.add("骨架层 —— 你自己维护的考点树:模块 → 题型 → 考点,三层。");
             comment.add("🔴 只有名称、层级、近五年频次。没有题干、没有解析、没有任何机构的课程内容。");
-            comment.add("🔴 考点名自行归纳,不沿用任何机构既有体系与措辞(R-07 / docs/实施路径 §1.2)。");
+            comment.add("🔴 考点名自行归纳,不沿用任何机构既有体系与措辞(R-07 / docs/decisions/实施路径.md §1.2)。");
             comment.add("code 是主键:改名不动 code,所以改名不会断掉任何历史记录。");
 
             ObjectNode s = root.putObject("subject");

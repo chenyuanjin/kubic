@@ -10,7 +10,7 @@ import jakarta.validation.constraints.Size;
  *
  * <h2>🔴 没有 name、没有 label、没有 tag —— R-07 在接口层的实现</h2>
  *
- * docs/技术架构 §6.3 原文:「body <b>只接受 {@code nodeId}</b>,不接受 {@code name}。
+ * docs/technical/INDEX.md §6.3 原文:「body <b>只接受 {@code nodeId}</b>,不接受 {@code name}。
  * <b>从树里选,不能新建。</b>」并且:「只要 API 上没有传入自由文本标签的通道,
  * 自由生成的考点就进不了库 —— 无论模型输出什么。」
  * <p>

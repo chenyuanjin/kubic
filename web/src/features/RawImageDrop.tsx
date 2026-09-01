@@ -6,9 +6,9 @@ import { rawImages } from '../lib/rawImageStore'
 import { Button, GlyphIcon, GroupHeader, Note, Tag } from '../ui/primitives'
 
 /**
- * 「拖张图进来」—— docs/总路线图 `1.1.3` 在界面上的三处表达。
+ * 「拖张图进来」—— docs/execution/INDEX.md `1.1.3` 在界面上的三处表达。
  *
- * <h2>docs/总路线图 的 UI 审核项逐条落在哪</h2>
+ * <h2>docs/execution/INDEX.md 的 UI 审核项逐条落在哪</h2>
  *
  * <table border="1">
  *   <tr><th>审核项</th><th>在这一屏的哪里</th></tr>
@@ -27,7 +27,7 @@ import { Button, GlyphIcon, GroupHeader, Note, Tag } from '../ui/primitives'
  *       这条红线的整个形状就是「每一份活着的原图都带着一个到期时刻」,
  *       多留一份就多一份不带戳的</li>
  *   <li>`createObjectURL` 产出的是一个 <b>URL</b>。它只在本页面活着、不是外链,
- *       但 docs/技术架构 §8.1 禁令 4 是「不做<b>任何形式</b>的图片分享/外链」,
+ *       但 docs/technical/INDEX.md §8.1 禁令 4 是「不做<b>任何形式</b>的图片分享/外链」,
  *       而缩略图带来的好处(认出是哪一张)用文件名 + 体积就够了。
  *       <b>为一点便利去贴着那条线走,不划算</b></li>
  * </ul>
@@ -302,8 +302,8 @@ export function RawImageDrop({
  *
  * <h2>为什么是「挡住」,不是一条提示</h2>
  *
- * docs/总路线图 的审核项写的是<b>同意点</b>。一条常驻说明只保证「写了」,
- * 而这条红线的性质是 docs/决策记录 §2.3 那句「第一天不定,后面改不回来」——
+ * docs/execution/INDEX.md 的审核项写的是<b>同意点</b>。一条常驻说明只保证「写了」,
+ * 而这条红线的性质是 docs/decisions/INDEX.md §2.3 那句「第一天不定,后面改不回来」——
  * 用户得在<b>第一张图落到他自己的磁盘上之前</b>知道它会待多久。
  * 所以这里挡住整个接收区:不点这个按钮,{@link RawImageDrop.accept} 一次都不会被调到。
  *

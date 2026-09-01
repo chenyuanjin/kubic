@@ -42,7 +42,7 @@
 //! 一个开了 SPA fallback 的部署会对那个路径回 200 + index.html,
 //! 于是浏览器形态被误判成壳形态 —— 探测那一侧已经挡住了,这一侧不制造它。
 //!
-//! 零 `#[cfg]` —— 这是判据(docs/壳技术方案 §4.1),这个文件里出现一个 `#[cfg(target_os)]`,隔离就已经破了。
+//! 零 `#[cfg]` —— 这是判据(docs/technical/壳技术方案-Tauri2包现有Web工程.md §4.1),这个文件里出现一个 `#[cfg(target_os)]`,隔离就已经破了。
 
 use std::convert::Infallible;
 use std::net::{Ipv4Addr, SocketAddr, TcpListener as StdTcpListener};
@@ -103,8 +103,8 @@ const HOP_BY_HOP: [&str; 8] = [
 /// 本机原图存储的路径前缀。
 ///
 /// 🔴 刻意**不是** `/api/*`:那条路整条反代给上游,这条路一个字节都不出这台机器。
-/// 双下划线开头是给读代码的人看的 —— **它不是产品 API**,不进 `docs/技术架构` 的接口表。
-/// 与 `web/src/lib/rawImageFs.ts` 里的 `BASE` 逐字相同,两侧靠 `docs/原图存储 §9.1` 那张表对齐。
+/// 双下划线开头是给读代码的人看的 —— **它不是产品 API**,不进 `docs/technical/INDEX.md` 的接口表。
+/// 与 `web/src/lib/rawImageFs.ts` 里的 `BASE` 逐字相同,两侧靠 `docs/technical/原图存储-判据层与存储层.md §9.1` 那张表对齐。
 const LOCAL_BASE: &str = "/__local/rawimages";
 const LOCAL_PREFIX: &str = "/__local/rawimages/";
 
@@ -153,7 +153,7 @@ pub fn bind(port: u16) -> Result<StdTcpListener, PortTaken> {
 
 impl Server {
     /// `store_dir` 由 `platform::archive_dir()` 给,**没有第二个入口能改它**。
-    /// 目录选在哪儿本身就是红线的物理落点,见 `raw_image_store.rs` 顶部与 `docs/原图存储 §3.4`。
+    /// 目录选在哪儿本身就是红线的物理落点,见 `raw_image_store.rs` 顶部与 `docs/technical/原图存储-判据层与存储层.md §3.4`。
     pub fn new(upstream: Option<&str>, store_dir: PathBuf) -> Result<Self, String> {
         let upstream = match upstream {
             None => None,
@@ -237,7 +237,7 @@ impl Server {
         }
     }
 
-    /// `{code, message, traceId}` —— 与服务端错误体同形(docs/技术架构 §六)。
+    /// `{code, message, traceId}` —— 与服务端错误体同形(docs/technical/INDEX.md §六)。
     ///
     /// 形状对不上的话,`client.ts` 里那条「code 给程序分支、message 给人看」的分支会失效。
     fn error(&self, status: StatusCode, code: &str, message: &str) -> Response<Body> {
@@ -260,7 +260,7 @@ impl Server {
     }
 
     /* ====================================================================== */
-    /* 本机原图存储 —— 路由表见 docs/原图存储 §9.1,web 侧 rawImageFs.ts 是同一张表      */
+    /* 本机原图存储 —— 路由表见 docs/technical/原图存储-判据层与存储层.md §9.1,web 侧 rawImageFs.ts 是同一张表      */
     /* ====================================================================== */
 
     /// 六个端点,没有第七个。
@@ -314,7 +314,7 @@ impl Server {
                     ),
                     // 🔴 content-type 一律 octet-stream,壳【不按图片类型回】。
                     //    按图片类型回的话,这个本地地址就是一条能在浏览器里直接打开原图的链接,
-                    //    而 docs/技术架构 §8.1 禁令 4 是「不做任何形式的图片分享/外链」。
+                    //    而 docs/technical/INDEX.md §8.1 禁令 4 是「不做任何形式的图片分享/外链」。
                     Ok(Some((row, bytes))) => Response::builder()
                         .status(StatusCode::OK)
                         .header(hyper::header::CONTENT_TYPE, "application/octet-stream")
@@ -427,7 +427,7 @@ impl Server {
     }
 
     /// 🔴 错误体里**只有一个静态的原因串**,没有 id、没有 label、没有路径。
-    /// docs/技术架构 §8.2 明说路径也是设备信息,而这个 body 会走到前端。
+    /// docs/technical/INDEX.md §8.2 明说路径也是设备信息,而这个 body 会走到前端。
     fn store_error(&self, e: StoreError) -> Response<Body> {
         match e {
             StoreError::BadId => self.error(

@@ -83,7 +83,7 @@ final class ExportRenderer {
             "考点 code", "考点", "题型 code", "题型", "近五年频次", "记录数");
 
     /**
-     * 「我已掌握」那一块 —— docs/技术架构 §5.2 {@code user_assertion} 那一行的最后四个字:
+     * 「我已掌握」那一块 —— docs/technical/INDEX.md §5.2 {@code user_assertion} 那一行的最后四个字:
      * <b>「导出时可区分」</b>。
      *
      * <p>没有「状态」「触达次数」这些列:它们在上面的「考点」块里已经有了,而<b>那才是权威的那一份</b>。

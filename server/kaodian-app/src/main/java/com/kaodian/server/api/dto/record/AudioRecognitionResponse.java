@@ -7,7 +7,7 @@ import jakarta.validation.constraints.Size;
  *
  * <h2>🔴 为什么这个 record 里没有 {@code transcript} / {@code text} / {@code summary}</h2>
  *
- * docs/技术架构 §5.2「不建的表」逐字写着:「<b>任何音频表 —— {@code 1.1.1.5}:ASR 失败提示重录,
+ * docs/technical/INDEX.md §5.2「不建的表」逐字写着:「<b>任何音频表 —— {@code 1.1.1.5}:ASR 失败提示重录,
  * 不留存音频</b>」;§5.1 写着「OCR/ASR 的完整长文本<b>只在内存里过一次</b>,用于打标」。
  * <p>
  * 「不留存」如果只兑现在<b>库</b>这一侧,是守不住的:一个把转写文本原样吐回响应体的端点,

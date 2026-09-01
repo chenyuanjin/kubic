@@ -30,8 +30,8 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * 「记一笔」的红线测试。
  *
- * <p>三条被钉住的东西:<b>识别失败不导致记录丢失</b>(docs/总路线图 §1.3.7.1)、
- * <b>挂载只认树里的 code</b>(R-07)、<b>闭集分类的形状长在签名上</b>(docs/识别链路 坑一/坑二)。
+ * <p>三条被钉住的东西:<b>识别失败不导致记录丢失</b>(docs/execution/INDEX.md §1.3.7.1)、
+ * <b>挂载只认树里的 code</b>(R-07)、<b>闭集分类的形状长在签名上</b>(docs/data/识别链路选型.md 坑一/坑二)。
  */
 class CaptureServiceTest {
 
@@ -126,7 +126,7 @@ class CaptureServiceTest {
     // ——————————————————— 🔴 识别失败不导致记录丢失 ———————————————————
 
     @Test
-    @DisplayName("🔴 识别说不匹配,但用户已经挑了考点 → 照样落地(docs/总路线图 §1.3.7.1)")
+    @DisplayName("🔴 识别说不匹配,但用户已经挑了考点 → 照样落地(docs/execution/INDEX.md §1.3.7.1)")
     void noMatchDoesNotLoseTheRecordWhenUserPicked() {
         CaptureService service = serviceWith(new FakeTagger(RecognitionResult.noMatch(0.31)));
         CaptureResult result = service.captureFromPhoto(
@@ -181,7 +181,7 @@ class CaptureServiceTest {
     // ——————————————————— 🔴 闭集与阈值 ———————————————————
 
     @Test
-    @DisplayName("🔴 模型编了一个树里没有的考点 → 出口处被拦掉,不入库(docs/识别链路 坑一)")
+    @DisplayName("🔴 模型编了一个树里没有的考点 → 出口处被拦掉,不入库(docs/data/识别链路选型.md 坑一)")
     void hallucinatedNodeIsRejectedAtTheOutput() {
         CaptureService service = serviceWith(new RogueTagger("机构标准表述-增长率速算"));
         CaptureResult result = service.captureFromPhoto(
@@ -230,7 +230,7 @@ class CaptureServiceTest {
     // ——————————————————— 🔴 形状层面的红线 ———————————————————
 
     @Test
-    @DisplayName("🔴 识别结果的形状里没有自由文本标签的位置(docs/技术架构 §3.1)")
+    @DisplayName("🔴 识别结果的形状里没有自由文本标签的位置(docs/technical/INDEX.md §3.1)")
     void recognitionResultHasNoLabelField() {
         List<String> fields = Arrays.stream(RecognitionResult.class.getRecordComponents())
                 .map(RecordComponent::getName).toList();
@@ -238,12 +238,12 @@ class CaptureServiceTest {
 
         for (String forbidden : List.of("label", "tag", "tagName", "name", "text", "content", "explanation")) {
             assertFalse(fields.contains(forbidden),
-                    "识别结果不允许出现自由文本标签字段(docs/识别链路 坑一):" + forbidden);
+                    "识别结果不允许出现自由文本标签字段(docs/data/识别链路选型.md 坑一):" + forbidden);
         }
     }
 
     @Test
-    @DisplayName("🔴 识别接口上不能出现 URL / fileId / 存储路径 —— 图片只能以字节形式过一次(docs/识别链路 坑二)")
+    @DisplayName("🔴 识别接口上不能出现 URL / fileId / 存储路径 —— 图片只能以字节形式过一次(docs/data/识别链路选型.md 坑二)")
     void recognizeInterfacesTakeBytesNotReferences() throws Exception {
         Method classify = VisionTagger.class.getMethod("classify", byte[].class, String.class, List.class);
         assertEquals(byte[].class, classify.getParameterTypes()[0], "图片必须是字节,不是引用");
@@ -268,7 +268,7 @@ class CaptureServiceTest {
     }
 
     /**
-     * 第六个字段 {@code clientToken} 是去重键(docs/技术架构 §6.2「client_token 幂等」)。
+     * 第六个字段 {@code clientToken} 是去重键(docs/technical/INDEX.md §6.2「client_token 幂等」)。
      *
      * <p>它能加进来,靠的是<b>装不下内容</b>而不是「约定它只放 id」:
      * 上限 {@link Touch#MAX_CLIENT_TOKEN_LENGTH} = 64,而 64 装不下任何一道题的题干。
@@ -285,7 +285,7 @@ class CaptureServiceTest {
     /**
      * 🔴 补传重发一次不该再花一次识别。
      *
-     * <p>docs/技术架构 §6.7.1:「同一 {@code idempotencyKey} 重试不重复扣」,而客户端复用的正是
+     * <p>docs/technical/INDEX.md §6.7.1:「同一 {@code idempotencyKey} 重试不重复扣」,而客户端复用的正是
      * {@code record_event.client_token}。判重如果排在调模型之后,一次断网重连就能把用户的额度扣光 ——
      * 那句话的原文就在契约里。这个测试用一个「一调用就炸」的 tagger 把顺序钉住。
      */

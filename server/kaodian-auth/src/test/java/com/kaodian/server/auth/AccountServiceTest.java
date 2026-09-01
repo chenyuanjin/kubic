@@ -13,10 +13,10 @@ import java.util.Base64;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * 注册即登录、绑定、合并、注销 —— docs/后端详设 §1.7 与 docs/技术架构 §7.1。
+ * 注册即登录、绑定、合并、注销 —— docs/technical/后端系统设计与组件接入.md §1.7 与 docs/technical/INDEX.md §7.1。
  *
  * <p>其中最要紧的一条是 {@link #signupLedgerSurvivesMerge}:
- * <b>合并会把已经发生过的注册从主表里抹掉</b>,而关卡 3 的判据是「累计」。
+ * <b>合并会把已经发生过的注册从主表里抹掉</b>,而阶段 3 的判据是「累计」。
  */
 class AccountServiceTest {
 
@@ -75,7 +75,7 @@ class AccountServiceTest {
     }
 
     @Test
-    @DisplayName("🔴 关卡 3 的累计注册数不能只数登录成功次数")
+    @DisplayName("🔴 阶段 3 的累计注册数不能只数登录成功次数")
     void signupCountIsNotLoginCount() {
         service.loginByPhone(passed(PHONE_A), "d1", null);
         service.loginByPhone(passed(PHONE_A), "d2", null);
@@ -267,7 +267,7 @@ class AccountServiceTest {
         assertTrue(again.isNewAccount());
         assertNotEquals(old, again.user().id());
         assertEquals(2, service.totalSignups(),
-                "关卡 3 问的是「有多少人注册过」,不是「现在还有多少人在」");
+                "阶段 3 问的是「有多少人注册过」,不是「现在还有多少人在」");
     }
 
     // —— 落盘 ——

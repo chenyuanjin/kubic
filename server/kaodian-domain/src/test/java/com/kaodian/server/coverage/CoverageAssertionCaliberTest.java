@@ -120,7 +120,7 @@ class CoverageAssertionCaliberTest {
 
         assertEquals(before.total(), after.total(), "分母不该动 —— 那是归档干的事,不是断言");
         assertEquals(before.covered(), after.covered(),
-                "🔴 分子动了 —— 断言被算进了覆盖度。docs/技术架构 §6.4:「分子 = discarded=0 的触达节点数」,"
+                "🔴 分子动了 —— 断言被算进了覆盖度。docs/technical/INDEX.md §6.4:「分子 = discarded=0 的触达节点数」,"
                         + "而声明不是触达。决策记录 §5.2:「我已掌握」按钮是补丁不是解法");
         assertEquals(before.percent(), after.percent(), "那个大字必须一模一样");
         assertEquals(before.empty(), after.empty(),
@@ -131,7 +131,7 @@ class CoverageAssertionCaliberTest {
                 "整块空白也是从记录推出来的");
 
         assertEquals(0, before.asserted());
-        assertEquals(1, after.asserted(), "唯一该变的就是这一个数(docs/技术架构 §6.4:断言单列不并入)");
+        assertEquals(1, after.asserted(), "唯一该变的就是这一个数(docs/technical/INDEX.md §6.4:断言单列不并入)");
     }
 
     /**
@@ -176,7 +176,7 @@ class CoverageAssertionCaliberTest {
     void assertionIsASeparateStateNotASixthOne() {
         NodeCoverage n = node(groupsWith("average-calc"), "average-calc");
 
-        assertEquals(NodeState.EMPTY, n.state(), "🔴 状态还是空白 —— 断言不是第六态(docs/技术架构 §5.2:独立状态)");
+        assertEquals(NodeState.EMPTY, n.state(), "🔴 状态还是空白 —— 断言不是第六态(docs/technical/INDEX.md §5.2:独立状态)");
         assertEquals(0, n.touchCount(), "触达次数不该被声明凭空加一");
         assertNull(n.latestAt(), "从没碰过,最近触达仍是 null");
         assertTrue(n.asserted());
@@ -186,7 +186,7 @@ class CoverageAssertionCaliberTest {
     // ———————————— 二、盲区榜排除已断言节点 ————————————
 
     @Test
-    @DisplayName("🔴 声明掌握之后,那个考点从盲区榜上消失(docs/技术架构 §6.4:排除已断言节点)")
+    @DisplayName("🔴 声明掌握之后,那个考点从盲区榜上消失(docs/technical/INDEX.md §6.4:排除已断言节点)")
     void assertedNodesDisappearFromBlindSpots() {
         List<NodeCoverage> before = service.blindSpots(groupsWith(), 5);
         String top = before.get(0).code();

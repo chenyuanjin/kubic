@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 闸 1(机器闸)判决回写 —— docs/交付工作流 §9.2 五键契约 + §9.6 属性
+# 闸 1(机器闸)判决回写 —— docs/ops/INDEX.md §9.2 五键契约 + §9.6 属性
 #
 #   预演:  ./scripts/ci/multica-report.sh --dry-run --branch KUBI-12-offline-queue \
 #              --backend success --frontend failure
@@ -8,7 +8,7 @@
 # ── 为什么这个脚本【任何情况下都 exit 0】 ──
 #   闸 1 的判决是测试结果本身,回写只是投递方式。
 #   投递失败让 CI 变红,等于「Multica 连不上」被读成「测试没过」—— 判决被投递
-#   通道污染,而这条通道今天连通不通都还没验证过(docs/交付工作流 §八:GitHub Actions
+#   通道污染,而这条通道今天连通不通都还没验证过(docs/ops/INDEX.md §八:GitHub Actions
 #   出口能否访问 62.234.164.41:8080,登记在待确认表里)。
 #   所以这里所有失败路径都是「警告 + exit 0」,没有一条是 exit 1。
 #
@@ -48,7 +48,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 # ══════════════ 1. 议题号 ══════════════
-# docs/交付工作流 §9.3:分支形如 KUBI-12-offline-queue。Multica 的 PR ↔ 议题关联就是靠
+# docs/ops/INDEX.md §9.3:分支形如 KUBI-12-offline-queue。Multica 的 PR ↔ 议题关联就是靠
 # 这个字符串。解析不出来是【正常情况】不是错误 —— main / v1 是明文规定的例外分支,
 # 临时分支也不一定对应议题。所以这条路径干净退出,不打警告、不返回非零。
 if [[ -z "$BRANCH" ]]; then
@@ -162,7 +162,7 @@ fi
 # 判据是 curl 的退出码,不是 HTTP 状态码 —— 根路径返回 404 也说明网络是通的。
 if ! curl -sS -o /dev/null --max-time "$PROBE_TIMEOUT" "$SERVER_URL" >/dev/null 2>&1; then
   warn "连不上 $SERVER_URL(${PROBE_TIMEOUT}s 超时),跳过回写。"
-  say "docs/交付工作流 §八 登记的待确认项:GitHub Actions 出口能否访问该端口。打不通就退回本地 runner。"
+  say "docs/ops/INDEX.md §八 登记的待确认项:GitHub Actions 出口能否访问该端口。打不通就退回本地 runner。"
   exit 0
 fi
 

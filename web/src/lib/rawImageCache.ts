@@ -1,9 +1,9 @@
 /**
- * 原图本地缓存的<b>判据层</b> —— docs/总路线图 `1.1.3`「原图过期删除写死」`P0-4` 🔴`R-04`。
+ * 原图本地缓存的<b>判据层</b> —— docs/execution/INDEX.md `1.1.3`「原图过期删除写死」`P0-4` 🔴`R-04`。
  *
  * <h2>这一层为什么和 IndexedDB 分开写</h2>
  *
- * docs/总路线图 给这条红线留的三个子项里,只有一项是「存」:
+ * docs/execution/INDEX.md 给这条红线留的三个子项里,只有一项是「存」:
  * `1.1.3.1` 存图即写过期戳 / `1.1.3.2` 到期自动<b>归档</b> / `1.1.3.3` <b>验证:改系统时间实测归档生效</b>。
  * 后两项是<b>判断</b>——「到期了没有」「该删哪几张」——而判断跑不进浏览器就永远只能靠人手改系统时间。
  * <p>
@@ -74,7 +74,7 @@
  *
  * <h2>⚪ 这是一个待人确认的产品参数,不是一条已决的红线</h2>
  *
- * 已决的是「短期」两个字(docs/决策记录 §2.3 / docs/技术架构 §8.2),<b>具体几小时文档里一个数都没写</b>。
+ * 已决的是「短期」两个字(docs/decisions/INDEX.md §2.3 / docs/technical/INDEX.md §8.2),<b>具体几小时文档里一个数都没写</b>。
  * `KUBI-6` 上记着 `raw_ttl_hours: 6` —— 那是 agent 填的值,不是人做的决定,
  * 这里沿用它,并把它留在<b>一个常量</b>上等人拍板,而不是散在三处。
  *
@@ -92,7 +92,7 @@
  *
  * <b>何时改变</b>:有第一个真实用户说「我第二天想再传一次那张图」时 ——
  * 那时要动的是这一个数,不是这条链路。反过来,任何把它调到 24 小时以上的提议,
- * 都要先回答 docs/决策记录 §2.3 那句「否则产品会成为盗版课件的托管方」。
+ * 都要先回答 docs/decisions/INDEX.md §2.3 那句「否则产品会成为盗版课件的托管方」。
  */
 export const RAW_IMAGE_TTL_MS = 6 * 60 * 60 * 1000
 
@@ -123,10 +123,10 @@ export type Clock = () => number
 /**
  * 一张本机原图的<b>元信息</b> —— 不含字节。
  *
- * <p>逐条对着 docs/技术架构 §8.2 那张表的「客户端本地」一列:本地路径 ✅、过期时间戳 ✅。
+ * <p>逐条对着 docs/technical/INDEX.md §8.2 那张表的「客户端本地」一列:本地路径 ✅、过期时间戳 ✅。
  * 🔴 <b>这一整个形状没有任何一个字段会被发到服务端</b> ——
  * 服务端关于图片知道的全部信息是一个枚举值(`record_event.capture_type='photo'`)。
- * 尤其是 {@link label}:它取自用户本机的文件名,docs/技术架构 §8.2 明说<b>路径也是设备信息</b>。
+ * 尤其是 {@link label}:它取自用户本机的文件名,docs/technical/INDEX.md §8.2 明说<b>路径也是设备信息</b>。
  */
 export interface RawImageMeta {
   /** 本机 id。只在这台设备上有意义,不进任何请求体。 */
@@ -153,7 +153,7 @@ export interface RawImageMeta {
    * 🔴 归档时刻;`null` = 仍在活跃期。
    *
    * <p><b>2026-08-29 决策变更</b>:到期<b>不再删除</b>,改为归档保留(本机)。
-   * 见本文件头「归档而非删除」一节与 `docs/决策记录 §2.3` 的加注。
+   * 见本文件头「归档而非删除」一节与 `docs/decisions/INDEX.md §2.3` 的加注。
    * <p>它由 {@link RawImageBackend.archive} 单独写,<b>不能在 {@link RawImageBackend.put} 里带进来</b> ——
    * 存图那一刻它必然是 `null`,没有「一存进来就是归档态」这种行。
    */
@@ -233,7 +233,7 @@ export class RawImageExpiryError extends Error {
 /**
  * 本地存储整个用不了时抛它(隐私模式、被策略禁用、配额拒绝、目录没权限、磁盘满)。
  *
- * <p>🔴 <b>这不是一次「记录失败」。</b> docs/后端详设 §1.5「降级方向是『少功能』,不是『少记录』」:
+ * <p>🔴 <b>这不是一次「记录失败」。</b> docs/technical/后端系统设计与组件接入.md §1.5「降级方向是『少功能』,不是『少记录』」:
  * 缓存不上照样能把这张图送去识别一次(服务端本来就不落盘),照样能记下这一笔。
  * 界面要说的是「这张图没被本地缓存」,不是「记不下来」。
  *
@@ -241,11 +241,11 @@ export class RawImageExpiryError extends Error {
  *
  * 原先它定义在 IndexedDB 实现里。加上文件系统实现之后,
  * `rawImageFs.ts` 要抛同一个类型,就得 `import` 一次 `rawImageDb.ts` ——
- * <b>那会让两个存储实现互相认识</b>,而 `docs/原图存储 §3.1` 冻结的依赖图是
+ * <b>那会让两个存储实现互相认识</b>,而 `docs/technical/原图存储-判据层与存储层.md §3.1` 冻结的依赖图是
  * 「两个存储实现各自只依赖判据层的类型,彼此不认识」。
  * <p>
  * 所以它搬到契约所在的这一层。判断它是不是该属于「判据」不重要,
- * <b>它属于 {@link RawImageBackend} 的契约</b>(`docs/原图存储 §2.1` 的错误码表:
+ * <b>它属于 {@link RawImageBackend} 的契约</b>(`docs/technical/原图存储-判据层与存储层.md §2.1` 的错误码表:
  * 两个错误类型,不新增第三个),而契约就在这个文件里。
  * <p>它不含任何 DOM 符号,所以搬进来不破坏这一层「跑得进 node」的性质。
  */
@@ -491,7 +491,7 @@ export class RawImageCache {
     return await this.backend.read(id)
   }
 
-  /** 用户按的「立即删除」。docs/总路线图 的 UI 审核项之一:随时能手动删掉。 */
+  /** 用户按的「立即删除」。docs/execution/INDEX.md 的 UI 审核项之一:随时能手动删掉。 */
   async forget(id: string): Promise<void> {
     await this.backend.deleteMany([id])
   }

@@ -25,7 +25,7 @@ import java.time.Duration;
  * <h2>小程序侧是另一个接口</h2>
  *
  * Web/App 用 {@code DescribeCaptchaResult};微信小程序插件用 {@code DescribeCaptchaMiniResult}。
- * 小程序在关卡 2 之后才回来(docs/技术架构 §一 的形态决定),届时这里加一个分支即可。
+ * 小程序在阶段 2 之后才回来(docs/technical/INDEX.md §一 的形态决定),届时这里加一个分支即可。
  */
 public class TencentCaptchaVerifier implements CaptchaVerifier {
 

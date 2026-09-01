@@ -14,7 +14,7 @@ import java.util.Optional;
  * 「查不到 → 建号」这条分支</b>。不报错、不告警、接口全部 200:
  * 老用户各自多出一个空账号,记录留在那个再也查不到的旧账号上。
  * 等到有人发现的时候,{@code SignupLedger} 上已经多了一批假注册 ——
- * <b>而那是关卡 3 判据的数据源。</b>
+ * <b>而那是阶段 3 判据的数据源。</b>
  *
  * <h2>🔴 四种情形,四种处置。只有一种该拒绝启动</h2>
  *
@@ -131,7 +131,7 @@ public class PhoneKeyGuard {
             accounts.stampKeyFingerprint(now);
             log.error("【已确认密钥丢失】{} 个账号的手机号身份从此无法匹配,它们已成为孤儿账号。"
                     + "这些用户再次登录会被当成新用户建号,SignupLedger 上会多出 {} 笔【非真实】注册 —— "
-                    + "关卡 3 的判据据此需要人工扣减。旧指纹 {},新指纹 {}",
+                    + "阶段 3 的判据据此需要人工扣减。旧指纹 {},新指纹 {}",
                     phones, phones, stored, now);
             return new Outcome.AcceptedLoss(phones, stored, now);
         }
@@ -199,7 +199,7 @@ public class PhoneKeyGuard {
 
                     继续跑下去不会报错 —— 每一次登录都会走「查不到 → 建号」分支,
                     老用户各自多出一个空账号,记录留在再也查不到的旧账号上,
-                    而 SignupLedger 上会多出一批假注册(那是关卡 3 判据的数据源)。
+                    而 SignupLedger 上会多出一批假注册(那是阶段 3 判据的数据源)。
 
                     三条出路,按可能性排序:
                       ① 最可能:你在用另一份密钥。找回原来的 ~/.kaodian/auth-keys.properties,

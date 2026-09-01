@@ -20,7 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * 标签这个形状本身的红线测试 —— <b>立场是「假设有人会去改 origin」。</b>
  *
- * <p>docs/技术架构 §5.2 那一行把话说死了:「{@code origin} 记的是这条标签<b>从哪来</b>,
+ * <p>docs/technical/INDEX.md §5.2 那一行把话说死了:「{@code origin} 记的是这条标签<b>从哪来</b>,
  * 不是它现在什么状态 —— 用户确认只写 {@code confirmed_at},不把 {@code auto} 改成 {@code manual}。
  * 改了,{@code 1.2.5.2} 那套准确率口径(标对的/标了的)在真实数据上就再也算不出来了。」
  *
@@ -230,7 +230,7 @@ class RecordTagTest {
     void tagOriginHasExactlyTwoValuesAndNoState() {
         assertEquals(List.of("AUTO", "MANUAL"),
                 java.util.Arrays.stream(TagOrigin.values()).map(Enum::name).toList());
-        assertEquals("auto", TagOrigin.AUTO.wireName(), "契约里是小写(docs/技术架构 §5.2)");
+        assertEquals("auto", TagOrigin.AUTO.wireName(), "契约里是小写(docs/technical/INDEX.md §5.2)");
         assertEquals("manual", TagOrigin.MANUAL.wireName());
         assertEquals(TagOrigin.AUTO, TagOrigin.ofWireName("auto"));
         assertThrows(IllegalArgumentException.class, () -> TagOrigin.ofWireName("Auto"),
@@ -318,7 +318,7 @@ class RecordTagTest {
     // ———————————————— 五、计不计覆盖度,判据只有一个 ————————————————
 
     @Test
-    @DisplayName("🔴 判据只有 discarded,没有「确认过没有」(docs/技术架构 §6.4)")
+    @DisplayName("🔴 判据只有 discarded,没有「确认过没有」(docs/technical/INDEX.md §6.4)")
     void onlyDiscardDecidesWhetherATagCounts() {
         // 把「没点确认」也算成不覆盖,等于要求用户对每一条自动标签点一次才承认他学过 ——
         // 覆盖率会变成点击率,而北极星指标看的正是这一屏。

@@ -21,7 +21,7 @@ import java.util.List;
  *
  * <h2>关于「四统计字段」</h2>
  *
- * docs/技术架构 §6.4 要的是四个纯统计字段({@code recent5y_count / province_codes /
+ * docs/technical/INDEX.md §6.4 要的是四个纯统计字段({@code recent5y_count / province_codes /
  * last_seen_year / avg_per_paper},见 §5.2 的 {@code syllabus_stat} 表)。
  * <b>现在的骨架种子只产出了其中一个</b>,另外三个属于离线加工区尚未产出的数据。
  * 这里只暴露已经存在的那个,不给不存在的数据造字段 —— 造出来就是三个恒为 null 的坑,

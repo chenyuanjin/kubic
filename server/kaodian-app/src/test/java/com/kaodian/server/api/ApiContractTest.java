@@ -86,7 +86,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * <h2>为什么用 {@code @WebMvcTest} 而不是整个应用</h2>
  *
  * 存储实现({@code FileTouchStore})属于另一条线,它换成什么都不该影响接口契约 ——
- * {@link TouchStore} 是接口,这里就按接口给一个内存实现。docs/技术架构 §2.2:
+ * {@link TouchStore} 是接口,这里就按接口给一个内存实现。docs/technical/INDEX.md §2.2:
  * <b>包之间只通过接口调用</b>,测试是这句话第一个受益的地方。
  */
 @WebMvcTest(controllers = {
@@ -317,7 +317,7 @@ class ApiContractTest {
                 .andExpect(jsonPath("$.buckets[29].best").doesNotExist())
                 .andExpect(jsonPath("$.buckets[29].worst").doesNotExist())
                 // 「对不对」那一侧:正确率进了桶,「这周退步了」就只差一次减法
-                // (docs/技术架构 §5.2 撤掉 practice_log 时给的就是这条理由)
+                // (docs/technical/INDEX.md §5.2 撤掉 practice_log 时给的就是这条理由)
                 .andExpect(jsonPath("$.buckets[29].accuracy").doesNotExist())
                 .andExpect(jsonPath("$.buckets[29].practiced").doesNotExist())
                 .andExpect(jsonPath("$.buckets[29].correct").doesNotExist())
@@ -892,7 +892,7 @@ class ApiContractTest {
     }
 
     @Test
-    @DisplayName("🔴 删记录时级联删它的标签(docs/技术架构 §6.2)—— 不删会留下一批没人会再过滤的孤儿行")
+    @DisplayName("🔴 删记录时级联删它的标签(docs/technical/INDEX.md §6.2)—— 不删会留下一批没人会再过滤的孤儿行")
     void deletingARecordCascadesToItsTags() throws Exception {
         // 那些孤儿行今天进不了覆盖度(CoverageService 会跳过指不到记录的标签),
         // 所以这不是一条会立刻算错数的路 —— 它的危险在于【下一个读它们的人未必也做那层过滤】。
@@ -1210,7 +1210,7 @@ class ApiContractTest {
     }
 
     /**
-     * 🔴 字段表从五个变成六个,是 {@code clientToken} 加进来的那一次(docs/技术架构 §6.2「client_token 幂等」)。
+     * 🔴 字段表从五个变成六个,是 {@code clientToken} 加进来的那一次(docs/technical/INDEX.md §6.2「client_token 幂等」)。
      *
      * <p>这个断言的作用不是「数字必须是 5」,是<b>加字段这件事必须先在这里被挡一下</b>:
      * 改这一行的人得先回答「这个字段会不会变成放内容的地方」。
@@ -1223,7 +1223,7 @@ class ApiContractTest {
         List<String> fields = Arrays.stream(CreateRecordRequest.class.getRecordComponents())
                 .map(RecordComponent::getName).toList();
         assertEquals(List.of("kind", "sourceName", "nodeCode", "practiced", "correct", "clientToken"), fields,
-                "「只接受 nodeCode,不接受 name」是 R-07 在接口层的实现 —— 加字段前先回去看 docs/技术架构 §6.3");
+                "「只接受 nodeCode,不接受 name」是 R-07 在接口层的实现 —— 加字段前先回去看 docs/technical/INDEX.md §6.3");
     }
 
     @Test
@@ -1436,12 +1436,12 @@ class ApiContractTest {
         /**
          * POST /api/records 这条路压根不调用模型(用户已经从树里挑好了考点),
          * 所以这里给一个「一调用就炸」的实现:<b>它一旦被调用,测试就会红</b> ——
-         * 这本身就是一条断言,钉住 docs/商业化设计 §二「手动记录永不消耗 AI 额度」。
+         * 这本身就是一条断言,钉住 docs/product/商业化与额度设计.md §二「手动记录永不消耗 AI 额度」。
          */
         @Bean
         VisionTagger visionTagger() {
             return (image, mimeType, candidates) -> {
-                throw new AssertionError("手动记一笔不该调用识别 —— 额度用尽 ≠ 记不了(docs/商业化设计 §二)");
+                throw new AssertionError("手动记一笔不该调用识别 —— 额度用尽 ≠ 记不了(docs/product/商业化与额度设计.md §二)");
             };
         }
 

@@ -27,12 +27,12 @@ import java.util.Map;
  *       从 {@code this} 原样带过去 —— <b>不是「记得别改」,是签名上没有改它的位置</b></li>
  *   <li>{@link RecordTagStore#put} 在写入侧再核一遍:同一个 id 的行,{@code origin} 变了就抛</li>
  * </ol>
- * 三道是冗余的,冗余是有意的 —— 与 docs/技术架构 §6.5 那四道 MCP 只读锁同一条纪律:
+ * 三道是冗余的,冗余是有意的 —— 与 docs/technical/INDEX.md §6.5 那四道 MCP 只读锁同一条纪律:
  * 一道失效不该导致整条线失守。
  *
  * <h2>{@code discarded} 是「可见但不计覆盖度」,不是删除</h2>
  *
- * {@code P1-7} / docs/技术架构 §5.2:「{@code discarded=1} 即宁缺毋滥的落地:<b>可见,但不计覆盖度</b>」。
+ * {@code P1-7} / docs/technical/INDEX.md §5.2:「{@code discarded=1} 即宁缺毋滥的落地:<b>可见,但不计覆盖度</b>」。
  * 所以它是一个标志位而不是一次删除 —— 用户得看得见「这条我丢过」,否则同一个错标会被反复建议、
  * 反复丢弃,而他不知道自己已经丢过一次。
  *
@@ -137,7 +137,7 @@ public record RecordTag(
      * 但理由已经比原先窄了一档,得说清楚是哪一档:
      * <ul>
      *   <li><b>已经不成立的那半句</b>:「{@code origin=auto} 今天没有 HTTP 产出路径」——
-     *       docs/技术架构 §6.2 的 {@code POST /records/{id}/image} 已落地
+     *       docs/technical/INDEX.md §6.2 的 {@code POST /records/{id}/image} 已落地
      *       ({@code RecognitionController#recognizePhotos} → {@link TaggingService#suggest}),
      *       命中时会<b>真的往库里落一行 {@code TagOrigin#AUTO}</b>。
      *       但它落的是<b>另一条标签</b>,不是主标签:主标签的 {@code nodeCode} 永远取自
@@ -171,7 +171,7 @@ public record RecordTag(
      *
      * <p>🔴 {@code origin} 从 {@code this} 原样带过去。这不是「记得别改」:
      * 这个方法的签名里<b>没有能传进一个新 origin 的位置</b>,所以调用方连改的机会都没有。
-     * docs/技术架构 §6.3 对 confirm 那一行的约束是「<b>不改 origin</b> —— 它是来源不是状态」。
+     * docs/technical/INDEX.md §6.3 对 confirm 那一行的约束是「<b>不改 origin</b> —— 它是来源不是状态」。
      */
     public RecordTag confirm(Instant at) {
         if (at == null) {
@@ -195,7 +195,7 @@ public record RecordTag(
      *
      * <h2>判据只有 {@code discarded},没有 {@code confirmedAt}</h2>
      *
-     * docs/技术架构 §6.4 的原文是「分子 = <b>{@code discarded=0}</b> 的触达节点数」。
+     * docs/technical/INDEX.md §6.4 的原文是「分子 = <b>{@code discarded=0}</b> 的触达节点数」。
      * 一条过了阈值、过了出口自检的自动标签,哪怕用户还没点过确认,也已经是一次分类 ——
      * 把「没点确认」也算成不覆盖,等于要求用户对每一条自动标签点一次才承认他学过,
      * 而那会让覆盖率变成「点击率」。

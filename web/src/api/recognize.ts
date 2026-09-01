@@ -1,11 +1,11 @@
 /**
- * 把原图送去识别一次 —— `POST /api/records/{id}/image`(docs/技术架构 §6.2 / §八)。
+ * 把原图送去识别一次 —— `POST /api/records/{id}/image`(docs/technical/INDEX.md §6.2 / §八)。
  *
  * <h2>🔴 这条路上原图字节出现的次数:一次</h2>
  *
  * 本机缓存里的 Blob → {@link toBase64} 编一次 → 塞进请求体 → 请求发出去。
  * 之后那段 base64 <b>没有任何人再引用它</b>:不存全局、不进 react-query 的缓存、
- * 不写进任何状态。docs/技术架构 §8.1 的五条禁令里有三条落在客户端这一侧 ——
+ * 不写进任何状态。docs/technical/INDEX.md §8.1 的五条禁令里有三条落在客户端这一侧 ——
  * 不上传到本项目服务端以外的任何地方、不生成外链、<b>不打进 console 的任何级别</b>。
  * 最后那条由 `tests/noRawBytesInConsole.test.ts` 钉住,不是靠这段注释。
  *
@@ -19,7 +19,7 @@
  * 所以本文件<b>没有绕法</b>:{@link useRecognizePhotos} 要一个已经存在的 `recordId`,
  * 界面上的次序就是「先挑考点 → 记下 → 图跟着这条记录走」。
  * 两条出路(给 `POST /records` 开一条「待识别记录」/ 让 `/image` 能改挂主标签)
- * 都会改变别的不变式,<b>要人来选</b>,不是前端自己发明一个。见 docs/总路线图 §四 `R-85`。
+ * 都会改变别的不变式,<b>要人来选</b>,不是前端自己发明一个。见 docs/execution/INDEX.md §四 `R-85`。
  */
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
@@ -43,7 +43,7 @@ import type { SuggestTagResponse } from './types'
  * 改动时对着 `PhotoRecognitionRequest.MAX_PHOTOS` / `MAX_PHOTO_BYTES` / `MAX_TOTAL_BYTES` 一起看。
  */
 
-/** 单次最多几张 —— 连拍合并成<b>一条</b>记录,不是 6 条(docs/技术架构 §6.2 / `1.1.2.3`)。 */
+/** 单次最多几张 —— 连拍合并成<b>一条</b>记录,不是 6 条(docs/technical/INDEX.md §6.2 / `1.1.2.3`)。 */
 export const MAX_PHOTOS = 6
 /** 单张 4 MiB。它拦的不是「图太大」,是「有人拿这个入口传一个别的东西」。 */
 export const MAX_PHOTO_BYTES = 4 * 1024 * 1024
@@ -67,7 +67,7 @@ const CHUNK = 0x8000
  *
  * 那个 API 出来的是 `data:image/png;base64,xxxx`,得再切一刀去掉前缀 ——
  * 而切之前那个完整的 data URL <b>就是一条能直接贴进浏览器地址栏、能塞进 `<img src>` 的东西</b>。
- * docs/技术架构 §8.1 禁令 4 是「不做任何形式的图片分享/外链」,一个 data URL 离那件事只差一次复制。
+ * docs/technical/INDEX.md §8.1 禁令 4 是「不做任何形式的图片分享/外链」,一个 data URL 离那件事只差一次复制。
  * 这里从头到尾没有产生过那样一个字符串。
  *
  * <h2>为什么要分块</h2>
@@ -94,7 +94,7 @@ export async function toBase64(blob: RawImageBytes): Promise<string> {
  * 服务端那个 record 上挂着 `@JsonAnySetter`,多带一个字段就是 `UNKNOWN_FIELD` 400 ——
  * 那道锁是拦 `{"photos":[...],"tag":"我自己起的考点"}` 的(`R-07` 的第二道锁),
  * 前端不该去撞它。尤其不要顺手带一个 `filename` 或 `takenAt`:
- * <b>docs/技术架构 §8.2 那张表里,服务端关于图片能知道的全部信息是一个枚举值。</b>
+ * <b>docs/technical/INDEX.md §8.2 那张表里,服务端关于图片能知道的全部信息是一个枚举值。</b>
  */
 interface PhotoRecognitionRequest {
   photos: string[]
@@ -107,7 +107,7 @@ interface PhotoRecognitionRequest {
  *
  * 调用这个 mutation 的时候,记录已经在库里了(见文件头 `R-85`)。
  * 所以它失败时界面要说的是「这一笔已经记下了,只是这次没认出考点」——
- * docs/后端详设 §1.5:<b>降级方向是「少功能」,不是「少记录」</b>。
+ * docs/technical/后端系统设计与组件接入.md §1.5:<b>降级方向是「少功能」,不是「少记录」</b>。
  * 把它显示成「没记下来」会让用户去重记一遍,于是库里多出一条重复记录,
  * 而覆盖率是按考点算的,重复记录正好污染「几次」那一列。
  *

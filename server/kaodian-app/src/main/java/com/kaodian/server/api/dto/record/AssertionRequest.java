@@ -8,7 +8,7 @@ import jakarta.validation.constraints.Size;
 /**
  * {@code POST/DELETE /assertions} 的请求体 —— <b>只接受一个考点 code。</b>
  *
- * <h2>🔴 契约原文就是「body 只接受 {@code nodeId}」(docs/技术架构 §6.4)</h2>
+ * <h2>🔴 契约原文就是「body 只接受 {@code nodeId}」(docs/technical/INDEX.md §6.4)</h2>
  *
  * 与 {@link MountTagRequest} 同一副形状、同一套理由,只是那边是把记录挂到考点上,
  * 这边是给考点贴一句「我会了」。两条写入路径上都<b>没有一个能装下自由文本的位置</b>:

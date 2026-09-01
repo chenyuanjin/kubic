@@ -52,7 +52,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * docs/技术架构 §6.4 最后一行:{@code POST/DELETE /assertions} —— 「我已掌握」/ 取消。
+ * docs/technical/INDEX.md §6.4 最后一行:{@code POST/DELETE /assertions} —— 「我已掌握」/ 取消。
  *
  * <h2>🔴 这个文件验的第一件事是「那个大字没变」</h2>
  *
@@ -122,7 +122,7 @@ class AssertionApiTest {
         String after = summaryBody();
 
         assertEquals((int) JsonPath.read(before, "$.percent"), (int) JsonPath.read(after, "$.percent"),
-                "🔴 覆盖率因为点了一次按钮而变了 —— docs/技术架构 §6.4:「分子 = discarded=0 的触达节点数」,"
+                "🔴 覆盖率因为点了一次按钮而变了 —— docs/technical/INDEX.md §6.4:「分子 = discarded=0 的触达节点数」,"
                         + "而声明不是触达。决策记录 §5.2:「我已掌握」按钮是补丁不是解法");
         assertEquals((int) JsonPath.read(before, "$.covered"), (int) JsonPath.read(after, "$.covered"));
         assertEquals((int) JsonPath.read(before, "$.total"), (int) JsonPath.read(after, "$.total"),
@@ -135,7 +135,7 @@ class AssertionApiTest {
 
         assertEquals(0, (int) JsonPath.read(before, "$.asserted"));
         assertEquals(1, (int) JsonPath.read(after, "$.asserted"),
-                "唯一该变的就是这一格(docs/技术架构 §6.4:断言单列不并入)");
+                "唯一该变的就是这一格(docs/technical/INDEX.md §6.4:断言单列不并入)");
     }
 
     /**
@@ -210,7 +210,7 @@ class AssertionApiTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.groups[*].nodes[?(@.code == '" + BLANK_NODE + "')].assertedAt",
                         Matchers.contains(Matchers.notNullValue())))
-                // 🔴 状态还是空白 —— 断言是独立状态,不是第六态(docs/技术架构 §5.2)
+                // 🔴 状态还是空白 —— 断言是独立状态,不是第六态(docs/technical/INDEX.md §5.2)
                 .andExpect(jsonPath("$.groups[*].nodes[?(@.code == '" + BLANK_NODE + "')].state",
                         Matchers.contains("EMPTY")));
     }

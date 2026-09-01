@@ -3,7 +3,7 @@ package com.kaodian.server.collect;
 import java.time.Instant;
 
 /**
- * 「我已掌握」—— docs/技术架构 §5.2 的 {@code user_assertion} 表。
+ * 「我已掌握」—— docs/technical/INDEX.md §5.2 的 {@code user_assertion} 表。
  *
  * <h2>🔴 它<b>不</b>进覆盖度的分子。这是这个 record 存在的全部理由</h2>
  *
@@ -19,8 +19,8 @@ import java.time.Instant;
  * 落到代码上就是三件事,写在 {@code CoverageService} 里:
  * <ol>
  *   <li>覆盖率的<b>分子不变</b> —— 断言不让任何考点变成「碰过」</li>
- *   <li>盲区榜<b>排除</b>它 —— 用户不想再被提醒,这是他按下按钮时要的东西(docs/技术架构 §6.4)</li>
- *   <li>概览里<b>单列一格</b> —— 「你声明掌握了 N 个」,与覆盖率并排但不相加(docs/技术架构 §6.4)</li>
+ *   <li>盲区榜<b>排除</b>它 —— 用户不想再被提醒,这是他按下按钮时要的东西(docs/technical/INDEX.md §6.4)</li>
+ *   <li>概览里<b>单列一格</b> —— 「你声明掌握了 N 个」,与覆盖率并排但不相加(docs/technical/INDEX.md §6.4)</li>
  * </ol>
  *
  * <h2>⚠️ 断言不是归档。两者是同一类问题的两个不同答案,不要混成一个概念</h2>
@@ -34,7 +34,7 @@ import java.time.Instant;
  *   <tr><td>说的是什么</td><td>「这个考点<b>与我无关</b>」—— 骨架层的裁剪</td>
  *       <td>「这个考点我会了,只是<b>没记</b>」—— 行为层的补丁</td></tr>
  * </table>
- * 归档那一侧的风险有单独一条记录({@code docs/总路线图} §四 {@code R-49}:「归档可无声刷高覆盖率」,
+ * 归档那一侧的风险有单独一条记录({@code docs/execution/INDEX.md} §四 {@code R-49}:「归档可无声刷高覆盖率」,
  * 对策是归档计数常驻 + 导出带完整归档清单 + 归档区永远可见可找回)。
  * <b>断言这一侧没有那条风险,因为它根本不动那个比值</b> —— 代价是它必须在别处被看见,
  * 否则用户会以为自己按了个没反应的按钮。所以概览单列一格、树上每个考点带 {@code assertedAt}。

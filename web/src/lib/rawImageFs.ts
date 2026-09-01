@@ -3,7 +3,7 @@
  *
  * <h2>🔴 这个文件是「第二个实现」,不是「第二套逻辑」</h2>
  *
- * `docs/原图存储 §1.1` 冻结的那句:**壳带来的是 `RawImageBackend` 的第二个实现,不是第二套逻辑。**
+ * `docs/technical/原图存储-判据层与存储层.md §1.1` 冻结的那句:**壳带来的是 `RawImageBackend` 的第二个实现,不是第二套逻辑。**
  * 于是这里和 `rawImageDb.ts` 一样,<b>不含任何判断</b> ——
  * 「到期了没有」「该归档哪几张」「上限到了先归档谁」全在 `rawImageCache.ts`,
  * 那一层只编译一份,两种形态逐字节共用。
@@ -42,14 +42,14 @@
  * 只用 `fetch` / `Blob` / `TextEncoder` / `btoa` —— 浏览器与 node 都有。
  * 于是 `tests/rawImageBackend.test.ts` 能拿一个假 `fetch` 把线协议整条测掉,
  * 而不需要真的起一个壳。<b>真实文件系统那一半由 `shell/src/raw_image_store.rs`
- * 的 Rust 测试守着</b>,两半在线协议上碰头,见 `docs/原图存储 §9.2`。
+ * 的 Rust 测试守着</b>,两半在线协议上碰头,见 `docs/technical/原图存储-判据层与存储层.md §9.2`。
  */
 
 import { RawImageStorageError } from './rawImageCache.ts'
 import type { RawImageBackend, RawImageMeta, StoredRawImage } from './rawImageCache.ts'
 
 /* ========================================================================== */
-/* 线协议 —— 逐字对着 docs/原图存储 §9.1 那张表,壳侧 raw_image_store.rs 是同一张表     */
+/* 线协议 —— 逐字对着 docs/technical/原图存储-判据层与存储层.md §9.1 那张表,壳侧 raw_image_store.rs 是同一张表     */
 /* ========================================================================== */
 
 /**
@@ -58,7 +58,7 @@ import type { RawImageBackend, RawImageMeta, StoredRawImage } from './rawImageCa
  * <p>刻意<b>不是</b> `/api/*`:`/api/*` 那条路整条反代给上游,而这条路一个字节都不出这台机器。
  * 两条路在壳里由 `local_server.rs` 分开,在浏览器里则根本没有第二条 ——
  * 浏览器形态下这个前缀是一个 404,而 {@link localRawImageStoreAvailable} 要的就是这一点。
- * <p>双下划线开头是给读代码的人看的:<b>它不是产品 API</b>,不进 `docs/技术架构` 的接口表。
+ * <p>双下划线开头是给读代码的人看的:<b>它不是产品 API</b>,不进 `docs/technical/INDEX.md` 的接口表。
  */
 const BASE = '/__local/rawimages'
 
@@ -118,11 +118,11 @@ function stripBytes(row: StoredRawImage): RawImageMeta {
 /**
  * 🔴 一次请求,失败翻成 {@link RawImageStorageError}。
  *
- * <p>`docs/原图存储 §2.1` 的错误码表:壳侧新增的失败模式(目录没权限、磁盘满、索引写不动)
+ * <p>`docs/technical/原图存储-判据层与存储层.md §2.1` 的错误码表:壳侧新增的失败模式(目录没权限、磁盘满、索引写不动)
  * <b>全部归到这一个类型</b>,不新增一种需要界面单独处理的形态。
  * 界面那句话在两种形态下逐字相同:「这张图没被本地缓存」,而<b>不是</b>「记不下来」。
  * <p>🔴 message 里<b>不带 id、不带 label、不带路径</b> —— 它会走到界面上,
- * 而 docs/技术架构 §8.2 明说路径也是设备信息。
+ * 而 docs/technical/INDEX.md §8.2 明说路径也是设备信息。
  */
 async function call(path: string, init: RequestInit): Promise<Response> {
   let res: Response
@@ -205,7 +205,7 @@ export const fsRawImageBackend: RawImageBackend = {
    * 🔴 一次请求写整行:字节是请求体,过期戳在 {@link META_HEADER} 里,<b>同一个请求</b>。
    *
    * <p>「要么整行在,要么整行不在」由壳侧兑现(先写 `.bin.tmp` → fsync → rename,
-   * 再原子重写索引;中间崩溃留下的孤儿字节文件由启动清理删掉,见 `docs/原图存储 §2.4`)。
+   * 再原子重写索引;中间崩溃留下的孤儿字节文件由启动清理删掉,见 `docs/technical/原图存储-判据层与存储层.md §2.4`)。
    * 这一侧能做的是<b>不给出第二个写入口</b> —— 没有 `putBytes`,没有 `setMeta`。
    */
   async put(row: StoredRawImage): Promise<void> {
@@ -256,7 +256,7 @@ export const fsRawImageBackend: RawImageBackend = {
     // 🔴 类型贴的是【元信息里的 mime】,不是壳回的 content-type。
     //    壳一律回 application/octet-stream —— 它不认识图片,也不该认识:
     //    一个会按图片类型回 content-type 的本地端点,就是一条能在浏览器里直接打开原图的链接,
-    //    而 docs/技术架构 §8.1 禁令 4 是「不做任何形式的图片分享/外链」。
+    //    而 docs/technical/INDEX.md §8.1 禁令 4 是「不做任何形式的图片分享/外链」。
     return { ...meta, blob: body.slice(0, body.size, meta.mime) }
   },
 

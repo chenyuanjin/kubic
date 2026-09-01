@@ -26,7 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  *
  * <h2>为什么每条用例都从「模型这样答了」开始写</h2>
  *
- * docs/识别链路 坑一:<b>「OCR 出错是漏字,LLM 出错是编造一个不存在的考点」</b>。
+ * docs/data/识别链路选型.md 坑一:<b>「OCR 出错是漏字,LLM 出错是编造一个不存在的考点」</b>。
  * 编造出来的东西长什么样是可以预演的 —— 树里没有的 code、机构宣传册上的措辞、
  * 候选的中文名而不是 code、大小写和空白抖动过的 code。这些都不是假想:
  * 它们是让一个自由生成的模型去填一个闭集槽位时最常见的四种失手方式。
@@ -206,7 +206,7 @@ class ClosedSetTaggingTest {
     void anAlreadyNegativeAnswerPassesThroughUntouched() {
         // enforceClosedSet 对 NO_MATCH 是短路返回的,所以它在 candidates 为 null 时也不会 NPE。
         // 钉住这一点,是因为「识别没认出来」绝不该升级成一个异常 ——
-        // docs/总路线图 §1.3.7.1:识别怎么失败,用户的记录动作都不能失败。
+        // docs/execution/INDEX.md §1.3.7.1:识别怎么失败,用户的记录动作都不能失败。
         RecognitionResult declined = RecognitionResult.noMatch(0.42);
 
         assertSame(declined, VisionTagger.enforceClosedSet(declined, null));
@@ -256,7 +256,7 @@ class ClosedSetTaggingTest {
     @Test
     @DisplayName("低置信度的答案连出口自检都到不了 —— 阈值在 of() 里,不在每个实现类里")
     void aLowConfidenceAnswerIsAlreadyNoMatchBeforeTheClosedSetCheck() {
-        // 换厂商换的是实现类,换不掉这条线(docs/识别链路 坑三)。哪怕 code 是候选集里货真价实的一个,
+        // 换厂商换的是实现类,换不掉这条线(docs/data/识别链路选型.md 坑三)。哪怕 code 是候选集里货真价实的一个,
         // 0.4 分也不许挂上去 —— 否则覆盖度里会多出一批「模型自己都不确定」的学过。
         RecognitionResult result = afterModelSays(RecognitionResult.of("growth-rate", 0.40));
 
@@ -382,7 +382,7 @@ class ClosedSetTaggingTest {
     @Test
     @DisplayName("🔴 RecognitionResult 上除了 nodeCode 没有任何文本字段 —— 断言的是形状,不是某次赋值")
     void theResultRecordHasNoFreeTextOutlet() {
-        // docs/技术架构 §3.1 的原话是「返回类型里根本没有 String label 字段」。
+        // docs/technical/INDEX.md §3.1 的原话是「返回类型里根本没有 String label 字段」。
         // 那句话现在成立,但它是靠人记得而成立的 —— 下一个人加个 label 用来「给用户看个提示」
         // 完全说得通,而那一刻 R-07 就破了:模型生成的措辞有了一条合法通路。
         // 这条用例把那句话机械化:任何文本类型的新分量都会在这里红一次,逼一次显式确认。

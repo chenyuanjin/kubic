@@ -5,11 +5,11 @@ package com.kaodian.server.recognize;
  *
  * <h2>🔴 这个 record 里没有 {@code label}、没有 {@code tag}、没有 {@code text}</h2>
  *
- * docs/识别链路 坑一:模型是<b>分类器</b>,不是标签生成器。放开自由生成会同时踩两条线 ——
+ * docs/data/识别链路选型.md 坑一:模型是<b>分类器</b>,不是标签生成器。放开自由生成会同时踩两条线 ——
  * 编造出树里不存在的考点(踩「宁缺毋滥」,而错标会让覆盖度失真,那个指标就是整个产品),
  * 以及原样吐出机构的既有措辞(踩 R-07 标签自行命名)。
  * <p>
- * docs/技术架构 §3.1 把解法写成一句话:<b>「返回类型里根本没有 {@code String label} 字段」</b>。
+ * docs/technical/INDEX.md §3.1 把解法写成一句话:<b>「返回类型里根本没有 {@code String label} 字段」</b>。
  * 所以这里的 {@link #nodeCode} 只可能是调用方传进去的候选集里的某一个 —— 由
  * {@link VisionTagger#enforceClosedSet} 在出口处再核一遍。
  *
@@ -45,7 +45,7 @@ public record RecognitionResult(String nodeCode, double confidence, boolean abov
         //
         // 为什么是抛而不是降级成 NO_MATCH:降级会把「置信度算不出来」压成
         // 「什么都没认出来」(confidence 0.0),而这个 record 的全部设计就是要把这两件事分开。
-        // 「记录动作永不失败」这条保证兑现在更上一层(docs/总路线图 §1.3.7.1:识别不可用时先落地后异步补),
+        // 「记录动作永不失败」这条保证兑现在更上一层(docs/execution/INDEX.md §1.3.7.1:识别不可用时先落地后异步补),
         // 不靠在这里把一个坏值悄悄洗成好值。
         if (Double.isNaN(confidence) || confidence < 0.0 || confidence > 1.0) {
             throw new IllegalArgumentException("置信度必须是 0~1 的实数:" + confidence);
@@ -77,7 +77,7 @@ public record RecognitionResult(String nodeCode, double confidence, boolean abov
      * 唯一的「命中」构造入口。
      *
      * <p><b>阈值裁决在这里发生,而不是在每个实现类里。</b> 换厂商换的是实现类,
-     * 换不掉这条线 —— docs/识别链路 坑三要的「切换点」不能顺带把红线也切换掉。
+     * 换不掉这条线 —— docs/data/识别链路选型.md 坑三要的「切换点」不能顺带把红线也切换掉。
      */
     public static RecognitionResult of(String nodeCode, double confidence) {
         if (nodeCode == null || nodeCode.isBlank()) {

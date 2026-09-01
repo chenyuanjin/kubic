@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# 壳的唯一构建入口(docs/壳技术方案 §2.3)。
+# 壳的唯一构建入口(docs/technical/壳技术方案-Tauri2包现有Web工程.md §2.3)。
 #
 # 为什么不能直接 `cargo tauri build`:
-#   Rust 是这个项目的第三条工具链,而 docs/技术架构 §一 的隔离红线当时只写了 Maven 和 npm。
+#   Rust 是这个项目的第三条工具链,而 docs/technical/INDEX.md §一 的隔离红线当时只写了 Maven 和 npm。
 #   `~/.cargo/config.toml` 里一行 `[source.crates-io] replace-with = "公司源"`
 #   会让依赖静默走内网 —— 与 server/build.sh 拦的是同一件事,而且【在公司网络里不会报错】(R-111)。
 #
@@ -79,7 +79,7 @@ for p in candidates:
         bad.append(f"{p}: 生效配置里出现 token —— 公共镜像不需要凭据,出现凭据说明指向了私服")
 
 if bad:
-    print("拒绝构建 —— cargo 依赖源未通过隔离校验(R-111 / docs/技术架构 §1.3):", file=sys.stderr)
+    print("拒绝构建 —— cargo 依赖源未通过隔离校验(R-111 / docs/technical/INDEX.md §1.3):", file=sys.stderr)
     for b in bad:
         print("  ✗ " + b, file=sys.stderr)
     print("\n  公共镜像 ≠ 公司私服:前者公开匿名、人人可用;后者在内网、要公司凭据。", file=sys.stderr)
@@ -88,7 +88,7 @@ if bad:
 print(f"  ✓ cargo 依赖源:{'、'.join(seen) if seen else '无本地覆盖配置(走官方源)'}")
 PY
 
-# —— 1.2 依赖黑名单(docs/壳技术方案 §六)——
+# —— 1.2 依赖黑名单(docs/technical/壳技术方案-Tauri2包现有Web工程.md §六)——
 # 同时扫 Cargo.toml 与 Cargo.lock:只扫前者的话,一个传递依赖就能绕过去。
 python3 - <<'PY'
 import re, sys, pathlib
@@ -96,7 +96,7 @@ import re, sys, pathlib
 # 单词段匹配(name 按 - 或 _ 切开之后逐段比),避免 "s3" 这类短串误伤。
 SEGMENTS = {
     # ① 模型 SDK —— 学科判断整个外包给用户自己接的模型;调模型的地方只有
-    #    server 的 recognize 与 agent.llm 两处(docs/后端详设 §二)。壳不调任何模型。
+    #    server 的 recognize 与 agent.llm 两处(docs/technical/后端系统设计与组件接入.md §二)。壳不调任何模型。
     "openai", "anthropic", "claude", "gemini", "ollama", "langchain",
     "tiktoken", "dashscope", "zhipu", "qianfan", "replicate",
     # ② 崩溃上报 / 遥测 —— 它会把数据送出这台机器,而红线的原话是「只存在他自己的机器上」。
@@ -122,7 +122,7 @@ for n in sorted(names):
         hits.append(n)
 
 if hits:
-    print("拒绝构建 —— 依赖黑名单命中(docs/壳技术方案 §六):", file=sys.stderr)
+    print("拒绝构建 —— 依赖黑名单命中(docs/technical/壳技术方案-Tauri2包现有Web工程.md §六):", file=sys.stderr)
     for h in hits:
         print("  ✗ " + h, file=sys.stderr)
     print("\n  壳不调用任何外部模型,不上报任何遥测,不碰任何云存储。", file=sys.stderr)
@@ -135,10 +135,10 @@ PY
 #
 # 🔴 这两条都【先剥注释再比】,不是原始 grep。
 #
-# docs/壳技术方案 §4.3 写的判据是 `grep -rn 'cfg(target_os' shell/src --exclude-dir=platform`,
+# docs/technical/壳技术方案-Tauri2包现有Web工程.md §4.3 写的判据是 `grep -rn 'cfg(target_os' shell/src --exclude-dir=platform`,
 # 而这条原样照抄的 grep 会红在【本仓库自己的合规注释】上 —— src/main.rs 与
 # src/local_server.rs 里各有一行「这里没有 cfg(target_os)」的声明,声明为了讲清楚
-# 必然要把被禁的那个串写出来。这不是新发现:docs/交付工作流 §9.10 记的三条设计教训第一条
+# 必然要把被禁的那个串写出来。这不是新发现:docs/ops/INDEX.md §9.10 记的三条设计教训第一条
 # 就是「黑名单不能匹配本仓库自己写的合规声明」,而 server/build.sh 处理 XML 时
 # 也是先剥注释再取 <url>。同一条处理,第三次出现。
 #
@@ -157,13 +157,13 @@ for p in sorted(pathlib.Path("src").rglob("*.rs")):
         if "cfg(target_os" in code:
             bad.append(f"{p}:{i}  {line.strip()}")
 if bad:
-    print("拒绝构建 —— cfg(target_os) 出现在 src/platform/ 之外,三端隔离已经破了(docs/壳技术方案 §4.3):", file=sys.stderr)
+    print("拒绝构建 —— cfg(target_os) 出现在 src/platform/ 之外,三端隔离已经破了(docs/technical/壳技术方案-Tauri2包现有Web工程.md §4.3):", file=sys.stderr)
     for b in bad:
         print("  ✗ " + b, file=sys.stderr)
     sys.exit(1)
 print("  ✓ cfg(target_os) 只出现在 src/platform/ 下(已剥注释)")
 
-# ② 与主业公司零交集(docs/技术架构 §1.5)
+# ② 与主业公司零交集(docs/technical/INDEX.md §1.5)
 #
 # 跳过 build.sh 自己:这两个词是它的模式串,扫自己必然命中。
 # 与上面同一条教训 —— 断言不能红在断言本身上。
@@ -183,7 +183,7 @@ for p in sorted(pathlib.Path(".").rglob("*")):
         if any(t in line.lower() for t in TERMS):
             hits.append(f"{p}:{i}  {line.strip()[:120]}")
 if hits:
-    print("拒绝构建 —— 壳里出现了主业公司相关字样(docs/技术架构 §1.5):", file=sys.stderr)
+    print("拒绝构建 —— 壳里出现了主业公司相关字样(docs/technical/INDEX.md §1.5):", file=sys.stderr)
     for h in hits:
         print("  ✗ " + h, file=sys.stderr)
     sys.exit(1)
@@ -197,7 +197,7 @@ PY
 # 换来的能力必须付代价,代价是下面这三条,它们让新增的那条路【可数、有名、跑不出去】。
 #
 # 与上面 1.3 / 1.4 同一条处理:先剥注释、并且只看 `#[cfg(test)]` 之前的部分。
-# docs/交付工作流 §9.10 那条教训第四次出现 —— 断言不能红在断言自己的说明上,
+# docs/ops/INDEX.md §9.10 那条教训第四次出现 —— 断言不能红在断言自己的说明上,
 # 也不能红在【为了证明这条约束成立而写的测试】上:
 # raw_image_store.rs 的测试里必然出现 expiresAt,那正是它证明「原样进、原样出」的方式。
 python3 - <<'PY'
@@ -223,7 +223,7 @@ for p in FILES:
             if term in code:
                 bad.append(f"① {p}:{i}  出现 {term} —— 判据只有 rawImageCache.ts 一份")
 if bad:
-    print("拒绝构建 —— 壳读到了它不该认识的字段(docs/原图存储 §9.3):", file=sys.stderr)
+    print("拒绝构建 —— 壳读到了它不该认识的字段(docs/technical/原图存储-判据层与存储层.md §9.3):", file=sys.stderr)
     for b in bad: print("  ✗ " + b, file=sys.stderr)
     print("\n  壳只认识 id 与 archivedAt。多认识一个字段,「到期判据只有一份」就不再由结构保证。", file=sys.stderr)
     sys.exit(1)
@@ -241,7 +241,7 @@ for p in FILES:
             if c in code:
                 bad.append(f"② {p}:{i}  {c}")
 if bad:
-    print("拒绝构建 —— 壳的写盘点跑出了那两个模块(docs/原图存储 §9.3):", file=sys.stderr)
+    print("拒绝构建 —— 壳的写盘点跑出了那两个模块(docs/technical/原图存储-判据层与存储层.md §9.3):", file=sys.stderr)
     for b in bad: print("  ✗ " + b, file=sys.stderr)
     print("\n  写盘只允许在 raw_image_store.rs(原图)与 config.rs(端口)里。", file=sys.stderr)
     print("  多一个没人知道的写入点,「原图只在用户自己的机器上」就少一道防线。", file=sys.stderr)
@@ -254,7 +254,7 @@ NET = ("hyper_util::client", "hyper::client", "reqwest", "TcpStream", "UdpSocket
 store = pathlib.Path("src/raw_image_store.rs")
 bad = [f"③ {store}:{i}  {n}" for i, code in enumerate(production_code(store), 1) for n in NET if n in code]
 if bad:
-    print("拒绝构建 —— 原图存储层出现了网络出口(docs/原图存储 §9.3):", file=sys.stderr)
+    print("拒绝构建 —— 原图存储层出现了网络出口(docs/technical/原图存储-判据层与存储层.md §9.3):", file=sys.stderr)
     for b in bad: print("  ✗ " + b, file=sys.stderr)
     sys.exit(1)
 print("  ✓ raw_image_store.rs 无网络出口")
@@ -286,19 +286,19 @@ step "③ web 构建(走 web 自己的构建脚本)"
 )
 
 # 🔴 server/ 零改动 —— 这条一个字没变。
-# server/ 有 diff = 选了 docs/壳技术方案 §3.2 的 E 方案(往 CORS 白名单里加 tauri://),而那条没被选。
+# server/ 有 diff = 选了 docs/technical/壳技术方案-Tauri2包现有Web工程.md §3.2 的 E 方案(往 CORS 白名单里加 tauri://),而那条没被选。
 if [ -d "$REPO_ROOT/.git" ] || git -C "$REPO_ROOT" rev-parse --git-dir >/dev/null 2>&1; then
   DIRTY="$(git -C "$REPO_ROOT" status --porcelain -- server)"
   if [ -n "$DIRTY" ]; then
     printf '%s\n' "$DIRTY" >&2
-    die "server/ 有改动 —— 壳不许要求服务端配合(docs/壳技术方案 §十)"
+    die "server/ 有改动 —— 壳不许要求服务端配合(docs/technical/壳技术方案-Tauri2包现有Web工程.md §十)"
   fi
   echo "  ✓ server/ 零改动"
 fi
 
 # ══════════════════════════ ③.5 形态分支可数 ══════════════════════════
 #
-# 🔴 2026-08-31:这一条【替换】了原先的「web/ 零改动」(docs/壳技术方案 §十 / §2.5)。
+# 🔴 2026-08-31:这一条【替换】了原先的「web/ 零改动」(docs/technical/壳技术方案-Tauri2包现有Web工程.md §十 / §2.5)。
 #
 # 原判据是一个【代理】:它真正想说的是「壳不许把 web 改出第二套」,
 # 而当形态分支的数量是 0 时,「一行都不改」恰好等价于这句话,还便宜得多。
@@ -312,18 +312,18 @@ fi
 #
 # 新判据比旧判据强的地方:旧判据挡不住「在 rawImageStore.ts 里写十个 if」,
 # 也挡不住有人在界面组件里加一句 window.__TAURI__ —— 只要那次改动被一起提交。
-step "③.5 形态分支可数(docs/原图存储 §3.1)"
+step "③.5 形态分支可数(docs/technical/原图存储-判据层与存储层.md §3.1)"
 python3 - <<'PY'
 import re, sys, pathlib, os
 
 WEB_SRC = pathlib.Path(os.environ["REPO_ROOT"]) / "web" / "src"
-# 🔴 唯一允许出现形态判断的文件。它就是 docs/原图存储 §3.1 那个「唯一注入点」。
+# 🔴 唯一允许出现形态判断的文件。它就是 docs/technical/原图存储-判据层与存储层.md §3.1 那个「唯一注入点」。
 INJECTION_POINT = "lib/rawImageStore.ts"
 # 线协议只允许出现在文件系统实现里。
 WIRE_OWNER = "lib/rawImageFs.ts"
 
 def code_lines(p):
-    """剥掉行注释与 JSDoc —— docs/交付工作流 §9.10 第五次:断言不能红在自己的说明上。
+    """剥掉行注释与 JSDoc —— docs/ops/INDEX.md §9.10 第五次:断言不能红在自己的说明上。
     这些文件的注释要么整行以 // 开头,要么在 /** … */ 块里以 * 开头。"""
     out = []
     for i, line in enumerate(p.read_text(encoding="utf-8").splitlines(), 1):
@@ -365,11 +365,11 @@ if clocks != [c for c in clocks if c.startswith(INJECTION_POINT + ":")] or len(c
     bad.append(f"原图链路上的 Date.now() 有 {len(clocks)} 处,应当恰好 1 处且在 {INJECTION_POINT}:{clocks}")
 
 if bad:
-    print("拒绝构建 —— 形态分支不再可数(docs/原图存储 §3.1):", file=sys.stderr)
+    print("拒绝构建 —— 形态分支不再可数(docs/technical/原图存储-判据层与存储层.md §3.1):", file=sys.stderr)
     for b in bad:
         print("  ✗ " + b, file=sys.stderr)
     print("\n  壳带来的是 RawImageBackend 的第二个实现,不是第二套逻辑。", file=sys.stderr)
-    print("  形态判断多一处,能力边界就少一道防线 —— 要加的话,先改 docs/原图存储 §3.2 那张穷举表。", file=sys.stderr)
+    print("  形态判断多一处,能力边界就少一道防线 —— 要加的话,先改 docs/technical/原图存储-判据层与存储层.md §3.2 那张穷举表。", file=sys.stderr)
     sys.exit(1)
 print(f"  ✓ 形态判断恰好 1 处({callers[0]});真时钟恰好 1 处({clocks[0]})")
 PY
@@ -386,7 +386,7 @@ DIST="$REPO_ROOT/web/dist"
 [ -f "$DIST/index.html" ] || die "找不到 $DIST/index.html —— 前端没构建出来。
   (不先校验的话,下一步 include_dir! 报的是一句 Rust 宏错误,和「前端没构建」对不上号)"
 grep -q '/assets/' "$DIST/index.html" || die "dist/index.html 里没有引用 /assets/* ——
-  资源路径不是根绝对路径的话,壳里的回环直出会 404(docs/壳技术方案 §2.2 事实 1)"
+  资源路径不是根绝对路径的话,壳里的回环直出会 404(docs/technical/壳技术方案-Tauri2包现有Web工程.md §2.2 事实 1)"
 echo "  ✓ dist/index.html 存在且引用 /assets/*"
 
 # ══════════════════════════ ⑤ 规范 ══════════════════════════
@@ -415,5 +415,5 @@ APP="$SHELL_DIR/target/$TARGET/release/bundle/macos/考点盲区.app"
 printf '\n\033[32m打包完成\033[0m\n  %s\n' "$APP"
 printf '\n  拖进「应用程序」即可,双击能开。\n'
 printf '  🔴 ad-hoc 签名,自用。首次打开走一次「右键 → 打开」。\n'
-printf '     分发给别人才需要 Developer ID + 公证,而本轮没有分发(docs/壳技术方案 §4.4)。\n'
+printf '     分发给别人才需要 Developer ID + 公证,而本轮没有分发(docs/technical/壳技术方案-Tauri2包现有Web工程.md §4.4)。\n'
 printf '     不出 .dmg 的理由写在 tauri.conf.json5 的 bundle.targets 旁边。\n\n'

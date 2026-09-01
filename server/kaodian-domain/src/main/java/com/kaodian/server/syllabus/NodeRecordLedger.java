@@ -16,7 +16,7 @@ package com.kaodian.server.syllabus;
  *
  * <h2>为什么是接口,而不是直接依赖 {@code collect} 包</h2>
  *
- * docs/技术架构 §2.2:包之间只通过接口调用。{@code syllabus} 包不认识 {@code Touch},
+ * docs/technical/INDEX.md §2.2:包之间只通过接口调用。{@code syllabus} 包不认识 {@code Touch},
  * 也不该认识 —— 它只需要一个整数和一次搬迁。装配这件事留在最外层的 {@code api} 包里
  * ({@code ApiBeans}),<b>谁组装,谁依赖框架</b>。
  */

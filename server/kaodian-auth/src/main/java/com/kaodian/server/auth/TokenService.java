@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * 签发、校验、吊销 —— docs/技术架构 §7.4 与 docs/后端详设 §1.9 的全部实现。
+ * 签发、校验、吊销 —— docs/technical/INDEX.md §7.4 与 docs/technical/后端系统设计与组件接入.md §1.9 的全部实现。
  *
  * <h2>这个类里没有 Spring</h2>
  *
@@ -23,7 +23,7 @@ import java.util.Optional;
  *
  * 产品里有两处硬要求撤销必须<b>立刻</b>生效:注销账号,以及设备管理页的「退出这台」。
  * JWT 在过期前无法撤销,要撤销就得另建黑名单表 —— 那等于每次请求都回库查一次,
- * 绕一圈回到有状态,还多背一套签名机制(docs/后端详设 §1.9)。
+ * 绕一圈回到有状态,还多背一套签名机制(docs/technical/后端系统设计与组件接入.md §1.9)。
  * <p>
  * 既然一定要回库,那就干脆只回库。
  */
@@ -34,7 +34,7 @@ public class TokenService {
             "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz".toCharArray();
 
     /**
-     * 43 个 base62 字符 ≈ 256 位熵,与 docs/技术架构 §7.4 写的「32 字节」等价。
+     * 43 个 base62 字符 ≈ 256 位熵,与 docs/technical/INDEX.md §7.4 写的「32 字节」等价。
      *
      * <p>写成「取 43 次字符」而不是「32 字节转 base62」,是为了避开一个静默的坑:
      * 大整数进制转换会<b>吃掉前导零</b>,于是极小概率下签出一条比别人短的令牌。
@@ -116,7 +116,7 @@ public class TokenService {
     }
 
     /**
-     * 退出这一台 —— 只吊销当前令牌(docs/技术架构 §6.1)。
+     * 退出这一台 —— 只吊销当前令牌(docs/technical/INDEX.md §6.1)。
      *
      * <p>🔴 <b>吊销是幂等的</b>:重复调用返回 {@code false},不报错。
      * 「退出登录」这个动作在网络不稳时会被用户点两次,而第二次报错只会让人以为没退成功。

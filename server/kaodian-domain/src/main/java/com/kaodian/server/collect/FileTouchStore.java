@@ -29,7 +29,7 @@ import java.util.List;
  *
  * <h2>为什么是文件</h2>
  *
- * docs/技术架构 §零 的落地阶段表写着:数据层落库最早到<b>阶段 1 的 {@code 1.2.4}</b>,
+ * docs/technical/INDEX.md §零 的落地阶段表写着:数据层落库最早到<b>阶段 1 的 {@code 1.2.4}</b>,
  * 「阶段 0 是本地文件夹 + 纯文本」,阶段 0/1 全本地、不需要服务器。
  * 现在提前上 MySQL,买到的只是一个要运维的进程,和一次没人要求的迁移。
  * <p>
@@ -44,7 +44,7 @@ import java.util.List;
  * 于是即便有人手工往 {@code touches.json} 里塞了一段题干,它也<b>到不了任何地方</b>:
  * 既不会被读进来,更不会因为 {@link Touch} 将来多了个字段就悄悄流回文件。
  * 这与 {@link com.kaodian.server.syllabus.SyllabusLoader} 是同一条思路 ——
- * 不给内容留位置(决策记录 §2.2 / docs/技术架构 §5.1)。
+ * 不给内容留位置(决策记录 §2.2 / docs/technical/INDEX.md §5.1)。
  *
  * <h2>写入:先写临时文件,再原子 rename</h2>
  *

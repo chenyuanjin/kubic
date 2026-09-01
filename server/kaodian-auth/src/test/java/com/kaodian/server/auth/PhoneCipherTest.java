@@ -11,7 +11,7 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * 手机号的三种形态。
  *
- * <p>这里钉住的是 docs/技术架构 §5.2 那一行:<b>手机号不明文落库,哈希用于查、密文用于发短信。</b>
+ * <p>这里钉住的是 docs/technical/INDEX.md §5.2 那一行:<b>手机号不明文落库,哈希用于查、密文用于发短信。</b>
  */
 class PhoneCipherTest {
 

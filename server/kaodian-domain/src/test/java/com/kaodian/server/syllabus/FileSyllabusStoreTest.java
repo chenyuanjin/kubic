@@ -248,7 +248,7 @@ class FileSyllabusStoreTest {
         for (Method m : SyllabusStore.class.getDeclaredMethods()) {
             String name = m.getName().toLowerCase();
             assertFalse(name.contains("import") || name.contains("bulk") || name.contains("batch"),
-                    "🔴 不许出现批量导入考点体系的方法(R-07 / docs/实施路径 §1.2):" + m.getName());
+                    "🔴 不许出现批量导入考点体系的方法(R-07 / docs/decisions/实施路径.md §1.2):" + m.getName());
         }
     }
 

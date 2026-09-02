@@ -1,3 +1,5 @@
+import { requirePair } from '../lib/captchaPolicy'
+import type { CaptchaPair } from '../lib/captchaPolicy'
 import { ApiUnavailableError, getJson, postJson } from './client'
 
 /**
@@ -65,15 +67,33 @@ export interface AccountDto {
   activeSessionCount: number
 }
 
-export function sendSmsCode(phone: string): Promise<SmsSendResponse> {
+/**
+ * 发一条验证码。
+ *
+ * <h2>🔴 行为验证的那一对是<b>参数</b>,不是这里编出来的</h2>
+ *
+ * 这个函数原先硬编码 `captchaTicket: 'dev'` / `captchaRandstr: 'dev'`,靠服务端
+ * `kaodian.auth.captcha.provider=disabled` 一律放行才跑得通。而服务端有一条启动期
+ * 强制的配对(`AuthBeans#checkVendorPairing`):<b>短信一旦切成真实供应商,
+ * 滑块也必须切成真实供应商,否则拒绝启动</b>。所以「把短信打开」和「滑块变成真的」
+ * 是同一个动作 —— 那一刻还发着 `'dev'` 的话,每一次发送都是 400 `CAPTCHA_FAILED`,
+ * 也就是登录整体不可用。
+ * <p>
+ * 现在这一对由调用方从 `lib/captchaPolicy.ts` 走完一次真实验证拿到。
+ * 占位串仍然存在(`BYPASS_PAIR`),但它<b>只在没有配 `CaptchaAppId` 时出现</b>,
+ * 而且界面上会明写「未接入」——安静的旁路和接通了的滑块长得一样,是这条线最危险的一种像。
+ *
+ * <p>🔴 参数是<b>一个对象</b>而不是两个字符串:只传 ticket 是接这个产品最常见的一个错
+ * (server: `SmsSendRequest` 的类注释),而形状上凑不出「只有一半」的那一对,
+ * 这个错就写不出来。{@link requirePair} 是同一条纪律在运行期的那一道。
+ */
+export function sendSmsCode(phone: string, captcha: CaptchaPair): Promise<SmsSendResponse> {
+  const pair = requirePair(captcha)
   return postJson<SmsSendResponse>('/auth/sms/send', {
     phone,
     purpose: 'login',
-    // 🔴 本机开发时服务端的 captcha 是 disabled(一律放行),所以这里给什么都行。
-    // 但字段必须传两个 —— 只传 ticket 是接腾讯云验证码时最常见的一个错,
-    // 到了真实供应商那一侧会 100% 校验失败(server: SmsSendRequest 的类注释)。
-    captchaTicket: 'dev',
-    captchaRandstr: 'dev',
+    captchaTicket: pair.ticket,
+    captchaRandstr: pair.randstr,
   })
 }
 

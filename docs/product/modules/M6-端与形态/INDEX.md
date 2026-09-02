@@ -52,8 +52,6 @@ flowchart LR
     MJ2 -.用户想看盲区.-> X["转场：这一屏在小程序上没有"]
     X --> WJ5
 
-    style MJ2 fill:#efe,stroke:#5a5
-    style WJ5 fill:#ffe,stroke:#a95
 ```
 
 三条后果，逐条：

@@ -652,7 +652,7 @@ erDiagram
 | GET | `/syllabus/tree` | 骨架树 + 覆盖 | `?subject=&withCoverage=true`。单模块整棵树一次返回,前端不做懒加载 |
 | GET | `/syllabus/nodes/{id}` | 考点详情 | 四统计字段 + 我的触达次数/最近触达/来源集合。**没有讲解字段**(`R-05`) |
 | GET | `/coverage/summary` | 覆盖概览 | 分母 = level 3 节点数;分子 = `discarded=0` 的触达节点数;断言单列不并入 |
-| GET | `/coverage/blindspots` | **盲区 Top N** | `?top=20&orderBy=recent5y_count`。排除已断言节点。**这是北极星指标的落点接口**。🆕 **加 `province` 参数**(2026-09-03 裁定):不传时取用户备考档案;响应回显 `statScope` 说明这次统计**实际**用的是哪一档。🔴 骨架侧数据到位前 `statScope` 恒为 `national` —— **照常返回,但不假装是那一场的**。见 `接口契约:签名与错误码全集` §12.9.3 |
+| GET | `/coverage/blindspots` | **盲区 Top N** | `?top=20&orderBy=recent5y_count`。排除已断言节点。**这是北极星指标的落点接口**。🔴 **暂不加 `province` 参数**(2026-09-03 裁定):拒绝理由**不是「今天没数据」**(那条已作废),是 `基础数据 · 抓取范围与渠道` §2.5 指出的**按省份计数的统计单位从第一天起就是错的**(同年同省 3 张卷被算成 1 次)。🔴 **数据还没采 vs 口径本身是错的,是两回事**:前者照定契约、缺失时 key 不出现;后者定了就是把一个已知算错的数固化进契约。解锁条件与到时候的完整形状见 `接口契约:签名与错误码全集` §12.9.3 |
 | GET | `/timeline` | 时间线聚合 | 按天/周聚合触达 |
 | POST/DELETE | `/assertions` | 我已掌握 / 取消 | body 只接受 `nodeId` |
 

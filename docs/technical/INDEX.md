@@ -389,7 +389,7 @@ record TagVerdict(Long nodeId, BigDecimal confidence, boolean noMatch) {}
 | `user_token` | 账号 | `token_hash` / `user_id` / `scope`(`full`/`readonly`)/ `expires_at` / `revoked_at` / `device_label` | 存 SHA-256 不存原值。`scope=readonly` 是 MCP 的全部实现基础(§六) |
 | `account_merge_log` | 账号 | `from_user_id` / `to_user_id` / `moved_record_count` / `merged_at` | 合并不可逆,必须留痕(`R-33`) |
 | `syllabus_node` | 骨架 | `id` / `parent_id` / `level`(1模块 2题型 3考点)/ `name` / `subject` / `sort` / `version` | **`level` 有 CHECK 约束 ≤ 3。** 决策记录 §2.5 不做第四层,写进约束不靠自觉 |
-| `syllabus_stat` | 骨架 | `node_id` / `recent5y_count` / `province_codes` / `last_seen_year` / `avg_per_paper` | 决策记录 §2.5 的四个纯统计字段。离线加工区产出,线上只读(`数据线 · 骨架原料的获取与隔离` 三区隔离)。⚠️ **本行是目标表设计,不是现状**:2026-09-03 实测全仓无建表 DDL,四统计只有 `recent5y_count` 有值,`province_codes` 被 `基础数据 · 抓取范围与渠道` §2.3 判为**本期直接不要**。据此 `/coverage/blindspots` 不加 `province` 参数,见 `接口契约:签名与错误码全集` §12.7 |
+| `syllabus_stat` | 骨架 | `node_id` / `recent5y_count` / `province_codes` / `last_seen_year` / `avg_per_paper` | 决策记录 §2.5 的四个纯统计字段。离线加工区产出,线上只读(`数据线 · 骨架原料的获取与隔离` 三区隔离)。⚠️ **本行是目标表设计,不是现状**:2026-09-03 实测全仓无建表 DDL,四统计只有 `recent5y_count` 有值。**这不改变契约** —— 契约先定、数据跟上(`接口契约:签名与错误码全集` §12.9.3)。🔴 但数据侧有一条必须先解决:`基础数据 · 抓取范围与渠道` §2.5 指出**按省份计数的统计单位从第一天起就是错的**(正确单位是 `(年份, 考试, 卷种)` 三元组)——在它改对之前填 `province_codes`,填进去的是一个口径错误的数字 |
 | `syllabus_evidence` | 骨架 | `node_id` / `paper_ref` | 推导留证,`R-26` 待律师确认格式是否足以自证 |
 | `record_event` | **行为** | `id` / `user_id` / `occurred_at` / `source_name` / `capture_type`(`voice`/`photo`/`text`)/ `extracted_text`(≤200)/ `client_token` | **产品的真实价值全在这张表。** `client_token` 唯一,用于离线队列补传去重 |
 | `record_tag` | 行为 | `record_id` / `node_id` / `confidence`(DECIMAL(4,3))/ `origin`(`auto`/`manual`,**写入后不可变**)/ `confirmed_at` / `discarded` | `discarded=1` 即宁缺毋滥的落地:**可见,但不计覆盖度**(`P1-7`)。**`origin` 记的是这条标签从哪来,不是它现在什么状态**——用户确认只写 `confirmed_at`,不把 `auto` 改成 `manual`。改了,`1.2.5.2` 那套准确率口径(标对的/标了的)在真实数据上就再也算不出来了 |
@@ -652,7 +652,7 @@ erDiagram
 | GET | `/syllabus/tree` | 骨架树 + 覆盖 | `?subject=&withCoverage=true`。单模块整棵树一次返回,前端不做懒加载 |
 | GET | `/syllabus/nodes/{id}` | 考点详情 | 四统计字段 + 我的触达次数/最近触达/来源集合。**没有讲解字段**(`R-05`) |
 | GET | `/coverage/summary` | 覆盖概览 | 分母 = level 3 节点数;分子 = `discarded=0` 的触达节点数;断言单列不并入 |
-| GET | `/coverage/blindspots` | **盲区 Top N** | `?top=20&orderBy=recent5y_count`。排除已断言节点。**这是北极星指标的落点接口**。🔴 **不加 `province` 参数**(2026-09-03 裁定):骨架侧按场次区分的数据今天不存在,加了服务端只能忽略它。三条理由见 `接口契约:签名与错误码全集` §12.7 |
+| GET | `/coverage/blindspots` | **盲区 Top N** | `?top=20&orderBy=recent5y_count`。排除已断言节点。**这是北极星指标的落点接口**。🆕 **加 `province` 参数**(2026-09-03 裁定):不传时取用户备考档案;响应回显 `statScope` 说明这次统计**实际**用的是哪一档。🔴 骨架侧数据到位前 `statScope` 恒为 `national` —— **照常返回,但不假装是那一场的**。见 `接口契约:签名与错误码全集` §12.9.3 |
 | GET | `/timeline` | 时间线聚合 | 按天/周聚合触达 |
 | POST/DELETE | `/assertions` | 我已掌握 / 取消 | body 只接受 `nodeId` |
 
@@ -799,10 +799,15 @@ sequenceDiagram
 
 | Method | Path | 用途 | 关键约束 |
 |---|---|---|---|
-| POST | `/agent/chat` | **产品内问答**(`S-ASK`) | 🔴 **第二个流式端点**(SSE)。多轮 · 带工具池 · 图片 base64 内联 ≤6 张不落盘。`message` ≤2000 字——把「问一句话」和「贴一段材料」分在两边 |
+| POST | `/agent/chat` | **产品内问答**(`S-ASK`) | 🔴 **第二个流式端点**(SSE)。多轮 · 带工具池 · 图片 base64 内联 ≤6 张不落盘。`message` ≤2000 字——把「问一句话」和「贴一段材料」分在两边。**首轮带 `context`**(四个入口:清单/单考点/刚记的一条/全局),🔴 **只传锚点不传数据本身**,且**只在首轮传**——上下文由服务端持有 |
+| GET | `/agent/suggestions` | **开屏建议问法** | 🔴 **闭集模板填数,不过模型。** 让模型生成这三句等于凭空多一个没有工具池约束、直接产出用户可见文案的注入点。不计费 |
 | GET | `/agent/sessions` | 会话列表 | cursor 分页 |
 | GET/PATCH/DELETE | `/agent/sessions/{id}` | 详情 / 改名 / 删除 | 🔴 **归属校验在 `app`**,不属本人 → `403`,**不是 `404`** |
 | GET/PUT | `/profile/exam` | 备考档案 | 考试类型(闭集)+ 考试日期。🔴 **服务端不返回「还剩几天」**,只返回绝对日期——与 §六 头注「不返回相对描述」同一条 |
+
+🔴 **回答里的考点必须带 id 回来。** SSE 多一帧 `node-ref{nodeId, name, start, end}`,前端按偏移量渲染可点区域,**一个字都不做名字匹配**——反查会把「名字对上了」当成「是同一个考点」。而这一帧真正的约束是:**候选集只能是本轮工具调用实际返回过的 `nodeId`**,模型没查过的考点永不可点。**「可点与否」于是成了「查没查过」的可见信号。**
+
+🌟 **这一帧是北极星的落点**:从 `S-ASK` 回答点进 `S-NODE`,直接生产 `实施路径` 那条「看到缺口清单后点进去的比例 >30%」的分子。埋点复用 `POST /events/blindspot-opened`,**新增 `from` 字段区分 `S-BLIND` 与 `S-ASK`**——分不开就永远说不清它有没有在抬那个数。
 
 🔴 **这一节是本文「端点该不该存在」真源身份的一次例外,方向是反的:实现先于契约存在。**
 

@@ -532,9 +532,10 @@ level=3 的 syllabus_node
 
 | 表 | 层 | 关键字段 | 要点 |
 |---|---|---|---|
-| `user_subscription` | 会员 | `user_id`(**UK**)/ `plan_code`(**当前只有 `free`/`plus` 两个值**,对应 `商业化与额度设计` §一 的 免费 / 记多点)/ `started_at` / `expires_at` / `granted_by`(`order`/`manual`)/ `status` | **一个用户一行,唯一索引就建在 `user_id` 上。** 续费 = 延长 `expires_at`,不新建行,所以不需要「只对生效态唯一」那种索引——MySQL 没有部分索引,`(user_id, status)` 联合唯一反而会挡住同一用户的第二条历史行。**历史在 `payment_order` 里,不在这张表里**。`plan_code` 是行里的一个值,**不是每档一列**——将来若重开第二个付费档,加的是一个取值和一行定价配置,DDL 不动 |
+| `user_subscription` | 会员 | `user_id`(**UK**)/ `plan_code`(**当前只有 `free`/`plus` 两个值**,对应 `商业化与额度设计` §一 的 免费 / 记多点)/ `started_at` / `expires_at` / `granted_by`(`order`/`manual`)/ ~~`status`~~ **← 已作废,见下一行更正** | **一个用户一行,唯一索引就建在 `user_id` 上。** 续费 = 延长 `expires_at`,不新建行,所以不需要「只对生效态唯一」那种索引——MySQL 没有部分索引,`(user_id, status)` 联合唯一反而会挡住同一用户的第二条历史行。**历史在 `payment_order` 里,不在这张表里**。`plan_code` 是行里的一个值,**不是每档一列**——将来若重开第二个付费档,加的是一个取值和一行定价配置,DDL 不动 |
 | ⚠️ `user_subscription` · 2026-09-03 更正 | — | **不建 `status` 列**(`M7-额度与订单` §十三 增量 5) | 「是否生效」派生自 `expires_at`(`active = expires_at != null && expires_at > now`)。一个需要定时任务写进去才准的状态列,是 `expires_at` 的第二真源 —— 而两个真源里先过期的一定是那个没人盯着的。**没有那个任务它就是一个会静默过期的字段。** 上一行末尾那句「`(user_id, status)` 联合唯一」随之作废 |
-| `payment_order` | 订单 | `user_id` / `out_trade_no`(**UK**)/ `plan_code` / `product_name`(≤64)/ `amount_fen` / `channel`(`wx_jsapi`/`wx_virtual_ios`)/ `status` / `transaction_id`(**UK**,可空)/ `paid_at` / `refunded_at` | **只有商品名与金额,不含任何学习内容。** `out_trade_no` 唯一 → 下单幂等;`transaction_id` 唯一 → **回调幂等**,重复通知撞唯一索引即视为已处理 |
+| `payment_order` | 订单 | `user_id` / `out_trade_no`(**UK**)/ `plan_code` / `product_name`(≤64)/ `amount_fen` / `channel`(~~`wx_jsapi`/`wx_virtual_ios`~~ **← 二值已作废,见下一行更正**)/ ~~`status`~~ **← 列名已改 `state`,见下一行更正** / `transaction_id`(**UK**,可空)/ `paid_at` / `refunded_at` | **只有商品名与金额,不含任何学习内容。** `out_trade_no` 唯一 → 下单幂等;`transaction_id` 唯一 → **回调幂等**,重复通知撞唯一索引即视为已处理 |
+| ⚠️ `payment_order` · 2026-09-03 更正 | — | `channel` 是**三值** `wx_jsapi`/`wx_virtual_ios`/**`apple_iap`**；状态列名是 **`state`** 不是 `status`（`M7-额度与订单` §十三 增量 11 / 增量 12） | `apple_iap` 是 `U7.5` 缺口「内购通道取值」要的那一个，`接口契约` §8.3 已逐字定下;上一行那个二值取值域会让 `M7` §一 第 4 行的判据(`values().length == 3`)当场跑红。**支付宝仍不加** —— `Q-8` 是「做不做」还没裁定,一个取值加进枚举就等于替它答了「做」。状态列改叫 `state` 是为了与 `接口契约` §8.4 / §8.5 / §8.7 的响应字段同名:**不同名就要有一层没人写过的映射,而没人写下来的映射等于每个人各写一遍** |
 | `quota_period` | 额度 | `user_id` / `period_ym`(如 `2026-09`)/ `quota_type`(`ai_capture` = `商业化与额度设计` §一 的 AI 录入,`ai_ask` = AI 代发提问,**只有这两个值**)/ `granted` / `used` | 唯一索引 `(user_id, period_ym, quota_type)`。**自然月重置,不按购买日滚动**(`商业化与额度设计` §一)——所以周期只需要一个 `period_ym` 列,不需要起止时间。**`granted` 是发放时写进这一行的数字,不是编译期常量**——`商业化与额度设计` §八 的「数字可改,维度不可改」落到数据模型上就是这一条 |
 | `ai_call_log` | 流水 | `user_id` / `quota_type` / `idempotency_key`(**UK**)/ `provider` / `model` / `status`(`success`/`failed`)/ `latency_ms` / `cost_micro` / `created_at` | **额度扣减的幂等锚点。** `cost_micro` 是记账用的整数微元,`1.2.5.3.4`「记录每日调用量与成本,对照订阅价测算毛利」的落点。**无 prompt、无答案、无图片**。收成单档后最坏一格(iOS · 满额)的安全倍数是 6.4×(`商业化与额度设计` §4.5;两档时最紧的一格在记到够上,只有 4.5×)——**这张表是验证那个倍数的唯一数据源,倍数本身不在本文重算** |
 | ⚠️ `ai_call_log` · 2026-09-03 更正 | — | 唯一键是**三列 `(user_id, endpoint, idempotency_key)`**,不是单列 `idempotency_key`(`M7-额度与订单` §十三 增量 2) | 理由是「客户端可复用 `record_event.client_token`」:同一条记录先走 `POST /records/{id}/audio` 再走 `POST /records/{id}/tags/suggest` 时,两次外部调用带着同一个键。单列唯一会把第二次当成重放 —— 🔴 **不扣额度,而且返回第一次的转写结果**,用户拿到一个牛头不对马嘴的答案,账单却真实发生了。三列与 `接口契约` §1.5「请求键」的锚定 `(userId, path, Idempotency-Key)` 是同一个概念,不是第二套 |
@@ -564,7 +565,6 @@ erDiagram
         bigint user_id FK "唯一 一个用户一行"
         varchar plan_code "free/plus 加档只加值 不改表"
         datetime expires_at "到期即停 无代扣字段"
-        tinyint status
     }
     payment_order {
         bigint id PK
@@ -572,9 +572,9 @@ erDiagram
         varchar out_trade_no UK "下单幂等"
         varchar product_name "只有商品名 不含学习内容"
         int amount_fen "整数分"
-        varchar channel "wx_jsapi / wx_virtual_ios"
+        varchar channel "wx_jsapi / wx_virtual_ios / apple_iap"
         varchar transaction_id UK "回调幂等"
-        tinyint status
+        tinyint state "PENDING/CONFIRMING/PAID/CLOSED/REFUNDED
     }
     quota_period {
         bigint user_id FK

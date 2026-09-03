@@ -246,6 +246,10 @@ flowchart TB
 > | `spring-ai` | 1.1.x GA | **2.0.1 GA** ✅ |
 > | `spring-ai-alibaba` | 1.1.2.3 GA ✅ | **无正式版**,里程碑实测起不来(`R-50`) |
 >
+> 🔴 **收口(2026-09-03)**:**实际推进按 4.1.1**,理由与代价见 `后端系统设计与组件接入` §0.2 与 §三.4,
+> 结论落在 [`backend/B0-平台底座与横切契约.md`](backend/B0-平台底座与横切契约.md) §九。
+> **本表数字不改** —— 它记录的是当初选 3.5.x 的理由(「Step2 实测跑得起来的版本线」),抹掉它就抹掉了那条信息。
+>
 > **`后端系统设计与组件接入` §三 是这条分叉的实测与裁定**,结论是按 4.1.1 继续、不引 `spring-ai-alibaba`。
 > 若将来要退回 3.5.x,代价是明确的:`starter-webmvc` → `starter-web`、**Jackson 3 → 2**(`application.properties` 里两处键名要改)、现有测试全部重跑。
 
@@ -529,9 +533,11 @@ level=3 的 syllabus_node
 | 表 | 层 | 关键字段 | 要点 |
 |---|---|---|---|
 | `user_subscription` | 会员 | `user_id`(**UK**)/ `plan_code`(**当前只有 `free`/`plus` 两个值**,对应 `商业化与额度设计` §一 的 免费 / 记多点)/ `started_at` / `expires_at` / `granted_by`(`order`/`manual`)/ `status` | **一个用户一行,唯一索引就建在 `user_id` 上。** 续费 = 延长 `expires_at`,不新建行,所以不需要「只对生效态唯一」那种索引——MySQL 没有部分索引,`(user_id, status)` 联合唯一反而会挡住同一用户的第二条历史行。**历史在 `payment_order` 里,不在这张表里**。`plan_code` 是行里的一个值,**不是每档一列**——将来若重开第二个付费档,加的是一个取值和一行定价配置,DDL 不动 |
+| ⚠️ `user_subscription` · 2026-09-03 更正 | — | **不建 `status` 列**(`M7-额度与订单` §十三 增量 5) | 「是否生效」派生自 `expires_at`(`active = expires_at != null && expires_at > now`)。一个需要定时任务写进去才准的状态列,是 `expires_at` 的第二真源 —— 而两个真源里先过期的一定是那个没人盯着的。**没有那个任务它就是一个会静默过期的字段。** 上一行末尾那句「`(user_id, status)` 联合唯一」随之作废 |
 | `payment_order` | 订单 | `user_id` / `out_trade_no`(**UK**)/ `plan_code` / `product_name`(≤64)/ `amount_fen` / `channel`(`wx_jsapi`/`wx_virtual_ios`)/ `status` / `transaction_id`(**UK**,可空)/ `paid_at` / `refunded_at` | **只有商品名与金额,不含任何学习内容。** `out_trade_no` 唯一 → 下单幂等;`transaction_id` 唯一 → **回调幂等**,重复通知撞唯一索引即视为已处理 |
 | `quota_period` | 额度 | `user_id` / `period_ym`(如 `2026-09`)/ `quota_type`(`ai_capture` = `商业化与额度设计` §一 的 AI 录入,`ai_ask` = AI 代发提问,**只有这两个值**)/ `granted` / `used` | 唯一索引 `(user_id, period_ym, quota_type)`。**自然月重置,不按购买日滚动**(`商业化与额度设计` §一)——所以周期只需要一个 `period_ym` 列,不需要起止时间。**`granted` 是发放时写进这一行的数字,不是编译期常量**——`商业化与额度设计` §八 的「数字可改,维度不可改」落到数据模型上就是这一条 |
 | `ai_call_log` | 流水 | `user_id` / `quota_type` / `idempotency_key`(**UK**)/ `provider` / `model` / `status`(`success`/`failed`)/ `latency_ms` / `cost_micro` / `created_at` | **额度扣减的幂等锚点。** `cost_micro` 是记账用的整数微元,`1.2.5.3.4`「记录每日调用量与成本,对照订阅价测算毛利」的落点。**无 prompt、无答案、无图片**。收成单档后最坏一格(iOS · 满额)的安全倍数是 6.4×(`商业化与额度设计` §4.5;两档时最紧的一格在记到够上,只有 4.5×)——**这张表是验证那个倍数的唯一数据源,倍数本身不在本文重算** |
+| ⚠️ `ai_call_log` · 2026-09-03 更正 | — | 唯一键是**三列 `(user_id, endpoint, idempotency_key)`**,不是单列 `idempotency_key`(`M7-额度与订单` §十三 增量 2) | 理由是「客户端可复用 `record_event.client_token`」:同一条记录先走 `POST /records/{id}/audio` 再走 `POST /records/{id}/tags/suggest` 时,两次外部调用带着同一个键。单列唯一会把第二次当成重放 —— 🔴 **不扣额度,而且返回第一次的转写结果**,用户拿到一个牛头不对马嘴的答案,账单却真实发生了。三列与 `接口契约` §1.5「请求键」的锚定 `(userId, path, Idempotency-Key)` 是同一个概念,不是第二套 |
 
 #### 5.5.3 三个「不建」
 
@@ -598,6 +604,11 @@ erDiagram
 
 统一约定:前缀 `/api/v1`,JSON,时间用 ISO-8601 带时区,错误体 `{code, message, traceId}`,分页用 cursor 不用 offset。
 
+> 🔴 **2026-09-03 起,本节的端点表是「有哪些端点」的索引;每个端点的完整签名、字段类型、错误码、分页与幂等语义,
+> 在 [`接口契约:签名与错误码全集`](接口契约-签名与错误码全集.md);而每个后端模块的实现设计在
+> [`docs/technical/backend/`](backend/INDEX.md)(七份 + 一份索引)。三层的分工:本节说「有什么」,契约说「长什么样」,`backend/` 说「怎么落」。**
+> 本节与那两处冲突时,**以那两处为准并回本节加指针,不静默改本节原文**。
+
 > ⚠️ **2026-09-02 用户裁定「没有本地模式」:登录是记录的前置。** 未登录只能看到产品说明与登录门,**不能记、不能看盲区、不能打标、不能导出**;
 > **已登录之后的离线可用性完全不变** —— 本地先落盘、联网后同步,`/records/batch` 补传照旧,「记录动作永不失败」这条红线不动。
 > **下面几张契约表没有一列写鉴权要求**,而在新形态下 §6.2 采集、§6.3 打标、§6.4 查询、§6.5 导出**全部是登录后接口**。
@@ -652,7 +663,7 @@ erDiagram
 | GET | `/syllabus/tree` | 骨架树 + 覆盖 | `?subject=&withCoverage=true`。单模块整棵树一次返回,前端不做懒加载 |
 | GET | `/syllabus/nodes/{id}` | 考点详情 | 四统计字段 + 我的触达次数/最近触达/来源集合。**没有讲解字段**(`R-05`) |
 | GET | `/coverage/summary` | 覆盖概览 | 分母 = level 3 节点数;分子 = `discarded=0` 的触达节点数;断言单列不并入 |
-| GET | `/coverage/blindspots` | **盲区 Top N** | `?top=20&orderBy=recent5y_count`。排除已断言节点。**这是北极星指标的落点接口**。🔴 **暂不加 `province` 参数**(2026-09-03 裁定):拒绝理由**不是「今天没数据」**(那条已作废),是 `基础数据 · 抓取范围与渠道` §2.5 指出的**按省份计数的统计单位从第一天起就是错的**(同年同省 3 张卷被算成 1 次)。🔴 **数据还没采 vs 口径本身是错的,是两回事**:前者照定契约、缺失时 key 不出现;后者定了就是把一个已知算错的数固化进契约。解锁条件与到时候的完整形状见 `接口契约:签名与错误码全集` §12.9.3 |
+| GET | `/coverage/blindspots` | **盲区 Top N** | `?subject=&orderBy=&filter=&hasStatsOnly=`(⚠️ **2026-09-03 更正:`top` 不再是查询参数**,N 的唯一来源是 `GET /config/effective` 的 `blindspotTop`,服务端执行并在响应里回显 —— 见 `接口契约:签名与错误码全集` §5.3)。排除已断言节点。**这是北极星指标的落点接口**。🔴 **暂不加 `province` 参数**(2026-09-03 裁定):拒绝理由**不是「今天没数据」**(那条已作废),是 `基础数据 · 抓取范围与渠道` §2.5 指出的**按省份计数的统计单位从第一天起就是错的**(同年同省 3 张卷被算成 1 次)。🔴 **数据还没采 vs 口径本身是错的,是两回事**:前者照定契约、缺失时 key 不出现;后者定了就是把一个已知算错的数固化进契约。解锁条件与到时候的完整形状见 `接口契约:签名与错误码全集` §12.9.3 |
 | GET | `/timeline` | 时间线聚合 | 按天/周聚合触达 |
 | POST/DELETE | `/assertions` | 我已掌握 / 取消 | body 只接受 `nodeId` |
 
@@ -660,7 +671,7 @@ erDiagram
 
 | Method | Path | 用途 | 关键约束 |
 |---|---|---|---|
-| GET | `/export?format=md\|csv\|json` | 全量导出 | **无删减、无水印、不限次数**(`1.3.6.1`);内容只含来源名称、时间、考点标签与统计,**不含机构内容**(`R-06`)。⚠️ **本行未提归档清单,但 `R-49` 要求「导出带完整归档清单」** —— 实现按 `R-49` 走(`ExportResponse.archivedNodes`):归档若跟着覆盖度一起藏掉,导出就成了「把空白全归档、44% 变 100%」的同谋。此处加注,原文不改 |
+| GET | `/export?format=md\|csv\|json&scope=all\|subject\|node&scopeId=` | 全量导出 | **无删减、无水印、不限次数**(`1.3.6.1`);内容只含来源名称、时间、考点标签与统计,**不含机构内容**(`R-06`)。⚠️ **本行未提归档清单,但 `R-49` 要求「导出带完整归档清单」** —— 实现按 `R-49` 走(`ExportResponse.archivedNodes`):归档若跟着覆盖度一起藏掉,导出就成了「把空白全归档、44% 变 100%」的同谋。此处加注,原文不改 |
 | POST | `/tokens/readonly` | 签发只读令牌 | 前缀 `ro_`,**在 Web 界面手动签发**。scope 一经签发不可提升 |
 | GET | `/tokens` / DELETE `/tokens/{id}` | 列出/吊销令牌 | 用 `full` 令牌管理,只读令牌不能管理令牌 |
 

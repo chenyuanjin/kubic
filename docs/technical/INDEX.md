@@ -389,12 +389,13 @@ record TagVerdict(Long nodeId, BigDecimal confidence, boolean noMatch) {}
 | `user_token` | 账号 | `token_hash` / `user_id` / `scope`(`full`/`readonly`)/ `expires_at` / `revoked_at` / `device_label` | 存 SHA-256 不存原值。`scope=readonly` 是 MCP 的全部实现基础(§六) |
 | `account_merge_log` | 账号 | `from_user_id` / `to_user_id` / `moved_record_count` / `merged_at` | 合并不可逆,必须留痕(`R-33`) |
 | `syllabus_node` | 骨架 | `id` / `parent_id` / `level`(1模块 2题型 3考点)/ `name` / `subject` / `sort` / `version` | **`level` 有 CHECK 约束 ≤ 3。** 决策记录 §2.5 不做第四层,写进约束不靠自觉 |
-| `syllabus_stat` | 骨架 | `node_id` / `recent5y_count` / `province_codes` / `last_seen_year` / `avg_per_paper` | 决策记录 §2.5 的四个纯统计字段。离线加工区产出,线上只读(`数据线 · 骨架原料的获取与隔离` 三区隔离) |
+| `syllabus_stat` | 骨架 | `node_id` / `recent5y_count` / `province_codes` / `last_seen_year` / `avg_per_paper` | 决策记录 §2.5 的四个纯统计字段。离线加工区产出,线上只读(`数据线 · 骨架原料的获取与隔离` 三区隔离)。⚠️ **本行是目标表设计,不是现状**:2026-09-03 实测全仓无建表 DDL,四统计只有 `recent5y_count` 有值,`province_codes` 被 `基础数据 · 抓取范围与渠道` §2.3 判为**本期直接不要**。据此 `/coverage/blindspots` 不加 `province` 参数,见 `接口契约:签名与错误码全集` §12.7 |
 | `syllabus_evidence` | 骨架 | `node_id` / `paper_ref` | 推导留证,`R-26` 待律师确认格式是否足以自证 |
 | `record_event` | **行为** | `id` / `user_id` / `occurred_at` / `source_name` / `capture_type`(`voice`/`photo`/`text`)/ `extracted_text`(≤200)/ `client_token` | **产品的真实价值全在这张表。** `client_token` 唯一,用于离线队列补传去重 |
 | `record_tag` | 行为 | `record_id` / `node_id` / `confidence`(DECIMAL(4,3))/ `origin`(`auto`/`manual`,**写入后不可变**)/ `confirmed_at` / `discarded` | `discarded=1` 即宁缺毋滥的落地:**可见,但不计覆盖度**(`P1-7`)。**`origin` 记的是这条标签从哪来,不是它现在什么状态**——用户确认只写 `confirmed_at`,不把 `auto` 改成 `manual`。改了,`1.2.5.2` 那套准确率口径(标对的/标了的)在真实数据上就再也算不出来了 |
 | `user_assertion` | 行为 | `user_id` / `node_id` / `asserted_at` | 「我已掌握」。**独立状态,不计入覆盖度**(决策记录 §5.2:补丁不是解法)。导出时可区分 |
 | `node_coverage` | 覆盖 | `user_id` / `node_id` / `touch_count` / `last_touch_at` / `source_names` | **派生表,不手工维护**(`1.2.4.4`)。可随时从行为层重算 |
+| `user_exam_profile` 🆕 | **行为** | `user_id`(PK)/ `exam_type` / `exam_date` / `updated_at` | 2026-09-03 新增。用户自填的备考档案(考什么、哪天考)。🔴 **不放进 `app_user`** —— 那是账号域的表,而这张表进公式(将来影响盲区排序),放过去等于让 `kaodian-auth` 长出业务字段。🔴 **只存当前值,不留历史** —— 留了就长出「你的备考轨迹」,那是学习分析。形状见 `接口契约:签名与错误码全集` §12.6 |
 | `error_event` | 运维 | `path` / `error_code` / `count` / `bucket_at` | `1.3.7.3` 的最小实现,不上监控栈 |
 
 **不建的表:**
@@ -651,7 +652,7 @@ erDiagram
 | GET | `/syllabus/tree` | 骨架树 + 覆盖 | `?subject=&withCoverage=true`。单模块整棵树一次返回,前端不做懒加载 |
 | GET | `/syllabus/nodes/{id}` | 考点详情 | 四统计字段 + 我的触达次数/最近触达/来源集合。**没有讲解字段**(`R-05`) |
 | GET | `/coverage/summary` | 覆盖概览 | 分母 = level 3 节点数;分子 = `discarded=0` 的触达节点数;断言单列不并入 |
-| GET | `/coverage/blindspots` | **盲区 Top N** | `?top=20&orderBy=recent5y_count`。排除已断言节点。**这是北极星指标的落点接口** |
+| GET | `/coverage/blindspots` | **盲区 Top N** | `?top=20&orderBy=recent5y_count`。排除已断言节点。**这是北极星指标的落点接口**。🔴 **不加 `province` 参数**(2026-09-03 裁定):骨架侧按场次区分的数据今天不存在,加了服务端只能忽略它。三条理由见 `接口契约:签名与错误码全集` §12.7 |
 | GET | `/timeline` | 时间线聚合 | 按天/周聚合触达 |
 | POST/DELETE | `/assertions` | 我已掌握 / 取消 | body 只接受 `nodeId` |
 
@@ -791,6 +792,32 @@ sequenceDiagram
 所以必须有一道按**路径**而不是按方法拦的锁——即 §6.5 表里的第 4 道:`scope=readonly` 命中 `/billing/**` 或 `/quota/**` → 403,不论方法,与锁 2 同一个过滤器,多一行判断。
 
 **MCP 的 tool 白名单仍然是 5 个,一个不加。** 不注册 `billing.*`、不注册 `quota.*`——`项目现状与决策记录` §2.6 的原文是「MCP 开放的是读,不是写入和采集」,**而订单和额度既不是学习数据,也不是用户想通过 AI 助手读的东西。**
+
+### 6.8 产品内问答与备考档案 🆕
+
+**2026-09-03 新增。这一节与上面七节有一个根本区别:它记的端点已经在生产代码里跑着了。**
+
+| Method | Path | 用途 | 关键约束 |
+|---|---|---|---|
+| POST | `/agent/chat` | **产品内问答**(`S-ASK`) | 🔴 **第二个流式端点**(SSE)。多轮 · 带工具池 · 图片 base64 内联 ≤6 张不落盘。`message` ≤2000 字——把「问一句话」和「贴一段材料」分在两边 |
+| GET | `/agent/sessions` | 会话列表 | cursor 分页 |
+| GET/PATCH/DELETE | `/agent/sessions/{id}` | 详情 / 改名 / 删除 | 🔴 **归属校验在 `app`**,不属本人 → `403`,**不是 `404`** |
+| GET/PUT | `/profile/exam` | 备考档案 | 考试类型(闭集)+ 考试日期。🔴 **服务端不返回「还剩几天」**,只返回绝对日期——与 §六 头注「不返回相对描述」同一条 |
+
+🔴 **这一节是本文「端点该不该存在」真源身份的一次例外,方向是反的:实现先于契约存在。**
+
+`POST /api/agent/chat` 与四个会话端点自 2026-08 起就在跑(`api/agent/AgentController.java:74`、
+`AgentSessionController.java:54,68,90,110`),前端也已接上(`web/src/api/agent.ts:190`),
+**而本节直到今天才第一次记下它们**。产品文档的十三屏里同样没有对话屏(`U6.2:43-55`)。
+
+**直接后果是一处仍然敞着的越权**:这五个端点今天**完全不校验令牌**,`userId` 恒为 `0L`,
+任何人可读、可删他人的对话会话。它与 §九 待办 1(`/api/records` 不经鉴权)是同一个根因、同一个修法。
+
+**教训写在这里而不是聊天里**:一个端点能被用户点到、却在两份契约文档里都查不到,
+说明「契约先行」这条工作方式在这一处**没有发生**——而没有发生的地方,鉴权也一起没有发生。
+
+签名、字段与类型、错误码、幂等与分页语义、以及八条落差的逐条登记,见
+[`接口契约:签名与错误码全集`](接口契约-签名与错误码全集.md) §十二。
 
 ---
 

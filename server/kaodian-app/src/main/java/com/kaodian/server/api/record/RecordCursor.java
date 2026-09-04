@@ -5,7 +5,7 @@ import com.kaodian.server.api.support.ApiException;
 import com.kaodian.server.collect.Touch;
 
 /**
- * {@code GET /api/records} 的游标 —— 「上一页最后看到的是哪一条」。
+ * {@code GET /api/v1/records} 的游标 —— 「上一页最后看到的是哪一条」。
  *
  * <h2>编解码不在这里,在 {@link Cursor}</h2>
  *
@@ -14,7 +14,7 @@ import com.kaodian.server.collect.Touch;
  * ({@code B0-平台底座与横切契约} §7.1)。<b>这里只剩「记录时间线的排序键是什么」</b>:
  * {@code (发生时间毫秒, 记录 id)},以及它在倒序列表上的比较。
  * <p>
- * 🔴 两级不能省成一级:离线队列补传({@code POST /api/records/batch})一次落 50 条,
+ * 🔴 两级不能省成一级:离线队列补传({@code POST /api/v1/records/batch})一次落 50 条,
  * 它们的时间戳来自<b>同一次 {@code clock.instant()}</b>,只按时间戳翻页会把这 50 条
  * 要么一起跳过要么一起重复吐出来 —— 而它们恰恰是用户断网那天记的全部东西。
  */

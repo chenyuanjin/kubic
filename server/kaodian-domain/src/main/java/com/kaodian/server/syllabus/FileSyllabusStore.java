@@ -273,13 +273,13 @@ public class FileSyllabusStore implements SyllabusStore {
      * 往归档考点里搬记录等于把它们搬进一个不参与差集的地方 —— 数字上和丢了没区别。
      *
      * <p>🔴 四种拒绝<b>逐个分开</b>,顺序也是有讲究的:先确认来源在不在(它可以是归档的 ——
-     * 「把归档考点的记录搬走再真删掉」正是 {@code /api/syllabus/archived} 那一屏的用途),
+     * 「把归档考点的记录搬走再真删掉」正是 {@code /api/v1/syllabus/archived} 那一屏的用途),
      * 再判同一个考点,最后才分「目标不存在」与「目标已归档」。
      * <p>
      * 这最后一刀不能省。{@code Syllabus#node} 查不到归档考点,于是「已归档」很容易被写成
      * 一句 {@code NODE_NOT_FOUND} —— 那是错的指路:404 对应的下一步是「刷新一下,树可能变了」,
      * 而这里真正的下一步是「先给目标取消归档,或者换一个」。更糟的是它当场自相矛盾,
-     * 因为 {@code GET /api/syllabus/archived} 刚把这个考点连名字带记录条数列出来过。
+     * 因为 {@code GET /api/v1/syllabus/archived} 刚把这个考点连名字带记录条数列出来过。
      */
     @Override
     public int moveRecords(String fromNodeCode, String toNodeCode) {

@@ -43,7 +43,7 @@ import java.util.List;
  * <h2>为什么复用 {@link NodeDetailDto} / {@link TimelineItemDto} 而不新定义字段</h2>
  *
  * §6.5 要的是「字段名与 API 契约一致」。复用现成的 DTO 是让这句话<b>在编译期成立</b>的唯一办法:
- * {@code GET /api/records} 与导出里的一条记录长得一模一样,不是因为有人对齐过,
+ * {@code GET /api/v1/records} 与导出里的一条记录长得一模一样,不是因为有人对齐过,
  * 是因为它们本来就是同一个 record。顺带地,红线扫描的白名单也不需要为导出新增一行 ——
  * 这份导出没有引入任何一个新的自由文本位置。
  *
@@ -69,7 +69,7 @@ import java.util.List;
  *                      ⚠️ 它与 {@code archivedNodes} 不是一回事,不要合并成一段「特殊考点」:
  *                      归档把考点从<b>分母</b>里拿掉(比值仍然诚实),声明把考点<b>留在分母里</b>、
  *                      不进分子。合成一段之后,导出就再也答不出「这个 44% 是怎么来的」
- * @param records       全部触达记录,<b>按发生时间升序</b>。{@code /api/records} 是倒序的(最近的在最上面),
+ * @param records       全部触达记录,<b>按发生时间升序</b>。{@code /api/v1/records} 是倒序的(最近的在最上面),
  *                      那是屏幕的需要;一份存档按发生顺序读才连得起来
  */
 public record ExportResponse(

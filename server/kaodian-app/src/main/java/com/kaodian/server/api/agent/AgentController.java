@@ -36,7 +36,7 @@ import java.util.List;
  * {@code doFinally} 里,不放在 {@code doOnComplete} 里。
  */
 @RestController
-@RequestMapping("/api/agent")
+@RequestMapping("/api/v1/agent")
 public class AgentController {
 
     private static final Logger log = LoggerFactory.getLogger(AgentController.class);
@@ -66,7 +66,7 @@ public class AgentController {
      *
      * <p>手工验证(不需要任何密钥,桩会真的去查覆盖率):
      * <pre>
-     * curl -N -X POST http://127.0.0.1:8080/api/agent/chat \
+     * curl -N -X POST http://127.0.0.1:8080/api/v1/agent/chat \
      *   -H 'Content-Type: application/json' \
      *   -d '{"message":"我的覆盖率怎么样"}'
      * </pre>

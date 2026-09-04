@@ -90,7 +90,7 @@ import java.util.stream.Collectors;
  * 不是另开一条「识别成功才写入」的路径(docs/execution/INDEX.md §1.3.7)。
  */
 @RestController
-@RequestMapping("/api/records")
+@RequestMapping("/api/v1/records")
 public class RecordController {
 
     private final CaptureService capture;
@@ -294,12 +294,12 @@ public class RecordController {
     /**
      * 时间线,cursor 分页(docs/technical/INDEX.md §6.2)。
      *
-     * <p>与 {@code GET /api/timeline} 的分工写在 {@link RecordPageResponse} 的 javadoc 里 ——
+     * <p>与 {@code GET /api/v1/timeline} 的分工写在 {@link RecordPageResponse} 的 javadoc 里 ——
      * <b>那一条是 §6.4 的聚合视图,这一条是采集线的读侧</b>,两个都留着。
      *
      * @param cursor 上一页返回的 {@code nextCursor};第一页不传
      * @param limit  每页几条。默认 50,上限 200。
-     *               <b>这两个数不再与 {@code /api/timeline} 共享</b> —— 那边改成聚合视图之后已经没有
+     *               <b>这两个数不再与 {@code /api/v1/timeline} 共享</b> —— 那边改成聚合视图之后已经没有
      *               {@code limit} 了,它按 {@code buckets} 数格子。两处从此各定各的,别再当成一组数改。
      */
     @GetMapping

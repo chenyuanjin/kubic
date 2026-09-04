@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef } from 'react'
 import type { ReactNode } from 'react'
 import type { GroupView, NodeView } from '../api/types'
-import { accuracyText, drillText, pad2, relativeDay } from '../lib/format'
+import { drillText, pad2, relativeDay } from '../lib/format'
 import { stateIsAlarming } from '../lib/nodeState'
 import { GroupHeader, Row, StateDot } from '../ui/primitives'
 
@@ -20,7 +20,7 @@ import { GroupHeader, Row, StateDot } from '../ui/primitives'
  *
  * <h2>窄屏:一行折成两行,<b>不是砍列</b></h2>
  *
- * 手机上放不下八列,但能砍的只有排版,不是信息。状态点、名称、近五年频次三样必须在 ——
+ * 手机上放不下七列,但能砍的只有排版,不是信息。状态点、名称、近五年频次三样必须在 ——
  * 状态点是五态本身,名称是这一行是什么,频次是「这个盲区值不值得补」的全部依据。
  * 早先频次那一列写的是 `hidden md:block`,于是手机上「近五年 9 次」直接消失,
  * 「先补这几个」的排序理由在小屏上就没了下半句。
@@ -148,9 +148,8 @@ function NodeRow({
         >
           {drillText(node)}
         </Cell>
-        <Cell width={44} dim={!drilled} className="order-8 md:order-6">
-          {accuracyText(node)}
-        </Cell>
+        {/* 🔴 这里原本还有一列:correct/practiced 的百分比。KUBI-107 按 `B0` §11.4 删掉 ——
+            两个原始数留在左边那一列(drillText),被删掉的只有它们相除得到的那个比值。 */}
         <Cell width={66} dim className="order-9 md:order-8">
           {relativeDay(node.latestAt)}
         </Cell>

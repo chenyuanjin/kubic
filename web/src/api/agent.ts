@@ -1,11 +1,11 @@
-import { getJson } from './client'
+import { API_BASE, getJson } from './client'
 
 /**
  * agent 这一侧:一条 SSE 流 + 一组会话管理接口。
  *
  * <h2>为什么不用 `EventSource`</h2>
  *
- * 它只会发 <b>GET</b>,而 `/api/agent/chat` 是 POST(要带 message、sessionId、images)。
+ * 它只会发 <b>GET</b>,而 `/api/v1/agent/chat` 是 POST(要带 message、sessionId、images)。
  * 把问题塞进 query string 能骗过这一点,但会让<b>用户问的每一句话都出现在访问日志里</b> ——
  * 而这个产品的输入随时可能是一道题的题干(决策记录 §2.2 不碰内容)。
  * <p>
@@ -99,11 +99,11 @@ export function getSession(sessionId: string): Promise<SessionDetail> {
 }
 
 export async function renameSession(sessionId: string, title: string): Promise<void> {
-  await rawJson(`/api/agent/sessions/${encodeURIComponent(sessionId)}`, 'POST', { title })
+  await rawJson(`${API_BASE}/agent/sessions/${encodeURIComponent(sessionId)}`, 'POST', { title })
 }
 
 export async function deleteSession(sessionId: string): Promise<void> {
-  await rawJson(`/api/agent/sessions/${encodeURIComponent(sessionId)}`, 'DELETE')
+  await rawJson(`${API_BASE}/agent/sessions/${encodeURIComponent(sessionId)}`, 'DELETE')
 }
 
 /**
@@ -187,7 +187,7 @@ export async function streamChat(
 ): Promise<void> {
   let res: Response
   try {
-    res = await fetch('/api/agent/chat', {
+    res = await fetch(`${API_BASE}/agent/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Accept: 'text/event-stream', ...authHeader() },
       body: JSON.stringify({

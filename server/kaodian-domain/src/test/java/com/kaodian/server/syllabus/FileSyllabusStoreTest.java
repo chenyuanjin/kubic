@@ -344,7 +344,7 @@ class FileSyllabusStoreTest {
      * 四种拒绝要<b>分得开</b>,因为界面上该说的下一步各不相同。
      *
      * <p>尤其是「目标已归档」不能退化成 {@code NODE_NOT_FOUND}:那个考点<b>在</b>树里,
-     * {@code GET /api/syllabus/archived} 刚把它连名字带记录条数列出来过,
+     * {@code GET /api/v1/syllabus/archived} 刚把它连名字带记录条数列出来过,
      * 紧接着回一句「骨架树里没有这个考点」是当场自相矛盾,而且把用户支到
      * 「刷新一下」那条死路上 —— 真正的下一步是取消归档,或者换一个没归档的考点。
      */

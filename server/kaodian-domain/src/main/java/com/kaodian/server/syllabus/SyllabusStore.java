@@ -31,7 +31,7 @@ import java.util.List;
  * 而 R-07 / docs/decisions/实施路径.md §1.2 要求<b>标签自行命名、不沿用机构既有体系与措辞</b>。
  * 逐个新增很慢,慢正是要的效果 —— 它逼着人对每一个考点名做一次自己的判断。
  * <p>
- * 导出是有的({@code GET /api/syllabus/export}),那是「把自己的树拿走」;
+ * 导出是有的({@code GET /api/v1/syllabus/export}),那是「把自己的树拿走」;
  * 它的反向操作是<b>把导出的文件放回 {@code ~/.kaodian/syllabus.json}</b>,
  * 不是一个接受任意树形 JSON 的端点。
  *

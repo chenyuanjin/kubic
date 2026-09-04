@@ -142,7 +142,7 @@ class ExportApiTest {
         assertEquals(RECORD_COUNT, mdRowsOf(md, "记录").size(), "md 少了记录");
 
         // 导出方自报的那个数也必须对上 —— 它存在的意义就是让「有没有被截断」可以核对
-        mockMvc.perform(get("/api/export").param("format", "json"))
+        mockMvc.perform(get("/api/v1/export").param("format", "json"))
                 .andExpect(jsonPath("$.recordCount").value(RECORD_COUNT))
                 .andExpect(jsonPath("$.records.length()").value(RECORD_COUNT));
     }
@@ -212,7 +212,7 @@ class ExportApiTest {
     @DisplayName("🔴 不限次数:连着导 50 次全是 200,没有频控头,每一次都还是全量")
     void exportIsNeverRateLimited() throws Exception {
         for (int i = 1; i <= 50; i++) {
-            MvcResult result = mockMvc.perform(get("/api/export").param("format", "json"))
+            MvcResult result = mockMvc.perform(get("/api/v1/export").param("format", "json"))
                     .andExpect(status().isOk())
                     .andReturn();
 
@@ -360,24 +360,24 @@ class ExportApiTest {
     @DisplayName("format 只认 md / csv / json 三个值,大小写不敏感;别的一律 400 且不回显原文")
     void formatIsValidated() throws Exception {
         for (String ok : List.of("md", "csv", "json", "JSON", " Md ")) {
-            mockMvc.perform(get("/api/export").param("format", ok)).andExpect(status().isOk());
+            mockMvc.perform(get("/api/v1/export").param("format", ok)).andExpect(status().isOk());
         }
 
-        mockMvc.perform(get("/api/export").param("format", "xlsx"))
+        mockMvc.perform(get("/api/v1/export").param("format", "xlsx"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("UNKNOWN_EXPORT_FORMAT"));
 
         // 🔴 format 是查询参数,没有 @Size 管得着它 —— 回声必须截断,否则它就是把一段题干
         //    写进响应体和访问日志的通道(决策记录 §2.2 不碰内容)
         String stem = "题".repeat(500);
-        MvcResult rejected = mockMvc.perform(get("/api/export").param("format", stem))
+        MvcResult rejected = mockMvc.perform(get("/api/v1/export").param("format", stem))
                 .andExpect(status().isBadRequest())
                 .andReturn();
         assertFalse(rejected.getResponse().getContentAsString().contains(stem),
                 "报错把用户送来的原文整段回显了");
 
         // 没有默认值:三种写法没有主次,挑一个当默认就是替用户做了决定
-        mockMvc.perform(get("/api/export")).andExpect(status().isBadRequest());
+        mockMvc.perform(get("/api/v1/export")).andExpect(status().isBadRequest());
     }
 
     @Test
@@ -389,7 +389,7 @@ class ExportApiTest {
                 "json", "application/json;charset=UTF-8");
 
         for (Map.Entry<String, String> e : expected.entrySet()) {
-            MvcResult result = mockMvc.perform(get("/api/export").param("format", e.getKey()))
+            MvcResult result = mockMvc.perform(get("/api/v1/export").param("format", e.getKey()))
                     .andExpect(status().isOk())
                     .andReturn();
             assertEquals(e.getValue(), result.getResponse().getContentType());
@@ -406,7 +406,7 @@ class ExportApiTest {
     // ---------------------------------------------------------------- 夹具与解析
 
     private String body(String format) throws Exception {
-        return mockMvc.perform(get("/api/export").param("format", format))
+        return mockMvc.perform(get("/api/v1/export").param("format", format))
                 .andExpect(status().isOk())
                 .andReturn()
                 .getResponse()

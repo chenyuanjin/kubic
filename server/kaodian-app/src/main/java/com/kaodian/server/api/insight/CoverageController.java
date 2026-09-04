@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
  * 差集本身的两个端点:一个是那个大字,一个是「先补这几个」。
  */
 @RestController
-@RequestMapping("/api/coverage")
+@RequestMapping("/api/v1/coverage")
 public class CoverageController {
 
     private final CoverageReader reader;

@@ -99,7 +99,7 @@ import java.util.List;
  * 重发同样的内容还是错。
  */
 @RestController
-@RequestMapping("/api/records/{id}")
+@RequestMapping("/api/v1/records/{id}")
 public class RecognitionController {
 
     private final TaggingService tagging;

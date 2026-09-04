@@ -71,7 +71,7 @@ import java.time.Clock;
  * 那与 {@code R-07} 是同一条:<b>只能从树里选,不能新建</b>。
  */
 @RestController
-@RequestMapping("/api/assertions")
+@RequestMapping("/api/v1/assertions")
 public class AssertionController {
 
     private final AssertionStore store;

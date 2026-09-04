@@ -71,7 +71,7 @@ import java.util.List;
  * 与 {@code RecordController#delete} 那段是同一条纪律。
  */
 @RestController
-@RequestMapping("/api/records/{id}/tags")
+@RequestMapping("/api/v1/records/{id}/tags")
 public class TagController {
 
     private final TaggingService tagging;
@@ -139,7 +139,7 @@ public class TagController {
      * <h2>201 与 200 的区别是「新挂了没有」,不是「成功了没有」</h2>
      *
      * 同一个考点挂第二次返回的是原来那条,服务端什么都没新建 ——
-     * 这时候还回 201 Created 是在说谎。与 {@code POST /api/records} 的幂等语义一致。
+     * 这时候还回 201 Created 是在说谎。与 {@code POST /api/v1/records} 的幂等语义一致。
      * <p>
      * 例外是<b>之前丢弃过</b>的那个考点:那时会新挂一条干净的标签(201),
      * 而不是把丢弃那条翻过来 —— 「我曾经把它丢掉过」这件事得留着,

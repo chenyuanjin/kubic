@@ -9,11 +9,16 @@ import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
 import org.springframework.core.type.filter.AssignableTypeFilter;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.lang.reflect.AnnotatedParameterizedType;
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.RecordComponent;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -22,6 +27,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.stream.Stream;
 
 import static java.util.Map.entry;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -132,6 +138,97 @@ class NoStemFieldTest {
     private static final List<String> BANNED_CJK = List.of(
             "题干", "原文", "解析", "内容", "正文", "转写", "录音", "截图",
             "答案", "讲义", "真题", "试题");
+
+    // ================================================================ R-05:永不判断对不对
+
+    /**
+     * 🔴 <b>「永不判断对不对」在字段名与错误文案上的形状</b>
+     * (`B0-平台底座与横切契约` §十一 第 3 行,归属 §11.2 —— 这一格归 B0)。
+     *
+     * <p>上面那组({@link #BANNED_WORDS})管的是 R-01「库里装不下题干」,这一组管的是 R-05
+     * 「只报有没有 / 几次 / 多久前」。两组分开写不是洁癖:R-01 那组<b>没有白名单</b>,
+     * 而这一组必须有 —— 「排名」排的是人还是考点,是两件事。
+     *
+     * <h2>🔴 这一组不能沿用子串匹配</h2>
+     *
+     * {@code stem} 那组是「词根即违规」,子串合适。这一组里 {@code score / rank / grade}
+     * 是<b>常见词的片段</b>,子串会大面积误伤:
+     * <ul>
+     *   <li>{@code scope} 被 {@code score}? 不会 —— 但 {@code underscore} 会</li>
+     *   <li>{@code ranking} / {@code frank} 被 {@code rank} 命中</li>
+     *   <li>{@code upgrade} / {@code degrade} 被 {@code grade} 命中
+     *       ({@code RunState.DEGRADED_*} 就在仓库里)</li>
+     * </ul>
+     * 一个总在误报的闸门会被人关掉,那才是真正的失守。所以这一组按 <b>token 全等</b> 比
+     * ({@link #tokens}:驼峰与下划线切开、小写化)。相邻两个 token 拼起来<b>也比一次</b> ——
+     * {@code checkIn} / {@code check_in} 是 {@code checkin} 最自然的 Java 写法,漏掉它这一行只是摆设。
+     *
+     * <p>⚠️ <b>token 比对收窄的是英文巧合,不是禁词本身。</b>{@code blindScore} 切出来就是
+     * {@code score},照样命中;它进不进得来靠下面那张<b>逐行写明理由</b>的豁免表,
+     * 不靠把匹配放松到「看不见它」。
+     */
+    private static final List<String> BANNED_JUDGEMENT = List.of(
+            "accuracy", "score", "rank", "grade", "badge", "streak", "checkin");
+
+    /** 中文没有词边界,这一列仍然是子串。 */
+    private static final List<String> BANNED_JUDGEMENT_CJK = List.of(
+            "正确率", "得分", "排名", "讲解", "学习建议", "复习提醒", "打卡", "徽章");
+
+    /**
+     * 判断类禁词的豁免只有三档,而且<b>每一档都必须能在汇报里点名</b>。
+     *
+     * <p>这张表故意做得难加:能力边界是这个产品的全部,一行「看着还行」就能把它化掉。
+     */
+    private enum JudgementReason {
+
+        /**
+         * 排的是<b>考点</b>,不是人。
+         *
+         * <p>{@code BlindSpotDto#rank} 是盲区清单里的名次(「先补这几个」),
+         * {@code blindScore} = 近五年频次 × 状态权重 —— 两个因子都在能力边界内,
+         * <b>没有任何一项来自「判断你答得对不对」</b>(理由写在 {@code BlindSpotDto} 的类注释里)。
+         * <p>
+         * 也包括<b>红线自己的否定式声明</b>:{@code AgentPrompt} 的系统提示词里必须写出
+         * 「不讲解知识点」「不要说『正确率偏低』」,否则这条红线根本没法用中文说出口。
+         * CLAUDE.md「每条断言都必须红过一次」那一段点的就是这种假阳性 ——
+         * <b>黑名单不得命中本仓库自己那些否定式的合规声明</b>。
+         */
+        NOT_ABOUT_THE_USER,
+
+        /**
+         * ⚪ <b>这不是理由,是缺口 —— 而且是已经升给人的那个缺口。</b>
+         *
+         * <p>「用户自己填的两个整数相除得到的正确率」到底算不算被禁的那个「正确率」,
+         * `B0-平台底座与横切契约` §11.3 末尾写明:<b>这是产品边界不是技术选型,已升给 chenyj</b>,
+         * 技术侧不自行放宽也不自行收窄。
+         * <p>
+         * 🔴 <b>本表把它记成豁免,是「走松」的那一侧,与 §11.3「在它落定之前按走严的那一侧」不一致。</b>
+         * 之所以还是记在这里而不是让闸门常红:走严要删掉的是
+         * {@code NodeDetailDto#accuracy / practiced / correct}、{@code CoverageService#accuracy}、
+         * 导出的那一列,以及它们上游的整条用户自填入口 —— 那是产品决定,不是这个测试能替谁做的。
+         * <b>所以摆在这里,可数、可查、可在议题里点名</b>(决策记录 §5:没解决的事不拿话盖过去)。
+         * 这一档<b>不接受新增</b>。
+         */
+        ESCALATED_TO_HUMAN
+    }
+
+    /** key 是 {@code 类名#字段名} —— 与 {@link #ALLOWED} 同一套 key。 */
+    private static final Map<String, JudgementReason> JUDGEMENT_ALLOWED_FIELDS = Map.of(
+            "BlindSpotDto#rank", JudgementReason.NOT_ABOUT_THE_USER,
+            "BlindSpotDto#blindScore", JudgementReason.NOT_ABOUT_THE_USER,
+            "NodeDetailDto#accuracy", JudgementReason.ESCALATED_TO_HUMAN);
+
+    /**
+     * key 是 {@code 文件名#命中的那个词}。
+     *
+     * <p>粒度是「文件 × 词」而不是「文件 × 行」:行号一改就成死行,而这张表要长期读得懂。
+     * ⚠️ 代价是同一个文件里同一个词的<b>下一处</b>也会被放行 ——
+     * {@code AgentPrompt} 那两行的天花板就在这里,它另有 {@code R-88} 两句话实测在守。
+     */
+    private static final Map<String, JudgementReason> JUDGEMENT_ALLOWED_LITERALS = Map.of(
+            "AgentPrompt.java#讲解", JudgementReason.NOT_ABOUT_THE_USER,
+            "AgentPrompt.java#正确率", JudgementReason.NOT_ABOUT_THE_USER,
+            "ExportRenderer.java#正确率", JudgementReason.ESCALATED_TO_HUMAN);
 
     /** 白名单里每一行都要挑一个理由。挑不出来,就别加这一行。 */
     private enum Reason {
@@ -358,6 +455,106 @@ class NoStemFieldTest {
                 把 stem 改叫 detail 只是把红线降级成命名规范,库的形状一点没变。
                 真要加这个字段,先回 docs/execution/INDEX.md §四把 R-01 改掉,再来改这个测试 —— 顺序不能反。
                 """.formatted(String.join("\n", violations)));
+    }
+
+    @Test
+    @DisplayName("🔴 R-05 之一:没有任何字段的名字在给用户下判断")
+    void noFieldNameJudgesTheUser() {
+        List<String> violations = new ArrayList<>();
+        Set<String> exercised = new TreeSet<>();
+        for (Member m : scan()) {
+            Set<String> hits = judgementHits(m.name());
+            if (hits.isEmpty()) {
+                continue;
+            }
+            if (JUDGEMENT_ALLOWED_FIELDS.containsKey(m.key())) {
+                exercised.add(m.key());
+                continue;
+            }
+            violations.add("  ✗ " + m.qualified() + "\n"
+                    + "      命中判断类禁词" + hits);
+        }
+        assertTrue(violations.isEmpty(), () -> """
+                🔴 R-05 被破坏 —— 出现了名字在「判断对不对」的字段
+                (`B0-平台底座与横切契约` §十一 第 3 行,决策记录 §2.2 能力边界)。
+
+                %s
+
+                这个产品只回答「有没有、几次、多久前」。正确率、得分、排名、讲解、学习建议、
+                复习提醒、打卡、徽章 —— 这八组词一旦进了契约,措辞就已经由服务端说出口了,
+                前端不写「你进步了」反而成了额外的克制。
+                真要加,先回 `B0-平台底座与横切契约` §十一 把第 3 行改掉,再来改这个测试 —— 顺序不能反。
+                排的确实是考点不是人?到 JUDGEMENT_ALLOWED_FIELDS 加一行,并挑一个 JudgementReason。
+                """.formatted(String.join("\n", violations)));
+
+        Set<String> stale = new TreeSet<>(JUDGEMENT_ALLOWED_FIELDS.keySet());
+        stale.removeAll(exercised);
+        assertTrue(stale.isEmpty(), () -> """
+                JUDGEMENT_ALLOWED_FIELDS 里有对不上任何字段的行:%s
+                字段没了,行也删掉 —— 死行会让下一个人以为「这里本来就很宽松」。
+                """.formatted(stale));
+    }
+
+    /**
+     * 🔴 R-05 之二 —— <b>错误文案也要扫,今天只扫字段名</b>
+     * (`B0-平台底座与横切契约` §十一 第 3 行原话)。
+     *
+     * <p>这一条<b>不能用反射</b>:字符串字面量在常量池里,反射看不到。所以这里读源文件,
+     * 自己跳注释、跳字符字面量,只取字符串与文本块的<b>内容</b>。
+     * <p>
+     * 🔴 <b>只扫字面量、不扫注释是硬要求</b>:这个仓库到处是「它不比较、不排名」
+     * 「用户自己填的正确率」这类<b>否定式边界声明</b>,它们是合规的注释,不是违规文案。
+     * CLAUDE.md 交付那一节写死了这条 —— 黑名单不得命中本仓库自己的合规注释。
+     */
+    @Test
+    @DisplayName("🔴 R-05 之二:错误文案(字符串字面量)里也不许出现这八组词")
+    void noStringLiteralJudgesTheUser() {
+        List<String> violations = new ArrayList<>();
+        Set<String> exercised = new TreeSet<>();
+        int literals = 0;
+        List<Path> files = mainSources();
+
+        for (Path file : files) {
+            String name = file.getFileName().toString();
+            for (Literal lit : stringLiteralsOf(read(file))) {
+                literals++;
+                for (String hit : judgementHits(lit.text())) {
+                    String key = name + "#" + hit;
+                    if (JUDGEMENT_ALLOWED_LITERALS.containsKey(key)) {
+                        exercised.add(key);
+                        continue;
+                    }
+                    violations.add("  ✗ " + name + ":" + lit.line() + "  命中「" + hit + "」\n"
+                            + "      " + clip(lit.text()));
+                }
+            }
+        }
+
+        // 一个扫不到东西的断言等于没有断言 —— 解析器写挂了会安安静静地全绿。
+        // 2026-09 实测:文件 200 上下、字面量 1600 上下。下限压得很低,留给删文件,不留给「扫不到了」。
+        int scanned = literals;
+        assertTrue(files.size() >= 100 && scanned >= 500, () -> """
+                源文件扫描落空了:文件 %d 个 / 字符串字面量 %d 个。
+                先确认 serverRoot() 找对了目录,再谈别的。
+                """.formatted(files.size(), scanned));
+
+        assertTrue(violations.isEmpty(), () -> """
+                🔴 R-05 被破坏 —— 有文案在「判断对不对」
+                (`B0-平台底座与横切契约` §十一 第 3 行:字段名与错误文案里都不得出现这八组词)。
+
+                %s
+
+                注意这里扫的<b>只有字符串字面量</b>,注释不在内 ——
+                所以命中的不是一句「不排名」的说明,是一句真的会被吐出去的话。
+                改文案,别改这个表。
+                """.formatted(String.join("\n", violations)));
+
+        Set<String> stale = new TreeSet<>(JUDGEMENT_ALLOWED_LITERALS.keySet());
+        stale.removeAll(exercised);
+        assertTrue(stale.isEmpty(), () -> """
+                JUDGEMENT_ALLOWED_LITERALS 里有对不上任何字面量的行:%s
+                文案改掉了,豁免行也删掉。
+                """.formatted(stale));
     }
 
     @Test
@@ -609,6 +806,178 @@ class NoStemFieldTest {
      */
     private static String flatten(String fieldName) {
         return fieldName.toLowerCase(Locale.ROOT).replace("system", "");
+    }
+
+    /**
+     * 判断类禁词命中的<b>全集</b>(不是第一个)。
+     *
+     * <p>返回全集是为了让豁免表诚实:{@code AgentPrompt} 的系统提示词是<b>一个</b>文本块,
+     * 里面同时有「讲解」和「正确率」。只报第一个,豁免表里另一行就永远是死行。
+     */
+    private static Set<String> judgementHits(String text) {
+        Set<String> hits = new TreeSet<>();
+        List<String> tk = tokens(text);
+        for (int i = 0; i < tk.size(); i++) {
+            String one = tk.get(i);
+            String pair = i + 1 < tk.size() ? one + tk.get(i + 1) : null;
+            for (String word : BANNED_JUDGEMENT) {
+                if (word.equals(one) || word.equals(pair)) {
+                    hits.add(word);
+                }
+            }
+        }
+        for (String word : BANNED_JUDGEMENT_CJK) {
+            if (text.contains(word)) {
+                hits.add(word);
+            }
+        }
+        return hits;
+    }
+
+    /**
+     * 按驼峰边界与一切非 ASCII 字母切词,小写化。
+     *
+     * <p>{@code blindScore → [blind, score]}、{@code DEGRADED_L1 → [degraded, l]}、
+     * {@code check_in → [check, in]}。中文整段不产出 token —— 它走子串那一列。
+     */
+    private static List<String> tokens(String s) {
+        List<String> out = new ArrayList<>();
+        StringBuilder cur = new StringBuilder();
+        for (int i = 0; i < s.length(); i++) {
+            char c = s.charAt(i);
+            if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')) {
+                // 只在「小写后面跟大写」处断:ALLCAPS 不能被拆成一串单字母,
+                // 否则 DEGRADED 会碎掉,而碎掉之后什么都比不出来。
+                if (Character.isUpperCase(c) && !cur.isEmpty()
+                        && Character.isLowerCase(s.charAt(i - 1))) {
+                    out.add(cur.toString().toLowerCase(Locale.ROOT));
+                    cur.setLength(0);
+                }
+                cur.append(c);
+            } else if (!cur.isEmpty()) {
+                out.add(cur.toString().toLowerCase(Locale.ROOT));
+                cur.setLength(0);
+            }
+        }
+        if (!cur.isEmpty()) {
+            out.add(cur.toString().toLowerCase(Locale.ROOT));
+        }
+        return out;
+    }
+
+    // ================================================================ 源文件与字面量
+
+    /** 一个字符串字面量(含文本块)的内容与它开始的行号。 */
+    private record Literal(int line, String text) {
+    }
+
+    /** 从当前工作目录往上找 {@code server/} —— surefire 的 cwd 是模块目录,不是仓库根。 */
+    private static Path serverRoot() {
+        Path start = Path.of("").toAbsolutePath();
+        for (Path dir = start; dir != null; dir = dir.getParent()) {
+            if (Files.isDirectory(dir.resolve("kaodian-domain").resolve("src"))) {
+                return dir;
+            }
+        }
+        throw new IllegalStateException("从 " + start + " 往上找不到含 kaodian-domain/src 的 server 目录");
+    }
+
+    private static List<Path> mainSources() {
+        try (Stream<Path> walk = Files.walk(serverRoot())) {
+            return walk.filter(p -> p.toString().endsWith(".java"))
+                    .filter(p -> p.toString().replace('\\', '/').contains("/src/main/java/"))
+                    .sorted()
+                    .toList();
+        } catch (IOException e) {
+            throw new UncheckedIOException("读不了源文件树", e);
+        }
+    }
+
+    private static String read(Path file) {
+        try {
+            return Files.readString(file, StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            throw new UncheckedIOException("读不了 " + file, e);
+        }
+    }
+
+    /**
+     * 取出一份 Java 源文件里所有字符串字面量的<b>内容</b>。
+     *
+     * <p>手写状态机,不引解析器:要的只是「哪些字符在字符串里」这一件事,
+     * 而 {@code //}、{@code /* *&#47;}、{@code '"'}、{@code \"}、{@code """} 这五种情况
+     * 一个 {@code String#split} 或正则都处理不对 —— 处理不对的后果不是漏报,
+     * 是把满仓库的<b>否定式合规注释</b>当成违规文案报出来。
+     */
+    private static List<Literal> stringLiteralsOf(String src) {
+        List<Literal> out = new ArrayList<>();
+        int n = src.length();
+        int line = 1;
+        int i = 0;
+        while (i < n) {
+            char c = src.charAt(i);
+            if (c == '\n') {
+                line++;
+                i++;
+            } else if (c == '/' && i + 1 < n && src.charAt(i + 1) == '/') {
+                while (i < n && src.charAt(i) != '\n') {
+                    i++;
+                }
+            } else if (c == '/' && i + 1 < n && src.charAt(i + 1) == '*') {
+                i += 2;
+                while (i + 1 < n && !(src.charAt(i) == '*' && src.charAt(i + 1) == '/')) {
+                    if (src.charAt(i) == '\n') {
+                        line++;
+                    }
+                    i++;
+                }
+                i = Math.min(i + 2, n);
+            } else if (c == '\'') {
+                // 字符字面量只跳过不收集 —— '"' 里那个引号不能被当成字符串的开头。
+                i++;
+                while (i < n && src.charAt(i) != '\'') {
+                    i += src.charAt(i) == '\\' ? 2 : 1;
+                }
+                i++;
+            } else if (c == '"') {
+                boolean block = src.startsWith("\"\"\"", i);
+                int startLine = line;
+                StringBuilder sb = new StringBuilder();
+                i += block ? 3 : 1;
+                while (i < n) {
+                    char d = src.charAt(i);
+                    if (d == '\\') {
+                        // 转义序列整体跳过,尤其是 \" —— 它不结束字符串。
+                        i += 2;
+                        sb.append(' ');
+                    } else if (block && src.startsWith("\"\"\"", i)) {
+                        i += 3;
+                        break;
+                    } else if (!block && d == '"') {
+                        i++;
+                        break;
+                    } else if (!block && d == '\n') {
+                        break;      // 防御:普通字符串不跨行,跨了说明前面已经错位
+                    } else {
+                        if (d == '\n') {
+                            line++;
+                        }
+                        sb.append(d);
+                        i++;
+                    }
+                }
+                out.add(new Literal(startLine, sb.toString()));
+            } else {
+                i++;
+            }
+        }
+        return out;
+    }
+
+    /** 文本块整段贴进失败信息没人读得下去,截一段够定位就行。 */
+    private static String clip(String text) {
+        String flat = text.replaceAll("\\s+", " ").trim();
+        return flat.length() <= 80 ? flat : flat.substring(0, 80) + "…";
     }
 
     /** 嵌套类写成 {@code Outer.Inner},比 {@code Outer$Inner} 好对着源码看。 */

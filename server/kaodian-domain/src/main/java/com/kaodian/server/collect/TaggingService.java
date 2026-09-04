@@ -145,12 +145,21 @@ public class TaggingService {
 
     // ---------------------------------------------------------------- 读
 
-    /** 按 id 找一条记录;没有返回 {@code null}。 */
-    public Touch findRecord(String recordId) {
+    /**
+     * 按 id 找这个用户的一条记录;没有返回 {@code null}。
+     *
+     * <h2>🔴 {@code userId} 从参数进来,而且它是这一层唯一的归属来源</h2>
+     *
+     * 拿到记录之后,下面那些写方法(挂载 / 确认 / 丢弃 / 补标)全部从
+     * {@code touch.userId()} 取归属 —— <b>不再要第二个 userId 参数</b>。
+     * 要第二个,就等于在每个方法上多一个「这两个值对不上时听谁的」要回答;
+     * 而这条记录本身已经是答案:它是从这个用户名下查出来的。
+     */
+    public Touch findRecord(long userId, String recordId) {
         if (recordId == null || recordId.isBlank()) {
             return null;
         }
-        return touches.findAll().stream()
+        return touches.findAll(userId).stream()
                 .filter(t -> t.id().equals(recordId))
                 .findFirst()
                 .orElse(null);
@@ -163,7 +172,7 @@ public class TaggingService {
      * 派生规则只写一处:两处推同一条主标签,就一定会推出两条不一样的。
      */
     public List<RecordTag> tagsOf(Touch touch) {
-        return RecordTag.effectiveTagsOf(touch, tags.findByRecord(touch.id()));
+        return RecordTag.effectiveTagsOf(touch, tags.findByRecord(touch.userId(), touch.id()));
     }
 
     // ---------------------------------------------------------------- 写
@@ -224,6 +233,7 @@ public class TaggingService {
 
         RecordTag tag = new RecordTag(
                 newTagId(),
+                touch.userId(),          // 归属跟着宿主记录走,调用方给不了第二个答案
                 touch.id(),
                 recognition.nodeCode(),
                 recognition.confidence(),
@@ -263,6 +273,7 @@ public class TaggingService {
 
         RecordTag tag = new RecordTag(
                 newTagId(),
+                touch.userId(),
                 touch.id(),
                 nodeCode,
                 RecordTag.MANUAL_CONFIDENCE,
@@ -304,8 +315,8 @@ public class TaggingService {
      *
      * @return 删掉了几行
      */
-    public int deleteTagsOf(String recordId) {
-        return tags.deleteByRecord(recordId);
+    public int deleteTagsOf(long userId, String recordId) {
+        return tags.deleteByRecord(userId, recordId);
     }
 
     // ---------------------------------------------------------------- 内部

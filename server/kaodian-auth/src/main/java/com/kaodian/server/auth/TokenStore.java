@@ -16,7 +16,7 @@ public interface TokenStore {
     Optional<AccessToken> findByHash(String tokenHash);
 
     /** 某账号的全部令牌,含已吊销与已过期的 —— 设备管理页要自己决定显示哪些。 */
-    List<AccessToken> findByUser(String userId);
+    List<AccessToken> findByUser(long userId);
 
     void save(AccessToken token);
 
@@ -29,5 +29,5 @@ public interface TokenStore {
      * <p>注销账号与「退出全部设备」都走它。<b>这是 docs/technical/后端系统设计与组件接入.md §1.9 里
      * 「立即失效」那四个字排除 JWT 的具体位置</b> —— JWT 在这一步无事可做。
      */
-    int revokeAllOfUser(String userId, java.time.Instant now);
+    int revokeAllOfUser(long userId, java.time.Instant now);
 }

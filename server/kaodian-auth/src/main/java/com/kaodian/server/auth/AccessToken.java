@@ -8,8 +8,11 @@ import java.time.Instant;
  * <p>所以「重新看一遍我的令牌」这件事在产品上不存在:签发时返回一次,
  * 丢了就重新签一条。这不是省事,是让<b>一次数据库泄露不等于一批账号被接管</b>。
  *
- * @param tokenHash   明文令牌(含前缀)的 SHA-256,十六进制。<b>主键</b>
- * @param userId      属于谁
+ * @param tokenHash   明文令牌(含前缀)的 SHA-256,十六进制。<b>主键</b>。
+ *                    🔴 <b>它是不透明字符串,不是 int64</b> —— {@code 接口契约} §1.1「令牌标识」行是
+ *                    「服务端标识一律 int64」的唯一例外:改成 int64 等于给令牌加一个可枚举的序号,
+ *                    而可枚举意味着「这个账号有几条令牌」变成一个能被数出来的事实
+ * @param userId      属于谁。{@code long},见 {@link AppUser#id()}
  * @param scope       能干什么。🔴 授权只看这个字段,不看前缀({@link TokenScope#hintFromPrefix})
  * @param deviceLabel 这台设备叫什么,如「iPhone · Safari」。设备管理页(D26)显示它
  * @param issuedAt    签发时刻
@@ -19,7 +22,7 @@ import java.time.Instant;
  */
 public record AccessToken(
         String tokenHash,
-        String userId,
+        long userId,
         TokenScope scope,
         String deviceLabel,
         Instant issuedAt,
@@ -32,8 +35,8 @@ public record AccessToken(
         if (tokenHash == null || tokenHash.isBlank()) {
             throw new IllegalArgumentException("令牌必须有哈希");
         }
-        if (userId == null || userId.isBlank()) {
-            throw new IllegalArgumentException("令牌必须属于某个账号");
+        if (userId <= 0) {
+            throw new IllegalArgumentException("令牌必须属于某个账号(userId > 0):" + userId);
         }
         if (scope == null) {
             throw new IllegalArgumentException("令牌必须有作用域");

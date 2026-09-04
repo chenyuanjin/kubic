@@ -46,6 +46,9 @@ class TaggingServiceTest {
     /** 这个来源名一个候选都召回不出来 —— 种子里真实存在的那种。 */
     private static final String SILENT_SOURCE = "粉笔 · 资料分析系统班 L12";
 
+    /** 测试用户 —— 与行为层种子同一个 id(B0 §3.3:auth 侧从 10001 起号)。 */
+    private static final long USER = 10001L;
+
     private final InMemoryTouchStore touches = new InMemoryTouchStore();
     private final InMemoryRecordTagStore tags = new InMemoryRecordTagStore();
 
@@ -55,7 +58,7 @@ class TaggingServiceTest {
     }
 
     private Touch given(String id, String nodeCode, String sourceName) {
-        Touch t = new Touch(id, nodeCode, sourceName, TouchKind.PHOTO, NOW.minusSeconds(60), null);
+        Touch t = new Touch(id, USER, nodeCode, sourceName, TouchKind.PHOTO, NOW.minusSeconds(60), null, null);
         touches.add(t);
         return t;
     }
@@ -110,7 +113,7 @@ class TaggingServiceTest {
         assertEquals(Outcome.NOT_RECALLED, suggestion.outcome());
         assertEquals(0, suggestion.candidateCount(), "candidateCount 是 0 就是「压根没送进去看」");
         assertNull(suggestion.tag());
-        assertEquals(0, tags.count(), "什么都不该落库");
+        assertEquals(0, tags.count(USER), "什么都不该落库");
     }
 
     @Test
@@ -128,7 +131,7 @@ class TaggingServiceTest {
             assertNotEquals(Outcome.NO_MATCH, suggestion.outcome(),
                     "「没素材」和「没认出来」在界面上说的话不一样,不能合成一个");
         }
-        assertEquals(0, tags.count());
+        assertEquals(0, tags.count(USER));
     }
 
     // ———————————————— 二、走完四段:命中、不命中、集外、挂了 ————————————————
@@ -152,7 +155,7 @@ class TaggingServiceTest {
         // 顺手填上「等于现在」会让 1.2.5.2 的准确率口径(标对的/标了的)分子恒等于分母。
         assertNull(tag.confirmedAt(), "这条是模型挑的,还没有人认过");
         assertFalse(tag.discarded());
-        assertEquals(1, tags.count(), "而且它真的落库了,不只是返回给调用方看看");
+        assertEquals(1, tags.count(USER), "而且它真的落库了,不只是返回给调用方看看");
     }
 
     @Test
@@ -165,7 +168,7 @@ class TaggingServiceTest {
         assertEquals(Outcome.NO_MATCH, suggestion.outcome());
         assertEquals(0.42, suggestion.confidence(), 1e-9, "降级不等于清零");
         assertNull(suggestion.tag());
-        assertEquals(0, tags.count());
+        assertEquals(0, tags.count(USER));
     }
 
     @Test
@@ -180,7 +183,7 @@ class TaggingServiceTest {
         assertEquals(Outcome.NO_MATCH, suggestion.outcome());
         assertEquals(0.99, suggestion.confidence(), 1e-9,
                 "置信度留着 —— 它是「召回没覆盖到」和「模型在乱答」唯一的区分线索");
-        assertEquals(0, tags.count(), "库里出现了一条不是自己命名的标签(R-07)");
+        assertEquals(0, tags.count(USER), "库里出现了一条不是自己命名的标签(R-07)");
     }
 
     @Test
@@ -192,7 +195,7 @@ class TaggingServiceTest {
                 .suggest(touch, MATERIAL, "image/jpeg");
 
         assertEquals(Outcome.NO_MATCH, suggestion.outcome());
-        assertEquals(0, tags.count(), "差一丝也是不够 —— 不硬凑最接近的考点");
+        assertEquals(0, tags.count(USER), "差一丝也是不够 —— 不硬凑最接近的考点");
     }
 
     @Test
@@ -206,7 +209,7 @@ class TaggingServiceTest {
         assertNull(suggestion.tag());
 
         // 这三条才是这条用例真正要说的话:降级方向是「少功能」,不是「少记录」。
-        assertEquals(1, touches.findAll().size(), "记录不能因为模型挂了而消失");
+        assertEquals(1, touches.findAll(USER).size(), "记录不能因为模型挂了而消失");
         assertEquals(1, service.tagsOf(touch).size(), "主标签还在 —— 覆盖度不掉");
         assertInstanceOf(MountResult.Mounted.class, service.mount(touch, "share-calc"),
                 "手动挂载这条路永不受识别故障影响");
@@ -224,7 +227,7 @@ class TaggingServiceTest {
             assertInstanceOf(MountResult.NotInSyllabus.class, service.mount(touch, outside),
                     "[" + outside + "]");
         }
-        assertEquals(0, tags.count());
+        assertEquals(0, tags.count(USER));
     }
 
     @Test
@@ -255,7 +258,7 @@ class TaggingServiceTest {
 
         assertFalse(again.created(), "什么都没新建,调用方据此把 201 降成 200");
         assertEquals(first.tag().id(), again.tag().id());
-        assertEquals(1, tags.count());
+        assertEquals(1, tags.count(USER));
     }
 
     @Test
@@ -269,7 +272,7 @@ class TaggingServiceTest {
 
         assertFalse(mounted.created());
         assertTrue(mounted.tag().primary());
-        assertEquals(0, tags.count(), "一行都不该落");
+        assertEquals(0, tags.count(USER), "一行都不该落");
     }
 
     // ———————————————— 四、确认与丢弃 ————————————————
@@ -286,8 +289,8 @@ class TaggingServiceTest {
         assertEquals(TagOrigin.AUTO, confirmed.origin(),
                 "确认把 auto 改成了 manual —— 准确率口径的分母会随每次确认缩水,指标恒等于 0");
         assertEquals(NOW, confirmed.confirmedAt());
-        assertEquals(TagOrigin.AUTO, tags.find(suggested.id()).origin(), "落库的那一行也得是 auto");
-        assertEquals(1, tags.count(), "确认是改一行,不是加一行");
+        assertEquals(TagOrigin.AUTO, tags.find(USER, suggested.id()).origin(), "落库的那一行也得是 auto");
+        assertEquals(1, tags.count(USER), "确认是改一行,不是加一行");
     }
 
     @Test
@@ -301,7 +304,7 @@ class TaggingServiceTest {
 
         assertTrue(confirmed.primary());
         assertEquals(TagOrigin.MANUAL, confirmed.origin());
-        assertEquals(1, tags.count(), "主标签本来不占行,被确认之后才需要一行来记住这个状态");
+        assertEquals(1, tags.count(USER), "主标签本来不占行,被确认之后才需要一行来记住这个状态");
     }
 
     @Test
@@ -333,7 +336,7 @@ class TaggingServiceTest {
 
         assertEquals(Outcome.ALREADY_TAGGED, again.outcome());
         assertTrue(again.tag().discarded(), "指回的是那条丢弃过的,不是一条崭新的");
-        assertEquals(1, tags.count(), "没有新增");
+        assertEquals(1, tags.count(USER), "没有新增");
         assertFalse(service.tagsOf(touch).stream()
                         .anyMatch(t -> t.nodeCode().equals("interval-growth") && t.countsInCoverage()),
                 "它不能重新计进覆盖度");
@@ -357,8 +360,8 @@ class TaggingServiceTest {
 
         assertTrue(remounted.created());
         assertNotEquals(first.id(), remounted.tag().id());
-        assertTrue(tags.find(first.id()).discarded(), "丢弃那条一个字都没被改");
-        assertEquals(2, tags.count());
+        assertTrue(tags.find(USER, first.id()).discarded(), "丢弃那条一个字都没被改");
+        assertEquals(2, tags.count(USER));
     }
 
     @Test
@@ -377,8 +380,8 @@ class TaggingServiceTest {
         assertNull(service.confirm(mine, "tag-不存在"));
         assertNull(service.confirm(mine, null));
 
-        assertEquals(othersTag, tags.find(othersTag.id()), "别人那条一个字都没被动");
-        assertFalse(tags.find(othersTag.id()).discarded());
+        assertEquals(othersTag, tags.find(USER, othersTag.id()), "别人那条一个字都没被动");
+        assertFalse(tags.find(USER, othersTag.id()).discarded());
     }
 
     @Test
@@ -390,9 +393,9 @@ class TaggingServiceTest {
         service.mount(touch, "average-calc");
         service.mount(other, "average-calc");
 
-        assertEquals(1, service.deleteTagsOf("t-1"));
-        assertEquals(1, tags.count(), "别人的标签不该被顺手带走");
-        assertEquals(0, service.deleteTagsOf("t-1"), "删一次不存在的返回 0,不抛");
+        assertEquals(1, service.deleteTagsOf(USER, "t-1"));
+        assertEquals(1, tags.count(USER), "别人的标签不该被顺手带走");
+        assertEquals(0, service.deleteTagsOf(USER, "t-1"), "删一次不存在的返回 0,不抛");
     }
 
     @Test
@@ -401,10 +404,10 @@ class TaggingServiceTest {
         given("t-1", "growth-rate", SILENT_SOURCE);
         TaggingService service = serviceWith(new StubVisionTagger());
 
-        assertEquals("t-1", service.findRecord("t-1").id());
-        assertNull(service.findRecord("t-nope"));
-        assertNull(service.findRecord(null));
-        assertNull(service.findRecord("  "));
+        assertEquals("t-1", service.findRecord(USER, "t-1").id());
+        assertNull(service.findRecord(USER, "t-nope"));
+        assertNull(service.findRecord(USER, null));
+        assertNull(service.findRecord(USER, "  "));
     }
 
     /** 最简行为层替身:这个文件只关心标签,记录怎么落地由 {@code CaptureServiceTest} 管。 */
@@ -416,17 +419,22 @@ class TaggingServiceTest {
         }
 
         @Override
-        public List<Touch> findAll() {
+        public List<Touch> findAll(long userId) {
+            return all.stream().filter(t -> t.userId() == userId).toList();
+        }
+
+        @Override
+        public List<Touch> findAllAcrossUsers() {
             return List.copyOf(all);
         }
 
         @Override
-        public List<Touch> findByNode(String nodeCode) {
-            return all.stream().filter(t -> t.nodeCode().equals(nodeCode)).toList();
+        public int countByNodeAcrossUsers(String nodeCode) {
+            return (int) all.stream().filter(t -> t.nodeCode().equals(nodeCode)).count();
         }
 
         @Override
-        public Touch findByClientToken(String clientToken) {
+        public Touch findByClientToken(long userId, String clientToken) {
             return null;
         }
 
@@ -437,8 +445,8 @@ class TaggingServiceTest {
         }
 
         @Override
-        public Touch delete(String id) {
-            return all.stream().filter(t -> t.id().equals(id)).findFirst()
+        public Touch delete(long userId, String id) {
+            return all.stream().filter(t -> t.userId() == userId && t.id().equals(id)).findFirst()
                     .map(t -> {
                         all.remove(t);
                         return t;
@@ -446,8 +454,8 @@ class TaggingServiceTest {
         }
 
         @Override
-        public int count() {
-            return all.size();
+        public int count(long userId) {
+            return (int) all.stream().filter(t -> t.userId() == userId).count();
         }
 
         @Override

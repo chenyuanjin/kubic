@@ -2,6 +2,7 @@ package com.kaodian.server.api.record;
 
 import com.kaodian.server.api.dto.common.ApiError;
 import com.kaodian.server.api.support.ApiException;
+import com.kaodian.server.api.support.CurrentSession;
 import com.kaodian.server.api.dto.record.BatchCreateRecordsRequest;
 import com.kaodian.server.api.dto.record.BatchCreateRecordsResponse;
 import com.kaodian.server.api.dto.record.CreateRecordRequest;
@@ -147,13 +148,15 @@ public class RecordController {
      * 的字面要求,也是离线队列敢重发的前提。
      */
     @PostMapping
-    public ResponseEntity<CreateRecordResponse> create(@Valid @RequestBody CreateRecordRequest req) {
-        CaptureResult result = capture.capture(toCaptureRequest(req));
+    public ResponseEntity<CreateRecordResponse> create(CurrentSession session,
+                                                       @Valid @RequestBody CreateRecordRequest req) {
+        session.requireWrite();
+        CaptureResult result = capture.capture(session.userId(), toCaptureRequest(req));
 
         return switch (result) {
             case CaptureResult.Recorded recorded -> ResponseEntity
                     .status(recorded.replayed() ? HttpStatus.OK : HttpStatus.CREATED)
-                    .body(responseFor(recorded.touch()));
+                    .body(responseFor(session.userId(), recorded.touch()));
             case CaptureResult.Rejected rejected -> throw toApiException(rejected.reason(), req.nodeCode());
         };
     }
@@ -183,10 +186,12 @@ public class RecordController {
      * 更要紧的是<b>顺序即结果顺序</b>:客户端靠下标把结果对回自己队列里的那一条。
      */
     @PostMapping("/batch")
-    public BatchCreateRecordsResponse createBatch(@Valid @RequestBody BatchCreateRecordsRequest req) {
+    public BatchCreateRecordsResponse createBatch(CurrentSession session,
+                                                  @Valid @RequestBody BatchCreateRecordsRequest req) {
+        session.requireWrite();
         List<ItemResult> results = new ArrayList<>(req.records().size());
         for (int i = 0; i < req.records().size(); i++) {
-            results.add(storeOne(i, req.records().get(i)));
+            results.add(storeOne(session.userId(), i, req.records().get(i)));
         }
         return BatchCreateRecordsResponse.of(results);
     }
@@ -198,7 +203,7 @@ public class RecordController {
      * 客户端还拿不到「已经落了前几条」这个信息,于是重发时全部重来一遍。
      * 幂等能兜住重来,但兜不住用户看见的那个「补传失败」。
      */
-    private ItemResult storeOne(int index, CreateRecordRequest item) {
+    private ItemResult storeOne(long userId, int index, CreateRecordRequest item) {
         // 🔴 补传必须带去重键。理由见 BatchCreateRecordsRequest ——
         // 没有它的补传是一次注定重复的写入,而重复的触达会把覆盖度的分子算错。
         if (item.clientToken() == null || item.clientToken().isBlank()) {
@@ -221,7 +226,7 @@ public class RecordController {
                     error("VALIDATION_FAILED", "这一条不合法 —— " + detail));
         }
 
-        CaptureResult result = capture.capture(toCaptureRequest(item));
+        CaptureResult result = capture.capture(userId, toCaptureRequest(item));
         return switch (result) {
             case CaptureResult.Recorded recorded -> {
                 TimelineItemDto dto = TimelineItemDto.from(recorded.touch(), syllabus.current());
@@ -266,15 +271,17 @@ public class RecordController {
      * 定位靠 traceId(见 {@code ApiExceptionHandler} 开头那条纪律)。
      */
     @DeleteMapping("/{id}")
-    public RecordDeletedResponse delete(@PathVariable String id) {
-        Touch deleted = store.delete(id);
+    public RecordDeletedResponse delete(CurrentSession session, @PathVariable String id) {
+        session.requireWrite();
+        // 🔴 归属参与匹配:别人的记录在这里等于不存在,回的是同一句 404。
+        Touch deleted = store.delete(session.userId(), id);
         if (deleted == null) {
             throw new ApiException(HttpStatus.NOT_FOUND, "RECORD_NOT_FOUND",
                     "找不到这条记录 —— 它可能已经被删掉了。");
         }
-        tagStore.deleteByRecord(id);            // 级联删标签(docs/technical/INDEX.md §6.2)
+        tagStore.deleteByRecord(session.userId(), id);   // 级联删标签(docs/technical/INDEX.md §6.2)
 
-        CoverageReader.Snapshot snapshot = reader.read();
+        CoverageReader.Snapshot snapshot = reader.read(session.userId());
         NodeCoverage node = snapshot.node(deleted.nodeCode());
         return new RecordDeletedResponse(
                 deleted.id(),
@@ -297,6 +304,7 @@ public class RecordController {
      */
     @GetMapping
     public RecordPageResponse list(
+            CurrentSession session,
             // 🔴 这里刻意【没有】@Size:长度由 RecordCursor.decode 一处判。
             // 挂上去的话,超长游标回 VALIDATION_FAILED、解不开的游标回 INVALID_CURSOR ——
             // 同一件事(这个游标不能用)两个错误码,前端就得写两条分支。
@@ -310,7 +318,7 @@ public class RecordController {
 
         RecordCursor.Position from = RecordCursor.decode(cursor);
 
-        List<Touch> all = store.findAll();
+        List<Touch> all = store.findAll(session.userId());
         // 🔴 排序是 (occurredAt, id) 两级倒序,不是只按时间。
         // 同一毫秒里真的会有多条 —— 补传一次落 50 条,它们共用同一个服务端时刻。
         // 只按时间排,那 50 条在翻页时要么一起被跳过要么一起被重复吐出来(见 RecordCursor)。
@@ -349,8 +357,8 @@ public class RecordController {
     }
 
     /** 落地之后再读一次差集,把那个考点的新状态一起带回去 —— 前端不必再请求一次。 */
-    private CreateRecordResponse responseFor(Touch stored) {
-        NodeCoverage node = reader.read().node(stored.nodeCode());
+    private CreateRecordResponse responseFor(long userId, Touch stored) {
+        NodeCoverage node = reader.read(userId).node(stored.nodeCode());
         return new CreateRecordResponse(
                 TimelineItemDto.from(stored, syllabus.current()),
                 node == null ? null : NodeDetailDto.from(node));

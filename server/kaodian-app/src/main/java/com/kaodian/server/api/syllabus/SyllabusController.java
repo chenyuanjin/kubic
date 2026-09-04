@@ -1,5 +1,6 @@
 package com.kaodian.server.api.syllabus;
 
+import com.kaodian.server.api.support.CurrentSession;
 import com.kaodian.server.api.support.ApiException;
 import com.kaodian.server.api.dto.common.NodeDetailDto;
 import com.kaodian.server.api.dto.syllabus.TreeResponse;
@@ -43,8 +44,8 @@ public class SyllabusController {
      *                2–3 人团队的灾难 —— 所以这里不是「选科目」,是「确认没选错」
      */
     @GetMapping("/tree")
-    public TreeResponse tree(@RequestParam(required = false) String subject) {
-        Snapshot snapshot = reader.read();
+    public TreeResponse tree(CurrentSession session, @RequestParam(required = false) String subject) {
+        Snapshot snapshot = reader.read(session.userId());
         String current = snapshot.syllabus().subject().code();
         if (subject != null && !subject.isBlank() && !subject.equals(current)) {
             // 回声在 ApiException 里统一截断 —— subject 是查询参数,没有 @Size 管得着它
@@ -60,8 +61,8 @@ public class SyllabusController {
      * <b>宁缺毋滥</b>:猜错的考点会污染覆盖度,而覆盖度就是这个产品本身。
      */
     @GetMapping("/nodes/{code}")
-    public NodeDetailDto node(@PathVariable String code) {
-        NodeCoverage node = reader.read().node(code);
+    public NodeDetailDto node(CurrentSession session, @PathVariable String code) {
+        NodeCoverage node = reader.read(session.userId()).node(code);
         if (node == null) {
             throw ApiException.nodeNotFound(code);
         }

@@ -1,6 +1,7 @@
 package com.kaodian.server.api.record;
 
 import com.kaodian.server.api.support.ApiException;
+import com.kaodian.server.api.support.CurrentSession;
 import com.kaodian.server.api.dto.record.MountTagRequest;
 import com.kaodian.server.api.dto.common.NodeDetailDto;
 import com.kaodian.server.api.dto.record.RecordTagsResponse;
@@ -110,13 +111,14 @@ public class TagController {
      *             里面出现任何一个键都是 400(见 {@link SuggestTagRequest})
      */
     @PostMapping("/suggest")
-    public SuggestTagResponse suggest(@PathVariable String id,
+    public SuggestTagResponse suggest(CurrentSession session, @PathVariable String id,
                                       @Valid @RequestBody(required = false) SuggestTagRequest body) {
-        Touch touch = requireRecord(id);
+        session.requireWrite();
+        Touch touch = requireRecord(session.userId(), id);
         Suggestion suggestion = tagging.suggest(touch, null, null);
 
         List<RecordTag> tags = tagging.tagsOf(touch);
-        CoverageReader.Snapshot snapshot = reader.read();
+        CoverageReader.Snapshot snapshot = reader.read(session.userId());
         Syllabus tree = snapshot.syllabus();
         RecordTag tag = suggestion.tag();
 
@@ -144,9 +146,10 @@ public class TagController {
      * 否则同一个错标会被反复建议,而用户不知道自己已经丢过一次。
      */
     @PostMapping
-    public ResponseEntity<RecordTagsResponse> mount(@PathVariable String id,
+    public ResponseEntity<RecordTagsResponse> mount(CurrentSession session, @PathVariable String id,
                                                     @Valid @RequestBody MountTagRequest req) {
-        Touch touch = requireRecord(id);
+        session.requireWrite();
+        Touch touch = requireRecord(session.userId(), id);
 
         return switch (tagging.mount(touch, req.nodeCode())) {
             case MountResult.Mounted mounted -> ResponseEntity
@@ -167,8 +170,10 @@ public class TagController {
      * 那是对的,不是没生效。
      */
     @PostMapping("/{tagId}/confirm")
-    public RecordTagsResponse confirm(@PathVariable String id, @PathVariable String tagId) {
-        Touch touch = requireRecord(id);
+    public RecordTagsResponse confirm(CurrentSession session, @PathVariable String id,
+                                      @PathVariable String tagId) {
+        session.requireWrite();
+        Touch touch = requireRecord(session.userId(), id);
         RecordTag confirmed = tagging.confirm(touch, tagId);
         return responseFor(touch, requireTag(confirmed).nodeCode());
     }
@@ -180,8 +185,10 @@ public class TagController {
      * 删记录会把「我那天学过东西」这件事一起抹掉,而错的只是它挂在哪儿。
      */
     @PostMapping("/{tagId}/discard")
-    public RecordTagsResponse discard(@PathVariable String id, @PathVariable String tagId) {
-        Touch touch = requireRecord(id);
+    public RecordTagsResponse discard(CurrentSession session, @PathVariable String id,
+                                      @PathVariable String tagId) {
+        session.requireWrite();
+        Touch touch = requireRecord(session.userId(), id);
         RecordTag discarded = tagging.discard(touch, tagId);
         return responseFor(touch, requireTag(discarded).nodeCode());
     }
@@ -189,8 +196,10 @@ public class TagController {
     // ---------------------------------------------------------------- 内部
 
     /** 🔴 404 的消息里不带那个 id —— 理由见类注释。 */
-    private Touch requireRecord(String id) {
-        Touch touch = tagging.findRecord(id);
+    private Touch requireRecord(long userId, String id) {
+        // 🔴 只在这个用户名下找 —— 别人的记录在这里等于不存在,回的是同一句 404。
+        //    回 403 会确认「这个 id 存在」,而 404 什么都不确认(与 requireTag 同一条)。
+        Touch touch = tagging.findRecord(userId, id);
         if (touch == null) {
             throw new ApiException(HttpStatus.NOT_FOUND, "RECORD_NOT_FOUND",
                     "找不到这条记录 —— 它可能已经被删掉了。");
@@ -215,7 +224,8 @@ public class TagController {
 
     /** 写完之后再读一次差集,把标签列表、受影响的考点、整体概览一起带回去。 */
     private RecordTagsResponse responseFor(Touch touch, String nodeCode) {
-        CoverageReader.Snapshot snapshot = reader.read();
+        // 归属取自记录本身 —— 它是从当前用户名下查出来的(见 requireRecord)
+        CoverageReader.Snapshot snapshot = reader.read(touch.userId());
         return new RecordTagsResponse(
                 touch.id(),
                 toDtos(tagging.tagsOf(touch), snapshot.syllabus()),

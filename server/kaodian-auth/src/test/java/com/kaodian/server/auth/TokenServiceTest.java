@@ -33,7 +33,7 @@ class TokenServiceTest {
     @Test
     @DisplayName("明文只出现一次,库里只有 SHA-256")
     void plaintextNeverStored() {
-        IssuedToken issued = service().issue("u_1", TokenScope.FULL, "iPhone · Safari");
+        IssuedToken issued = service().issue(10001L, TokenScope.FULL, "iPhone · Safari");
 
         assertTrue(issued.plaintext().startsWith("at_"));
         assertEquals(TokenService.sha256(issued.plaintext()), issued.stored().tokenHash());
@@ -46,7 +46,7 @@ class TokenServiceTest {
     @DisplayName("前缀参与哈希 —— 把 ro_ 改成 at_ 换不出写能力")
     void prefixIsPartOfTheHash() {
         TokenService s = service();
-        IssuedToken ro = s.issue("u_1", TokenScope.READONLY, "MCP");
+        IssuedToken ro = s.issue(10001L, TokenScope.READONLY, "MCP");
         assertTrue(ro.plaintext().startsWith("ro_"));
 
         String forged = "at_" + ro.plaintext().substring(3);
@@ -60,7 +60,7 @@ class TokenServiceTest {
     @DisplayName("吊销立刻生效 —— 这是 JWT 做不到、因而被排除的那一条")
     void revokeIsImmediate() {
         TokenService s = service();
-        IssuedToken t = s.issue("u_1", TokenScope.FULL, "iPad");
+        IssuedToken t = s.issue(10001L, TokenScope.FULL, "iPad");
         assertTrue(s.verify(t.plaintext()).isPresent());
 
         assertTrue(s.revoke(t.plaintext()));
@@ -74,11 +74,11 @@ class TokenServiceTest {
     @DisplayName("注销时全量吊销:多设备一起断")
     void revokeAllOfUser() {
         TokenService s = service();
-        IssuedToken a = s.issue("u_1", TokenScope.FULL, "手机");
-        IssuedToken b = s.issue("u_1", TokenScope.FULL, "电脑");
-        IssuedToken other = s.issue("u_2", TokenScope.FULL, "别人的手机");
+        IssuedToken a = s.issue(10001L, TokenScope.FULL, "手机");
+        IssuedToken b = s.issue(10001L, TokenScope.FULL, "电脑");
+        IssuedToken other = s.issue(10002L, TokenScope.FULL, "别人的手机");
 
-        assertEquals(2, s.revokeAll("u_1"));
+        assertEquals(2, s.revokeAll(10001L));
         assertTrue(s.verify(a.plaintext()).isEmpty());
         assertTrue(s.verify(b.plaintext()).isEmpty());
         assertTrue(s.verify(other.plaintext()).isPresent(), "不能误伤别的账号");
@@ -88,19 +88,19 @@ class TokenServiceTest {
     @DisplayName("别人的会话吊销不了 —— 越权是显式失败,不是静默无事发生")
     void cannotRevokeSomeoneElsesSession() {
         TokenService s = service();
-        IssuedToken mine = s.issue("u_1", TokenScope.FULL, "我的");
-        IssuedToken theirs = s.issue("u_2", TokenScope.FULL, "他的");
+        IssuedToken mine = s.issue(10001L, TokenScope.FULL, "我的");
+        IssuedToken theirs = s.issue(10002L, TokenScope.FULL, "他的");
 
         assertThrows(IllegalArgumentException.class,
-                () -> s.revokeByHash("u_1", theirs.stored().tokenHash()));
-        assertTrue(s.revokeByHash("u_1", mine.stored().tokenHash()));
+                () -> s.revokeByHash(10001L, theirs.stored().tokenHash()));
+        assertTrue(s.revokeByHash(10001L, mine.stored().tokenHash()));
     }
 
     @Test
     @DisplayName("30 天滑动:用一次就往后推;30 天不用则过期")
     void slidingExpiry() {
         TokenService s = service();
-        IssuedToken t = s.issue("u_1", TokenScope.FULL, "手机");
+        IssuedToken t = s.issue(10001L, TokenScope.FULL, "手机");
 
         clock.advance(Duration.ofDays(20));
         AccessToken slid = s.verify(t.plaintext()).orElseThrow();
@@ -117,7 +117,7 @@ class TokenServiceTest {
     @DisplayName("滑动落盘被节流:一小时内的重复使用不重写文件")
     void slideIsThrottled() {
         TokenService s = service();
-        IssuedToken t = s.issue("u_1", TokenScope.FULL, "手机");
+        IssuedToken t = s.issue(10001L, TokenScope.FULL, "手机");
 
         clock.advance(Duration.ofMinutes(30));
         AccessToken first = s.verify(t.plaintext()).orElseThrow();
@@ -133,11 +133,11 @@ class TokenServiceTest {
     @DisplayName("设备列表按最后使用时间倒序,当前这条能被认出来")
     void sessionList() {
         TokenService s = service();
-        s.issue("u_1", TokenScope.FULL, "旧设备");
+        s.issue(10001L, TokenScope.FULL, "旧设备");
         clock.advance(Duration.ofHours(2));
-        IssuedToken newer = s.issue("u_1", TokenScope.FULL, "新设备");
+        IssuedToken newer = s.issue(10001L, TokenScope.FULL, "新设备");
 
-        List<AccessToken> list = s.sessionsOf("u_1");
+        List<AccessToken> list = s.sessionsOf(10001L);
         assertEquals(2, list.size());
         assertEquals("新设备", list.get(0).deviceLabel());
         assertEquals(newer.stored().tokenHash(), list.get(0).tokenHash());
@@ -149,9 +149,49 @@ class TokenServiceTest {
         Path file = dir.resolve("restart.json");
         TestClock c = new TestClock("2026-09-01T00:00:00Z");
         IssuedToken t = new TokenService(new FileTokenStore(file), c)
-                .issue("u_1", TokenScope.FULL, "手机");
+                .issue(10001L, TokenScope.FULL, "手机");
 
         TokenService afterRestart = new TokenService(new FileTokenStore(file), c);
         assertTrue(afterRestart.verify(t.plaintext()).isPresent());
+    }
+
+    // —— TokenCheck 四档(B0 §5.3 · 接口契约 §1.2「未授权三档」)——
+
+    @Test
+    @DisplayName("🔴 check 拆四档,而 Revoked 带得出 userId —— 三档能落地的唯一原因")
+    void checkSplitsFourLeaves() {
+        TokenService s = service();
+        IssuedToken good = s.issue(10001L, TokenScope.FULL, "手机");
+        IssuedToken revoked = s.issue(10002L, TokenScope.FULL, "被踢的那台");
+        IssuedToken expired = s.issue(10003L, TokenScope.FULL, "放了很久的那台");
+        s.revoke(revoked.plaintext());
+
+        assertInstanceOf(TokenCheck.Valid.class, s.check(good.plaintext()));
+
+        // 已吊销 —— 内部档,而它必须带着 userId:没有它就查不到账号状态,
+        // UNAUTHORIZED 与 ACCOUNT_DEACTIVATED 分不开。
+        TokenCheck r = s.check(revoked.plaintext());
+        assertInstanceOf(TokenCheck.Revoked.class, r);
+        assertEquals(10002L, ((TokenCheck.Revoked) r).userId());
+
+        clock.advance(TokenService.LIFETIME.plusDays(1));
+        assertInstanceOf(TokenCheck.Expired.class, s.check(expired.plaintext()));
+
+        // 🔴 查不到令牌行的那一叶永远没有 userId 可查 —— 泄露面由结构限死,不靠实现者自觉。
+        assertInstanceOf(TokenCheck.Invalid.class, s.check("at_" + "x".repeat(43)));
+        assertInstanceOf(TokenCheck.Invalid.class, s.check("没有前缀"));
+        assertInstanceOf(TokenCheck.Invalid.class, s.check(null));
+    }
+
+    @Test
+    @DisplayName("verify 就是 check 的 Valid 那一叶 —— 滑动续期不会有两套行为")
+    void verifyIsCheckValid() {
+        TokenService s = service();
+        IssuedToken t = s.issue(10001L, TokenScope.FULL, "手机");
+
+        clock.advance(Duration.ofDays(5));
+        assertEquals(s.verify(t.plaintext()).orElseThrow().expiresAt(),
+                ((TokenCheck.Valid) s.check(t.plaintext())).token().expiresAt(),
+                "两条路必须给出同一个 expiresAt,否则续期就有了两套行为");
     }
 }

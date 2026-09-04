@@ -134,6 +134,16 @@ jobs:
           </settings>
           XML
 
+      # .githooks/pre-commit 那道闸靠 core.hooksPath,而它不随 clone 传播 —— 新机器上默认是关的,
+      # 且关着的时候看起来一切正常。CI 是唯一一处「不装也躲不掉」的位置(B0 §8.2)。
+      # 正则与 pre-commit 同源,都读 scripts/sensitive-paths.txt,不是抄两遍。
+      - name: 敏感文件扫描(与 .githooks/pre-commit 同一份模式文件)
+        run: |
+          if git -c core.quotepath=false ls-files \
+               | grep -E -f <(grep -vE '^#|^$' scripts/sensitive-paths.txt); then
+            echo "::error::仓库里有密钥/运行时数据/原图缓存"; exit 1
+          fi
+
       # 走 build.sh,不走 ./mvnw。差别只有一处:隔离校验跑不跑。
       - name: 测试
         run: ./server/build.sh -q test

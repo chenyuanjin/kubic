@@ -29,6 +29,12 @@ class FileAssertionStoreTest {
     private static final Instant EARLIER = Instant.parse("2026-08-20T09:00:00Z");
     private static final Instant LATER = Instant.parse("2026-08-25T12:00:00Z");
 
+    /** 测试用户 —— 与行为层种子同一个 id(B0 §3.3:auth 侧从 10001 起号)。 */
+    private static final long USER = 10001L;
+
+    /** 另一个真实存在的用户 —— 用来证明「按用户查」不是摆设。 */
+    private static final long OTHER_USER = 10002L;
+
     @TempDir
     Path dataDir;
 
@@ -41,18 +47,18 @@ class FileAssertionStoreTest {
     void anAbsentFileIsAnEmptyTableAndStaysAbsent() {
         FileAssertionStore store = store();
 
-        assertEquals(0, store.count());
-        assertEquals(List.of(), store.findAll());
-        assertNull(store.find("growth-rate"));
+        assertEquals(0, store.count(USER));
+        assertEquals(List.of(), store.findAll(USER));
+        assertNull(store.find(USER, "growth-rate"));
         assertFalse(Files.exists(store.dataFile()), "只是读了一下,不该在用户目录里造出文件");
     }
 
     @Test
     @DisplayName("写进去、换个实例读出来,两个字段一个不少")
     void anAssertionSurvivesAReopen() {
-        store().put(new UserAssertion("growth-rate", EARLIER));
+        store().put(new UserAssertion(USER, "growth-rate", EARLIER));
 
-        List<UserAssertion> read = store().findAll();
+        List<UserAssertion> read = store().findAll(USER);
         assertEquals(1, read.size());
         assertEquals("growth-rate", read.get(0).nodeCode());
         assertEquals(EARLIER, read.get(0).assertedAt());
@@ -69,15 +75,15 @@ class FileAssertionStoreTest {
     @DisplayName("🔴 重复声明同一个考点:不新增一行,而且不刷新 assertedAt")
     void puttingTwiceNeitherDuplicatesNorRefreshes() {
         FileAssertionStore store = store();
-        store.put(new UserAssertion("growth-rate", EARLIER));
+        store.put(new UserAssertion(USER, "growth-rate", EARLIER));
 
-        UserAssertion again = store.put(new UserAssertion("growth-rate", LATER));
+        UserAssertion again = store.put(new UserAssertion(USER, "growth-rate", LATER));
 
         assertEquals(EARLIER, again.assertedAt(),
                 "重复声明刷新了时刻 —— 连点两下不该改写「你在 X 月 X 日说过你会了」这句话");
-        assertEquals(1, store.count());
-        assertEquals(1, store().count(), "而且磁盘上也只有一行,不是只在内存里去重");
-        assertEquals(EARLIER, store().find("growth-rate").assertedAt());
+        assertEquals(1, store.count(USER));
+        assertEquals(1, store().count(USER), "而且磁盘上也只有一行,不是只在内存里去重");
+        assertEquals(EARLIER, store().find(USER, "growth-rate").assertedAt());
     }
 
     @Test
@@ -85,35 +91,35 @@ class FileAssertionStoreTest {
     void removingSomethingNeverAssertedIsNotAnError() {
         FileAssertionStore store = store();
 
-        assertFalse(store.remove("growth-rate"));
+        assertFalse(store.remove(USER, "growth-rate"));
         assertFalse(Files.exists(store.dataFile()), "什么都没变就不该写盘");
 
-        store.put(new UserAssertion("growth-rate", EARLIER));
-        assertFalse(store.remove("share-calc"), "删的是别人,同样返回 false");
-        assertEquals(1, store.count());
+        store.put(new UserAssertion(USER, "growth-rate", EARLIER));
+        assertFalse(store.remove(USER, "share-calc"), "删的是别人,同样返回 false");
+        assertEquals(1, store.count(USER));
     }
 
     @Test
     @DisplayName("取消要落盘 —— 只改内存的话进程一重启,按掉的考点全回到盲区榜上")
     void removalIsPersisted() {
         FileAssertionStore store = store();
-        store.put(new UserAssertion("growth-rate", EARLIER));
-        store.put(new UserAssertion("share-calc", LATER));
+        store.put(new UserAssertion(USER, "growth-rate", EARLIER));
+        store.put(new UserAssertion(USER, "share-calc", LATER));
 
-        assertTrue(store.remove("growth-rate"));
+        assertTrue(store.remove(USER, "growth-rate"));
 
         assertEquals(List.of("share-calc"),
-                store().findAll().stream().map(UserAssertion::nodeCode).toList());
+                store().findAll(USER).stream().map(UserAssertion::nodeCode).toList());
     }
 
     @Test
     @DisplayName("取消之后再声明:是一次新的声明,时刻按新的算")
     void reAssertingAfterRemovalStartsOver() {
         FileAssertionStore store = store();
-        store.put(new UserAssertion("growth-rate", EARLIER));
-        store.remove("growth-rate");
+        store.put(new UserAssertion(USER, "growth-rate", EARLIER));
+        store.remove(USER, "growth-rate");
 
-        assertEquals(LATER, store.put(new UserAssertion("growth-rate", LATER)).assertedAt());
+        assertEquals(LATER, store.put(new UserAssertion(USER, "growth-rate", LATER)).assertedAt());
     }
 
     /**
@@ -133,19 +139,21 @@ class FileAssertionStoreTest {
                 "[]",
                 "{\"assertions\":{}}"}) {
             write(broken);
-            assertThrows(IllegalStateException.class, () -> store().findAll(), broken);
+            assertThrows(IllegalStateException.class, () -> store().findAll(USER), broken);
         }
     }
 
     @Test
     @DisplayName("行里少了必填字段 / 时刻解析不了 → 同样吵着失败,不静默跳过那一行")
     void aBrokenRowFailsLoudlyToo() throws IOException {
+        // 每行都带上 userId:没有它的行会被当成无归属数据静默丢弃(B0 §4.4),
+        // 那样这些断言验的就成了「孤儿被丢掉」,而不是「坏行会炸」
         for (String row : new String[]{
-                "{\"assertedAt\":\"2026-08-20T09:00:00Z\"}",
-                "{\"nodeCode\":\"growth-rate\"}",
-                "{\"nodeCode\":\"growth-rate\",\"assertedAt\":\"上周三\"}"}) {
+                "{\"userId\":10001,\"assertedAt\":\"2026-08-20T09:00:00Z\"}",
+                "{\"userId\":10001,\"nodeCode\":\"growth-rate\"}",
+                "{\"userId\":10001,\"nodeCode\":\"growth-rate\",\"assertedAt\":\"上周三\"}"}) {
             write("{\"assertions\":[" + row + "]}");
-            assertThrows(IllegalStateException.class, () -> store().findAll(), row);
+            assertThrows(IllegalStateException.class, () -> store().findAll(USER), row);
         }
     }
 
@@ -153,30 +161,62 @@ class FileAssertionStoreTest {
     @DisplayName("🔴 文件里多塞的键读不进来 —— 手工往里写一段题干也到不了任何地方")
     void unknownKeysInTheFileAreIgnored() throws IOException {
         write("""
-                {"assertions":[{"nodeCode":"growth-rate","assertedAt":"2026-08-20T09:00:00Z",
+                {"assertions":[{"userId":10001,"nodeCode":"growth-rate","assertedAt":"2026-08-20T09:00:00Z",
                   "note":"某年某省考资料分析材料第一段……","label":"【某机构】增长率速算"}]}
                 """);
 
-        assertEquals(1, store().count());
+        assertEquals(1, store().count(USER));
 
         // 再写一次是全量重写,那两个键必须不会被原样带回去
         FileAssertionStore store = store();
-        store.put(new UserAssertion("share-calc", LATER));
+        store.put(new UserAssertion(USER, "share-calc", LATER));
         String onDisk = Files.readString(store.dataFile(), StandardCharsets.UTF_8);
         assertFalse(onDisk.contains("某年某省考"), "读进来的东西不该带着文件里那段内容:" + onDisk);
         assertFalse(onDisk.contains("某机构"), onDisk);
     }
 
     @Test
-    @DisplayName("落盘的键就是那两个,一个不多 —— 一条声明的全部内容就是 code 加一个时刻")
+    @DisplayName("落盘的键就是那三个,一个不多 —— 一条声明的全部内容就是归属 + code + 一个时刻")
     void theFileCarriesExactlyTheDeclaredKeys() throws IOException {
         FileAssertionStore store = store();
-        store.put(new UserAssertion("growth-rate", EARLIER));
+        store.put(new UserAssertion(USER, "growth-rate", EARLIER));
 
         String onDisk = Files.readString(store.dataFile(), StandardCharsets.UTF_8);
+        assertTrue(onDisk.contains("\"userId\""), onDisk);
         assertTrue(onDisk.contains("\"nodeCode\""), onDisk);
         assertTrue(onDisk.contains("\"assertedAt\""), onDisk);
         assertTrue(onDisk.contains("2026-08-20T09:00:00Z"), onDisk);
+    }
+
+    // ——————————————————— 🔴 B0-3 租户列 ———————————————————
+
+    @Test
+    @DisplayName("🔴 userId 不是正数就构造不出来 —— 声明的主键是「谁 + 哪个考点」,少一半就不是主键")
+    void anAssertionWithoutAPositiveUserIdCannotExist() {
+        for (long bad : new long[]{0L, -1L, Long.MIN_VALUE}) {
+            assertThrows(IllegalArgumentException.class,
+                    () -> new UserAssertion(bad, "growth-rate", EARLIER), "userId=" + bad);
+        }
+    }
+
+    @Test
+    @DisplayName("🔴 别人声明过的考点,对我来说等于没声明 —— 查不到,也取消不掉")
+    void oneUserNeverSeesOrRemovesAnotherUsersAssertions() {
+        // 幂等是按「谁 + 哪个考点」判的。只按 nodeCode 判的话,第二个人按下按钮会拿回
+        // 第一个人的那一行、以为自己声明成功了,而他的盲区榜上那个考点一直不消失。
+        FileAssertionStore store = store();
+        store.put(new UserAssertion(USER, "growth-rate", EARLIER));
+
+        UserAssertion theirs = store.put(new UserAssertion(OTHER_USER, "growth-rate", LATER));
+        assertEquals(LATER, theirs.assertedAt(), "两个人各自一行,不该被当成重复声明");
+
+        assertNull(store.find(OTHER_USER, "share-calc"));
+        assertEquals(1, store.count(USER));
+        assertEquals(1, store.count(OTHER_USER));
+
+        assertTrue(store.remove(USER, "growth-rate"));
+        assertEquals(1, store.count(OTHER_USER), "取消只带走自己那一行");
+        assertEquals(LATER, store.find(OTHER_USER, "growth-rate").assertedAt());
     }
 
     private void write(String json) throws IOException {

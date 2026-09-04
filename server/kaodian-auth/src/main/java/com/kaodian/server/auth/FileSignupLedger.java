@@ -99,7 +99,7 @@ public class FileSignupLedger implements SignupLedger {
         List<Entry> out = new ArrayList<>();
         for (JsonNode n : arr) {
             out.add(new Entry(
-                    required(n, "userId"),
+                    requiredLong(n, "userId"),
                     Instant.parse(required(n, "at")),
                     IdentityType.ofWireName(required(n, "channel")),
                     n.path("referrer").asString(null)));
@@ -124,5 +124,15 @@ public class FileSignupLedger implements SignupLedger {
             throw new IllegalStateException("注册流水缺少必填字段:" + field);
         }
         return v;
+    }
+
+    /** userId 是 int64(B0-2 §3.3)。 */
+    private static long requiredLong(JsonNode n, String field) {
+        JsonNode v = n.path(field);
+        if (!v.isIntegralNumber()) {
+            throw new IllegalStateException("注册流水的 " + field + " 不是 int64:" + v
+                    + " —— B0-2 之前的存量数据?删掉 ~/.kaodian/auth-*.json 重新注册即可");
+        }
+        return v.longValue();
     }
 }

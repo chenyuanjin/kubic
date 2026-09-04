@@ -52,11 +52,11 @@ public interface SignupLedger {
      * @param referrer 从哪个入口来的,如渠道码 / 落地页标识。⚪ 空表示不知道 ——
      *                 <b>而「不知道从哪来的」正是判定「陌生」时最需要的那一格</b>
      */
-    record Entry(String userId, Instant at, IdentityType channel, String referrer) {
+    record Entry(long userId, Instant at, IdentityType channel, String referrer) {
 
         public Entry {
-            if (userId == null || userId.isBlank()) {
-                throw new IllegalArgumentException("注册流水必须有账号 id");
+            if (userId <= 0) {
+                throw new IllegalArgumentException("注册流水必须有账号 id(> 0):" + userId);
             }
             if (at == null || channel == null) {
                 throw new IllegalArgumentException("注册流水必须有时刻与通道");

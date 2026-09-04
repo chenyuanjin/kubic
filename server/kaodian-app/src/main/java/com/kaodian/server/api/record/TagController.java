@@ -1,5 +1,6 @@
 package com.kaodian.server.api.record;
 
+import com.kaodian.server.api.dto.common.ErrorCode;
 import com.kaodian.server.api.support.ApiException;
 import com.kaodian.server.api.support.CurrentSession;
 import com.kaodian.server.api.dto.record.MountTagRequest;
@@ -17,22 +18,32 @@ import com.kaodian.server.api.dto.record.SuggestTagRequest;
 import com.kaodian.server.api.dto.record.SuggestTagResponse;
 import com.kaodian.server.api.dto.common.SummaryDto;
 import com.kaodian.server.api.dto.record.TagDto;
+import com.kaodian.server.api.dto.record.CandidateDto;
+import com.kaodian.server.api.dto.record.RestoreTagResponse;
+import com.kaodian.server.api.dto.record.TagSuggestionResponse;
+import com.kaodian.server.api.support.IdempotencyGuard;
 import com.kaodian.server.collect.RecordTag;
-import com.kaodian.server.collect.TaggingService;
-import com.kaodian.server.collect.TaggingService.MountResult;
-import com.kaodian.server.collect.TaggingService.Suggestion;
 import com.kaodian.server.collect.Touch;
+import com.kaodian.server.tagging.ModelCallGate;
+import com.kaodian.server.tagging.TaggingService;
+import com.kaodian.server.tagging.TaggingService.MountResult;
+import com.kaodian.server.tagging.TaggingService.RestoreResult;
+import com.kaodian.server.tagging.TaggingService.Suggestion;
+import com.kaodian.server.tagging.TagAttempt;
 import com.kaodian.server.coverage.CoverageService.NodeCoverage;
 import com.kaodian.server.syllabus.Syllabus;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.Duration;
 import java.util.List;
 
 /**
@@ -74,63 +85,150 @@ import java.util.List;
 @RequestMapping("/api/v1/records/{id}/tags")
 public class TagController {
 
+    /**
+     * 幂等键的保留期 —— 🔴 <b>本模块定 24 小时</b>({@code B0} §7.3:保留期各模块自定)。
+     *
+     * <p>理由是一个算得出来的数:最长退避 30min × 3 次 &lt; 2h,24h 覆盖「离线一整晚后补传」,
+     * 再长只是为不会发生的重放付存储。
+     */
+    static final Duration IDEMPOTENCY_RETENTION = Duration.ofHours(24);
+
     private final TaggingService tagging;
     private final CoverageReader reader;
+    private final IdempotencyGuard idempotency;
 
-    public TagController(TaggingService tagging, CoverageReader reader) {
+    /**
+     * 🔴 {@link ModelCallGate} 在这一层注入,再<b>作为参数</b>递进领域层({@code M2} §2.5)——
+     * 领域层不注入、不查找、不知道实现类名,{@code domain → app} 那条边因此建不出来。
+     */
+    private final ModelCallGate gate;
+
+    public TagController(TaggingService tagging, CoverageReader reader,
+                         IdempotencyGuard idempotency, ModelCallGate gate) {
         this.tagging = tagging;
         this.reader = reader;
+        this.idempotency = idempotency;
+        this.gate = gate;
     }
 
     /**
-     * 触发一次闭集分类(docs/technical/后端系统设计与组件接入.md §1.3 的四段)。
+     * 触发一次闭集分类 —— {@code M2-打标管线与模型接入} §9.1。
      *
-     * <h2>🔴 全部结局都是 200,理由写在 {@link SuggestTagResponse} 上</h2>
+     * <h2>🔴 必带 {@code Idempotency-Key}</h2>
      *
-     * 一句话:<b>记录早就落地了,补标失败什么都没损坏</b>。回 503 会让前端把它当成一次失败去重试,
-     * 而它没有失败 —— 它只是这次没认出来,用户随时可以手动挂一个。
+     * 这个端点会触发外部模型调用 = 一笔按次外部账单,重放一次就是扣两次
+     * ({@code 接口契约} §4.1 已逐字写死)。锚定 {@code (userId, path, key)},
+     * 🔴 <b>不是参数哈希</b> —— 请求体是空对象,参数哈希会把「用户真的想再认一次」
+     * 和「一次网络重试」压成同一个值。
+     *
+     * <h2>成功只有两种形态,失败各有各的码</h2>
+     *
+     * <table border="1">
+     *   <caption>{@code M2} §9.1 那张表</caption>
+     *   <tr><th>档</th><th>HTTP</th><th>{@code code}</th></tr>
+     *   <tr><td>命中 / 无匹配</td><td>200</td><td>—({@code state})</td></tr>
+     *   <tr><td>识别服务不可用</td><td>503</td><td>{@code RECOGNIZER_UNAVAILABLE}</td></tr>
+     *   <tr><td>拿不到许可</td><td>403</td><td>{@code QUOTA_EXHAUSTED}</td></tr>
+     *   <tr><td>该科目无骨架</td><td>422</td><td>{@code SYLLABUS_EMPTY}</td></tr>
+     *   <tr><td>记录不存在</td><td>404</td><td>{@code RECORD_NOT_FOUND}</td></tr>
+     *   <tr><td>没带幂等键</td><td>400</td><td>{@code IDEMPOTENCY_KEY_REQUIRED}</td></tr>
+     *   <tr><td>幂等键进行中</td><td>409</td><td>{@code IN_PROGRESS}</td></tr>
+     * </table>
+     *
+     * ⚠️ <b>「服务不可用」这一格与 {@code M2} §9.1 写的 {@code 502 SERVER_ERROR} 不一致,
+     * 这是有意的、并且已经报回议题</b>:{@code 接口契约} §10.2 把 {@code SERVER_ERROR}
+     * 钉在 {@code 500}(而 {@code B0} 的 {@code ErrorCode} 枚举照它落了地),§4.1 又写
+     * {@code 502}/{@code 504} —— 契约自己两处对不上。本模块<b>不自己改横切件去迁就一侧</b>,
+     * 走 {@code RECOGNIZER_UNAVAILABLE(503)}:今天识别不可用<b>确实发生在发出外部调用之前</b>
+     * (还没有真实厂商实现),503 是这一档在契约里本来就有的那个码。
      *
      * <h2>⚪ {@code material} 传的是 {@code null},这不是没写完</h2>
      *
-     * 服务端手里<b>一份可送进模型的素材都没有</b>:原图内联送一次即弃(决策记录 §2.3 / docs/data/识别链路选型.md 坑二),
-     * 转写文本用完即弃,{@code Touch} 结构上没有能装下它们的字段(决策记录 §2.2 不碰内容)。
-     * 拿零字节去调一次视觉模型是「假装成功」的另一种写法,所以这里明确地不给素材,
-     * 由 {@code TaggingService} 回一个 {@code NO_MATERIAL} 说清原因。
-     * <p>
-     * 带着字节走完四段的那条路在 {@code TaggingService.suggest} 里是实现好的,而且
-     * <b>现在有 HTTP 入口了</b>:docs/technical/INDEX.md §6.2 的 {@code POST /records/{id}/image}
-     * ({@link RecognitionController#recognizePhotos})。两个端点共用
-     * {@link SuggestTagResponse} 这一个答复形状,区别只在于<b>手里有没有素材</b>。
-     * <p>
-     * ⚪ <b>这个端点本身的缺口没有跟着补上,而且补不了</b>:它是「事后」补标,
-     * 而事后服务端手里一份素材都没有 —— 那不是实现偷懒,是红线的直接后果。
-     * 契约层面的缺口(§6.3 的 suggest 依赖 §5.2 的 {@code extracted_text},
-     * 而那个字段与本仓库的红线冲突)已在交付说明里报出,本轮不自行改契约。
+     * 服务端手里<b>一份可送进模型的素材都没有</b>:原图内联送一次即弃,转写文本用完即弃,
+     * {@code Touch} 结构上没有能装下它们的字段。拿零字节去调一次视觉模型是「假装成功」的
+     * 另一种写法,所以这里明确地不给素材,由领域层回一个 {@code NO_MATERIAL} 说清原因,
+     * wire 上合进 {@code NO_MATCH}。<b>登记为 {@code M2-G1},入口归 {@code M1},本轮不代填。</b>
      *
      * @param body 可以整个不传;<b>传了就必须是个空对象</b> ——
      *             里面出现任何一个键都是 400(见 {@link SuggestTagRequest})
      */
     @PostMapping("/suggest")
-    public SuggestTagResponse suggest(CurrentSession session, @PathVariable String id,
-                                      @Valid @RequestBody(required = false) SuggestTagRequest body) {
+    public TagSuggestionResponse suggest(CurrentSession session, @PathVariable String id,
+                                         @RequestHeader(name = "Idempotency-Key", required = false) String key,
+                                         @Valid @RequestBody(required = false) SuggestTagRequest body) {
         session.requireWrite();
         Touch touch = requireRecord(session.userId(), id);
-        Suggestion suggestion = tagging.suggest(touch, null, null);
 
-        List<RecordTag> tags = tagging.tagsOf(touch);
-        CoverageReader.Snapshot snapshot = reader.read(session.userId());
-        Syllabus tree = snapshot.syllabus();
-        RecordTag tag = suggestion.tag();
+        String path = "/api/v1/records/" + id + "/tags/suggest";
+        switch (idempotency.begin(session.userId(), path, key, IDEMPOTENCY_RETENTION)) {
+            // 🔴 命中已成功:返回上一次的结果,不再调模型、不再动许可。
+            case IdempotencyGuard.Replay replay -> {
+                return (TagSuggestionResponse) replay.result();
+            }
+            case IdempotencyGuard.InFlight ignored -> throw new ApiException(
+                    ErrorCode.IN_PROGRESS, "上一次识别还在进行中,请等它结束。");
+            case IdempotencyGuard.Fresh ignored -> {
+                // 往下真的走一遍管线
+            }
+        }
 
-        return new SuggestTagResponse(
-                suggestion.outcome().name(),
-                SuggestTagResponse.messageFor(suggestion.outcome()),
-                suggestion.confidence(),
-                suggestion.candidateCount(),
-                tag == null ? null : TagDto.from(tag, tree),
-                toDtos(tags, tree),
-                tag == null ? null : nodeDetail(snapshot, tag.nodeCode()),
-                SummaryDto.from(reader.summarize(snapshot)));
+        Suggestion suggestion;
+        try {
+            suggestion = tagging.suggest(touch, null, null, gate);
+        } catch (RuntimeException e) {
+            // 🔴 失败要放掉槽位,否则这个键会被永久钉在 IN_PROGRESS 上直到保留期到点,
+            //    而「上次失败 → 允许重试」是契约里写着的一档语义。
+            idempotency.fail(session.userId(), path, key);
+            throw e;
+        }
+
+        TagSuggestionResponse response;
+        try {
+            response = switch (suggestion.outcome()) {
+                case UNAVAILABLE -> throw new ApiException(ErrorCode.RECOGNIZER_UNAVAILABLE,
+                        "识别服务暂时不可用,可以稍后重试,也可以自己从树里挑一个考点。");
+                case QUOTA_EXHAUSTED -> throw new ApiException(ErrorCode.QUOTA_EXHAUSTED,
+                        "这个月的自动识别用完了。你仍然可以自己从树里挑一个考点,记录一条不少。");
+                case SYLLABUS_EMPTY -> throw new ApiException(ErrorCode.SYLLABUS_EMPTY,
+                        "这个科目的考点树还没有建好,现在挑不了考点。");
+                default -> TagSuggestionResponse.from(
+                        suggestion, reader.read(session.userId()).syllabus());
+            };
+        } catch (RuntimeException e) {
+            idempotency.fail(session.userId(), path, key);
+            throw e;
+        }
+        idempotency.complete(session.userId(), path, key, response);
+        return response;
+    }
+
+    /**
+     * 恢复一条丢弃过的标签 —— {@code M2} §9.2 / {@code 接口契约} §4.2。
+     *
+     * <h2>🔴 不需要 {@code Idempotency-Key}</h2>
+     *
+     * 它不触发外部账单、可以无限重放 —— <b>天然幂等</b>。已经是 {@code TS-02} 的标签
+     * 原样返回 200,不报错。要求一个键只会让端多一次失败的机会。
+     *
+     * <h2>界面两档,契约三档</h2>
+     *
+     * {@code TAG_NOT_FOUND} 与 {@code NODE_ARCHIVED} 在界面上走同一个分支(「重新挑一个」),
+     * 但<b>码不合并</b>:前者是我们这边的行不见了,后者是骨架变了 ——
+     * 两件事各自会以完全不同的方式变多,合成一个码就再也分不出是哪一种在涨。
+     */
+    @PostMapping("/{tagId}/restore")
+    public RestoreTagResponse restore(CurrentSession session, @PathVariable String id,
+                                      @PathVariable String tagId) {
+        session.requireWrite();
+        Touch touch = requireRecord(session.userId(), id);
+        return switch (tagging.restore(touch, tagId)) {
+            case RestoreResult.Restored restored -> RestoreTagResponse.of(restored.tag().id());
+            // 🔴 消息里不回显 tagId —— 它没有长度上限,而报错消息会同时进响应体和服务端日志。
+            case RestoreResult.NotFound ignored -> throw new ApiException(
+                    ErrorCode.TAG_NOT_FOUND, "找不到这条标签 —— 你可以重新挑一个考点。");
+            case RestoreResult.NodeArchived ignored -> throw new ApiException(
+                    ErrorCode.NODE_ARCHIVED, "这个考点已经归档了 —— 你可以重新挑一个。");
+        };
     }
 
     /**

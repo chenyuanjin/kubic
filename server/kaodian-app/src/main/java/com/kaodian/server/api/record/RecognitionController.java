@@ -16,9 +16,10 @@ import com.kaodian.server.api.dto.record.SuggestTagResponse;
 import com.kaodian.server.api.dto.common.SummaryDto;
 import com.kaodian.server.api.dto.record.TagDto;
 import com.kaodian.server.collect.RecordTag;
-import com.kaodian.server.collect.TaggingService;
-import com.kaodian.server.collect.TaggingService.Outcome;
-import com.kaodian.server.collect.TaggingService.Suggestion;
+import com.kaodian.server.tagging.ModelCallGate;
+import com.kaodian.server.tagging.TaggingService;
+import com.kaodian.server.tagging.TagAttempt.Outcome;
+import com.kaodian.server.tagging.TaggingService.Suggestion;
 import com.kaodian.server.collect.Touch;
 import com.kaodian.server.coverage.CoverageService.NodeCoverage;
 import com.kaodian.server.recognize.AsrClient;
@@ -114,10 +115,21 @@ public class RecognitionController {
      */
     private final AsrClient asr;
 
-    public RecognitionController(TaggingService tagging, CoverageReader reader, AsrClient asr) {
+    /**
+     * 🔴 调外部模型前那一问 —— 与 {@code TagController} 同一个 bean,<b>不各持一个</b>。
+     *
+     * <p>这条路是<b>真的会把字节送出去</b>的那一条(事后补标那条今天送不出任何东西),
+     * 所以它比 {@code /tags/suggest} 更需要这道闸:少了它,{@code M2} §2.4 那条恒等式
+     * (净扣减 == 未退回的外部调用次数)在这个端点上直接不成立。
+     */
+    private final ModelCallGate gate;
+
+    public RecognitionController(TaggingService tagging, CoverageReader reader, AsrClient asr,
+                                 ModelCallGate gate) {
         this.tagging = tagging;
         this.reader = reader;
         this.asr = asr;
+        this.gate = gate;
     }
 
     // ================================================================ 图片
@@ -176,7 +188,7 @@ public class RecognitionController {
 
         Suggestion suggestion = null;
         for (int i = 0; i < photos.size(); i++) {
-            suggestion = tagging.suggest(touch, photos.get(i), mimeTypes.get(i));
+            suggestion = tagging.suggest(touch, photos.get(i), mimeTypes.get(i), gate);
             if (suggestion.outcome() != Outcome.NO_MATCH) {
                 break;      // 见上表:只有「这张没认出来」才值得换下一张
             }

@@ -1,8 +1,15 @@
-package com.kaodian.server.collect;
+package com.kaodian.server.tagging;
 
-import com.kaodian.server.collect.TaggingService.MountResult;
-import com.kaodian.server.collect.TaggingService.Outcome;
-import com.kaodian.server.collect.TaggingService.Suggestion;
+import com.kaodian.server.collect.InMemoryRecordTagStore;
+import com.kaodian.server.collect.RecordTag;
+import com.kaodian.server.collect.TagOrigin;
+import com.kaodian.server.collect.Touch;
+import com.kaodian.server.collect.TouchKind;
+import com.kaodian.server.collect.TouchStore;
+
+import com.kaodian.server.tagging.TagAttempt.Outcome;
+import com.kaodian.server.tagging.TaggingService.MountResult;
+import com.kaodian.server.tagging.TaggingService.Suggestion;
 import com.kaodian.server.recognize.RecognitionResult;
 import com.kaodian.server.recognize.RecognitionUnavailableException;
 import com.kaodian.server.recognize.StubVisionTagger;
@@ -38,6 +45,18 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class TaggingServiceTest {
 
     private static final Instant NOW = Instant.parse("2026-08-25T12:00:00Z");
+    /** 永远放行的那道闸 —— 这些用例判的是管线,不是许可。许可自己那几条在 ModelCallGateTest。 */
+    private static final ModelCallGate OPEN = new ModelCallGate() {
+        @Override
+        public boolean acquire() {
+            return true;
+        }
+
+        @Override
+        public void release() {
+        }
+    };
+
     private static final byte[] MATERIAL = {1, 2, 3};
 
     /** 这个来源名召回得出 6 个候选(见 {@code CandidateRecallTest})。 */
@@ -53,7 +72,7 @@ class TaggingServiceTest {
     private final InMemoryRecordTagStore tags = new InMemoryRecordTagStore();
 
     private TaggingService serviceWith(VisionTagger tagger) {
-        return new TaggingService(touches, tags, SyllabusLoader.loadDefault(),
+        return new TaggingService(touches, tags, new InMemoryTagAttemptStore(), SyllabusLoader.loadDefault(),
                 new CandidateRecall(), tagger, Clock.fixed(NOW, ZoneOffset.UTC));
     }
 
@@ -108,7 +127,7 @@ class TaggingServiceTest {
     @DisplayName("🔴 召回为空 → 标为未分类,连模型都不调(docs/technical/后端系统设计与组件接入.md §1.3:调了也只能瞎猜)")
     void anEmptyRecallNeverReachesTheModel() {
         Touch touch = given("t-1", "growth-rate", SILENT_SOURCE);
-        Suggestion suggestion = serviceWith(new ForbiddenTagger()).suggest(touch, MATERIAL, "image/jpeg");
+        Suggestion suggestion = serviceWith(new ForbiddenTagger()).suggest(touch, MATERIAL, "image/jpeg", OPEN);
 
         assertEquals(Outcome.NOT_RECALLED, suggestion.outcome());
         assertEquals(0, suggestion.candidateCount(), "candidateCount 是 0 就是「压根没送进去看」");
@@ -125,7 +144,7 @@ class TaggingServiceTest {
         TaggingService service = serviceWith(new ForbiddenTagger());
 
         for (byte[] nothing : new byte[][]{null, new byte[0]}) {
-            Suggestion suggestion = service.suggest(touch, nothing, "image/jpeg");
+            Suggestion suggestion = service.suggest(touch, nothing, "image/jpeg", OPEN);
             assertEquals(Outcome.NO_MATERIAL, suggestion.outcome());
             assertEquals(6, suggestion.candidateCount(), "召回是成功的,停的是下一步");
             assertNotEquals(Outcome.NO_MATCH, suggestion.outcome(),
@@ -142,7 +161,7 @@ class TaggingServiceTest {
         Touch touch = given("t-1", "growth-rate", RECALLING_SOURCE);
         CountingTagger tagger = new CountingTagger(RecognitionResult.of("interval-growth", 0.91));
 
-        Suggestion suggestion = serviceWith(tagger).suggest(touch, MATERIAL, "image/jpeg");
+        Suggestion suggestion = serviceWith(tagger).suggest(touch, MATERIAL, "image/jpeg", OPEN);
 
         assertEquals(Outcome.SUGGESTED, suggestion.outcome());
         assertEquals(1, tagger.calls.get(), "召回出了候选就该真的调一次");
@@ -163,7 +182,7 @@ class TaggingServiceTest {
     void aNoMatchLandsNothingButKeepsTheConfidence() {
         Touch touch = given("t-1", "growth-rate", RECALLING_SOURCE);
         Suggestion suggestion = serviceWith(new CountingTagger(RecognitionResult.noMatch(0.42)))
-                .suggest(touch, MATERIAL, "image/jpeg");
+                .suggest(touch, MATERIAL, "image/jpeg", OPEN);
 
         assertEquals(Outcome.NO_MATCH, suggestion.outcome());
         assertEquals(0.42, suggestion.confidence(), 1e-9, "降级不等于清零");
@@ -178,7 +197,7 @@ class TaggingServiceTest {
         // 唯一的判据是它在不在这次送进去的候选集里 —— 不是它看起来合不合理。
         Touch touch = given("t-1", "growth-rate", RECALLING_SOURCE);
         Suggestion suggestion = serviceWith(new RogueTagger("机构标准表述-增长率速算"))
-                .suggest(touch, MATERIAL, "image/jpeg");
+                .suggest(touch, MATERIAL, "image/jpeg", OPEN);
 
         assertEquals(Outcome.NO_MATCH, suggestion.outcome());
         assertEquals(0.99, suggestion.confidence(), 1e-9,
@@ -192,7 +211,7 @@ class TaggingServiceTest {
         Touch touch = given("t-1", "growth-rate", RECALLING_SOURCE);
         Suggestion suggestion = serviceWith(new CountingTagger(
                 RecognitionResult.of("interval-growth", RecognitionResult.MIN_CONFIDENCE - 0.01)))
-                .suggest(touch, MATERIAL, "image/jpeg");
+                .suggest(touch, MATERIAL, "image/jpeg", OPEN);
 
         assertEquals(Outcome.NO_MATCH, suggestion.outcome());
         assertEquals(0, tags.count(USER), "差一丝也是不够 —— 不硬凑最接近的考点");
@@ -204,7 +223,7 @@ class TaggingServiceTest {
         Touch touch = given("t-1", "growth-rate", RECALLING_SOURCE);
         TaggingService service = serviceWith(new DeadTagger());
 
-        Suggestion suggestion = service.suggest(touch, MATERIAL, "image/jpeg");
+        Suggestion suggestion = service.suggest(touch, MATERIAL, "image/jpeg", OPEN);
         assertEquals(Outcome.UNAVAILABLE, suggestion.outcome());
         assertNull(suggestion.tag());
 
@@ -282,7 +301,7 @@ class TaggingServiceTest {
     void confirmingDoesNotRewriteOrigin() {
         Touch touch = given("t-1", "growth-rate", RECALLING_SOURCE);
         TaggingService service = serviceWith(new CountingTagger(RecognitionResult.of("interval-growth", 0.91)));
-        RecordTag suggested = service.suggest(touch, MATERIAL, "image/jpeg").tag();
+        RecordTag suggested = service.suggest(touch, MATERIAL, "image/jpeg", OPEN).tag();
 
         RecordTag confirmed = service.confirm(touch, suggested.id());
 
@@ -329,10 +348,10 @@ class TaggingServiceTest {
         Touch touch = given("t-1", "growth-rate", RECALLING_SOURCE);
         TaggingService service = serviceWith(new CountingTagger(RecognitionResult.of("interval-growth", 0.91)));
 
-        RecordTag suggested = service.suggest(touch, MATERIAL, "image/jpeg").tag();
+        RecordTag suggested = service.suggest(touch, MATERIAL, "image/jpeg", OPEN).tag();
         service.discard(touch, suggested.id());
 
-        Suggestion again = service.suggest(touch, MATERIAL, "image/jpeg");
+        Suggestion again = service.suggest(touch, MATERIAL, "image/jpeg", OPEN);
 
         assertEquals(Outcome.ALREADY_TAGGED, again.outcome());
         assertTrue(again.tag().discarded(), "指回的是那条丢弃过的,不是一条崭新的");

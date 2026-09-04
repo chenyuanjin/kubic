@@ -58,7 +58,7 @@ public class OrphanGuard {
     private static final Logger log = LoggerFactory.getLogger(OrphanGuard.class);
 
     /** 三个文件里那一列的键名。<b>写一处</b> —— 读、写、判孤儿三处引用它。 */
-    static final String USER_ID = "userId";
+    public static final String USER_ID = "userId";
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
@@ -121,7 +121,7 @@ public class OrphanGuard {
      * <p>判据只有一条:有一个<b>正的</b> {@code userId}。{@code 0} 与负数都算没有 ——
      * {@code 0} 不是「暂时没有用户」的意思(B0 §3.3,auth 侧从 10001 起号)。
      */
-    static boolean isOrphan(JsonNode entry) {
+    public static boolean isOrphan(JsonNode entry) {
         return entry.path(USER_ID).asLong(0) <= 0;
     }
 

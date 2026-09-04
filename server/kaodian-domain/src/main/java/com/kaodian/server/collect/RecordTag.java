@@ -156,7 +156,7 @@ public record RecordTag(
      * <ul>
      *   <li><b>已经不成立的那半句</b>:「{@code origin=auto} 今天没有 HTTP 产出路径」——
      *       docs/technical/INDEX.md §6.2 的 {@code POST /records/{id}/image} 已落地
-     *       ({@code RecognitionController#recognizePhotos} → {@link TaggingService#suggest}),
+     *       ({@code RecognitionController#recognizePhotos} → {@code TaggingService#suggest}),
      *       命中时会<b>真的往库里落一行 {@code TagOrigin#AUTO}</b>。
      *       但它落的是<b>另一条标签</b>,不是主标签:主标签的 {@code nodeCode} 永远取自
      *       {@link Touch#nodeCode()},而那是用户自己挑的</li>
@@ -208,6 +208,27 @@ public record RecordTag(
      */
     public RecordTag discard() {
         return new RecordTag(id, userId, recordId, nodeCode, confidence, origin, confirmedAt, true);
+    }
+
+    /**
+     * 恢复 —— 置 {@code discarded=false},🔴 <b>同时把 {@code confirmedAt} 清成 {@code null}</b>。
+     *
+     * <h2>后半句是这个方法的全部理由</h2>
+     *
+     * 不清空的话,一条「确认 → 丢弃 → 恢复」的标签会直接落回 {@code TS-03},
+     * 而那是一条<b>系统触发、且终点计覆盖度</b>的转移 ——
+     * {@code U2.2} §2.4 的形式化表述是「<b>没有任何一条系统触发的转移会让覆盖度上升</b>」,
+     * 当场破。恢复表达的是「我想再看看」,不是「我确认」;用户还得再点一次。
+     *
+     * <p>{@code origin} 原样带过去,与 {@link #confirm} / {@link #discard} 同一条:
+     * 这个方法的签名里<b>没有能传进一个新 origin 的位置</b>。
+     *
+     * <p>与 {@link #discard} 不对称是有意的:丢弃保留 {@code confirmedAt}
+     * (「我确认过,后来又觉得不对」是一段真实经过),恢复清掉它 ——
+     * 因为丢弃的终点不计覆盖度,而恢复的终点会。<b>不对称的是后果,不是记性</b>。
+     */
+    public RecordTag restore() {
+        return new RecordTag(id, userId, recordId, nodeCode, confidence, origin, null, false);
     }
 
     /**

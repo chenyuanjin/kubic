@@ -2,7 +2,7 @@ package com.kaodian.server.api.dto.record;
 
 import com.kaodian.server.api.dto.common.NodeDetailDto;
 import com.kaodian.server.api.dto.common.SummaryDto;
-import com.kaodian.server.collect.TaggingService;
+import com.kaodian.server.tagging.TagAttempt;
 import jakarta.validation.constraints.Size;
 
 import java.util.List;
@@ -70,7 +70,7 @@ public record SuggestTagResponse(
      * 措辞写在其中一个控制器里,另一个就只能抄一遍 —— 而抄出来的两份迟早会说两句不一样的话,
      * 用户看到的就是「同一个结果,换个入口说法变了」。
      */
-    public static String messageFor(TaggingService.Outcome outcome) {
+    public static String messageFor(TagAttempt.Outcome outcome) {
         return switch (outcome) {
             case SUGGESTED -> "识别挑了一个考点,请确认或丢弃。";
             case ALREADY_TAGGED -> "这个考点已经挂在这条记录上了,没有重复挂。";
@@ -78,6 +78,9 @@ public record SuggestTagResponse(
             case NO_MATERIAL -> "这条记录没有可再次识别的素材(原图与转写都不留存),请自己从树里挑一个考点。";
             case NO_MATCH -> "没认出来 —— 请自己从树里挑一个考点。";
             case UNAVAILABLE -> "识别服务暂时不可用,可以稍后重试,也可以自己从树里挑一个考点。";
+            case QUOTA_EXHAUSTED -> "这个月的自动识别用完了 —— 你仍然可以自己从树里挑一个考点。";
+            case SYLLABUS_EMPTY -> "这个科目的考点树还没有建好,现在挑不了考点。";
+            case PENDING, RUNNING -> "还在认,稍等一下。";
         };
     }
 }

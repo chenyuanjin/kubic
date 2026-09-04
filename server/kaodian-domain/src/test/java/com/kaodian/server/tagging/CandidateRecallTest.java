@@ -1,4 +1,4 @@
-package com.kaodian.server.collect;
+package com.kaodian.server.tagging;
 
 import com.kaodian.server.recognize.VisionTagger;
 import com.kaodian.server.syllabus.Syllabus;
@@ -167,6 +167,32 @@ class CandidateRecallTest {
         assertEquals(10, CandidateRecall.MAX_CANDIDATES);
         assertEquals(2, CandidateRecall.MIN_KEYWORD_LENGTH);
     }
+
+    @Test
+    @DisplayName("🔴 服务端召回永远 ≤ 契约违规阈 12 —— 那道闸是给端上用的,不是冗余")
+    void neverExceedsContractCap() {
+        // 造一棵能命中一大片的树,断言召回仍然 ≤ 10 ≤ 12。
+        // 🔴 10 ≤ 12 恒成立,所以 12 那道闸在服务端【永远不触发】—— 这不是冗余:
+        //    端不知道服务端今天是 10,它要防的是「服务端某天被换成了别的东西」。
+        //    一道锁失效不该导致整条线失守。
+        for (String hint : new String[]{"增长 · 计算", "自己刷题 · 增长率专项", "增长率 增长量 计算 平均"}) {
+            List<VisionTagger.Candidate> candidates = recall.recall(syllabus, hint);
+            assertTrue(candidates.size() <= CandidateRecall.MAX_CANDIDATES, hint + " 超了服务端上限");
+            assertTrue(candidates.size() <= CONTRACT_CANDIDATE_CAP,
+                    hint + " 超了契约违规阈 —— 端会把这次响应判成异常");
+        }
+        assertTrue(CandidateRecall.MAX_CANDIDATES <= CONTRACT_CANDIDATE_CAP,
+                "服务端上限一旦被调到 12 以上,端上那道闸会开始拒绝合法响应");
+    }
+
+    /**
+     * 契约违规阈 —— <b>12,不是 20</b>({@code 接口契约} §4.1,同时关闭 {@code T-10})。
+     *
+     * <p>⚠️ {@code 打标与未分类} §七 第 4 行写的「超过 20 视为响应异常」已被它作废,
+     * 那一行要改成 12,否则端上会按 20 放行 13–20 个候选,而契约说它们是违规。
+     * 原文已进 §契约增量 3。
+     */
+    private static final int CONTRACT_CANDIDATE_CAP = 12;
 
     @Test
     @DisplayName("候选里只有 code 与名称 —— prompt 里出现的每个字都是模型的可用素材")

@@ -5,6 +5,7 @@ import com.kaodian.server.api.record.RecordController;
 import com.kaodian.server.api.syllabus.SyllabusAdminController;
 import com.kaodian.server.api.syllabus.SyllabusController;
 import com.kaodian.server.api.insight.TimelineController;
+import com.kaodian.server.api.support.TaggingBeans;
 import com.kaodian.server.config.DomainBeans;
 import com.kaodian.server.coverage.CoverageReader;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
@@ -80,7 +81,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         RecordController.class})
 // web 切片不扫 @Configuration,领域装配要显式带进来;ApiTestAuth 给每个请求配一条真令牌(B0-4 默认拒绝)。
 // 🔴 令牌里的 userId 与种子数据的 userId 是同一个 10001,那 8 条记录才数得出来 —— 见 ApiTestAuth.USER_ID。
-@Import({DomainBeans.class, ApiTestAuth.class})
+@Import({DomainBeans.class, TaggingBeans.class, ApiTestAuth.class})
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class SyllabusAdminApiTest {
 

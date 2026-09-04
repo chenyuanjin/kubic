@@ -1,6 +1,7 @@
 package com.kaodian.server.api;
 
 import com.kaodian.server.api.record.RecognitionController;
+import com.kaodian.server.api.support.TaggingBeans;
 import com.kaodian.server.config.DomainBeans;
 import com.kaodian.server.coverage.CoverageReader;
 import ch.qos.logback.classic.Level;
@@ -8,14 +9,16 @@ import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
 import com.kaodian.server.api.dto.record.PhotoRecognitionRequest;
-import com.kaodian.server.collect.CandidateRecall;
+import com.kaodian.server.tagging.CandidateRecall;
+import com.kaodian.server.tagging.InMemoryTagAttemptStore;
+import com.kaodian.server.tagging.TagAttemptStore;
 import com.kaodian.server.collect.InMemoryRecordTagStore;
 import com.kaodian.server.collect.RecordTag;
 import com.kaodian.server.collect.AssertionStore;
 import com.kaodian.server.collect.InMemoryAssertionStore;
 import com.kaodian.server.collect.RecordTagStore;
 import com.kaodian.server.collect.TagOrigin;
-import com.kaodian.server.collect.TaggingService;
+import com.kaodian.server.tagging.TaggingService;
 import com.kaodian.server.collect.Touch;
 import com.kaodian.server.collect.TouchKind;
 import com.kaodian.server.collect.TouchStore;
@@ -82,7 +85,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 @WebMvcTest(controllers = RecognitionController.class)
 // web 切片不扫 @Configuration,领域装配要显式带进来;ApiTestAuth 给每个请求配一条真令牌(B0-4 默认拒绝)
-@Import({DomainBeans.class, ApiTestAuth.class})
+@Import({DomainBeans.class, TaggingBeans.class, ApiTestAuth.class})
 class RecognitionApiTest {
 
     /** 这个来源名召回得出 6 个候选(见 {@code CandidateRecallTest}),所以模型真的会被调到。 */
@@ -653,9 +656,15 @@ class RecognitionApiTest {
         }
 
         @Bean
-        TaggingService taggingService(TouchStore store, RecordTagStore tagStore, SyllabusSource syllabus,
+        TaggingService taggingService(TouchStore store, RecordTagStore tagStore,
+                                      TagAttemptStore attemptStore, SyllabusSource syllabus,
                                       CandidateRecall recall, VisionTagger tagger, Clock clock) {
-            return new TaggingService(store, tagStore, syllabus, recall, tagger, clock);
+            return new TaggingService(store, tagStore, attemptStore, syllabus, recall, tagger, clock);
+        }
+
+        @Bean
+        TagAttemptStore tagAttemptStore() {
+            return new InMemoryTagAttemptStore();
         }
 
         @Bean

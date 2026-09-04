@@ -468,7 +468,7 @@ class ImageRetentionTest {
             // 音频端点的答复:它的全部主张就是「里面没有转写文本」
             "com/kaodian/server/api/dto/record/AudioRecognitionResponse.java",
             // 打标管线的调用方:material 那个 byte[] 从这里走到模型出口
-            "com/kaodian/server/collect/TaggingService.java",
+            "com/kaodian/server/tagging/TaggingService.java",
             // 拍照采集:image 那个 byte[] 同上
             "com/kaodian/server/collect/CaptureService.java");
 

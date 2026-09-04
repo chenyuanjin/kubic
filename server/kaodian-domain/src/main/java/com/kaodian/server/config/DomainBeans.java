@@ -1,6 +1,6 @@
 package com.kaodian.server.config;
 
-import com.kaodian.server.collect.CandidateRecall;
+import com.kaodian.server.tagging.CandidateRecall;
 import com.kaodian.server.collect.TouchLedger;
 import com.kaodian.server.collect.TouchStore;
 import com.kaodian.server.coverage.CoverageService;

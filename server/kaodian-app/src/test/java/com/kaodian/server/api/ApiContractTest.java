@@ -4,6 +4,7 @@ import com.kaodian.server.api.insight.CoverageController;
 import com.kaodian.server.api.record.RecordController;
 import com.kaodian.server.api.syllabus.SyllabusController;
 import com.kaodian.server.api.insight.TimelineController;
+import com.kaodian.server.api.support.TaggingBeans;
 import com.kaodian.server.config.DomainBeans;
 import com.kaodian.server.coverage.CoverageReader;
 import com.kaodian.server.api.dto.record.BatchCreateRecordsRequest;
@@ -96,7 +97,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         RecordController.class})
 // web 切片不扫 @Configuration,领域装配要显式带进来;ApiTestAuth 给每个请求带上真令牌
 // (B0-4 之后 /api/v1/** 默认拒绝),「不带令牌 → 401」那条反向用例在 ApiAuthDefaultDenyTest 里
-@Import({DomainBeans.class, ApiTestAuth.class})
+@Import({DomainBeans.class, TaggingBeans.class, ApiTestAuth.class})
 class ApiContractTest {
 
     @Autowired

@@ -1,19 +1,24 @@
 package com.kaodian.server.api;
 
 import com.kaodian.server.api.record.TagController;
+import com.kaodian.server.api.support.TaggingBeans;
 import com.kaodian.server.config.DomainBeans;
 import com.kaodian.server.coverage.CoverageReader;
 import com.kaodian.server.api.dto.record.MountTagRequest;
+import com.kaodian.server.api.dto.record.CandidateDto;
 import com.kaodian.server.api.dto.record.SuggestTagRequest;
+import com.kaodian.server.api.dto.record.TagSuggestionResponse;
 import com.kaodian.server.api.dto.common.UnknownFieldException;
-import com.kaodian.server.collect.CandidateRecall;
+import com.kaodian.server.tagging.CandidateRecall;
+import com.kaodian.server.tagging.InMemoryTagAttemptStore;
+import com.kaodian.server.tagging.TagAttemptStore;
 import com.kaodian.server.collect.InMemoryRecordTagStore;
 import com.kaodian.server.collect.RecordTag;
 import com.kaodian.server.collect.AssertionStore;
 import com.kaodian.server.collect.InMemoryAssertionStore;
 import com.kaodian.server.collect.RecordTagStore;
 import com.kaodian.server.collect.TagOrigin;
-import com.kaodian.server.collect.TaggingService;
+import com.kaodian.server.tagging.TaggingService;
 import com.kaodian.server.collect.Touch;
 import com.kaodian.server.collect.TouchKind;
 import com.kaodian.server.collect.TouchStore;
@@ -42,7 +47,11 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -73,10 +82,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(controllers = TagController.class)
 // web 切片不扫 @Configuration,领域装配要显式带进来;ApiTestAuth 给每个请求带上真令牌
 // (B0-4 之后 /api/** 默认拒绝),「不带令牌 → 401」那条反向用例在 ApiAuthDefaultDenyTest 里
-@Import({DomainBeans.class, ApiTestAuth.class})
+@Import({DomainBeans.class, TaggingBeans.class, ApiTestAuth.class})
 class TagApiTest {
 
     /** 这个来源名召回得出候选(见 {@code CandidateRecallTest}),用来验 suggest 走到第 ② 段。 */
+    /** 幂等键的请求头名 —— {@code B0-6} 的请求键,不是 clientToken、不是 outTradeNo。 */
+    private static final String KEY = "Idempotency-Key";
+
     private static final String RECALLING_SOURCE = "自己刷题 · 增长率专项";
 
     /** 种子里真实存在的来源名,一个候选都召回不出来。 */
@@ -139,41 +151,91 @@ class TagApiTest {
     }
 
     @Test
-    @DisplayName("召回为空 → 200 + NOT_RECALLED,而不是 4xx:记录早就落地了,补标失败什么都没损坏")
+    @DisplayName("召回为空 → 200 + state=NO_MATCH,而不是 4xx:记录早就落地了,补标失败什么都没损坏")
     void suggestWithoutRecallIsStillTwoHundred() throws Exception {
-        mockMvc.perform(post("/api/v1/records/t-1/tags/suggest"))
+        mockMvc.perform(post("/api/v1/records/t-1/tags/suggest").header(KEY, "k-recall-empty"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.outcome").value("NOT_RECALLED"))
-                .andExpect(jsonPath("$.candidateCount").value(0))
-                .andExpect(jsonPath("$.tag").doesNotExist())
-                // 补标失败不该动覆盖度:两条记录,两个考点,还是碰过的
-                .andExpect(jsonPath("$.summary.covered").value(2));
+                // 🔴 成因⑤(召回为空)在 wire 上合进 NO_MATCH —— 区分了也没有一个用户动作不同。
+                //    库里那一格是分开的(TagAttempt.Outcome.NOT_RECALLED),C-1 那次复核查的就是它。
+                .andExpect(jsonPath("$.state").value("NO_MATCH"))
+                .andExpect(jsonPath("$.candidates.length()").value(0))
+                .andExpect(jsonPath("$.selectedNodeId").doesNotExist())
+                .andExpect(jsonPath("$.tagId").doesNotExist());
     }
 
     @Test
-    @DisplayName("召回出了候选、但服务端没有素材 → NO_MATERIAL,与「没认出来」分得开")
+    @DisplayName("召回出了候选、但服务端没有素材 → 仍然是 NO_MATCH,而候选集全集要带回去")
     void suggestWithoutMaterialSaysSo() throws Exception {
-        // 这是今天这个端点的常态,而它诚实地说明原因:原图与转写都不留存(决策记录 §2.3 / 决策记录 §2.2),
-        // 服务端手里没有可再看一遍的东西。伪装成「模型没认出来」会让人去查模型,而模型没被调用过。
-        mockMvc.perform(post("/api/v1/records/t-2/tags/suggest").contentType(MediaType.APPLICATION_JSON)
-                        .content("{}"))
+        // 这是今天这个端点的常态(M2-G1):原图与转写都不留存,服务端手里没有可再看一遍的东西。
+        // 🔴 候选集在 NO_MATCH 形态下也必须返回 —— 端靠它自行判定 selectedNodeId 在不在集内。
+        mockMvc.perform(post("/api/v1/records/t-2/tags/suggest").header(KEY, "k-no-material")
+                        .contentType(MediaType.APPLICATION_JSON).content("{}"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.outcome").value("NO_MATERIAL"))
-                .andExpect(jsonPath("$.candidateCount").value(6))
-                .andExpect(jsonPath("$.message").exists());
+                .andExpect(jsonPath("$.state").value("NO_MATCH"))
+                .andExpect(jsonPath("$.candidates.length()").value(6))
+                .andExpect(jsonPath("$.candidates[0].nodeId").exists())
+                .andExpect(jsonPath("$.candidates[0].path").exists());
     }
 
     @Test
-    @DisplayName("suggest 的响应里带着这条记录当前的全部标签 —— 包括那条没有落库的主标签")
-    void suggestReturnsTheCurrentTagList() throws Exception {
-        mockMvc.perform(post("/api/v1/records/t-1/tags/suggest"))
-                .andExpect(jsonPath("$.tags.length()").value(1))
-                .andExpect(jsonPath("$.tags[0].id").value("primary-t-1"))
-                .andExpect(jsonPath("$.tags[0].primary").value(true))
-                .andExpect(jsonPath("$.tags[0].nodeCode").value("growth-rate"))
-                .andExpect(jsonPath("$.tags[0].nodeName").value("增长率计算"))
-                .andExpect(jsonPath("$.tags[0].origin").value("manual"))
-                .andExpect(jsonPath("$.tags[0].countsInCoverage").value(true));
+    @DisplayName("🔴 响应里没有 confidence,也没有任何能装下自由文本的字段(R-07 的接口层形态)")
+    void suggestNeverExposesConfidenceOrFreeText() throws Exception {
+        mockMvc.perform(post("/api/v1/records/t-2/tags/suggest").header(KEY, "k-no-free-text"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.confidence").doesNotExist())
+                .andExpect(jsonPath("$.candidates[0].confidence").doesNotExist())
+                .andExpect(jsonPath("$.candidates[0].name").doesNotExist())
+                .andExpect(jsonPath("$.candidates[0].label").doesNotExist())
+                .andExpect(jsonPath("$.candidates[0].reason").doesNotExist());
+        // 断言的是形状不是某一次响应:加一个自由文本字段得先改这个 record 的分量表。
+        assertEquals(5, TagSuggestionResponse.class.getRecordComponents().length);
+        assertEquals(2, CandidateDto.class.getRecordComponents().length);
+    }
+
+    @Test
+    @DisplayName("🔴 没带 Idempotency-Key → 400,带上重放同一个键 → 不再走一遍管线")
+    void suggestRequiresAnIdempotencyKey() throws Exception {
+        mockMvc.perform(post("/api/v1/records/t-2/tags/suggest"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("IDEMPOTENCY_KEY_REQUIRED"));
+
+        // 同一个键第二次:返回上一次的结果,🔴 不再调模型、不再动许可。
+        for (int i = 0; i < 2; i++) {
+            mockMvc.perform(post("/api/v1/records/t-2/tags/suggest").header(KEY, "k-replay"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.state").value("NO_MATCH"));
+        }
+    }
+
+    @Test
+    @DisplayName("🔴 恢复:丢弃过的标签置回 TS-02,而且 confirmedAt 被清空 —— 覆盖度不许因此上升")
+    void restorePutsATagBackAsACandidate() throws Exception {
+        mockMvc.perform(post("/api/v1/records/t-1/tags/primary-t-1/discard"))
+                .andExpect(status().isOk());
+        mockMvc.perform(post("/api/v1/records/t-1/tags/primary-t-1/restore"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.tagId").value("primary-t-1"))
+                .andExpect(jsonPath("$.tagState").value("TS-02"));
+
+        RecordTag restored = tags.find(ApiTestAuth.USER_ID, "primary-t-1");
+        assertFalse(restored.discarded(), "恢复之后不该还是丢弃态");
+        assertNull(restored.confirmedAt(),
+                "🔴 恢复必须清掉 confirmedAt —— 不清的话「确认→丢弃→恢复」会变成一条"
+                        + "系统触发、且终点计覆盖度的转移,U2.2 §2.4 当场破");
+
+        // 天然幂等:再来一次还是 200,不报错。
+        mockMvc.perform(post("/api/v1/records/t-1/tags/primary-t-1/restore"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.tagState").value("TS-02"));
+    }
+
+    @Test
+    @DisplayName("恢复一条不存在的标签 → 404 TAG_NOT_FOUND,消息里不回显那个 id")
+    void restoreOfAMissingTagIsFourOhFour() throws Exception {
+        mockMvc.perform(post("/api/v1/records/t-1/tags/tag-does-not-exist/restore"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("TAG_NOT_FOUND"))
+                .andExpect(jsonPath("$.message", not(containsString("tag-does-not-exist"))));
     }
 
     // ———————————————————— 二、手动挂载 ————————————————————
@@ -471,9 +533,15 @@ class TagApiTest {
         }
 
         @Bean
-        TaggingService taggingService(TouchStore store, RecordTagStore tagStore, SyllabusSource syllabus,
+        TaggingService taggingService(TouchStore store, RecordTagStore tagStore,
+                                      TagAttemptStore attemptStore, SyllabusSource syllabus,
                                       CandidateRecall recall, VisionTagger tagger, Clock clock) {
-            return new TaggingService(store, tagStore, syllabus, recall, tagger, clock);
+            return new TaggingService(store, tagStore, attemptStore, syllabus, recall, tagger, clock);
+        }
+
+        @Bean
+        TagAttemptStore tagAttemptStore() {
+            return new InMemoryTagAttemptStore();
         }
 
         /**

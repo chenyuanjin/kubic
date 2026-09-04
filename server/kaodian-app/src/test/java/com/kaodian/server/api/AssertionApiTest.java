@@ -3,6 +3,7 @@ package com.kaodian.server.api;
 import com.kaodian.server.api.record.AssertionController;
 import com.kaodian.server.api.insight.CoverageController;
 import com.kaodian.server.api.syllabus.SyllabusController;
+import com.kaodian.server.api.support.TaggingBeans;
 import com.kaodian.server.config.DomainBeans;
 import com.kaodian.server.coverage.CoverageReader;
 import com.jayway.jsonpath.JsonPath;
@@ -78,7 +79,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 @WebMvcTest(controllers = {AssertionController.class, CoverageController.class, SyllabusController.class})
 // web 切片不扫 @Configuration,领域装配要显式带进来;ApiTestAuth 给每个请求装上真令牌(B0-4 默认拒绝)
-@Import({DomainBeans.class, ApiTestAuth.class})
+@Import({DomainBeans.class, TaggingBeans.class, ApiTestAuth.class})
 class AssertionApiTest {
 
     /** 一个彻头彻尾的空白考点 —— 一条记录都没有,最容易被「按一下就算碰过」。 */

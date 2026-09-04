@@ -1,4 +1,4 @@
-package com.kaodian.server.collect;
+package com.kaodian.server.tagging;
 
 import com.kaodian.server.recognize.VisionTagger;
 import com.kaodian.server.syllabus.Syllabus;

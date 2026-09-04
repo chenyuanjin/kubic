@@ -16,7 +16,7 @@ package com.kaodian.server.collect;
  * {@code 0} 不是合法值(B0 §3.3,auth 侧从 10001 起号),负数更不是。
  * 「这个 id 背后有没有一个活着的账号」由鉴权那一侧回答 —— 请求走到领域层之前就已经答完了。
  */
-final class Tenant {
+public final class Tenant {
 
     private Tenant() {
     }
@@ -24,7 +24,7 @@ final class Tenant {
     /**
      * @throws IllegalArgumentException {@code userId <= 0}
      */
-    static long requireUserId(long userId) {
+    public static long requireUserId(long userId) {
         if (userId <= 0) {
             throw new IllegalArgumentException(
                     "userId 必须是正数,拿到的是 " + userId

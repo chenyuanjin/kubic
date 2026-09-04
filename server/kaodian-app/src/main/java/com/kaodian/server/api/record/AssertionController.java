@@ -1,6 +1,7 @@
 package com.kaodian.server.api.record;
 
 import com.kaodian.server.api.support.ApiException;
+import com.kaodian.server.api.support.CurrentSession;
 import com.kaodian.server.api.dto.record.AssertionRequest;
 import com.kaodian.server.api.dto.record.AssertionResponse;
 import com.kaodian.server.api.dto.common.NodeDetailDto;
@@ -94,15 +95,19 @@ public class AssertionController {
      * 用户会以为自己刚才那一下没生效,于是再点一次。
      */
     @PostMapping
-    public ResponseEntity<AssertionResponse> assertMastery(@Valid @RequestBody AssertionRequest req) {
+    public ResponseEntity<AssertionResponse> assertMastery(CurrentSession session,
+                                                           @Valid @RequestBody AssertionRequest req) {
+        session.requireWrite();
         String nodeCode = requireNodeInSyllabus(req.nodeCode());
 
-        UserAssertion existing = store.find(nodeCode);
-        store.put(new UserAssertion(nodeCode, clock.instant()));
+        // 🔴 「已经声明过」问的是【这个人】声明过没有 —— 主键是 (userId, nodeCode)。
+        //    按 nodeCode 单列判的那一版,第二个人的第一次声明会被当成重复,回 200 而且不落行。
+        UserAssertion existing = store.find(session.userId(), nodeCode);
+        store.put(new UserAssertion(session.userId(), nodeCode, clock.instant()));
 
         return ResponseEntity
                 .status(existing == null ? HttpStatus.CREATED : HttpStatus.OK)
-                .body(responseFor(nodeCode));
+                .body(responseFor(session.userId(), nodeCode));
     }
 
     /**
@@ -120,10 +125,11 @@ public class AssertionController {
      * <p>永远 200:取消一个没声明过的考点不是错误,见类注释。
      */
     @DeleteMapping
-    public AssertionResponse cancel(@Valid @RequestBody AssertionRequest req) {
+    public AssertionResponse cancel(CurrentSession session, @Valid @RequestBody AssertionRequest req) {
+        session.requireWrite();
         String nodeCode = requireNodeInSyllabus(req.nodeCode());
-        store.remove(nodeCode);
-        return responseFor(nodeCode);
+        store.remove(session.userId(), nodeCode);
+        return responseFor(session.userId(), nodeCode);
     }
 
     // ---------------------------------------------------------------- 内部
@@ -157,8 +163,8 @@ public class AssertionController {
      * {@code CoverageService#compute} 的 {@code assertions} 参数说明)。
      * <b>两处算同一个数就一定会算出两个数。</b>
      */
-    private AssertionResponse responseFor(String nodeCode) {
-        CoverageReader.Snapshot snapshot = reader.read();
+    private AssertionResponse responseFor(long userId, String nodeCode) {
+        CoverageReader.Snapshot snapshot = reader.read(userId);
         NodeCoverage node = snapshot.node(nodeCode);
         SummaryDto summary = SummaryDto.from(reader.summarize(snapshot));
 

@@ -28,11 +28,24 @@ import java.util.List;
  */
 public interface AssertionStore {
 
-    /** 全部声明,按写入顺序。 */
-    List<UserAssertion> findAll();
+    /** 这个用户的全部声明,按写入顺序。 */
+    List<UserAssertion> findAll(long userId);
 
-    /** 某个考点上的声明;没有返回 {@code null}(「查一个没声明过的考点」是调用方要分辨的情况)。 */
-    UserAssertion find(String nodeCode);
+    /**
+     * 全库声明,<b>跨用户</b>。
+     *
+     * <p>与 {@link TouchStore#findAllAcrossUsers()} 同一条:今天只剩
+     * {@code CoverageReader#read()} 那条 agent 路径,而那五个端点已被 {@code ApiAuthFilter} 挡住。
+     */
+    List<UserAssertion> findAllAcrossUsers();
+
+    /**
+     * 这个用户在某个考点上的声明;没有返回 {@code null}
+     * (「查一个没声明过的考点」是调用方要分辨的情况)。
+     *
+     * <p>🔴 查的是 {@code (userId, nodeCode)} 这一对 —— 主键的形状,见 {@link UserAssertion}。
+     */
+    UserAssertion find(long userId, String nodeCode);
 
     /**
      * 声明掌握。<b>幂等</b>。
@@ -42,6 +55,10 @@ public interface AssertionStore {
      * 不是「后写的覆盖先写的」。这个字段唯一的用处是在界面上说「你在 X 月 X 日说过你会了」,
      * 而<b>连点两下按钮不该改写那句话</b>。真要重新计时,得先取消再声明 ——
      * 那是两次明确的动作,不是一次误触。
+     *
+     * <p>归属在 {@code assertion.userId()} 上,不另传一个参数(与 {@code TouchStore#append} 同一句)。
+     * 幂等按 {@code (userId, nodeCode)} 这一对判 —— <b>「已经声明过」问的是「这个人声明过没有」,
+     * 不是「有没有人声明过」</b>。
      *
      * @return 库里那一行:新声明时是传进来的这条,已经声明过时是<b>原来那条</b>
      */
@@ -55,8 +72,11 @@ public interface AssertionStore {
      *
      * @return 真的删掉了一行返回 {@code true};本来就没有返回 {@code false}
      */
-    boolean remove(String nodeCode);
+    boolean remove(long userId, String nodeCode);
 
-    /** 声明的总数。概览里单列的那一格就是它(docs/technical/INDEX.md §6.4:<b>断言单列不并入</b>)。 */
-    int count();
+    /**
+     * 这个用户声明的总数。概览里单列的那一格就是它
+     * (docs/technical/INDEX.md §6.4:<b>断言单列不并入</b>)。
+     */
+    int count(long userId);
 }

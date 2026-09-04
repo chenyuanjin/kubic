@@ -75,7 +75,17 @@ public class FileRecordTagStore implements RecordTagStore {
     }
 
     @Override
-    public List<RecordTag> findAll() {
+    public List<RecordTag> findAll(long userId) {
+        Tenant.requireUserId(userId);
+        synchronized (lock) {
+            ensureLoaded();
+            return tags.stream().filter(t -> t.userId() == userId).toList();
+        }
+    }
+
+    /** 契约见 {@link RecordTagStore#findAllAcrossUsers()} —— 有意的跨用户口。 */
+    @Override
+    public List<RecordTag> findAllAcrossUsers() {
         synchronized (lock) {
             ensureLoaded();
             return List.copyOf(tags);
@@ -83,18 +93,23 @@ public class FileRecordTagStore implements RecordTagStore {
     }
 
     @Override
-    public List<RecordTag> findByRecord(String recordId) {
+    public List<RecordTag> findByRecord(long userId, String recordId) {
+        Tenant.requireUserId(userId);
         synchronized (lock) {
             ensureLoaded();
-            return tags.stream().filter(t -> t.recordId().equals(recordId)).toList();
+            return tags.stream()
+                    .filter(t -> t.userId() == userId && t.recordId().equals(recordId))
+                    .toList();
         }
     }
 
     @Override
-    public RecordTag find(String tagId) {
+    public RecordTag find(long userId, String tagId) {
+        Tenant.requireUserId(userId);
         synchronized (lock) {
             ensureLoaded();
-            return lookup(tagId);
+            RecordTag found = lookup(tagId);
+            return found != null && found.userId() == userId ? found : null;
         }
     }
 
@@ -125,6 +140,12 @@ public class FileRecordTagStore implements RecordTagStore {
                             "标签不能原地改挂考点 —— 改挂是「丢弃这条、新挂一条」,"
                                     + "原地改会让「我曾经把它标成什么」这件事消失");
                 }
+                if (existing.userId() != tag.userId()) {
+                    // 🔴 与上面三条同一列:换归属等于把这条标签贡献的那一格覆盖度过户给另一个人,
+                    //    而覆盖度是这个产品唯一的那个数(B0 §4.2)。
+                    throw new IllegalArgumentException(
+                            "标签不能换归属 —— 覆盖度是按用户算的,过户等于把一个人的那一格记到另一个人头上");
+                }
             }
 
             List<RecordTag> next = new ArrayList<>(tags.size() + 1);
@@ -150,13 +171,14 @@ public class FileRecordTagStore implements RecordTagStore {
 
     /** 契约见 {@link RecordTagStore#deleteByRecord}。 */
     @Override
-    public int deleteByRecord(String recordId) {
+    public int deleteByRecord(long userId, String recordId) {
+        Tenant.requireUserId(userId);
         synchronized (lock) {
             ensureLoaded();
             List<RecordTag> next = new ArrayList<>(tags.size());
             int removed = 0;
             for (RecordTag t : tags) {
-                if (t.recordId().equals(recordId)) {
+                if (t.userId() == userId && t.recordId().equals(recordId)) {
                     removed++;
                 } else {
                     next.add(t);
@@ -172,10 +194,17 @@ public class FileRecordTagStore implements RecordTagStore {
     }
 
     @Override
-    public int count() {
+    public int count(long userId) {
+        Tenant.requireUserId(userId);
         synchronized (lock) {
             ensureLoaded();
-            return tags.size();
+            int n = 0;
+            for (RecordTag t : tags) {
+                if (t.userId() == userId) {
+                    n++;
+                }
+            }
+            return n;
         }
     }
 
@@ -240,6 +269,10 @@ public class FileRecordTagStore implements RecordTagStore {
 
         List<RecordTag> result = new ArrayList<>();
         for (JsonNode n : array) {
+            // 🔴 没有归属的行【丢弃】,不认领 —— 与 FileTouchStore#parse 同一句,理由见 OrphanGuard。
+            if (OrphanGuard.isOrphan(n)) {
+                continue;
+            }
             try {
                 result.add(toTag(n));
             } catch (IllegalArgumentException | DateTimeException e) {
@@ -257,6 +290,7 @@ public class FileRecordTagStore implements RecordTagStore {
         String confirmedAt = n.path("confirmedAt").asString("");
         return new RecordTag(
                 required(n, "id"),
+                n.path(OrphanGuard.USER_ID).asLong(0),
                 required(n, "recordId"),
                 required(n, "nodeCode"),
                 n.path("confidence").asDouble(RecordTag.MANUAL_CONFIDENCE),
@@ -285,6 +319,7 @@ public class FileRecordTagStore implements RecordTagStore {
     private static ObjectNode toNode(RecordTag t) {
         ObjectNode o = MAPPER.createObjectNode();
         o.put("id", t.id());
+        o.put(OrphanGuard.USER_ID, t.userId());  // B0-3 租户列,冗余存一份(见 RecordTag)
         o.put("recordId", t.recordId());
         o.put("nodeCode", t.nodeCode());         // 只有考点树里的 code,没有任何标签文字(R-07)
         o.put("confidence", t.confidence());

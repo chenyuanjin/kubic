@@ -36,7 +36,22 @@ import java.util.Map;
  * 所以它是一个标志位而不是一次删除 —— 用户得看得见「这条我丢过」,否则同一个错标会被反复建议、
  * 反复丢弃,而他不知道自己已经丢过一次。
  *
+ * <h2>🔴 {@code userId} 冗余存一份,不靠 {@code recordId} 反查</h2>
+ *
+ * B0 §4.2 逐字要求的就是这一条,两个理由:
+ * <ol>
+ *   <li><b>覆盖度计算是按用户过滤的热路径。</b>反查会让每次差集多一次连接 ——
+ *       今天是一次文件内的线性查找,{@code 1.2.4} 换 JDBC 之后就是一次 join,
+ *       而差集是每个查询请求都要算一遍的东西</li>
+ *   <li><b>它让「一条 tag 的归属」在数据里可以自证。</b>标签行与记录行万一对不上
+ *       (孤儿标签、坏文件、将来的批量导入),归属不必靠另一张表回答 ——
+ *       而覆盖度的分子正是从这些行数出来的</li>
+ * </ol>
+ * 冗余的代价是它可能与 {@link Touch#userId()} 不一致,所以写入侧
+ * ({@code TaggingService} / {@code RecordTagStore#put})一律从记录本身取,不接受调用方另给一个。
+ *
  * @param id          标签 id。主标签的 id 由 {@link #primaryIdOf} 从记录 id 推出,不是随机的
+ * @param userId      这条标签归谁。🔴 必填且为正,与它宿主记录的归属一致,见上
  * @param recordId    挂在哪条记录上({@link Touch#id()})
  * @param nodeCode    挂到哪个考点。🔴 只可能是考点树里的 code
  * @param confidence  模型自报的置信度。手动标签恒为 {@link #MANUAL_CONFIDENCE}
@@ -48,6 +63,8 @@ public record RecordTag(
 
         @Size(max = RecordTag.MAX_ID_LENGTH)
         String id,
+
+        long userId,
 
         @Size(max = RecordTag.MAX_ID_LENGTH)
         String recordId,
@@ -100,6 +117,7 @@ public record RecordTag(
     public static final String PRIMARY_ID_PREFIX = "primary-";
 
     public RecordTag {
+        Tenant.requireUserId(userId);
         id = requireId(id, "标签 id");
         recordId = requireId(recordId, "记录 id");
         nodeCode = requireId(nodeCode, "考点 code");
@@ -153,6 +171,8 @@ public record RecordTag(
     public static RecordTag primaryOf(Touch touch) {
         return new RecordTag(
                 primaryIdOf(touch.id()),
+                // 归属跟着宿主记录走 —— 主标签是记录本身的另一个视角,它不可能属于另一个人
+                touch.userId(),
                 touch.id(),
                 touch.nodeCode(),
                 MANUAL_CONFIDENCE,
@@ -177,7 +197,7 @@ public record RecordTag(
         if (at == null) {
             throw new IllegalArgumentException("确认必须有时刻 —— confirmed_at 是这条标签唯一的状态");
         }
-        return new RecordTag(id, recordId, nodeCode, confidence, origin, at, discarded);
+        return new RecordTag(id, userId, recordId, nodeCode, confidence, origin, at, discarded);
     }
 
     /**
@@ -187,7 +207,7 @@ public record RecordTag(
      * 抹掉它等于让这条标签装成从没被确认过。同理 {@code origin} 也原样带过去。
      */
     public RecordTag discard() {
-        return new RecordTag(id, recordId, nodeCode, confidence, origin, confirmedAt, true);
+        return new RecordTag(id, userId, recordId, nodeCode, confidence, origin, confirmedAt, true);
     }
 
     /**
@@ -247,7 +267,9 @@ public record RecordTag(
 
         result.add(storedPrimary == null
                 ? primaryOf(touch)
-                : new RecordTag(primaryId, touch.id(), touch.nodeCode(),
+                // 🔴 归属也取自记录,不取库里那一行 —— 与 nodeCode 同一条理由:
+                //    记录是事实,存下来的主标签行只贡献状态。
+                : new RecordTag(primaryId, touch.userId(), touch.id(), touch.nodeCode(),
                         storedPrimary.confidence(), storedPrimary.origin(),
                         storedPrimary.confirmedAt(), storedPrimary.discarded()));
 

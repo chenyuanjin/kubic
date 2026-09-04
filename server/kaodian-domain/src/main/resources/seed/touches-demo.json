@@ -16,6 +16,11 @@
     "share-change 没有这两个数:听过课、一道题没练,状态是「仅接触」——",
     "它与「完全没碰过」必须分开,否则差集就没意义了。",
     "",
+    "🔴 userId 全部是 10001 —— 这是【演示数据】,归 auth 侧发出的第一个账号(B0 §3.3 从 10001 起号)。",
+    "   它不是「认领存量数据」(那是 OrphanGuard 明确禁止的事,理由是覆盖度只有一个,",
+    "   不能让它带着来路不明的记录出生);这 8 条本来就是我们自己编的,它们从来不属于任何真实用户。",
+    "   ⚪ 「第一个注册的人会看到一份编好的演示数据」这件事本身要不要保留,归产品拍板,已在交付说明里报出。",
+    "",
     "这 8 条对应设计契约:18 个考点 / 8 个有记录 / 覆盖 44% / 10 个空白 / 2 组整块空白,",
     "状态分布 稳 3 · 弱 2 · 生疏 2 · 仅接触 1 · 空白 10。",
     "由 FileTouchStoreTest 锁死 —— 改这个文件而不改设计稿,测试立刻红。"
@@ -23,6 +28,7 @@
   "touches": [
     {
       "id": "seed-growth-rate",
+      "userId": 10001,
       "nodeCode": "growth-rate",
       "sourceName": "粉笔 · 资料分析系统班 L12",
       "kind": "DRILL",
@@ -32,6 +38,7 @@
     },
     {
       "id": "seed-share-calc",
+      "userId": 10001,
       "nodeCode": "share-calc",
       "sourceName": "华图 · 资料速算网课",
       "kind": "DRILL",
@@ -41,6 +48,7 @@
     },
     {
       "id": "seed-growth-amount",
+      "userId": 10001,
       "nodeCode": "growth-amount",
       "sourceName": "自己刷题 · 2023 国考真题",
       "kind": "DRILL",
@@ -50,6 +58,7 @@
     },
     {
       "id": "seed-feature-number",
+      "userId": 10001,
       "nodeCode": "feature-number",
       "sourceName": "自己刷题 · 2023 国考真题",
       "kind": "DRILL",
@@ -59,6 +68,7 @@
     },
     {
       "id": "seed-truncate-divide",
+      "userId": 10001,
       "nodeCode": "truncate-divide",
       "sourceName": "B站 · 资料分析技巧",
       "kind": "DRILL",
@@ -68,6 +78,7 @@
     },
     {
       "id": "seed-share-change",
+      "userId": 10001,
       "nodeCode": "share-change",
       "sourceName": "粉笔 · 资料分析系统班 L12",
       "kind": "VOICE",
@@ -75,6 +86,7 @@
     },
     {
       "id": "seed-base-value",
+      "userId": 10001,
       "nodeCode": "base-value",
       "sourceName": "中公 · 资料分析专项",
       "kind": "DRILL",
@@ -84,6 +96,7 @@
     },
     {
       "id": "seed-interval-growth",
+      "userId": 10001,
       "nodeCode": "interval-growth",
       "sourceName": "中公 · 资料分析专项",
       "kind": "DRILL",

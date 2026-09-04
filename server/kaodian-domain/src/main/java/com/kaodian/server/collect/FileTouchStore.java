@@ -111,26 +111,44 @@ public class FileTouchStore implements TouchStore {
     }
 
     @Override
-    public List<Touch> findAll() {
+    public List<Touch> findAll(long userId) {
+        Tenant.requireUserId(userId);
+        synchronized (lock) {
+            ensureLoaded();
+            return touches.stream().filter(t -> t.userId() == userId).toList();
+        }
+    }
+
+    /** 契约见 {@link TouchStore#findAllAcrossUsers()} —— 有意的跨用户口,今天只剩 agent 那条路。 */
+    @Override
+    public List<Touch> findAllAcrossUsers() {
         synchronized (lock) {
             ensureLoaded();
             return List.copyOf(touches);
         }
     }
 
+    /** 契约见 {@link TouchStore#countByNodeAcrossUsers} —— 删除守则数的是全库,不是当前这个人。 */
     @Override
-    public List<Touch> findByNode(String nodeCode) {
+    public int countByNodeAcrossUsers(String nodeCode) {
         synchronized (lock) {
             ensureLoaded();
-            return touches.stream().filter(t -> t.nodeCode().equals(nodeCode)).toList();
+            int n = 0;
+            for (Touch t : touches) {
+                if (t.nodeCode().equals(nodeCode)) {
+                    n++;
+                }
+            }
+            return n;
         }
     }
 
     @Override
-    public Touch findByClientToken(String clientToken) {
+    public Touch findByClientToken(long userId, String clientToken) {
+        Tenant.requireUserId(userId);
         synchronized (lock) {
             ensureLoaded();
-            return lookup(clientToken);
+            return lookup(userId, clientToken);
         }
     }
 
@@ -151,7 +169,8 @@ public class FileTouchStore implements TouchStore {
             // 「不覆盖」这一条要紧:补传的那份带的是【补传时刻】的服务端时间戳,
             // 拿它盖掉第一次落地的 occurredAt,等于让一条记录凭空变年轻 ——
             // 而「多久前」是五态里唯一的时间依据(见 reassign 里同一句话)。
-            Touch existing = lookup(touch.clientToken());
+            // 🔴 判重按 (userId, clientToken):两个人的客户端各自生成键,彼此之间没有任何约定。
+            Touch existing = lookup(touch.userId(), touch.clientToken());
             if (existing != null) {
                 return existing;
             }
@@ -167,9 +186,14 @@ public class FileTouchStore implements TouchStore {
         }
     }
 
-    /** 契约见 {@link TouchStore#delete} —— 删一条不存在的记录返回 {@code null},不抛异常。 */
+    /**
+     * 契约见 {@link TouchStore#delete} —— 删一条不存在的记录返回 {@code null},不抛异常。
+     *
+     * <p>🔴 {@code userId} 参与匹配:别人的记录在这里等于不存在。
+     */
     @Override
-    public Touch delete(String id) {
+    public Touch delete(long userId, String id) {
+        Tenant.requireUserId(userId);
         synchronized (lock) {
             ensureLoaded();
             Touch victim = null;
@@ -177,7 +201,7 @@ public class FileTouchStore implements TouchStore {
             for (Touch t : touches) {
                 // id 相同的只可能有一条(服务端签发的 UUID),但这里仍然写成「留下所有不匹配的」
                 // 而不是 remove 第一个命中的:万一历史文件里真有两条同 id,一次删干净好过留半条。
-                if (t.id().equals(id)) {
+                if (t.userId() == userId && t.id().equals(id)) {
                     victim = t;
                 } else {
                     next.add(t);
@@ -194,12 +218,12 @@ public class FileTouchStore implements TouchStore {
     }
 
     /** 调用方必须已经持有 {@link #lock} 且已 {@link #ensureLoaded}。 */
-    private Touch lookup(String clientToken) {
+    private Touch lookup(long userId, String clientToken) {
         if (clientToken == null || clientToken.isBlank()) {
             return null;                        // 「没有去重键」不是一个能互相匹配的值
         }
         for (Touch t : touches) {
-            if (clientToken.equals(t.clientToken())) {
+            if (t.userId() == userId && clientToken.equals(t.clientToken())) {
                 return t;
             }
         }
@@ -207,10 +231,17 @@ public class FileTouchStore implements TouchStore {
     }
 
     @Override
-    public int count() {
+    public int count(long userId) {
+        Tenant.requireUserId(userId);
         synchronized (lock) {
             ensureLoaded();
-            return touches.size();
+            int n = 0;
+            for (Touch t : touches) {
+                if (t.userId() == userId) {
+                    n++;
+                }
+            }
+            return n;
         }
     }
 
@@ -229,8 +260,9 @@ public class FileTouchStore implements TouchStore {
             int moved = 0;
             for (Touch t : touches) {
                 if (t.nodeCode().equals(fromNodeCode)) {
-                    // clientToken 也要原样带过去:丢了它,那条记录就重新变得可以被补传一次
-                    next.add(new Touch(t.id(), toNodeCode, t.sourceName(), t.kind(),
+                    // clientToken 与归属都要原样带过去:丢了 clientToken,那条记录就重新变得
+                    // 可以被补传一次;改了归属,它就成了另一个人的记录。搬家换的只有 nodeCode。
+                    next.add(new Touch(t.id(), t.userId(), toNodeCode, t.sourceName(), t.kind(),
                             t.occurredAt(), t.drill(), t.clientToken()));
                     moved++;
                 } else {
@@ -319,6 +351,12 @@ public class FileTouchStore implements TouchStore {
 
         List<Touch> result = new ArrayList<>();
         for (JsonNode n : array) {
+            // 🔴 没有归属的条目【丢弃】,不认领给任何人 —— 理由见 OrphanGuard。
+            // 走到这里说明 kaodian.collect.accept-orphan-loss 已经被显式置为 true
+            // (否则 OrphanGuard 在启动期就把进程拦住了),条数已经记在那条 ERROR 日志里。
+            if (OrphanGuard.isOrphan(n)) {
+                continue;
+            }
             try {
                 result.add(toTouch(n, seedAt));
             } catch (IllegalArgumentException | DateTimeException e) {
@@ -361,6 +399,7 @@ public class FileTouchStore implements TouchStore {
 
         return new Touch(
                 required(n, "id"),
+                n.path(OrphanGuard.USER_ID).asLong(0),
                 required(n, "nodeCode"),
                 n.path("sourceName").asString(""),
                 TouchKind.valueOf(required(n, "kind")),
@@ -390,6 +429,7 @@ public class FileTouchStore implements TouchStore {
     private static ObjectNode toNode(Touch t) {
         ObjectNode o = MAPPER.createObjectNode();
         o.put("id", t.id());
+        o.put(OrphanGuard.USER_ID, t.userId());   // B0-3 租户列。没有它的条目读回来会被丢弃
         o.put("nodeCode", t.nodeCode());
         o.put("sourceName", t.sourceName());     // 只有来源【名字】,没有来源的内容
         o.put("kind", t.kind().name());

@@ -32,6 +32,9 @@ class CoverageServiceTest {
 
     private static final Instant NOW = Instant.parse("2026-08-25T12:00:00Z");
 
+    /** 测试用户 —— 与行为层种子同一个 id(B0 §3.3:auth 侧从 10001 起号)。 */
+    private static final long USER = 10001L;
+
     private final CoverageService service = new CoverageService();
     private final Syllabus syllabus = SyllabusLoader.loadDefault();
 
@@ -49,14 +52,14 @@ class CoverageServiceTest {
         drill(ts, "base-value", "中公 · 资料分析专项", 5, 4, 32);              // 80% 但 32 天前
         drill(ts, "interval-growth", "中公 · 资料分析专项", 3, 2, 33);         // 67% 但 33 天前
         // 仅接触:听过课,一道题没练
-        ts.add(new Touch("t-share-change", "share-change",
-                "粉笔 · 资料分析系统班 L12", TouchKind.VOICE, daysAgo(5), null));
+        ts.add(new Touch("t-share-change", USER, "share-change",
+                "粉笔 · 资料分析系统班 L12", TouchKind.VOICE, daysAgo(5), null, null));
         return ts;
     }
 
     private void drill(List<Touch> ts, String node, String source, int practiced, int correct, int daysAgo) {
-        ts.add(new Touch("t-" + node, node, source, TouchKind.DRILL, daysAgo(daysAgo),
-                new Touch.Drill(practiced, correct)));
+        ts.add(new Touch("t-" + node, USER, node, source, TouchKind.DRILL, daysAgo(daysAgo),
+                new Touch.Drill(practiced, correct), null));
     }
 
     private Instant daysAgo(int d) {
@@ -145,10 +148,10 @@ class CoverageServiceTest {
     @Test
     @DisplayName("生疏只由时间推出:同样的正确率,隔 30 天内是稳,超过就是生疏")
     void rustyIsPurelyTemporal() {
-        List<Touch> recent = List.of(new Touch("a", "growth-rate", "自己刷题",
-                TouchKind.DRILL, daysAgo(29), new Touch.Drill(10, 9)));
-        List<Touch> old = List.of(new Touch("b", "growth-rate", "自己刷题",
-                TouchKind.DRILL, daysAgo(31), new Touch.Drill(10, 9)));
+        List<Touch> recent = List.of(new Touch("a", USER, "growth-rate", "自己刷题",
+                TouchKind.DRILL, daysAgo(29), new Touch.Drill(10, 9), null));
+        List<Touch> old = List.of(new Touch("b", USER, "growth-rate", "自己刷题",
+                TouchKind.DRILL, daysAgo(31), new Touch.Drill(10, 9), null));
 
         assertEquals(NodeState.STABLE, NodeState.derive(recent, NOW));
         assertEquals(NodeState.RUSTY, NodeState.derive(old, NOW), "同样 90% 正确率,只因为隔久了");
@@ -157,8 +160,8 @@ class CoverageServiceTest {
     @Test
     @DisplayName("仅接触与空白必须分开:听过课没练 ≠ 完全没碰过")
     void touchedOnlyIsNotEmpty() {
-        List<Touch> lectureOnly = List.of(new Touch("c", "share-change", "粉笔 · 资料分析系统班 L12",
-                TouchKind.VOICE, daysAgo(5), null));
+        List<Touch> lectureOnly = List.of(new Touch("c", USER, "share-change", "粉笔 · 资料分析系统班 L12",
+                TouchKind.VOICE, daysAgo(5), null, null));
         assertEquals(NodeState.TOUCHED_ONLY, NodeState.derive(lectureOnly, NOW));
         assertEquals(NodeState.EMPTY, NodeState.derive(List.of(), NOW));
         assertTrue(NodeState.TOUCHED_ONLY.covered(), "仅接触算碰过,计入覆盖度");
@@ -166,7 +169,8 @@ class CoverageServiceTest {
     }
 
     /**
-     * 第七个字段 {@code clientToken} 是去重键(docs/technical/INDEX.md §6.2「client_token 幂等」)。
+     * 第八个字段 {@code clientToken} 是去重键(docs/technical/INDEX.md §6.2「client_token 幂等」)。
+     * 第二个 {@code userId} 是 B0-3 的租户列 —— 它是归属,不是内容,而且没有它这条记录读回来会被丢弃。
      *
      * <p>它是这条记录上<b>唯一一个来自客户端的字符串</b>,所以它能进来必须有个硬理由:
      * 上限 {@link Touch#MAX_CLIENT_TOKEN_LENGTH} = 64,而 64 装不下任何一道题的题干,
@@ -179,7 +183,7 @@ class CoverageServiceTest {
         List<String> fields = java.util.Arrays.stream(Touch.class.getRecordComponents())
                 .map(java.lang.reflect.RecordComponent::getName).toList();
         assertEquals(
-                List.of("id", "nodeCode", "sourceName", "kind", "occurredAt", "drill", "clientToken"),
+                List.of("id", "userId", "nodeCode", "sourceName", "kind", "occurredAt", "drill", "clientToken"),
                 fields);
 
         for (String forbidden : List.of("content", "text", "body", "question", "transcript",
@@ -193,9 +197,9 @@ class CoverageServiceTest {
     @DisplayName("🔴 挂载只认考点树里的 code,空 code 直接拒绝(R-07 在构造器上的实现)")
     void mountingRejectsFreeText() {
         assertThrows(IllegalArgumentException.class,
-                () -> new Touch("x", "  ", "某来源", TouchKind.MANUAL, NOW, null));
+                () -> new Touch("x", USER, "  ", "某来源", TouchKind.MANUAL, NOW, null, null));
         assertThrows(IllegalArgumentException.class,
-                () -> new Touch("x", "growth-rate", "某来源", TouchKind.MANUAL, null, null));
+                () -> new Touch("x", USER, "growth-rate", "某来源", TouchKind.MANUAL, null, null, null));
         assertThrows(IllegalArgumentException.class,
                 () -> new Touch.Drill(3, 5), "对的题数不能多于练的题数");
     }

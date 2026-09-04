@@ -55,10 +55,22 @@ class FileSyllabusStoreTest {
 
     private FileTouchStore touches;
 
+    /** 种子那 8 条全归这个 id(B0 §3.3:auth 侧从 10001 起号)。 */
+    private static final long USER = 10001L;
+
     /** 骨架 store,背后接着一个真的行为层 —— 删除守则要数的就是那边的记录。 */
     private FileSyllabusStore store() {
         touches = new FileTouchStore(dataDir.resolve("touches.json"));
         return new FileSyllabusStore(dataDir.resolve("syllabus.json"), new TouchLedger(touches));
+    }
+
+    /**
+     * {@code findByNode} 随 B0-3 拆成了「按用户查全部」与「跨用户计数」两个方法。
+     * 这些断言问的是「那条种子记录搬没搬走 / 少没少」,拿得到 {@link com.kaodian.server.collect.Touch}
+     * 本身才行,所以走按用户查再过滤,不走跨用户计数。
+     */
+    private List<com.kaodian.server.collect.Touch> onNode(String nodeCode) {
+        return touches.findAll(USER).stream().filter(t -> t.nodeCode().equals(nodeCode)).toList();
     }
 
     /** 不需要行为层的场景(纯树操作),给一个永远说「0 条」的账本。 */
@@ -264,7 +276,7 @@ class FileSyllabusStoreTest {
 
         assertEquals("growth-rate", renamed.code(), "🔴 改名绝不改 code");
         assertEquals("增长率(我自己的说法)", renamed.name());
-        assertEquals(1, touches.findByNode("growth-rate").size(), "记录挂在 code 上,改名之后还在原处");
+        assertEquals(1, onNode("growth-rate").size(), "记录挂在 code 上,改名之后还在原处");
 
         Summary after = summarize(store);
         assertEquals(before.total(), after.total(), "分母不动");
@@ -280,7 +292,7 @@ class FileSyllabusStoreTest {
         store.moveNode("growth-rate", "fast-math");
 
         assertEquals("fast-math", store.current().groupOf("growth-rate").code());
-        assertEquals(1, touches.findByNode("growth-rate").size());
+        assertEquals(1, onNode("growth-rate").size());
         assertEquals(18, summarize(store).total(), "总数不变 —— 只是换了个题型");
     }
 
@@ -302,24 +314,24 @@ class FileSyllabusStoreTest {
 
         assertNotNull(store.current().node("growth-rate"), "被拒之后考点还在");
         assertEquals(18, summarize(store).total());
-        assertEquals(1, touches.findByNode("growth-rate").size(), "记录一条都没少");
+        assertEquals(1, onNode("growth-rate").size(), "记录一条都没少");
     }
 
     @Test
     @DisplayName("🔴 出路一:把记录搬到别的考点之后才能删。记录总数不变,时间戳不重置")
     void movingRecordsAwayIsTheWayToDelete() {
         FileSyllabusStore store = store();
-        Instant originalAt = touches.findByNode("growth-rate").get(0).occurredAt();
-        int totalBefore = touches.count();
+        Instant originalAt = onNode("growth-rate").get(0).occurredAt();
+        int totalBefore = touches.count(USER);
 
         int moved = store.moveRecords("growth-rate", "average-calc");
         assertEquals(1, moved);
         assertEquals(0, store.recordCount("growth-rate"));
         assertEquals(1, store.recordCount("average-calc"));
-        assertEquals(totalBefore, touches.count(), "🔴 搬家不扔东西 —— 记录总数必须不变");
-        assertEquals(originalAt, touches.findByNode("average-calc").get(0).occurredAt(),
+        assertEquals(totalBefore, touches.count(USER), "🔴 搬家不扔东西 —— 记录总数必须不变");
+        assertEquals(originalAt, onNode("average-calc").get(0).occurredAt(),
                 "时间戳不能重置 —— 「多久前」是这个产品仅有的三个维度之一");
-        assertEquals(12, touches.findByNode("average-calc").get(0).drill().practiced(),
+        assertEquals(12, onNode("average-calc").get(0).drill().practiced(),
                 "做题数原样带过去");
 
         store.deleteNode("growth-rate");
@@ -368,8 +380,8 @@ class FileSyllabusStoreTest {
         assertEquals(1, store.moveRecords("share-calc", "growth-rate"),
                 "归档考点上的记录必须搬得走,否则它就成了看不见又删不掉的东西");
 
-        assertEquals(2, touches.findByNode("growth-rate").size(), "四次拒绝一条没丢,最后一次搬成了");
-        assertEquals(0, touches.findByNode("share-calc").size());
+        assertEquals(2, onNode("growth-rate").size(), "四次拒绝一条没丢,最后一次搬成了");
+        assertEquals(0, onNode("share-calc").size());
     }
 
     @Test
@@ -381,7 +393,7 @@ class FileSyllabusStoreTest {
         Summary archived = summarize(store);
         assertEquals(17, archived.total(), "分母 −1");
         assertEquals(7, archived.covered(), "分子也 −1 —— 比值仍然诚实");
-        assertEquals(1, touches.findByNode("growth-rate").size(), "🔴 记录一条都没动");
+        assertEquals(1, onNode("growth-rate").size(), "🔴 记录一条都没动");
         assertNull(store.current().node("growth-rate"), "退出差集");
         assertNotNull(store.current().nodeIncludingArchived("growth-rate"),
                 "但 code 还在 —— 时间线上的老记录仍然认得出名字");
@@ -448,7 +460,7 @@ class FileSyllabusStoreTest {
         CoverageService service = new CoverageService();
 
         List<String> before = service.blindSpots(
-                        service.compute(store.current(), touches.findAll(), Instant.now()), 5)
+                        service.compute(store.current(), touches.findAll(USER), Instant.now()), 5)
                 .stream().map(CoverageService.NodeCoverage::name).toList();
         assertEquals(List.of("增长量计算", "平均数计算", "截位直除", "现期量计算", "倍数计算"), before);
 
@@ -456,7 +468,7 @@ class FileSyllabusStoreTest {
         store.reorderGroups(List.of("multiple", "growth", "effect", "average-share", "fast-math"));
 
         List<String> after = service.blindSpots(
-                        service.compute(store.current(), touches.findAll(), Instant.now()), 5)
+                        service.compute(store.current(), touches.findAll(USER), Instant.now()), 5)
                 .stream().map(CoverageService.NodeCoverage::name).toList();
         assertEquals(List.of("增长量计算", "平均数计算", "截位直除", "倍数计算", "现期量计算"), after);
 
@@ -1069,7 +1081,7 @@ class FileSyllabusStoreTest {
 
     private Summary summarize(SyllabusStore store) {
         CoverageService service = new CoverageService();
-        return service.summarize(service.compute(store.current(), touches().findAll(), Instant.now()));
+        return service.summarize(service.compute(store.current(), touches().findAll(USER), Instant.now()));
     }
 
     private FileTouchStore touches() {

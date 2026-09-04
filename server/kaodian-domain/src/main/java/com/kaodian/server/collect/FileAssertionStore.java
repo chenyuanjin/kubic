@@ -72,7 +72,17 @@ public class FileAssertionStore implements AssertionStore {
     }
 
     @Override
-    public List<UserAssertion> findAll() {
+    public List<UserAssertion> findAll(long userId) {
+        Tenant.requireUserId(userId);
+        synchronized (lock) {
+            ensureLoaded();
+            return assertions.stream().filter(a -> a.userId() == userId).toList();
+        }
+    }
+
+    /** 契约见 {@link AssertionStore#findAllAcrossUsers()} —— 有意的跨用户口。 */
+    @Override
+    public List<UserAssertion> findAllAcrossUsers() {
         synchronized (lock) {
             ensureLoaded();
             return List.copyOf(assertions);
@@ -80,10 +90,11 @@ public class FileAssertionStore implements AssertionStore {
     }
 
     @Override
-    public UserAssertion find(String nodeCode) {
+    public UserAssertion find(long userId, String nodeCode) {
+        Tenant.requireUserId(userId);
         synchronized (lock) {
             ensureLoaded();
-            return lookup(nodeCode);
+            return lookup(userId, nodeCode);
         }
     }
 
@@ -93,7 +104,8 @@ public class FileAssertionStore implements AssertionStore {
         synchronized (lock) {
             ensureLoaded();
 
-            UserAssertion existing = lookup(assertion.nodeCode());
+            // 🔴 幂等按主键 (userId, nodeCode) 判 —— 「已经声明过」问的是「这个人声明过没有」。
+            UserAssertion existing = lookup(assertion.userId(), assertion.nodeCode());
             if (existing != null) {
                 // 幂等:已经声明过了,原样返回。不写盘,更不刷新 assertedAt ——
                 // 连点两下按钮不该改写「你在 X 月 X 日说过你会了」这句话。
@@ -113,7 +125,8 @@ public class FileAssertionStore implements AssertionStore {
 
     /** 契约见 {@link AssertionStore#remove} —— 没有那一行就什么都不做,也不写盘。 */
     @Override
-    public boolean remove(String nodeCode) {
+    public boolean remove(long userId, String nodeCode) {
+        Tenant.requireUserId(userId);
         synchronized (lock) {
             ensureLoaded();
             if (nodeCode == null || nodeCode.isBlank()) {
@@ -122,7 +135,7 @@ public class FileAssertionStore implements AssertionStore {
             List<UserAssertion> next = new ArrayList<>(assertions.size());
             boolean removed = false;
             for (UserAssertion a : assertions) {
-                if (nodeCode.equals(a.nodeCode())) {
+                if (a.userId() == userId && nodeCode.equals(a.nodeCode())) {
                     removed = true;
                 } else {
                     next.add(a);
@@ -138,20 +151,27 @@ public class FileAssertionStore implements AssertionStore {
     }
 
     @Override
-    public int count() {
+    public int count(long userId) {
+        Tenant.requireUserId(userId);
         synchronized (lock) {
             ensureLoaded();
-            return assertions.size();
+            int n = 0;
+            for (UserAssertion a : assertions) {
+                if (a.userId() == userId) {
+                    n++;
+                }
+            }
+            return n;
         }
     }
 
     /** 调用方必须已经持有 {@link #lock} 且已 {@link #ensureLoaded}。 */
-    private UserAssertion lookup(String nodeCode) {
+    private UserAssertion lookup(long userId, String nodeCode) {
         if (nodeCode == null || nodeCode.isBlank()) {
             return null;
         }
         for (UserAssertion a : assertions) {
-            if (nodeCode.equals(a.nodeCode())) {
+            if (a.userId() == userId && nodeCode.equals(a.nodeCode())) {
                 return a;
             }
         }
@@ -205,6 +225,10 @@ public class FileAssertionStore implements AssertionStore {
 
         List<UserAssertion> result = new ArrayList<>();
         for (JsonNode n : array) {
+            // 🔴 没有归属的行【丢弃】,不认领 —— 与 FileTouchStore#parse 同一句,理由见 OrphanGuard。
+            if (OrphanGuard.isOrphan(n)) {
+                continue;
+            }
             try {
                 result.add(toAssertion(n));
             } catch (IllegalArgumentException | DateTimeException e) {
@@ -218,6 +242,7 @@ public class FileAssertionStore implements AssertionStore {
     /** 一个 JSON 对象 → 一行声明。<b>只认这两个键,别的一概不看。</b> */
     private static UserAssertion toAssertion(JsonNode n) {
         return new UserAssertion(
+                n.path(OrphanGuard.USER_ID).asLong(0),
                 required(n, "nodeCode"),
                 Instant.parse(required(n, "assertedAt")));
     }
@@ -241,6 +266,7 @@ public class FileAssertionStore implements AssertionStore {
      */
     private static ObjectNode toNode(UserAssertion a) {
         ObjectNode o = MAPPER.createObjectNode();
+        o.put(OrphanGuard.USER_ID, a.userId());  // B0-3:主键的另一半,见 UserAssertion
         o.put("nodeCode", a.nodeCode());     // 只有考点树里的 code,没有任何自己起的名字(R-07)
         o.put("assertedAt", a.assertedAt().toString());
         return o;

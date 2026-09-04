@@ -98,7 +98,7 @@ public class CaptureService {
         /**
          * 在线直接记 —— 没有去重键。
          *
-         * <p>与 {@link Touch} 的六参构造器同一个理由:在线记一笔的成败当场就知道,
+         * <p>与 {@link Touch#clientToken()} 那段同一个理由:在线记一笔的成败当场就知道,
          * 不需要去重键;强迫它编一个,只会让这个字段可以是任何东西。
          */
         public CaptureRequest(TouchKind kind, String sourceName, String nodeCode,
@@ -186,16 +186,24 @@ public class CaptureService {
      *
      * <p><b>这条路不碰任何模型,因此永不消耗额度、永不受识别故障影响。</b>
      * docs/product/商业化与额度设计.md §二「额度用尽 ≠ 记不了」的实现就是它一直在这儿。
+     *
+     * <h2>🔴 {@code userId} 是参数,不是这一层自己去拿的东西(B0 §4.3)</h2>
+     *
+     * {@code app} 从鉴权上下文取出来递进来。这个包里没有任何「当前用户」类型的入口
+     * (禁词全集见 {@link Tenant}),也不依赖 {@code kaodian-auth} 的任何类型 ——
+     * 那条边由 {@code kaodian-domain/pom.xml} 上的 enforcer 在构建期拦着。
+     * 这里只校验它 {@code > 0}(在 {@link Touch} 的构造器里),<b>不查这个用户存不存在</b>。
      */
-    public CaptureResult capture(CaptureRequest request) {
-        CaptureResult replay = replayOf(request);
+    public CaptureResult capture(long userId, CaptureRequest request) {
+        CaptureResult replay = replayOf(userId, request);
         if (replay != null) {
             return replay;
         }
         if (isBlank(request.nodeCode())) {
             return new CaptureResult.Rejected(Rejection.MISSING_NODE_CODE, RecognitionResult.noMatch());
         }
-        return mountAndAppend(request, request.nodeCode(), Mounting.USER_PICKED, RecognitionResult.noMatch());
+        return mountAndAppend(userId, request, request.nodeCode(),
+                Mounting.USER_PICKED, RecognitionResult.noMatch());
     }
 
     /**
@@ -214,8 +222,9 @@ public class CaptureService {
      *
      * @return 命中就返回 {@code Recorded(replayed = true)};没有去重键或没命中返回 {@code null}
      */
-    private CaptureResult replayOf(CaptureRequest request) {
-        Touch existing = store.findByClientToken(request.clientToken());
+    private CaptureResult replayOf(long userId, CaptureRequest request) {
+        // 🔴 判重按 (userId, clientToken):去重键是客户端自己生成的,两个人之间没有任何约定。
+        Touch existing = store.findByClientToken(userId, request.clientToken());
         if (existing == null) {
             return null;
         }
@@ -244,9 +253,9 @@ public class CaptureService {
      * @param image    原图字节
      * @param mimeType 如 {@code image/jpeg}
      */
-    public CaptureResult captureFromPhoto(CaptureRequest request, byte[] image, String mimeType) {
+    public CaptureResult captureFromPhoto(long userId, CaptureRequest request, byte[] image, String mimeType) {
         // 🔴 判重在调模型【之前】—— 补传重发一次不该再花一次识别(见 replayOf)
-        CaptureResult replay = replayOf(request);
+        CaptureResult replay = replayOf(userId, request);
         if (replay != null) {
             return replay;
         }
@@ -266,10 +275,10 @@ public class CaptureService {
 
         // 🔴 顺序是红线本身:先看用户挑没挑,再看模型认没认出来。
         if (!isBlank(request.nodeCode())) {
-            return mountAndAppend(request, request.nodeCode(), Mounting.USER_PICKED, recognition);
+            return mountAndAppend(userId, request, request.nodeCode(), Mounting.USER_PICKED, recognition);
         }
         if (recognition.matched()) {
-            return mountAndAppend(request, recognition.nodeCode(), Mounting.RECOGNIZED, recognition);
+            return mountAndAppend(userId, request, recognition.nodeCode(), Mounting.RECOGNIZED, recognition);
         }
         return new CaptureResult.Rejected(
                 available ? Rejection.NO_MATCH_AND_NO_USER_NODE
@@ -300,7 +309,7 @@ public class CaptureService {
      * {@code Syllabus#node} 查的是<b>未归档</b>的考点,所以归档的考点也挂不上新记录 ——
      * 归档的意思正是「这个考点不再使用了」,继续往上挂会让归档变成一句空话。
      */
-    private CaptureResult mountAndAppend(CaptureRequest request, String nodeCode,
+    private CaptureResult mountAndAppend(long userId, CaptureRequest request, String nodeCode,
                                          Mounting mounting, RecognitionResult recognition) {
         if (syllabus.current().node(nodeCode) == null) {
             return new CaptureResult.Rejected(Rejection.NODE_NOT_IN_SYLLABUS, recognition);
@@ -308,6 +317,7 @@ public class CaptureService {
 
         Touch touch = new Touch(
                 newId(),
+                userId,
                 nodeCode,
                 request.sourceName(),
                 request.kind(),

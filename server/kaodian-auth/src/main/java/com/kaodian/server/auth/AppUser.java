@@ -9,7 +9,10 @@ import java.time.Instant;
  * 凭证一律在 {@link UserIdentity} 里,一个通道一行。
  * 这样合并两个账号时改的是 identity 的归属,主表一个字段都不用动。
  *
- * @param id        账号 id
+ * @param id        账号 id。<b>{@code long}(int64),JSON 里以字符串传输</b>
+ *                  (docs/technical/backend/B0-平台底座与横切契约.md §3.3 · {@code 接口契约} §1.1「用户标识」)。
+ *                  🔴 <b>{@code 0} 在结构上不是合法 userId</b> —— {@code 0L} 正是 {@code AgentController}
+ *                  那个硬编码哨兵。发号从 {@code 10001} 起,任何残留的 {@code 0} 一眼就是错的
  * @param nickname  昵称。可空 —— 手机号通道注册时根本没有昵称,而<b>逼用户起名会在
  *                  离开成本最低的那一秒多加一个页面</b>(docs/technical/后端系统设计与组件接入.md §1.7)
  * @param status    账号状态
@@ -19,7 +22,7 @@ import java.time.Instant;
  *                  {@code L-A5} 的律师稿。这里只保证「注销后立刻登不进来、令牌全部失效」
  */
 public record AppUser(
-        String id,
+        long id,
         String nickname,
         AccountStatus status,
         Instant createdAt,
@@ -27,8 +30,9 @@ public record AppUser(
 ) {
 
     public AppUser {
-        if (id == null || id.isBlank()) {
-            throw new IllegalArgumentException("账号必须有 id");
+        // 🔴 不是「非空非白」而是 > 0:0 必须在结构上不是一个合法 userId(B0-2 §3.3)。
+        if (id <= 0) {
+            throw new IllegalArgumentException("账号 id 必须 > 0(0 是 agent 那个哨兵,不是账号):" + id);
         }
         if (status == null) {
             throw new IllegalArgumentException("账号必须有状态");
@@ -41,7 +45,7 @@ public record AppUser(
         }
     }
 
-    public static AppUser fresh(String id, Instant now) {
+    public static AppUser fresh(long id, Instant now) {
         return new AppUser(id, null, AccountStatus.ACTIVE, now, null);
     }
 

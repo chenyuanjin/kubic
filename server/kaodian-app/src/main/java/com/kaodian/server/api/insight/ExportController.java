@@ -1,5 +1,6 @@
 package com.kaodian.server.api.insight;
 
+import com.kaodian.server.api.support.CurrentSession;
 import com.kaodian.server.api.dto.insight.ExportResponse;
 import com.kaodian.server.coverage.CoverageReader;
 import com.kaodian.server.coverage.CoverageReader.Snapshot;
@@ -19,8 +20,8 @@ import java.time.format.DateTimeFormatter;
  * <h2>为什么挂在 {@code /api/v1/export},而不是 {@code /api/v1/syllabus/export} 底下</h2>
  *
  * §6.5 的契约写的是 {@code /export},与 {@code /records} / {@code /coverage} /
- * {@code /timeline} 平级;统一前缀 {@code /api/v1} 自 KUBI-107 起代码与契约一致
- * (`B0` §16.2),所以落到 {@code /api/v1/export}。
+ * {@code /timeline} 平级(契约里的统一前缀是 {@code /api/v1/v1},本仓库目前用 {@code /api},
+ * v1 那一位还没引入,所以落到 {@code /api/v1/export})。
  * <p>
  * 它<b>不能</b>挂进 {@code /api/v1/syllabus} 是因为它导的东西横跨三层 ——
  * 骨架(考点)、行为(记录)、覆盖(统计)。挂到其中任何一层下面,都是在说
@@ -95,10 +96,12 @@ public class ExportController {
      * <b>那份配置是「一处声明」的,改它属于跨域策略的决定,不是导出功能顺手能带的</b>。
      */
     @GetMapping("/api/v1/export")
-    public ResponseEntity<Object> export(@RequestParam String format) {
+    public ResponseEntity<Object> export(CurrentSession session, @RequestParam String format) {
         ExportFormat fmt = ExportFormat.ofWireName(format);
 
-        Snapshot snapshot = reader.read();
+        // 🔴 导出的是【这个人】的差集。跨用户那一份连接口都不该有 ——
+        //    「完整数据导出」说的是我的数据(决策记录 §2.6),不是全库。
+        Snapshot snapshot = reader.read(session.userId());
         ExportResponse data = ExportResponse.of(
                 snapshot.at(), snapshot.syllabus(), reader.summarize(snapshot),
                 snapshot.groups(), snapshot.touches());

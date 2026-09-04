@@ -97,10 +97,32 @@ public class CoverageReader {
      * 中间要是恰好有一次编辑落盘,顶上的百分比就会和树上的格子对不上 ——
      * 与「生疏」为什么共用一个 {@code at} 是同一个理由。
      */
+    public Snapshot read(long userId) {
+        return read(store.findAll(userId), tagStore.findAll(userId), assertionStore.findAll(userId));
+    }
+
+    /**
+     * 🔴 <b>跨用户读一次全量。今天只剩一个调用方:{@code kaodian-agent} 的三个工具。</b>
+     *
+     * <p>{@code /api/agent/**} 的租户列归 KUBI-78,B0 §5.4 明写「本轮给目标形态,不动手」——
+     * 而 {@code AgentController} 那个恒为 {@code 0L} 的 userId 是那条冲突的实读记录
+     * (KUBI-76 {@code metadata.redline_hit}),本轮不撤销它。
+     * <p>
+     * 它今天在 HTTP 上走不通:{@code ApiAuthFilter} 覆盖 {@code /api/**},那五个端点没有令牌
+     * 一律 {@code 401}。所以这条路存在,但打不开 —— <b>B0 §3.5 判据②:延后的是动手时间,
+     * 不是那条判据,它现在是红的,红着是对的。</b>
+     * <p>
+     * ⚠️ 不要给它加新的调用方。要用户维度的差集,调 {@link #read(long)}。
+     */
     public Snapshot read() {
+        return read(store.findAllAcrossUsers(), tagStore.findAllAcrossUsers(),
+                assertionStore.findAllAcrossUsers());
+    }
+
+    private Snapshot read(List<Touch> touches, List<RecordTag> storedTags,
+                          List<UserAssertion> assertions) {
         Instant now = clock.instant();
         Syllabus tree = syllabus.current();
-        List<Touch> touches = store.findAll();
 
         // 行为层与标签层<b>一起读一次</b>,然后才算差集。分两次去问的话,中间要是恰好落了一次丢弃,
         // 就可能出现「记录已经有了、它的标签还没读到」——那个考点会不报错地少算一次触达。
@@ -108,12 +130,11 @@ public class CoverageReader {
         //
         // 🔴 tagStore.findAll() 不能直接拿去算:库里只有【后来发生的事】(补标、加挂、确认、丢弃),
         //    采集那一刻的主标签是推出来的。派生规则只有 RecordTag.effectiveTagsOf 一处。
-        List<RecordTag> tags = RecordTag.effectiveTagsOf(touches, tagStore.findAll());
-
-        // 「我已掌握」也在这一次读取里取齐。它不进覆盖度的分子(决策记录 §5.2:补丁不是解法),
-        // 但盲区榜要按它过滤、概览要按它单列一格 —— 两处都得看到同一份声明,
-        // 否则会出现「榜上没有它,概览里也没算它」这种谁都解释不了的一屏。
-        List<UserAssertion> assertions = assertionStore.findAll();
+        //
+        // 🔴 三层是【同一个用户维度】取来的(见两个 read 重载)。混着来 —— 比如记录按用户过滤、
+        //    标签取全库 —— 会让一个人的覆盖度里混进别人的标签行,而且不会报错。
+        //    所以三次取数都在调用方一处完成,这里只负责把它们对齐算差集。
+        List<RecordTag> tags = RecordTag.effectiveTagsOf(touches, storedTags);
 
         return new Snapshot(tree, now, touches,
                 coverage.compute(tree, touches, tags, assertions, now));

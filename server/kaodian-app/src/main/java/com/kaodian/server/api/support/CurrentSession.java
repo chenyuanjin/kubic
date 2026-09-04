@@ -12,7 +12,8 @@ import com.kaodian.server.auth.TokenScope;
  */
 public record CurrentSession(AccessToken token) {
 
-    public String userId() {
+    /** {@code long}(int64)。JSON 出口一律 {@code String.valueOf(...)} —— 契约 §1.1「用户标识」。 */
+    public long userId() {
         return token.userId();
     }
 

@@ -1,5 +1,6 @@
 package com.kaodian.server.api.insight;
 
+import com.kaodian.server.api.support.CurrentSession;
 import com.kaodian.server.api.dto.insight.ExportResponse;
 import com.kaodian.server.coverage.CoverageReader;
 import com.kaodian.server.coverage.CoverageReader.Snapshot;
@@ -94,11 +95,13 @@ public class ExportController {
      * 直接跳转不受影响,所以这一版没有去动 {@code ApiCorsConfig} ——
      * <b>那份配置是「一处声明」的,改它属于跨域策略的决定,不是导出功能顺手能带的</b>。
      */
-    @GetMapping("/api/v1/export")
-    public ResponseEntity<Object> export(@RequestParam String format) {
+    @GetMapping("/api/v1/v1/export")
+    public ResponseEntity<Object> export(CurrentSession session, @RequestParam String format) {
         ExportFormat fmt = ExportFormat.ofWireName(format);
 
-        Snapshot snapshot = reader.read();
+        // 🔴 导出的是【这个人】的差集。跨用户那一份连接口都不该有 ——
+        //    「完整数据导出」说的是我的数据(决策记录 §2.6),不是全库。
+        Snapshot snapshot = reader.read(session.userId());
         ExportResponse data = ExportResponse.of(
                 snapshot.at(), snapshot.syllabus(), reader.summarize(snapshot),
                 snapshot.groups(), snapshot.touches());

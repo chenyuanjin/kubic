@@ -28,14 +28,27 @@ import java.util.List;
  */
 public interface RecordTagStore {
 
-    /** 库里存着的全部标签行。<b>不含推出来的主标签</b>,见类注释。 */
-    List<RecordTag> findAll();
+    /** 这个用户存着的全部标签行。<b>不含推出来的主标签</b>,见类注释。 */
+    List<RecordTag> findAll(long userId);
 
-    /** 某条记录名下存着的标签行,按写入顺序。 */
-    List<RecordTag> findByRecord(String recordId);
+    /**
+     * 全库标签行,<b>跨用户</b>。
+     *
+     * <p>与 {@link TouchStore#findAllAcrossUsers()} 同一条:今天只剩
+     * {@code CoverageReader#read()} 那条 agent 路径,而那五个端点已被 {@code ApiAuthFilter} 挡住。
+     */
+    List<RecordTag> findAllAcrossUsers();
 
-    /** 按 id 找;没有返回 {@code null}(不抛 —— 「查一个不存在的标签」是调用方要分辨的情况)。 */
-    RecordTag find(String tagId);
+    /** 这个用户某条记录名下存着的标签行,按写入顺序。 */
+    List<RecordTag> findByRecord(long userId, String recordId);
+
+    /**
+     * 按 id 找这个用户的标签;没有返回 {@code null}
+     * (不抛 —— 「查一个不存在的标签」是调用方要分辨的情况)。
+     *
+     * <p>🔴 别人的标签等于不存在,与 {@link TouchStore#delete} 那句同源。
+     */
+    RecordTag find(long userId, String tagId);
 
     /**
      * 新增或更新一行。
@@ -58,8 +71,12 @@ public interface RecordTagStore {
      *
      * <p>要挪到别的考点,正确做法是 {@link RecordTag#discard()} 这一条,再 {@code put} 一条新的。
      *
+     * <p>归属在 {@code tag.userId()} 上,不另传一个参数(与 {@link TouchStore#append} 同一句)。
+     * 🔴 <b>{@code userId} 也在「不许变」那一列里</b>:换归属等于把一条标签连同它贡献的那一格
+     * 覆盖度过户给另一个人,而覆盖度是这个产品唯一的那个数。
+     *
      * @return 落下的那行
-     * @throws IllegalArgumentException 试图改动上面三个字段之一
+     * @throws IllegalArgumentException 试图改动上面几个字段之一
      */
     RecordTag put(RecordTag tag);
 
@@ -72,8 +89,8 @@ public interface RecordTagStore {
      *
      * @return 删掉了几行
      */
-    int deleteByRecord(String recordId);
+    int deleteByRecord(long userId, String recordId);
 
-    /** 存着的标签行数。 */
-    int count();
+    /** 这个用户存着的标签行数。 */
+    int count(long userId);
 }

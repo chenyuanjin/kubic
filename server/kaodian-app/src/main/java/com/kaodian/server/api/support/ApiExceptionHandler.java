@@ -1,8 +1,7 @@
 package com.kaodian.server.api.support;
 
 import com.kaodian.server.api.dto.common.ApiError;
-import com.kaodian.server.api.dto.common.UnknownFieldException;
-import com.kaodian.server.api.dto.common.ApiError;
+import com.kaodian.server.api.dto.common.ErrorCode;
 import com.kaodian.server.api.dto.common.UnknownFieldException;
 import com.kaodian.server.syllabus.SyllabusDataException;
 import com.kaodian.server.syllabus.SyllabusEditException;
@@ -193,7 +192,9 @@ public class ApiExceptionHandler {
         if (status.is5xxServerError()) {
             log.error("[{}] 未预期的服务端错误", traceId, ex);      // 堆栈只进日志
             return ResponseEntity.status(status)
-                    .body(new ApiError("INTERNAL_ERROR", "服务器内部错误,请把 traceId 报给我们。", traceId));
+                    // 🔴 契约 §10.2 统一叫 SERVER_ERROR。这是一次改名不是一次新增 ——
+                    // 老名字 INTERNAL_ERROR 不在 ErrorCode 里,留着会让 §十 的双向比对判红。
+                    .body(new ApiError(ErrorCode.SERVER_ERROR.name(), "服务器内部错误,请把 traceId 报给我们。", traceId));
         }
         log.info("[{}] 请求被 Spring MVC 拒绝 status={} type={}", traceId, status.value(), ex.getClass().getSimpleName());
         return ResponseEntity.status(status)

@@ -64,11 +64,11 @@ public class FileTokenStore implements TokenStore {
     }
 
     @Override
-    public List<AccessToken> findByUser(String userId) {
+    public List<AccessToken> findByUser(long userId) {
         synchronized (lock) {
             ensureLoaded();
             return tokens.values().stream()
-                    .filter(t -> t.userId().equals(userId))
+                    .filter(t -> t.userId() == userId)
                     .sorted(Comparator.comparing(AccessToken::lastUsedAt,
                             Comparator.nullsFirst(Comparator.naturalOrder())).reversed())
                     .toList();
@@ -104,14 +104,14 @@ public class FileTokenStore implements TokenStore {
     }
 
     @Override
-    public int revokeAllOfUser(String userId, Instant now) {
+    public int revokeAllOfUser(long userId, Instant now) {
         synchronized (lock) {
             ensureLoaded();
             Map<String, AccessToken> next = new LinkedHashMap<>(tokens);
             int n = 0;
             for (Map.Entry<String, AccessToken> e : next.entrySet()) {
                 AccessToken t = e.getValue();
-                if (t.userId().equals(userId) && !t.isRevoked()) {
+                if (t.userId() == userId && !t.isRevoked()) {
                     e.setValue(t.revoked(now));
                     n++;
                 }
@@ -184,7 +184,7 @@ public class FileTokenStore implements TokenStore {
         for (JsonNode n : arr) {
             all.add(new AccessToken(
                     required(n, "tokenHash"),
-                    required(n, "userId"),
+                    requiredLong(n, "userId"),
                     TokenScope.ofWireName(required(n, "scope")),
                     n.path("deviceLabel").asString(""),
                     Instant.parse(required(n, "issuedAt")),
@@ -222,6 +222,16 @@ public class FileTokenStore implements TokenStore {
             throw new IllegalStateException("令牌记录缺少必填字段:" + field);
         }
         return v;
+    }
+
+    /** userId 是 int64(B0-2 §3.3);tokenHash 不是 —— 它仍然是不透明字符串(契约 §1.1「令牌标识」)。 */
+    private static long requiredLong(JsonNode n, String field) {
+        JsonNode v = n.path(field);
+        if (!v.isIntegralNumber()) {
+            throw new IllegalStateException("令牌记录的 " + field + " 不是 int64:" + v
+                    + " —— B0-2 之前的存量数据?删掉 ~/.kaodian/auth-*.json 重新注册即可");
+        }
+        return v.longValue();
     }
 
     private static Instant optionalInstant(JsonNode n, String field) {

@@ -71,7 +71,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * 一个把丢弃写成「只改标志、不进差集」的实现会全绿,而那正是 {@code P1-7} 要的那件事没做。
  */
 @WebMvcTest(controllers = TagController.class)
-@Import(DomainBeans.class)     // web 切片不扫 @Configuration,领域装配要显式带进来
+// web 切片不扫 @Configuration,领域装配要显式带进来;ApiTestAuth 给每个请求带上真令牌
+// (B0-4 之后 /api/** 默认拒绝),「不带令牌 → 401」那条反向用例在 ApiAuthDefaultDenyTest 里
+@Import({DomainBeans.class, ApiTestAuth.class})
 class TagApiTest {
 
     /** 这个来源名召回得出候选(见 {@code CandidateRecallTest}),用来验 suggest 走到第 ② 段。 */
@@ -96,12 +98,14 @@ class TagApiTest {
         // 所以记录时刻相对「现在」构造 —— 这个文件验的是接口形状,不验五态的时间边界,
         // 那是 CoverageServiceTest 的活。
         Instant now = Instant.now();
+        // 记录归 ApiTestAuth.USER_ID —— 令牌里的那个人。挂在别人名下的话,按用户过滤之后
+        // 这两条记录一条都查不到,而失败会以「404 RECORD_NOT_FOUND」的样子出现。
         store.reset(List.of(
-                new Touch("t-1", "growth-rate", SILENT_SOURCE, TouchKind.DRILL,
-                        now.minusSeconds(3600), new Touch.Drill(10, 8)),
-                new Touch("t-2", "share-calc", RECALLING_SOURCE, TouchKind.PHOTO,
-                        now.minusSeconds(7200), null)));
-        tags.findAll().forEach(t -> tags.deleteByRecord(t.recordId()));
+                new Touch("t-1", ApiTestAuth.USER_ID, "growth-rate", SILENT_SOURCE, TouchKind.DRILL,
+                        now.minusSeconds(3600), new Touch.Drill(10, 8), null),
+                new Touch("t-2", ApiTestAuth.USER_ID, "share-calc", RECALLING_SOURCE, TouchKind.PHOTO,
+                        now.minusSeconds(7200), null, null)));
+        tags.findAllAcrossUsers().forEach(t -> tags.deleteByRecord(t.userId(), t.recordId()));
     }
 
     // ———————————————————— 一、suggest ————————————————————
@@ -121,7 +125,8 @@ class TagApiTest {
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.code").value("UNKNOWN_FIELD"));
         }
-        assertTrue(tags.findAll().isEmpty(), "被拒的请求一条标签都不该落");
+        // across-users:「一条都不该落」说的是整个库,不只是这个用户名下那一格
+        assertTrue(tags.findAllAcrossUsers().isEmpty(), "被拒的请求一条标签都不该落");
     }
 
     @Test
@@ -185,7 +190,7 @@ class TagApiTest {
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.code").value("UNKNOWN_FIELD"));
         }
-        assertTrue(tags.findAll().isEmpty());
+        assertTrue(tags.findAllAcrossUsers().isEmpty());
     }
 
     /**
@@ -247,7 +252,7 @@ class TagApiTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
 
-        assertTrue(tags.findAll().isEmpty());
+        assertTrue(tags.findAllAcrossUsers().isEmpty());
     }
 
     @Test
@@ -281,7 +286,8 @@ class TagApiTest {
     void confirmDoesNotRewriteOrigin() throws Exception {
         // 直接往库里放一条 auto 标签:今天没有任何端点能造出 auto(suggest 拿不到素材),
         // 而 origin 不可变这条恰恰只有在 auto 上才验得出来。
-        tags.put(new RecordTag("tag-auto", "t-1", "average-calc", 0.91, TagOrigin.AUTO, null, false));
+        tags.put(new RecordTag("tag-auto", ApiTestAuth.USER_ID, "t-1", "average-calc",
+                0.91, TagOrigin.AUTO, null, false));
 
         mockMvc.perform(post("/api/v1/records/t-1/tags/tag-auto/confirm"))
                 .andExpect(status().isOk())
@@ -290,14 +296,15 @@ class TagApiTest {
                 .andExpect(jsonPath("$.tags[1].confirmedAt").exists());
 
         // 出接口那一份对了不算数,库里那一行才算:响应体可以是从一个改过的副本里渲染出来的。
-        assertTrue(tags.find("tag-auto").origin() == TagOrigin.AUTO,
+        assertTrue(tags.find(ApiTestAuth.USER_ID, "tag-auto").origin() == TagOrigin.AUTO,
                 "确认把 auto 改成了 manual —— 准确率口径(标对的/标了的)从此算不出来");
     }
 
     @Test
     @DisplayName("确认不改变覆盖度 —— 判据只有 discarded,「计入覆盖度」说的是它不会掉出去")
     void confirmDoesNotChangeCoverage() throws Exception {
-        tags.put(new RecordTag("tag-auto", "t-1", "average-calc", 0.91, TagOrigin.AUTO, null, false));
+        tags.put(new RecordTag("tag-auto", ApiTestAuth.USER_ID, "t-1", "average-calc",
+                0.91, TagOrigin.AUTO, null, false));
 
         mockMvc.perform(post("/api/v1/records/t-1/tags/tag-auto/confirm"))
                 .andExpect(jsonPath("$.summary.covered").value(3))
@@ -336,7 +343,7 @@ class TagApiTest {
                 .andExpect(status().isOk());
 
         // 错的只是它挂在哪儿,不该把「我那天学过东西」一起抹掉。
-        assertTrue(store.findAll().stream().anyMatch(t -> t.id().equals("t-1")));
+        assertTrue(store.findAll(ApiTestAuth.USER_ID).stream().anyMatch(t -> t.id().equals("t-1")));
     }
 
     // ———————————————————— 五、找不到 ————————————————————
@@ -367,7 +374,7 @@ class TagApiTest {
                     .andExpect(status().isNotFound())
                     .andExpect(jsonPath("$.code").value("TAG_NOT_FOUND"));
         }
-        assertTrue(tags.findAll().isEmpty(), "被拒的请求一行都不该落");
+        assertTrue(tags.findAllAcrossUsers().isEmpty(), "被拒的请求一行都不该落");
     }
 
     // ---------------------------------------------------------------- 装配
@@ -383,17 +390,19 @@ class TagApiTest {
         }
 
         @Override
-        public List<Touch> findAll() {
+        public List<Touch> findAll(long userId) {
+            return touches.stream()
+                    .filter(t -> t.userId() == userId)
+                    .sorted(Comparator.comparing(Touch::occurredAt)).toList();
+        }
+
+        @Override
+        public List<Touch> findAllAcrossUsers() {
             return touches.stream().sorted(Comparator.comparing(Touch::occurredAt)).toList();
         }
 
         @Override
-        public List<Touch> findByNode(String nodeCode) {
-            return touches.stream().filter(t -> t.nodeCode().equals(nodeCode)).toList();
-        }
-
-        @Override
-        public Touch findByClientToken(String clientToken) {
+        public Touch findByClientToken(long userId, String clientToken) {
             return null;
         }
 
@@ -404,8 +413,10 @@ class TagApiTest {
         }
 
         @Override
-        public Touch delete(String id) {
-            return touches.stream().filter(t -> t.id().equals(id)).findFirst()
+        public Touch delete(long userId, String id) {
+            // 别人的记录等于不存在(契约见 TouchStore#delete)
+            return touches.stream()
+                    .filter(t -> t.userId() == userId && t.id().equals(id)).findFirst()
                     .map(t -> {
                         touches.remove(t);
                         return t;
@@ -413,8 +424,13 @@ class TagApiTest {
         }
 
         @Override
-        public int count() {
-            return touches.size();
+        public int count(long userId) {
+            return (int) touches.stream().filter(t -> t.userId() == userId).count();
+        }
+
+        @Override
+        public int countByNodeAcrossUsers(String nodeCode) {
+            return (int) touches.stream().filter(t -> t.nodeCode().equals(nodeCode)).count();
         }
 
         @Override

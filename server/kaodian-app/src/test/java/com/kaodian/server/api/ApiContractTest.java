@@ -94,7 +94,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         CoverageController.class,
         TimelineController.class,
         RecordController.class})
-@Import(DomainBeans.class)     // web 切片不扫 @Configuration,领域装配要显式带进来
+// web 切片不扫 @Configuration,领域装配要显式带进来;ApiTestAuth 给每个请求带上真令牌
+// (B0-4 之后 /api/** 默认拒绝),「不带令牌 → 401」那条反向用例在 ApiAuthDefaultDenyTest 里
+@Import({DomainBeans.class, ApiTestAuth.class})
 class ApiContractTest {
 
     @Autowired
@@ -122,7 +124,7 @@ class ApiContractTest {
         // 标签层也得跟着清干净:@WebMvcTest 的上下文在一个类里是复用的,
         // 一条留下来的标签会让后面每一个断言覆盖率的用例都多算一格 ——
         // 而它是不是留下来了,取决于方法执行顺序,那是最难查的一种红。
-        tagStore.findAll().forEach(t -> tagStore.deleteByRecord(t.recordId()));
+        tagStore.findAllAcrossUsers().forEach(t -> tagStore.deleteByRecord(t.userId(), t.recordId()));
     }
 
     // ---------------------------------------------------------------- 查询
@@ -618,7 +620,7 @@ class ApiContractTest {
                         .contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
-        assertEquals(9, store.count(), "第一次:种子 8 条 + 这条");
+        assertEquals(9, store.count(ApiTestAuth.USER_ID), "第一次:种子 8 条 + 这条");
 
         mockMvc.perform(post("/api/v1/records")
                         .contentType(MediaType.APPLICATION_JSON).content(body))
@@ -630,7 +632,7 @@ class ApiContractTest {
                 .andExpect(jsonPath("$.record.occurredAt").value(
                         JsonPath.read(firstId, "$.record.occurredAt").toString()));
 
-        assertEquals(9, store.count(), "第二次一条都不该多 —— 多一条就等于覆盖度的分子被数了两次");
+        assertEquals(9, store.count(ApiTestAuth.USER_ID), "第二次一条都不该多 —— 多一条就等于覆盖度的分子被数了两次");
     }
 
     @Test
@@ -645,7 +647,7 @@ class ApiContractTest {
                                     """.formatted(token)))
                     .andExpect(status().isCreated());
         }
-        assertEquals(10, store.count());
+        assertEquals(10, store.count(ApiTestAuth.USER_ID));
     }
 
     @Test
@@ -661,7 +663,7 @@ class ApiContractTest {
 
         // 判重的失败方向只能是「多一条」:多一条用户看得见、删得掉;
         // 少一条是他记了却没记上,而他不会知道。
-        assertEquals(10, store.count(), "两条都要在 —— 它们只是长得一样,不是同一条");
+        assertEquals(10, store.count(ApiTestAuth.USER_ID), "两条都要在 —— 它们只是长得一样,不是同一条");
     }
 
     @Test
@@ -676,7 +678,7 @@ class ApiContractTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))
                 .andExpect(jsonPath("$.message").value(Matchers.containsString("clientToken")));
-        assertEquals(8, store.count());
+        assertEquals(8, store.count(ApiTestAuth.USER_ID));
     }
 
     // ---------------------------------------------------------------- 批量补传
@@ -704,8 +706,8 @@ class ApiContractTest {
                 .andExpect(jsonPath("$.results[1].record.practiced").value(5))
                 .andExpect(jsonPath("$.results[2].error").doesNotExist());
 
-        assertEquals(11, store.count());
-        mockMvc.perform(get("/api/v1/coverage/summary")).andExpect(jsonPath("$.covered").value(11));
+        assertEquals(11, store.count(ApiTestAuth.USER_ID));
+        mockMvc.perform(get("/api/v1/v1/coverage/summary")).andExpect(jsonPath("$.covered").value(11));
     }
 
     /**
@@ -738,7 +740,7 @@ class ApiContractTest {
                 // 🔴 第 3 条在坏的那条【之后】,它必须照样落地 —— 这一条挂了就说明中途断了
                 .andExpect(jsonPath("$.results[2].status").value("STORED"));
 
-        assertEquals(10, store.count(), "坏的那条不落库,好的两条一条都不能少");
+        assertEquals(10, store.count(ApiTestAuth.USER_ID), "坏的那条不落库,好的两条一条都不能少");
     }
 
     @Test
@@ -764,7 +766,7 @@ class ApiContractTest {
                 .andExpect(jsonPath("$.results[0].status").value("DUPLICATE"))
                 .andExpect(jsonPath("$.results[0].record.id").isNotEmpty());
 
-        assertEquals(10, store.count(), "重发一整批,一条都不该多");
+        assertEquals(10, store.count(ApiTestAuth.USER_ID), "重发一整批,一条都不该多");
     }
 
     @Test
@@ -787,7 +789,7 @@ class ApiContractTest {
                 .andExpect(jsonPath("$.results[0].index").value(0))
                 .andExpect(jsonPath("$.results[1].status").value("STORED"));
 
-        assertEquals(9, store.count());
+        assertEquals(9, store.count(ApiTestAuth.USER_ID));
     }
 
     @Test
@@ -808,7 +810,7 @@ class ApiContractTest {
 
         // 🔴 一条都不许落。截断到 50 条处理是这里最危险的写法:
         // 服务端存 50 条回一个成功,客户端清空整个队列 —— 用户丢了 1 笔,两边都以为一切正常。
-        assertEquals(8, store.count());
+        assertEquals(8, store.count(ApiTestAuth.USER_ID));
     }
 
     @Test
@@ -849,7 +851,7 @@ class ApiContractTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("UNKNOWN_FIELD"));
 
-        assertEquals(8, store.count(), "解析就没过,一条都不该落");
+        assertEquals(8, store.count(ApiTestAuth.USER_ID), "解析就没过,一条都不该落");
     }
 
     @Test
@@ -887,8 +889,8 @@ class ApiContractTest {
                 .andExpect(jsonPath("$.summary.covered").value(7))
                 .andExpect(jsonPath("$.summary.percent").value(39));
 
-        assertEquals(7, store.count());
-        mockMvc.perform(get("/api/v1/coverage/summary")).andExpect(jsonPath("$.covered").value(7));
+        assertEquals(7, store.count(ApiTestAuth.USER_ID));
+        mockMvc.perform(get("/api/v1/v1/coverage/summary")).andExpect(jsonPath("$.covered").value(7));
     }
 
     @Test
@@ -897,15 +899,15 @@ class ApiContractTest {
         // 那些孤儿行今天进不了覆盖度(CoverageService 会跳过指不到记录的标签),
         // 所以这不是一条会立刻算错数的路 —— 它的危险在于【下一个读它们的人未必也做那层过滤】。
         // 契约把「级联删标签」写成了这个端点的约束,那它就得真的发生,而不是靠下游都记得防一手。
-        tagStore.put(new RecordTag("tag-x", "t-share-change", "average-calc",
+        tagStore.put(new RecordTag("tag-x", ApiTestAuth.USER_ID, "t-share-change", "average-calc",
                 RecordTag.MANUAL_CONFIDENCE, TagOrigin.MANUAL, Instant.now(), false));
-        tagStore.put(new RecordTag("tag-y", "t-growth-rate", "average-calc",
+        tagStore.put(new RecordTag("tag-y", ApiTestAuth.USER_ID, "t-growth-rate", "average-calc",
                 RecordTag.MANUAL_CONFIDENCE, TagOrigin.MANUAL, Instant.now(), false));
 
         mockMvc.perform(delete("/api/v1/records/{id}", "t-share-change"))
                 .andExpect(status().isOk());
 
-        assertEquals(List.of("tag-y"), tagStore.findAll().stream().map(RecordTag::id).toList(),
+        assertEquals(List.of("tag-y"), tagStore.findAllAcrossUsers().stream().map(RecordTag::id).toList(),
                 "被删记录的标签行还留着 —— 契约里那句「级联删标签」没有对应物");
     }
 
@@ -922,7 +924,7 @@ class ApiContractTest {
 
         assertFalse(body.contains("粮食"),
                 "那个 id 是客户端自己刚发过来的,回显一个字的信息都不增加,却开了一条往日志里写题干的路");
-        assertEquals(8, store.count());
+        assertEquals(8, store.count(ApiTestAuth.USER_ID));
     }
 
     // ---------------------------------------------------------------- cursor 分页
@@ -990,7 +992,7 @@ class ApiContractTest {
         Instant sameMoment = Instant.now().minus(Duration.ofDays(7));
         List<Touch> burst = new ArrayList<>();
         for (int i = 0; i < 6; i++) {
-            burst.add(new Touch("t-burst-" + i, "average-calc", "地铁上",
+            burst.add(new Touch("t-burst-" + i, ApiTestAuth.USER_ID, "average-calc", "地铁上",
                     TouchKind.MANUAL, sameMoment, null, "o-" + i));
         }
         store.reset(burst);
@@ -1270,6 +1272,9 @@ class ApiContractTest {
      *
      * <p>时间用「距现在多少天」而不是固定时刻,因为接口层的 {@code Clock} 就是系统时钟 ——
      * 这样这个测试验的是<b>真实链路</b>,不是一个被冻结的时间点。
+     *
+     * <p>整份种子都归 {@link ApiTestAuth#USER_ID} —— 令牌里的那个人。挂到别人名下的话,
+     * 按用户过滤之后 18/8/44% 会全部变成 18/0/0%,而这个文件的每一条断言都建立在那三个数上。
      */
     private static List<Touch> contractTouches() {
         Instant now = Instant.now();
@@ -1281,20 +1286,21 @@ class ApiContractTest {
         drill(ts, now, "truncate-divide", "B站 · 资料分析技巧", 6, 2, 4);
         drill(ts, now, "base-value", "中公 · 资料分析专项", 5, 4, 32);
         drill(ts, now, "interval-growth", "中公 · 资料分析专项", 3, 2, 33);
-        ts.add(new Touch("t-share-change", "share-change",
-                "粉笔 · 资料分析系统班 L12", TouchKind.VOICE, now.minus(Duration.ofDays(5)), null));
+        ts.add(new Touch("t-share-change", ApiTestAuth.USER_ID, "share-change",
+                "粉笔 · 资料分析系统班 L12", TouchKind.VOICE, now.minus(Duration.ofDays(5)), null, null));
         return ts;
     }
 
     /** 聚合测试用的一条记录 —— 时刻按北京时间给,因为要验的就是「这一笔算哪一天」。 */
     private static Touch at(String id, String node, String source, ZonedDateTime when) {
-        return new Touch(id, node, source, TouchKind.MANUAL, when.toInstant(), null);
+        return new Touch(id, ApiTestAuth.USER_ID, node, source,
+                TouchKind.MANUAL, when.toInstant(), null, null);
     }
 
     private static void drill(List<Touch> ts, Instant now, String node, String source,
                               int practiced, int correct, int daysAgo) {
-        ts.add(new Touch("t-" + node, node, source, TouchKind.DRILL,
-                now.minus(Duration.ofDays(daysAgo)), new Touch.Drill(practiced, correct)));
+        ts.add(new Touch("t-" + node, ApiTestAuth.USER_ID, node, source, TouchKind.DRILL,
+                now.minus(Duration.ofDays(daysAgo)), new Touch.Drill(practiced, correct), null));
     }
 
     /**
@@ -1313,23 +1319,28 @@ class ApiContractTest {
         }
 
         @Override
-        public List<Touch> findAll() {
+        public List<Touch> findAll(long userId) {
+            return touches.stream()
+                    .filter(t -> t.userId() == userId)
+                    .sorted(Comparator.comparing(Touch::occurredAt)).toList();
+        }
+
+        @Override
+        public List<Touch> findAllAcrossUsers() {
             return touches.stream().sorted(Comparator.comparing(Touch::occurredAt)).toList();
         }
 
+        /**
+         * 契约见 {@link TouchStore#findByClientToken} —— 没有去重键不是一个能互相匹配的值,
+         * 而且<b>去重键按用户判</b>:全局判重会让 A 的补传被 B 的一条老记录顶掉。
+         */
         @Override
-        public List<Touch> findByNode(String nodeCode) {
-            return touches.stream().filter(t -> t.nodeCode().equals(nodeCode)).toList();
-        }
-
-        /** 契约见 {@link TouchStore#findByClientToken} —— 没有去重键不是一个能互相匹配的值。 */
-        @Override
-        public Touch findByClientToken(String clientToken) {
+        public Touch findByClientToken(long userId, String clientToken) {
             if (clientToken == null || clientToken.isBlank()) {
                 return null;
             }
             return touches.stream()
-                    .filter(t -> clientToken.equals(t.clientToken()))
+                    .filter(t -> t.userId() == userId && clientToken.equals(t.clientToken()))
                     .findFirst()
                     .orElse(null);
         }
@@ -1343,7 +1354,7 @@ class ApiContractTest {
          */
         @Override
         public Touch append(Touch touch) {
-            Touch existing = findByClientToken(touch.clientToken());
+            Touch existing = findByClientToken(touch.userId(), touch.clientToken());
             if (existing != null) {
                 return existing;
             }
@@ -1351,11 +1362,15 @@ class ApiContractTest {
             return touch;
         }
 
-        /** 契约见 {@link TouchStore#delete} —— 删一条不存在的返回 null,不抛异常。 */
+        /**
+         * 契约见 {@link TouchStore#delete} —— 删一条不存在的返回 null,不抛异常;
+         * <b>别人的记录等于不存在</b>,同样是 null 而不是 403。
+         */
         @Override
-        public Touch delete(String id) {
+        public Touch delete(long userId, String id) {
             for (int i = 0; i < touches.size(); i++) {
-                if (touches.get(i).id().equals(id)) {
+                Touch t = touches.get(i);
+                if (t.userId() == userId && t.id().equals(id)) {
                     return touches.remove(i);
                 }
             }
@@ -1363,8 +1378,14 @@ class ApiContractTest {
         }
 
         @Override
-        public int count() {
-            return touches.size();
+        public int count(long userId) {
+            return (int) touches.stream().filter(t -> t.userId() == userId).count();
+        }
+
+        /** 契约见 {@link TouchStore#countByNodeAcrossUsers} —— 删除守则数的是全库,收窄成单用户是错的。 */
+        @Override
+        public int countByNodeAcrossUsers(String nodeCode) {
+            return (int) touches.stream().filter(t -> t.nodeCode().equals(nodeCode)).count();
         }
 
         /** 契约见 {@link TouchStore#reassign} —— 搬家,不扔东西:只换 nodeCode,其余原样。 */
@@ -1374,7 +1395,7 @@ class ApiContractTest {
             for (int i = 0; i < touches.size(); i++) {
                 Touch t = touches.get(i);
                 if (t.nodeCode().equals(fromNodeCode)) {
-                    touches.set(i, new Touch(t.id(), toNodeCode, t.sourceName(), t.kind(),
+                    touches.set(i, new Touch(t.id(), t.userId(), toNodeCode, t.sourceName(), t.kind(),
                             t.occurredAt(), t.drill(), t.clientToken()));
                     moved++;
                 }

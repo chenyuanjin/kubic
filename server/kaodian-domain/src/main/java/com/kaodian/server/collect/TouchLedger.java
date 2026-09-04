@@ -23,11 +23,17 @@ public final class TouchLedger implements NodeRecordLedger {
         this.store = store;
     }
 
+    /**
+     * 🔴 <b>跨用户</b>数,不按当前这个人收窄 —— 理由写在
+     * {@link TouchStore#countByNodeAcrossUsers} 上:骨架树是全进程共用的一棵,
+     * 删掉一个节点会让所有人挂在它上面的记录变成孤儿。
+     */
     @Override
     public int countFor(String nodeCode) {
-        return store.findByNode(nodeCode).size();
+        return store.countByNodeAcrossUsers(nodeCode);
     }
 
+    /** 🔴 同样跨用户 —— <b>数的口径与搬的口径必须是同一个</b>,见 {@link TouchStore#reassign}。 */
     @Override
     public int moveAll(String fromNodeCode, String toNodeCode) {
         return store.reassign(fromNodeCode, toNodeCode);

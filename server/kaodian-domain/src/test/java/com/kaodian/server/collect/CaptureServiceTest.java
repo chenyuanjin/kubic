@@ -38,6 +38,9 @@ class CaptureServiceTest {
     private static final Instant NOW = Instant.parse("2026-08-25T12:00:00Z");
     private static final byte[] IMAGE = {1, 2, 3};
 
+    /** 测试用户 —— 与行为层种子同一个 id(B0 §3.3:auth 侧从 10001 起号)。 */
+    private static final long USER = 10001L;
+
     @TempDir
     Path dataDir;
 
@@ -78,21 +81,21 @@ class CaptureServiceTest {
     @DisplayName("手动挂载:落地,挂载来源是「用户自己挑的」,不消耗任何模型")
     void manualCaptureLands() {
         CaptureService service = serviceWith(new StubVisionTagger());
-        CaptureResult result = service.capture(
+        CaptureResult result = service.capture(USER,
                 CaptureRequest.manual(TouchKind.MANUAL, "粉笔 · 资料分析系统班 L12", "average-calc"));
 
         CaptureResult.Recorded recorded = assertInstanceOf(CaptureResult.Recorded.class, result);
         assertEquals("average-calc", recorded.touch().nodeCode());
         assertEquals(Mounting.USER_PICKED, recorded.mounting());
         assertEquals(NOW, recorded.touch().occurredAt());
-        assertEquals(9, store.count(), "种子 8 条 + 新记的这条");
+        assertEquals(9, store.count(USER), "种子 8 条 + 新记的这条");
     }
 
     @Test
     @DisplayName("记做题:两个整数原样存下来,不做任何判断")
     void drillNumbersAreCopiedVerbatim() {
         CaptureService service = serviceWith(new StubVisionTagger());
-        CaptureResult result = service.capture(
+        CaptureResult result = service.capture(USER,
                 new CaptureRequest(TouchKind.DRILL, "自己刷题", "yoy-mom", 10, 3));
 
         Touch t = assertInstanceOf(CaptureResult.Recorded.class, result).touch();
@@ -104,19 +107,19 @@ class CaptureServiceTest {
     @DisplayName("🔴 挂载只认考点树里的 code:树外的 code 一律拒绝,不会顺手建一个新考点(R-07)")
     void freeTextTagsCannotEnter() {
         CaptureService service = serviceWith(new StubVisionTagger());
-        CaptureResult result = service.capture(
+        CaptureResult result = service.capture(USER,
                 CaptureRequest.manual(TouchKind.MANUAL, "某来源", "我自己起的考点名"));
 
         assertEquals(Rejection.NODE_NOT_IN_SYLLABUS,
                 assertInstanceOf(CaptureResult.Rejected.class, result).reason());
-        assertEquals(8, store.count(), "被拒的记录不该落库");
+        assertEquals(8, store.count(USER), "被拒的记录不该落库");
     }
 
     @Test
     @DisplayName("手动记录没挑考点 → 拒绝,而且理由说的是「没挑」不是「没认出来」")
     void manualWithoutNodeIsRejectedWithItsOwnReason() {
         CaptureService service = serviceWith(new StubVisionTagger());
-        CaptureResult result = service.capture(
+        CaptureResult result = service.capture(USER,
                 CaptureRequest.manual(TouchKind.MANUAL, "某来源", "   "));
 
         assertEquals(Rejection.MISSING_NODE_CODE,
@@ -129,32 +132,32 @@ class CaptureServiceTest {
     @DisplayName("🔴 识别说不匹配,但用户已经挑了考点 → 照样落地(docs/execution/INDEX.md §1.3.7.1)")
     void noMatchDoesNotLoseTheRecordWhenUserPicked() {
         CaptureService service = serviceWith(new FakeTagger(RecognitionResult.noMatch(0.31)));
-        CaptureResult result = service.captureFromPhoto(
+        CaptureResult result = service.captureFromPhoto(USER,
                 CaptureRequest.manual(TouchKind.PHOTO, "自己刷题", "growth-rate"), IMAGE, "image/jpeg");
 
         CaptureResult.Recorded recorded = assertInstanceOf(CaptureResult.Recorded.class, result);
         assertEquals("growth-rate", recorded.touch().nodeCode());
         assertEquals(Mounting.USER_PICKED, recorded.mounting(), "用户挑的优先,识别只是锦上添花");
         assertEquals(0.31, recorded.recognition().confidence(), 1e-9, "识别结果原样带回,供界面提示");
-        assertEquals(9, store.count());
+        assertEquals(9, store.count(USER));
     }
 
     @Test
     @DisplayName("🔴 识别服务整个挂了,但用户已经挑了考点 → 照样落地")
     void recognizerDownDoesNotLoseTheRecordWhenUserPicked() {
         CaptureService service = serviceWith(new DeadTagger());
-        CaptureResult result = service.captureFromPhoto(
+        CaptureResult result = service.captureFromPhoto(USER,
                 CaptureRequest.manual(TouchKind.PHOTO, "自己刷题", "growth-rate"), IMAGE, "image/jpeg");
 
         assertInstanceOf(CaptureResult.Recorded.class, result);
-        assertEquals(9, store.count(), "模型挂了,记录动作本身不能失败");
+        assertEquals(9, store.count(USER), "模型挂了,记录动作本身不能失败");
     }
 
     @Test
     @DisplayName("识别命中且用户没挑 → 挂模型选的那个,挂载来源标成「识别挑的」")
     void recognizedMountIsRecordedAsSuch() {
         CaptureService service = serviceWith(new FakeTagger(RecognitionResult.of("truncate-divide", 0.91)));
-        CaptureResult result = service.captureFromPhoto(
+        CaptureResult result = service.captureFromPhoto(USER,
                 CaptureRequest.manual(TouchKind.PHOTO, "自己刷题", null), IMAGE, "image/jpeg");
 
         CaptureResult.Recorded recorded = assertInstanceOf(CaptureResult.Recorded.class, result);
@@ -168,12 +171,12 @@ class CaptureServiceTest {
         CaptureRequest noNode = CaptureRequest.manual(TouchKind.PHOTO, "自己刷题", null);
 
         CaptureResult noMatch = serviceWith(new FakeTagger(RecognitionResult.noMatch()))
-                .captureFromPhoto(noNode, IMAGE, "image/jpeg");
+                .captureFromPhoto(USER, noNode, IMAGE, "image/jpeg");
         assertEquals(Rejection.NO_MATCH_AND_NO_USER_NODE,
                 assertInstanceOf(CaptureResult.Rejected.class, noMatch).reason());
-        assertEquals(8, store.count(), "挂不上考点的记录不入库");
+        assertEquals(8, store.count(USER), "挂不上考点的记录不入库");
 
-        CaptureResult dead = serviceWith(new DeadTagger()).captureFromPhoto(noNode, IMAGE, "image/jpeg");
+        CaptureResult dead = serviceWith(new DeadTagger()).captureFromPhoto(USER, noNode, IMAGE, "image/jpeg");
         assertEquals(Rejection.RECOGNIZER_UNAVAILABLE_AND_NO_USER_NODE,
                 assertInstanceOf(CaptureResult.Rejected.class, dead).reason());
     }
@@ -184,14 +187,14 @@ class CaptureServiceTest {
     @DisplayName("🔴 模型编了一个树里没有的考点 → 出口处被拦掉,不入库(docs/data/识别链路选型.md 坑一)")
     void hallucinatedNodeIsRejectedAtTheOutput() {
         CaptureService service = serviceWith(new RogueTagger("机构标准表述-增长率速算"));
-        CaptureResult result = service.captureFromPhoto(
+        CaptureResult result = service.captureFromPhoto(USER,
                 CaptureRequest.manual(TouchKind.PHOTO, "自己刷题", null), IMAGE, "image/jpeg");
 
         CaptureResult.Rejected rejected = assertInstanceOf(CaptureResult.Rejected.class, result);
         assertEquals(Rejection.NO_MATCH_AND_NO_USER_NODE, rejected.reason());
         assertFalse(rejected.recognition().matched(), "候选集之外的 code 一律降级为 NO_MATCH");
         assertEquals(0.99, rejected.recognition().confidence(), 1e-9, "置信度留着,便于排查是召回问题还是模型乱答");
-        assertEquals(8, store.count());
+        assertEquals(8, store.count(USER));
     }
 
     @Test
@@ -297,18 +300,18 @@ class CaptureServiceTest {
                 TouchKind.PHOTO, "地铁上", "average-calc", null, null, "offline-001");
 
         CaptureResult.Recorded first = assertInstanceOf(CaptureResult.Recorded.class,
-                service.capture(offline));
+                service.capture(USER, offline));
         assertFalse(first.replayed(), "第一次是真落地");
 
         // 同一个 store 换一个「一调用就炸」的 tagger:它一旦被调用,这个测试就红
         CaptureService withDeadModel = new CaptureService(store, new DeadTagger(),
                 SyllabusLoader.loadDefault(), Clock.fixed(NOW, ZoneOffset.UTC));
         CaptureResult.Recorded replayed = assertInstanceOf(CaptureResult.Recorded.class,
-                withDeadModel.captureFromPhoto(offline, IMAGE, "image/jpeg"));
+                withDeadModel.captureFromPhoto(USER, offline, IMAGE, "image/jpeg"));
 
         assertTrue(replayed.replayed(), "命中去重键 → 这一次什么都没新建");
         assertEquals(first.touch().id(), replayed.touch().id(), "返回的必须是原来那条");
-        assertEquals(9, store.count(), "种子 8 条 + 第一次那条,重发不加条");
+        assertEquals(9, store.count(USER), "种子 8 条 + 第一次那条,重发不加条");
     }
 
     /**
@@ -331,17 +334,17 @@ class CaptureServiceTest {
 
         CaptureRequest offline = new CaptureRequest(
                 TouchKind.MANUAL, "地铁上", "average-calc", null, null, "offline-001");
-        assertInstanceOf(CaptureResult.Recorded.class, service.capture(offline));
+        assertInstanceOf(CaptureResult.Recorded.class, service.capture(USER, offline));
 
         tree.set(withArchived(full, "average-calc"));
         // 前提:归档之后,同样内容但没有去重键的一笔确实会被拒 —— 否则下面那条断言什么都没证明
         assertInstanceOf(CaptureResult.Rejected.class,
-                service.capture(CaptureRequest.manual(TouchKind.MANUAL, "地铁上", "average-calc")));
+                service.capture(USER, CaptureRequest.manual(TouchKind.MANUAL, "地铁上", "average-calc")));
 
         CaptureResult.Recorded replayed = assertInstanceOf(CaptureResult.Recorded.class,
-                service.capture(offline));
+                service.capture(USER, offline));
         assertTrue(replayed.replayed());
-        assertEquals(9, store.count());
+        assertEquals(9, store.count(USER));
     }
 
     /** 把一棵树里的某个考点标成已归档,其余原样。 */

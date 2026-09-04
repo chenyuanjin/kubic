@@ -56,7 +56,8 @@ public class AccountController {
         int active = (int) tokens.sessionsOf(user.id()).stream()
                 .filter(t -> t.isUsableAt(now)).count();
         return new AccountDto(
-                user.id(), user.nickname(), user.createdAt(),
+                // 🔴 JSON 线上仍是字符串(契约 §1.1):变的是里面装什么,"u_3f2a…" → "10001"
+                String.valueOf(user.id()), user.nickname(), user.createdAt(),
                 accounts.maskedPhoneOf(user.id()).orElse(null),
                 accounts.identitiesOf(user.id()).stream()
                         .map(UserIdentity::type)

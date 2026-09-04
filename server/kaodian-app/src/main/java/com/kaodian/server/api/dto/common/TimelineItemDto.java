@@ -8,10 +8,10 @@ import java.time.Instant;
 /**
  * 一条原始记录 —— 「你什么时候、从哪个来源、以什么方式碰过哪个考点」。
  *
- * <h2>⚠ 名字里的 Timeline 已经不指 {@code /api/timeline} 了</h2>
+ * <h2>⚠ 名字里的 Timeline 已经不指 {@code /api/v1/timeline} 了</h2>
  *
- * 这条 DTO 现在只出现在<b>采集线</b>的响应里({@code GET /api/records}、
- * {@code POST /api/records} 及其批量版)。{@code /api/timeline} 改成 §6.4 的聚合视图之后
+ * 这条 DTO 现在只出现在<b>采集线</b>的响应里({@code GET /api/v1/records}、
+ * {@code POST /api/v1/records} 及其批量版)。{@code /api/v1/timeline} 改成 §6.4 的聚合视图之后
  * 一条 {@code items} 都不出了,见 {@link TimelineResponse}。
  * <p>
  * <b>没有跟着改名</b>,是因为改名要动 {@code RecordController} 与前端的类型定义,

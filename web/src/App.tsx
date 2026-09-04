@@ -18,7 +18,7 @@ import { MainScreen } from './screens/MainScreen'
  *
  * <h2>⚪ 但这道门现在是可以绕开的,这一点必须说清楚</h2>
  *
- * 后端的 `/api/records`、`/api/syllabus/*` <b>还没有要求令牌</b> —— 行为层至今是单用户的
+ * 后端的 `/api/v1/records`、`/api/v1/syllabus/*` <b>还没有要求令牌</b> —— 行为层至今是单用户的
  * (`Touch` 上没有 `user_id`,整个进程一份 `touches.json`,见 server 的
  * `CurrentSessionResolver` 类注释)。所以这道门此刻挡的是<b>界面</b>,不是数据。
  * <p>

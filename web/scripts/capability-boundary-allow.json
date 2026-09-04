@@ -1,5 +1,5 @@
 {
-  "note": "能力边界灰名单豁免表(docs/总路线图 §四 R-05)。判据只有一条:这个数是谁产生的 —— 用户自己填的、服务端按「近五年频次 × 状态权重」排的盲区序,都不算产品替用户判断对错;产品对内容作出的评价才算。豁免按 file + match 生效(不按行号,行号会漂移),所以 reason 写的是「这个文件为什么可以用这个词」。拿不准就别写在这里,留着红让人判 —— 宁缺毋滥。",
+  "note": "能力边界灰名单豁免表(docs/总路线图 §四 R-05)。判据只有一条:这个数是谁产生的 —— 服务端按「近五年频次 × 状态权重」排的盲区序不算产品替用户判断对错;产品对内容作出的评价才算。🔴 2026-09-04 起「用户自己填的」不再是一条豁免理由:`正确率` 已升硬名单(`B0` §11.4),这张表对它无效。豁免按 file + match 生效(不按行号,行号会漂移),所以 reason 写的是「这个文件为什么可以用这个词」。拿不准就别写在这里,留着红让人判 —— 宁缺毋滥。",
   "allow": [
     {
       "file": "src/api/derive.ts",
@@ -15,11 +15,6 @@
       "file": "src/api/derive.ts",
       "match": "score",
       "reason": "只出现在 blindScore(盲区排序分)。两个因子——近五年频次是真题统计事实,状态由「有没有/几次/多久前」推出——都在能力边界内,没有一处需要知道某道题的答案。"
-    },
-    {
-      "file": "src/api/derive.ts",
-      "match": "正确率",
-      "reason": "两处都是注释,而且说的正是不能算的那种正确率:记录被截断时偏小的正确率会把「稳」显示成「弱」,所以宁可显示「—」。是在给这个数设防,不是在用它评价用户。"
     },
     {
       "file": "src/api/derive.ts",
@@ -48,11 +43,6 @@
     },
     {
       "file": "src/api/mock.ts",
-      "match": "正确率",
-      "reason": "注释里写的都是「用户自填正确率」。mock 里的 practiced/correct 模拟的是用户敲进来的两个整数,不是模拟一次判卷结果。"
-    },
-    {
-      "file": "src/api/mock.ts",
       "match": "评分",
       "reason": "出现在否定式里:「这是一条显示分组的阈值,不是评分」。这行声明的正是 R-05 边界本身,删掉它才会有风险。"
     },
@@ -65,11 +55,6 @@
       "file": "src/api/types.ts",
       "match": "accuracy",
       "reason": "DTO 字段与其注释。类型是 number | null,null 的意思是「不知道」而不是 0%;树节点 DTO 里则刻意连这个字段都没有。数的来源始终是用户自填的 correct/practiced。"
-    },
-    {
-      "file": "src/api/types.ts",
-      "match": "正确率",
-      "reason": "注释,解释 accuracy 列为什么会显示「—」,以及树节点 DTO 缺字段时整列会渲染成「NaN%」。是在约束这个数的显示,不是在产生一个评价。"
     },
     {
       "file": "src/api/types.ts",
@@ -123,11 +108,6 @@
     },
     {
       "file": "src/features/BlindSpotSide.tsx",
-      "match": "正确率",
-      "reason": "第 94 行那句常驻文案:「不判断对错。正确率是你自己填的数。」这是产品的能力边界本身,不是免责声明,常驻、不折叠、不随列表滚走。"
-    },
-    {
-      "file": "src/features/BlindSpotSide.tsx",
       "match": "对错",
       "reason": "同一句常驻文案的前半句「不判断对错」。整个仓库最该保留的一行 UI 文案。"
     },
@@ -140,11 +120,6 @@
       "file": "src/features/BlindSpotSide.tsx",
       "match": "榜单",
       "reason": "指「先补这几个」这块盲区榜的滚动区域。榜上是考点缺口;这个产品从头到尾只有一个人的记录,结构上排不出用户之间的榜。"
-    },
-    {
-      "file": "src/features/CaptureSheet.tsx",
-      "match": "正确率",
-      "reason": "记录表单给用户的说明:「这两个数原样存下来。产品不判题、不给分,正确率就是它们相除。」练/对两个数都是用户自己敲进去的。"
     },
     {
       "file": "src/features/CaptureSheet.tsx",
@@ -170,21 +145,6 @@
       "file": "src/features/CoverageHeader.tsx",
       "match": "分数",
       "reason": "在否定式里:「大字是覆盖率,不是分数」。覆盖率的分子是有记录的考点数,只回答「有没有」。"
-    },
-    {
-      "file": "src/features/CoverageHeader.tsx",
-      "match": "正确率",
-      "reason": "列表头的列名说明。那一列显示的是用户自填的两个数相除,算不出来时显示「—」。"
-    },
-    {
-      "file": "src/features/NodeList.tsx",
-      "match": "accuracy",
-      "reason": "只是引用并渲染 lib/format 的 accuracyText,显示用户自填正确率;这里没有任何新的计算或判断。"
-    },
-    {
-      "file": "src/features/StatusBar.tsx",
-      "match": "正确率",
-      "reason": "两处都在解释一个降级:记录超出单次上限时,练·对与正确率显示「—」并当场说明原因 —— 宁可空着,也不给一个会把「稳」显示成「弱」的偏小值。"
     },
     {
       "file": "src/features/SyllabusEditor.tsx",
@@ -217,19 +177,9 @@
       "reason": "是 parse 的意思:「近五年频次的解析。0–999 的整数」,把输入框里的字符串解析成整数。与题目解析无关。"
     },
     {
-      "file": "src/index.css",
-      "match": "正确率",
-      "reason": "五态色的注释:「弱 = 练过但用户自填正确率低」。在颜色定义旁边点明这个数由用户填,正是防止把这块红读成产品的评价。"
-    },
-    {
-      "file": "src/lib/format.ts",
-      "match": "正确率",
-      "reason": "accuracyText / blindReason 的注释与拼串,显示的是用户自填的那两个数;blindReason 那行明说它回答的是「凭什么排这么前」而不是「你哪里不会」。"
-    },
-    {
       "file": "src/lib/format.ts",
       "match": "accuracy",
-      "reason": "accuracyText 只做一件事:null → 「—」,否则把用户自填的比值取整成百分数。没练过、算不出来都显示「—」而不是 0%。"
+      "reason": "KUBI-107 之后这个文件里的 accuracy 只剩两处注释:一处是 accuracyText 被删掉的记号(它渲染的那个比值按 `B0` §11.4 整条去掉),一处说明 NodeView.accuracy 这个字段为什么没跟着删 —— 它是服务端 NodeDetailDto 的契约字段。两处都不产生任何显示值。"
     },
     {
       "file": "src/features/AgentChat.tsx",

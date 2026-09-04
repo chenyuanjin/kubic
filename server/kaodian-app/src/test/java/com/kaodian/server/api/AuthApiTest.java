@@ -276,7 +276,7 @@ class AuthApiTest {
 
     private String sendTo(String phone) throws Exception {
         int before = SENT.size();
-        mvc.perform(post("/api/auth/sms/send")
+        mvc.perform(post("/api/v1/auth/sms/send")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"phone":"%s","purpose":"login","captchaTicket":"ok","captchaRandstr":"r"}"""
@@ -292,7 +292,7 @@ class AuthApiTest {
         String phone = freshPhone(1);
         String code = sendTo(phone);
 
-        mvc.perform(post("/api/auth/sms/verify")
+        mvc.perform(post("/api/v1/auth/sms/verify")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"phone":"%s","code":"%s","deviceLabel":"测试设备"}""".formatted(phone, code)))
@@ -308,7 +308,7 @@ class AuthApiTest {
     @DisplayName("🔴 滑块不通过 → 400 CAPTCHA_FAILED,而且一条短信都没发")
     void captchaGatesBeforeSpending() throws Exception {
         int before = SENT.size();
-        mvc.perform(post("/api/auth/sms/send")
+        mvc.perform(post("/api/v1/auth/sms/send")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"phone":"%s","captchaTicket":"bad","captchaRandstr":"r"}"""
@@ -324,7 +324,7 @@ class AuthApiTest {
         String phone = freshPhone(3);
 
         // 没发过
-        mvc.perform(post("/api/auth/sms/verify")
+        mvc.perform(post("/api/v1/auth/sms/verify")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"phone":"%s","code":"123456"}""".formatted(phone)))
@@ -334,7 +334,7 @@ class AuthApiTest {
         String first = sendTo(phone);
 
         // 输错 —— 必须告诉用户还剩几次
-        mvc.perform(post("/api/auth/sms/verify")
+        mvc.perform(post("/api/v1/auth/sms/verify")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"phone":"%s","code":"%s"}""".formatted(phone, wrong(first))))
@@ -349,7 +349,7 @@ class AuthApiTest {
         String phone = freshPhone(4);
         sendTo(phone);
 
-        mvc.perform(post("/api/auth/sms/send")
+        mvc.perform(post("/api/v1/auth/sms/send")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"phone":"%s","captchaTicket":"ok","captchaRandstr":"r"}""".formatted(phone)))
@@ -363,7 +363,7 @@ class AuthApiTest {
     @DisplayName("手机号格式不对在发送之前就被挡下")
     void badPhoneRejectedBeforeSending() throws Exception {
         int before = SENT.size();
-        mvc.perform(post("/api/auth/sms/send")
+        mvc.perform(post("/api/v1/auth/sms/send")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"phone":"12345","captchaTicket":"ok","captchaRandstr":"r"}"""))
@@ -375,7 +375,7 @@ class AuthApiTest {
     @Test
     @DisplayName("未定义字段一律拒绝 —— R-07 的第二道锁在鉴权端点上同样生效")
     void unknownFieldRejected() throws Exception {
-        mvc.perform(post("/api/auth/sms/send")
+        mvc.perform(post("/api/v1/auth/sms/send")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"phone":"13800138000","captchaTicket":"ok","captchaRandstr":"r","admin":true}"""))
@@ -385,14 +385,14 @@ class AuthApiTest {
     @Test
     @DisplayName("没带令牌 → 401;带了就能读到自己的账号")
     void bearerTokenRequired() throws Exception {
-        mvc.perform(get("/api/account"))
+        mvc.perform(get("/api/v1/account"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code", is("UNAUTHORIZED")));
 
         String phone = freshPhone(5);
         String token = login(phone);
 
-        mvc.perform(get("/api/account").header("Authorization", "Bearer " + token))
+        mvc.perform(get("/api/v1/account").header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.maskedPhone", is(PhoneCipher.mask(phone))))
                 .andExpect(jsonPath("$.identities", contains("phone")))
@@ -404,15 +404,15 @@ class AuthApiTest {
     void logoutIsIdempotent() throws Exception {
         String token = login(freshPhone(6));
 
-        mvc.perform(post("/api/auth/logout").header("Authorization", "Bearer " + token))
+        mvc.perform(post("/api/v1/auth/logout").header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.revoked", is(true)));
-        mvc.perform(post("/api/auth/logout").header("Authorization", "Bearer " + token))
+        mvc.perform(post("/api/v1/auth/logout").header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.revoked", is(false)));
 
         // 吊销立刻生效
-        mvc.perform(get("/api/account").header("Authorization", "Bearer " + token))
+        mvc.perform(get("/api/v1/account").header("Authorization", "Bearer " + token))
                 .andExpect(status().isUnauthorized());
     }
 
@@ -423,10 +423,10 @@ class AuthApiTest {
         String ro = tokens.issue(s.userId(), TokenScope.READONLY, "MCP").plaintext();
 
         // 读得到
-        mvc.perform(get("/api/account").header("Authorization", "Bearer " + ro))
+        mvc.perform(get("/api/v1/account").header("Authorization", "Bearer " + ro))
                 .andExpect(status().isOk());
         // 写不了
-        mvc.perform(delete("/api/account").header("Authorization", "Bearer " + ro))
+        mvc.perform(delete("/api/v1/account").header("Authorization", "Bearer " + ro))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code", is("READONLY_TOKEN")));
     }
@@ -436,13 +436,13 @@ class AuthApiTest {
     void deactivateCarriesExportHint() throws Exception {
         String token = login(freshPhone(8));
 
-        mvc.perform(delete("/api/account").header("Authorization", "Bearer " + token))
+        mvc.perform(delete("/api/v1/account").header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.exportHint", containsString("导出")))
                 // ⚪ 硬删时点未定(L-A5 的律师稿)。写「7 天内清干净」等于替法务做决定。
                 .andExpect(jsonPath("$.exportHint", not(matchesRegex(".*\\d+\\s*天.*"))));
 
-        mvc.perform(get("/api/account").header("Authorization", "Bearer " + token))
+        mvc.perform(get("/api/v1/account").header("Authorization", "Bearer " + token))
                 .andExpect(status().isUnauthorized());
     }
 
@@ -450,7 +450,7 @@ class AuthApiTest {
     @DisplayName("设备列表能标出当前这一台 —— 否则用户会把自己踢下线然后以为是 bug")
     void sessionsMarkCurrent() throws Exception {
         String token = login(freshPhone(9));
-        mvc.perform(get("/api/account/sessions").header("Authorization", "Bearer " + token))
+        mvc.perform(get("/api/v1/account/sessions").header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[?(@.current == true)]", hasSize(1)));
     }
@@ -458,7 +458,7 @@ class AuthApiTest {
     @Test
     @DisplayName("微信通道未启用时回 503,不是 404 —— 端点存在,只是这个阶段还没开")
     void wechatNotEnabledYet() throws Exception {
-        mvc.perform(post("/api/auth/wechat/login")
+        mvc.perform(post("/api/v1/auth/wechat/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"entry":"mini_program","code":"x"}"""))
@@ -470,25 +470,25 @@ class AuthApiTest {
     @DisplayName("阶段 3 的那个累计数读得到")
     void signupCount() throws Exception {
         login(freshPhone(10));
-        mvc.perform(get("/api/account/signup-count"))
+        mvc.perform(get("/api/v1/account/signup-count"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.totalSignups", greaterThanOrEqualTo(1)))
                 .andExpect(jsonPath("$.note", containsString("人工判定")));
     }
 
     @Test
-    @DisplayName("🔴 DELETE 只开给 /api/account 这一条路径,别处仍然没有")
+    @DisplayName("🔴 DELETE 只开给 /api/v1/account 这一条路径,别处仍然没有")
     void deleteIsScopedToAccountOnly() throws Exception {
         // 这条断言看着琐碎,但它守的是一个顺序依赖:CORS 规则按注册顺序取第一条匹配的。
-        // 把 /api/** 写在 /api/account 前面,下面这个 DELETE 预检就会失败 —— 而且没有别的症状。
-        mvc.perform(options("/api/account")
+        // 把 /api/v1/** 写在 /api/v1/account 前面,下面这个 DELETE 预检就会失败 —— 而且没有别的症状。
+        mvc.perform(options("/api/v1/account")
                         .header("Origin", "http://localhost:5173")
                         .header("Access-Control-Request-Method", "DELETE"))
                 .andExpect(status().isOk())
                 .andExpect(header().string("Access-Control-Allow-Methods", containsString("DELETE")));
 
         // 而别处仍然没有 DELETE —— 骨架层的删除守则是「有记录就不许删,只能归档」
-        mvc.perform(options("/api/account/sessions")
+        mvc.perform(options("/api/v1/account/sessions")
                         .header("Origin", "http://localhost:5173")
                         .header("Access-Control-Request-Method", "DELETE"))
                 .andExpect(status().isForbidden());
@@ -535,7 +535,7 @@ class AuthApiTest {
     void authErrorsDoNotEchoUnboundedInput() throws Exception {
         String pastedStem = "2023 年全国粮食总产量为 13908 亿斤,比上年增加 177 亿斤".repeat(40);
 
-        String body = mvc.perform(post("/api/auth/sms/send")
+        String body = mvc.perform(post("/api/v1/auth/sms/send")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(new tools.jackson.databind.ObjectMapper().createObjectNode()
                                 .put("phone", freshPhone(30))
@@ -563,7 +563,7 @@ class AuthApiTest {
         WECHAT.phoneToReturn = freshPhone(20);
 
         // 第一次:走完三步
-        mvc.perform(post("/api/auth/wechat/phone-login")
+        mvc.perform(post("/api/v1/auth/wechat/phone-login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"loginCode":"jsc_1","phoneCode":"pc_1","deviceLabel":"小程序"}"""))
@@ -574,7 +574,7 @@ class AuthApiTest {
 
         // 第二次(同一个 openid,60 秒内):应当在【花钱之前】被拦下
         int paidBefore = WECHAT.paidCalls;
-        mvc.perform(post("/api/auth/wechat/phone-login")
+        mvc.perform(post("/api/v1/auth/wechat/phone-login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"loginCode":"jsc_1","phoneCode":"pc_2"}"""))
@@ -593,7 +593,7 @@ class AuthApiTest {
         WECHAT.enabled = true;
         WECHAT.phoneCodeFails = true;
 
-        mvc.perform(post("/api/auth/wechat/phone-login")
+        mvc.perform(post("/api/v1/auth/wechat/phone-login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"loginCode":"jsc_refund","phoneCode":"pc_x"}"""))
@@ -611,7 +611,7 @@ class AuthApiTest {
 
         WECHAT.enabled = true;
         WECHAT.phoneToReturn = phone;
-        mvc.perform(post("/api/auth/wechat/phone-login")
+        mvc.perform(post("/api/v1/auth/wechat/phone-login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"loginCode":"jsc_old","phoneCode":"pc_old"}"""))
@@ -625,7 +625,7 @@ class AuthApiTest {
     @DisplayName("微信登录建了新号 → needsPhoneBinding=true,前端据此引导补绑")
     void weChatOnlyAccountNeedsPhoneBinding() throws Exception {
         WECHAT.enabled = true;
-        mvc.perform(post("/api/auth/wechat/login")
+        mvc.perform(post("/api/v1/auth/wechat/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"entry":"mini_program","code":"jsc_nophone"}"""))
@@ -641,7 +641,7 @@ class AuthApiTest {
         WECHAT.enabled = true;
 
         // 伪造的 state
-        mvc.perform(post("/api/auth/wechat/login")
+        mvc.perform(post("/api/v1/auth/wechat/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"entry":"official_h5","code":"c1","state":"forged"}"""))
@@ -649,18 +649,18 @@ class AuthApiTest {
                 .andExpect(jsonPath("$.code", is("WECHAT_STATE_INVALID")));
 
         // 服务端发的 state 可用,但只能用一次
-        String state = jsonField(mvc.perform(get("/api/auth/wechat/authorize-url")
+        String state = jsonField(mvc.perform(get("/api/v1/auth/wechat/authorize-url")
                         .param("entry", "official_h5")
                         .param("redirectUri", "https://kaodian.example/cb"))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString(), "state");
 
-        mvc.perform(post("/api/auth/wechat/login")
+        mvc.perform(post("/api/v1/auth/wechat/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"entry":"official_h5","code":"c2","state":"%s"}""".formatted(state)))
                 .andExpect(status().isOk());
-        mvc.perform(post("/api/auth/wechat/login")
+        mvc.perform(post("/api/v1/auth/wechat/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"entry":"official_h5","code":"c3","state":"%s"}""".formatted(state)))
@@ -672,7 +672,7 @@ class AuthApiTest {
     @DisplayName("小程序没有回跳因而没有 state —— 不该被 state 校验拦住")
     void miniProgramNeedsNoState() throws Exception {
         WECHAT.enabled = true;
-        mvc.perform(post("/api/auth/wechat/login")
+        mvc.perform(post("/api/v1/auth/wechat/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"entry":"mini_program","code":"jsc_nostate"}"""))
@@ -682,7 +682,7 @@ class AuthApiTest {
     @Test
     @DisplayName("一步登录在微信未启用时也回 503,不是 500")
     void oneStepRespectsTheStageGate() throws Exception {
-        mvc.perform(post("/api/auth/wechat/phone-login")
+        mvc.perform(post("/api/v1/auth/wechat/phone-login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"loginCode":"a","phoneCode":"b"}"""))
@@ -697,7 +697,7 @@ class AuthApiTest {
         WECHAT.enabled = true;
         WECHAT.noUnionId = true;
 
-        mvc.perform(post("/api/auth/wechat/login")
+        mvc.perform(post("/api/v1/auth/wechat/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"entry":"mini_program","code":"jsc_nounion"}"""))
@@ -713,7 +713,7 @@ class AuthApiTest {
         WECHAT.enabled = true;
         WECHAT.noUnionId = true;
 
-        mvc.perform(post("/api/auth/wechat/phone-login")
+        mvc.perform(post("/api/v1/auth/wechat/phone-login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"loginCode":"jsc_x","phoneCode":"pc_x"}"""))
@@ -729,7 +729,7 @@ class AuthApiTest {
         WECHAT.noUnionId = true;
         WECHAT.requireUnionId = false;
 
-        mvc.perform(post("/api/auth/wechat/login")
+        mvc.perform(post("/api/v1/auth/wechat/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"entry":"mini_program","code":"jsc_degraded"}"""))
@@ -745,7 +745,7 @@ class AuthApiTest {
 
     private Session loginFull(String phone) throws Exception {
         String code = sendTo(phone);
-        String body = mvc.perform(post("/api/auth/sms/verify")
+        String body = mvc.perform(post("/api/v1/auth/sms/verify")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"phone":"%s","code":"%s","deviceLabel":"测试设备"}""".formatted(phone, code)))

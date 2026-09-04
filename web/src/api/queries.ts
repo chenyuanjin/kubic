@@ -53,17 +53,17 @@ const BLINDSPOT_TOP = 100
  *
  * <h2>路径逐条对着 server 侧的 @GetMapping</h2>
  *
- * 逐条记录在 <b>`GET /api/records`</b>(cursor 分页,§6.2 采集线的读侧)。
- * `/api/timeline` <b>不再是这条路</b>:它现在出的是按天/周分桶的聚合视图(§6.4),
+ * 逐条记录在 <b>`GET /api/v1/records`</b>(cursor 分页,§6.2 采集线的读侧)。
+ * `/api/v1/timeline` <b>不再是这条路</b>:它现在出的是按天/周分桶的聚合视图(§6.4),
  * <b>响应体里一条 `items` 都没有</b>。
  *
  * <h3>这一段话已经反过来一次了,两次都是同一个坑</h3>
  *
- * 第一次:这里写的是 `GET /api/records`,而那时候那个控制器<b>只有 `@PostMapping`</b>,
+ * 第一次:这里写的是 `GET /api/v1/records`,而那时候那个控制器<b>只有 `@PostMapping`</b>,
  * GET 过去是 405。后果是后端跑得好好的,整屏却永远退回离线示例数据,理由写着「HTTP 405」——
- * 查起来像后端坏了。于是改成了 `/api/timeline`,并在这里留了那句「不在 `/api/records`」。
+ * 查起来像后端坏了。于是改成了 `/api/v1/timeline`,并在这里留了那句「不在 `/api/v1/records`」。
  * <p>
- * 第二次就是现在:`/api/records` 补上了 `@GetMapping`,`/api/timeline` 改成了聚合视图,
+ * 第二次就是现在:`/api/v1/records` 补上了 `@GetMapping`,`/api/v1/timeline` 改成了聚合视图,
  * <b>那句话整个反了过来</b>。而这一次的表现比 405 还难查 —— 请求会 <b>200</b>,
  * `timeline.items` 是 `undefined`,炸在 derive.ts 的 `for...of` 里,
  * 界面上仍旧是那句「已退回离线示例数据」,只是理由换成了一行 TypeError。
@@ -136,7 +136,7 @@ export function useCreateRecord() {
 export const ARCHIVED_KEY = ['syllabus', 'archived'] as const
 
 /**
- * 已归档的考点。`GET /api/syllabus/archived`
+ * 已归档的考点。`GET /api/v1/syllabus/archived`
  *
  * <h2>为什么必须单拉一次</h2>
  *

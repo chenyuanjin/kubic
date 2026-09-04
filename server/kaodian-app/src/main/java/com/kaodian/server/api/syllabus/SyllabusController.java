@@ -21,7 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
  * {@code CoverageService}。这里只做三件事 —— 收参数、校验 code、把领域对象翻成 DTO。
  */
 @RestController
-@RequestMapping("/api/syllabus")
+@RequestMapping("/api/v1/syllabus")
 public class SyllabusController {
 
     private final CoverageReader reader;

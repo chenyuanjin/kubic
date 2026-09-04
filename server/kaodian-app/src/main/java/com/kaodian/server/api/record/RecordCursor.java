@@ -9,7 +9,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 
 /**
- * {@code GET /api/records} 的游标 —— 「上一页最后看到的是哪一条」。
+ * {@code GET /api/v1/records} 的游标 —— 「上一页最后看到的是哪一条」。
  *
  * <h2>游标里装的是<b>排序键</b>,不是页码</h2>
  *
@@ -21,7 +21,7 @@ import java.util.Base64;
  * <h2>🔴 为什么必须带 id,只有时间戳不够</h2>
  *
  * 因为<b>同一毫秒里真的会有多条记录</b>,而且不是理论上的:
- * 离线队列补传({@code POST /api/records/batch})一次落 50 条,它们的时间戳全部来自
+ * 离线队列补传({@code POST /api/v1/records/batch})一次落 50 条,它们的时间戳全部来自
  * <b>同一次 {@code clock.instant()}</b> —— 服务端收到的时刻。
  * 只按时间戳当游标,这 50 条要么一起被跳过,要么一起被重复吐出来;
  * 而它们恰恰是用户断网那天记的全部东西。

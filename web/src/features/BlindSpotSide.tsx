@@ -91,7 +91,7 @@ export function BlindSpotSide({
       <div className="shrink-0 border-t border-hair p-4">
         {/* 这两句是产品的能力边界本身,不是免责声明 —— 常驻、不折叠、不随列表滚走 */}
         <Note>
-          不判断对错。正确率是你自己填的数。
+          不判断对错。练了几道、对了几道,都是你自己填的数。
           <br />
           这里只说有没有、几次、多久前。
         </Note>

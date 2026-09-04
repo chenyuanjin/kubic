@@ -1,5 +1,5 @@
 /**
- * 把原图送去识别一次 —— `POST /api/records/{id}/image`(docs/technical/INDEX.md §6.2 / §八)。
+ * 把原图送去识别一次 —— `POST /api/v1/records/{id}/image`(docs/technical/INDEX.md §6.2 / §八)。
  *
  * <h2>🔴 这条路上原图字节出现的次数:一次</h2>
  *

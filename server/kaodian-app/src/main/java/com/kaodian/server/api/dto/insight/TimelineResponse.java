@@ -6,9 +6,9 @@ import java.time.LocalDate;
 import java.util.List;
 
 /**
- * {@code GET /api/timeline} —— <b>按天/周聚合的触达视图</b>(docs/technical/INDEX.md §6.4)。
+ * {@code GET /api/v1/timeline} —— <b>按天/周聚合的触达视图</b>(docs/technical/INDEX.md §6.4)。
  *
- * <h2>🔴 它和 {@code GET /api/records} 不是一个东西,两个都要留着</h2>
+ * <h2>🔴 它和 {@code GET /api/v1/records} 不是一个东西,两个都要留着</h2>
  *
  * 分工那张表写在 {@link RecordPageResponse} 的 javadoc 里,<b>这里不再抄一遍</b> ——
  * 抄一遍就是两份会各自漂移的说明。一句话版本:

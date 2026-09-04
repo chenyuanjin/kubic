@@ -76,7 +76,7 @@ import java.time.format.DateTimeFormatter;
  * 而那件事本身就是契约的一部分:四种终态要给四句不同的话。
  */
 @RestController
-@RequestMapping("/api/auth")
+@RequestMapping("/api/v1/auth")
 public class AuthController {
 
     private static final Logger log = LoggerFactory.getLogger(AuthController.class);
@@ -168,7 +168,7 @@ public class AuthController {
         SmsPurpose purpose = parsePurpose(req.purpose());
         if (purpose != SmsPurpose.LOGIN) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "WRONG_PURPOSE",
-                    "这个端点只处理登录。绑定手机号请调用 /api/auth/bind/phone。");
+                    "这个端点只处理登录。绑定手机号请调用 /api/v1/auth/bind/phone。");
         }
         var passed = requirePassed(sms.verify(req.phone(), req.code(), SmsPurpose.LOGIN));
         AccountService.LoginResult result =

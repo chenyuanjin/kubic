@@ -90,7 +90,7 @@ import java.util.List;
  * 不是一个接受任意树形 JSON 的接口。详见 {@link SyllabusExportResponse}。
  */
 @RestController
-@RequestMapping("/api/syllabus")
+@RequestMapping("/api/v1/syllabus")
 public class SyllabusAdminController {
 
     private final SyllabusStore store;

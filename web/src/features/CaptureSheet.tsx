@@ -310,7 +310,7 @@ export function CaptureSheet({
               </Field>
             </div>
             <span className="text-[11.5px] text-t3">
-              这两个数原样存下来。产品不判题、不给分,正确率就是它们相除。
+              这两个数原样存下来。产品不判题、不给分。
             </span>
           </div>
 

@@ -46,7 +46,7 @@
 
   /* —— 五态色。全部可由「有没有 / 几次 / 多久前」推出,与 NodeState 一一对应 —— */
   --color-s-stable: #e6e7ea; /* 稳    练过且近期 */
-  --color-s-weak: #ff6b5a; /* 弱    练过但用户自填正确率低 */
+  --color-s-weak: #ff6b5a; /* 弱    练过,但用户自填的对/练偏低 */
   --color-s-rusty: #61666e; /* 生疏  练过但 >30 天 */
   --color-s-touch: #9ba0a8; /* 仅接触 听过看过,没练 */
   --color-s-empty: #3a3e44; /* 空白  无任何记录 */

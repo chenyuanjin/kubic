@@ -33,7 +33,7 @@ import java.util.List;
  * 「我的账号」与设备管理 —— 界面 D11 / D26 / D27。
  */
 @RestController
-@RequestMapping("/api/account")
+@RequestMapping("/api/v1/account")
 public class AccountController {
 
     private static final Logger log = LoggerFactory.getLogger(AccountController.class);

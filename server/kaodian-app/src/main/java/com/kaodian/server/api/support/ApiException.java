@@ -82,7 +82,7 @@ public class ApiException extends RuntimeException {
      *   <li><b>409 {@code GROUP_NOT_EMPTY}</b> —— 先把考点处理掉</li>
      *   <li><b>409 {@code NODE_ARCHIVED}</b> —— 目标考点<b>在</b>树里,只是归档了。
      *       它必须与 404 分开:404 那句「刷新一下,树可能已经变了」在这里是错的指路,
-     *       而且它与 {@code GET /api/syllabus/archived} 刚列出过这个考点直接矛盾</li>
+     *       而且它与 {@code GET /api/v1/syllabus/archived} 刚列出过这个考点直接矛盾</li>
      *   <li><b>409 {@code NAME_TAKEN}</b> —— 名字被树上另一个考点/题型占着。
      *       与 400 {@code INVALID_NAME} 分开:那是「这个名字本身不能用,改一个」,
      *       这是「名字没问题,只是已经有人叫了」—— 界面要说的是<b>被谁占着</b>,

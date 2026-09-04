@@ -14,19 +14,19 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 
 /**
- * 全量导出 —— <b>{@code GET /api/export?format=md|csv|json}</b>(docs/technical/INDEX.md §6.5)。
+ * 全量导出 —— <b>{@code GET /api/v1/export?format=md|csv|json}</b>(docs/technical/INDEX.md §6.5)。
  *
- * <h2>为什么挂在 {@code /api/export},而不是 {@code /api/syllabus/export} 底下</h2>
+ * <h2>为什么挂在 {@code /api/v1/export},而不是 {@code /api/v1/syllabus/export} 底下</h2>
  *
  * §6.5 的契约写的是 {@code /export},与 {@code /records} / {@code /coverage} /
- * {@code /timeline} 平级(契约里的统一前缀是 {@code /api/v1},本仓库目前用 {@code /api},
- * v1 那一位还没引入,所以落到 {@code /api/export})。
+ * {@code /timeline} 平级;统一前缀 {@code /api/v1} 自 KUBI-107 起代码与契约一致
+ * (`B0` §16.2),所以落到 {@code /api/v1/export}。
  * <p>
- * 它<b>不能</b>挂进 {@code /api/syllabus} 是因为它导的东西横跨三层 ——
+ * 它<b>不能</b>挂进 {@code /api/v1/syllabus} 是因为它导的东西横跨三层 ——
  * 骨架(考点)、行为(记录)、覆盖(统计)。挂到其中任何一层下面,都是在说
  * 「这是那一层的一个功能」,而它是整份数据。
  * <p>
- * 🔴 <b>{@code GET /api/syllabus/export} 是另一件事,两者必须并存</b>:
+ * 🔴 <b>{@code GET /api/v1/syllabus/export} 是另一件事,两者必须并存</b>:
  * 那个导的是<b>骨架树本身</b>(见 {@code SyllabusExportResponse}),
  * 它的格式与 {@code ~/.kaodian/syllabus.json} 一一对应,用途是<b>把文件放回去还能读</b>。
  * 这个导的是<b>用户自己的全量数据</b>,用途是拿走。合并成一个端点会同时毁掉两个用途:
@@ -39,8 +39,8 @@ import java.time.format.DateTimeFormatter;
  *   <tr><th>承诺</th><th>落点</th></tr>
  *   <tr><td><b>无删减</b></td>
  *       <td>{@link ExportResponse#of} 直接吃 {@code snapshot.touches()} ——
- *           没有 limit、没有 cursor、没有过滤。对比 {@code /api/records} 有 {@code limit}、
- *           {@code /api/coverage/blindspots} 有 {@code top ≤ 100}:
+ *           没有 limit、没有 cursor、没有过滤。对比 {@code /api/v1/records} 有 {@code limit}、
+ *           {@code /api/v1/coverage/blindspots} 有 {@code top ≤ 100}:
  *           <b>那两个是「先看这些」,这个是「全都给我」</b></td></tr>
  *   <tr><td><b>无水印</b></td>
  *       <td>{@code ExportRenderer} 里一个产品名都没有,没有页脚、没有「由 XX 导出」。
@@ -94,7 +94,7 @@ public class ExportController {
      * 直接跳转不受影响,所以这一版没有去动 {@code ApiCorsConfig} ——
      * <b>那份配置是「一处声明」的,改它属于跨域策略的决定,不是导出功能顺手能带的</b>。
      */
-    @GetMapping("/api/export")
+    @GetMapping("/api/v1/export")
     public ResponseEntity<Object> export(@RequestParam String format) {
         ExportFormat fmt = ExportFormat.ofWireName(format);
 

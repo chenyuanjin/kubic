@@ -6,15 +6,15 @@ import jakarta.validation.constraints.Size;
 import java.util.List;
 
 /**
- * {@code GET /api/records} 的一页 —— <b>原始记录的时间线,cursor 分页</b>(docs/technical/INDEX.md §6.2)。
+ * {@code GET /api/v1/records} 的一页 —— <b>原始记录的时间线,cursor 分页</b>(docs/technical/INDEX.md §6.2)。
  *
- * <h2>🔴 它和 {@code GET /api/timeline} 不是一个东西,两个都要留着</h2>
+ * <h2>🔴 它和 {@code GET /api/v1/timeline} 不是一个东西,两个都要留着</h2>
  *
  * 契约里它们分在两节,职责不同:
  *
  * <table border="1">
  *   <caption>两个时间线端点的分工</caption>
- *   <tr><th>—</th><th>{@code GET /api/records}</th><th>{@code GET /api/timeline}</th></tr>
+ *   <tr><th>—</th><th>{@code GET /api/v1/records}</th><th>{@code GET /api/v1/timeline}</th></tr>
  *   <tr><td>契约</td><td>§6.2 采集</td><td>§6.4 查询</td></tr>
  *   <tr><td>给谁用</td><td><b>记录本身</b>:翻历史、找那条记错的删掉</td>
  *       <td><b>聚合视图</b>:按天/周看「这段时间碰过些什么」</td></tr>
@@ -27,7 +27,7 @@ import java.util.List;
  * 而删记录那个页面要的是一条一条、能翻到底。把两种需求塞进一个端点,
  * 结果是一堆互相排斥的查询参数,以及一个谁都不敢改的返回体。
  *
- * <p>⚠ 这里原先记着一笔欠账:{@code /api/timeline} 曾经返回<b>平铺的最近 N 条</b>,
+ * <p>⚠ 这里原先记着一笔欠账:{@code /api/v1/timeline} 曾经返回<b>平铺的最近 N 条</b>,
  * 也就是在干这个端点的活,§6.4 要的按天/周聚合没人做。<b>那笔账已经还了</b> ——
  * 见 {@link TimelineResponse}。
  *
@@ -75,7 +75,7 @@ public record RecordPageResponse(
      * 每页条数的默认值与上限。
      *
      * <p>这两个数原先是「与 {@code TimelineController} 的 50/200 保持一致」——
-     * 那时候两个端点翻的是同一批记录。现在 {@code /api/timeline} 出的是格子不是条目
+     * 那时候两个端点翻的是同一批记录。现在 {@code /api/v1/timeline} 出的是格子不是条目
      * (它的那对数在 {@link TimelineResponse#DEFAULT_BUCKETS}),<b>没有可对齐的东西了</b>:
      * 「一屏放多少条记录」和「一次给多少格」是两个不相干的问题,凑成同一个数才是巧合。
      */

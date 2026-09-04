@@ -100,7 +100,7 @@ class SyllabusAdminApiTest {
     @Test
     @DisplayName("🔴 新增考点:code 由服务端生成,不是中文名;覆盖率的分母当场 +1")
     void createNodeGeneratesTheCodeAndMovesTheDenominator() throws Exception {
-        String body = mockMvc.perform(json(post("/api/syllabus/nodes"), """
+        String body = mockMvc.perform(json(post("/api/v1/syllabus/nodes"), """
                         {"groupCode":"growth","name":"复合增长率","recent5yCount":2}
                         """))
                 .andExpect(status().isCreated())
@@ -120,7 +120,7 @@ class SyllabusAdminApiTest {
         assertFalse(body.contains("\"code\" : \"复合增长率\""), "🔴 不许拿中文名当 code");
 
         // 树上也真的多了一个 —— 不是只在响应里多了一个
-        mockMvc.perform(get("/api/syllabus/tree"))
+        mockMvc.perform(get("/api/v1/syllabus/tree"))
                 .andExpect(jsonPath("$.groups[0].nodes.length()").value(8))
                 .andExpect(jsonPath("$.summary.total").value(19));
     }
@@ -129,13 +129,13 @@ class SyllabusAdminApiTest {
     @DisplayName("🔴 客户端指定 code 被拒 —— 接口上根本没有这个字段")
     void clientCannotChooseTheCode() throws Exception {
         for (String field : List.of("code", "nodeCode", "id")) {
-            mockMvc.perform(json(post("/api/syllabus/nodes"), """
+            mockMvc.perform(json(post("/api/v1/syllabus/nodes"), """
                             {"groupCode":"growth","name":"复合增长率","recent5yCount":2,"%s":"my-own-code"}
                             """.formatted(field)))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.code").value("UNKNOWN_FIELD"));
         }
-        mockMvc.perform(get("/api/coverage/summary")).andExpect(jsonPath("$.total").value(18));
+        mockMvc.perform(get("/api/v1/coverage/summary")).andExpect(jsonPath("$.total").value(18));
     }
 
     @Test
@@ -147,7 +147,7 @@ class SyllabusAdminApiTest {
                 "父级只能是题型 —— 加字段前先回去看 决策记录 §2.5");
 
         for (String field : List.of("parentNodeCode", "parentCode", "children", "subNodes", "nodes")) {
-            mockMvc.perform(json(post("/api/syllabus/nodes"), """
+            mockMvc.perform(json(post("/api/v1/syllabus/nodes"), """
                             {"groupCode":"growth","name":"更细的一层","recent5yCount":1,"%s":"growth-rate"}
                             """.formatted(field)))
                     .andExpect(status().isBadRequest())
@@ -160,7 +160,7 @@ class SyllabusAdminApiTest {
     @Test
     @DisplayName("🔴 重命名只改 name:code 不变、记录不丢、覆盖率逐字不变")
     void renameKeepsCodeRecordsAndPercent() throws Exception {
-        mockMvc.perform(json(post("/api/syllabus/nodes/growth-rate/rename"), """
+        mockMvc.perform(json(post("/api/v1/syllabus/nodes/growth-rate/rename"), """
                         {"name":"增长率(我自己的说法)"}
                         """))
                 .andExpect(status().isOk())
@@ -172,7 +172,7 @@ class SyllabusAdminApiTest {
                 .andExpect(jsonPath("$.summary.covered").value(8))
                 .andExpect(jsonPath("$.summary.percent").value(44));
 
-        mockMvc.perform(get("/api/syllabus/nodes/growth-rate"))
+        mockMvc.perform(get("/api/v1/syllabus/nodes/growth-rate"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name").value("增长率(我自己的说法)"))
                 .andExpect(jsonPath("$.touchCount").value(1))
@@ -180,8 +180,8 @@ class SyllabusAdminApiTest {
                 .andExpect(jsonPath("$.state").value("STABLE"));
 
         // 记录列表上那条老记录也跟着显示新名字 —— 它本来就是按 code 反查的。
-        // 逐条的记录读 /api/records(§6.2);/api/timeline 现在只出按天/周的格子(§6.4)
-        mockMvc.perform(get("/api/records"))
+        // 逐条的记录读 /api/v1/records(§6.2);/api/v1/timeline 现在只出按天/周的格子(§6.4)
+        mockMvc.perform(get("/api/v1/records"))
                 .andExpect(jsonPath("$.total").value(8))
                 .andExpect(jsonPath("$.items[0].nodeCode").value("growth-rate"))
                 .andExpect(jsonPath("$.items[0].nodeName").value("增长率(我自己的说法)"));
@@ -190,13 +190,13 @@ class SyllabusAdminApiTest {
     @Test
     @DisplayName("重命名一个树里没有的考点 → 404,不新建")
     void renamingAnUnknownNodeIs404() throws Exception {
-        mockMvc.perform(json(post("/api/syllabus/nodes/我自己想的考点/rename"), """
+        mockMvc.perform(json(post("/api/v1/syllabus/nodes/我自己想的考点/rename"), """
                         {"name":"随便"}
                         """))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("NODE_NOT_FOUND"));
 
-        mockMvc.perform(get("/api/coverage/summary")).andExpect(jsonPath("$.total").value(18));
+        mockMvc.perform(get("/api/v1/coverage/summary")).andExpect(jsonPath("$.total").value(18));
     }
 
     // ---------------------------------------------------------------- 🔴 删除守则
@@ -204,7 +204,7 @@ class SyllabusAdminApiTest {
     @Test
     @DisplayName("🔴 删除有记录的考点必须失败:409,说出有几条,并给出两条出路")
     void deletingANodeWithRecordsIsRefused() throws Exception {
-        mockMvc.perform(post("/api/syllabus/nodes/growth-rate/delete"))
+        mockMvc.perform(post("/api/v1/syllabus/nodes/growth-rate/delete"))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("NODE_HAS_RECORDS"))
                 .andExpect(jsonPath("$.message").value(Matchers.containsString("1 条记录")))
@@ -212,24 +212,24 @@ class SyllabusAdminApiTest {
                 .andExpect(jsonPath("$.traceId").isNotEmpty());
 
         // 被拒之后:考点还在、记录还在、那个数一点没动
-        mockMvc.perform(get("/api/syllabus/nodes/growth-rate"))
+        mockMvc.perform(get("/api/v1/syllabus/nodes/growth-rate"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.touchCount").value(1));
-        mockMvc.perform(get("/api/coverage/summary"))
+        mockMvc.perform(get("/api/v1/coverage/summary"))
                 .andExpect(jsonPath("$.total").value(18))
                 .andExpect(jsonPath("$.covered").value(8))
                 .andExpect(jsonPath("$.percent").value(44));
-        mockMvc.perform(get("/api/records")).andExpect(jsonPath("$.total").value(8));
+        mockMvc.perform(get("/api/v1/records")).andExpect(jsonPath("$.total").value(8));
     }
 
     @Test
     @DisplayName("🔴 出路一:先把记录搬到别的考点,再删。记录总数不变,时间戳不重置")
     void moveRecordsThenDelete() throws Exception {
-        mockMvc.perform(get("/api/records"))
+        mockMvc.perform(get("/api/v1/records"))
                 .andExpect(jsonPath("$.items[0].nodeCode").value("growth-rate"))
                 .andExpect(jsonPath("$.items[0].practiced").value(12));
 
-        mockMvc.perform(json(post("/api/syllabus/nodes/growth-rate/records/move"), """
+        mockMvc.perform(json(post("/api/v1/syllabus/nodes/growth-rate/records/move"), """
                         {"toNodeCode":"average-calc"}
                         """))
                 .andExpect(status().isOk())
@@ -241,37 +241,37 @@ class SyllabusAdminApiTest {
                 .andExpect(jsonPath("$.summary.covered").value(8))
                 .andExpect(jsonPath("$.summary.percent").value(44));
 
-        mockMvc.perform(get("/api/records"))
+        mockMvc.perform(get("/api/v1/records"))
                 .andExpect(jsonPath("$.total").value(8))                       // 🔴 一条都没丢
                 .andExpect(jsonPath("$.items[0].nodeCode").value("average-calc"))
                 .andExpect(jsonPath("$.items[0].practiced").value(12));
 
-        mockMvc.perform(post("/api/syllabus/nodes/growth-rate/delete"))
+        mockMvc.perform(post("/api/v1/syllabus/nodes/growth-rate/delete"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value("growth-rate"))
                 .andExpect(jsonPath("$.summary.total").value(17))               // 分母 −1
                 .andExpect(jsonPath("$.summary.covered").value(8))              // 分子不动
                 .andExpect(jsonPath("$.summary.percent").value(47));
 
-        mockMvc.perform(get("/api/syllabus/nodes/growth-rate")).andExpect(status().isNotFound());
+        mockMvc.perform(get("/api/v1/syllabus/nodes/growth-rate")).andExpect(status().isNotFound());
     }
 
     @Test
     @DisplayName("记录不许搬进不存在的考点,也不许原地搬")
     void recordsCannotBeMovedIntoNowhere() throws Exception {
-        mockMvc.perform(json(post("/api/syllabus/nodes/growth-rate/records/move"), """
+        mockMvc.perform(json(post("/api/v1/syllabus/nodes/growth-rate/records/move"), """
                         {"toNodeCode":"我自己想的考点"}
                         """))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("NODE_NOT_FOUND"));
 
-        mockMvc.perform(json(post("/api/syllabus/nodes/growth-rate/records/move"), """
+        mockMvc.perform(json(post("/api/v1/syllabus/nodes/growth-rate/records/move"), """
                         {"toNodeCode":"growth-rate"}
                         """))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("SAME_NODE"));
 
-        mockMvc.perform(get("/api/records")).andExpect(jsonPath("$.total").value(8));
+        mockMvc.perform(get("/api/v1/records")).andExpect(jsonPath("$.total").value(8));
     }
 
     /**
@@ -285,15 +285,15 @@ class SyllabusAdminApiTest {
     @Test
     @DisplayName("🔴 记录搬进【已归档】的考点:409 NODE_ARCHIVED,不是 404 —— 归档清单里明明还看得见它")
     void movingRecordsIntoAnArchivedNodeSaysSoInsteadOfPretendingItIsGone() throws Exception {
-        mockMvc.perform(post("/api/syllabus/nodes/average-calc/archive")).andExpect(status().isOk());
+        mockMvc.perform(post("/api/v1/syllabus/nodes/average-calc/archive")).andExpect(status().isOk());
 
         // 同一个 code,一个端点说「在,还挂着 0 条记录」
-        mockMvc.perform(get("/api/syllabus/archived"))
+        mockMvc.perform(get("/api/v1/syllabus/archived"))
                 .andExpect(jsonPath("$.items[0].code").value("average-calc"))
                 .andExpect(jsonPath("$.items[0].name").value("平均数计算"));
 
         // 另一个端点必须别说「不存在」
-        mockMvc.perform(json(post("/api/syllabus/nodes/growth-rate/records/move"), """
+        mockMvc.perform(json(post("/api/v1/syllabus/nodes/growth-rate/records/move"), """
                         {"toNodeCode":"average-calc"}
                         """))
                 .andExpect(status().isConflict())
@@ -302,14 +302,14 @@ class SyllabusAdminApiTest {
                 .andExpect(jsonPath("$.message").value(Matchers.containsString("unarchive")));
 
         // 树里真的不存在的 code 才是 404 —— 两者不能是同一个答复
-        mockMvc.perform(json(post("/api/syllabus/nodes/growth-rate/records/move"), """
+        mockMvc.perform(json(post("/api/v1/syllabus/nodes/growth-rate/records/move"), """
                         {"toNodeCode":"我自己想的考点"}
                         """))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("NODE_NOT_FOUND"));
 
         // 两次都被拒,记录一条没动
-        mockMvc.perform(get("/api/records"))
+        mockMvc.perform(get("/api/v1/records"))
                 .andExpect(jsonPath("$.total").value(8))
                 .andExpect(jsonPath("$.items[0].nodeCode").value("growth-rate"));
     }
@@ -317,7 +317,7 @@ class SyllabusAdminApiTest {
     @Test
     @DisplayName("🔴 出路二:归档 —— 退出差集,但历史一条不少,还能接回来")
     void archiveRetiresTheNodeButKeepsHistory() throws Exception {
-        mockMvc.perform(post("/api/syllabus/nodes/growth-rate/archive"))
+        mockMvc.perform(post("/api/v1/syllabus/nodes/growth-rate/archive"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.node.archived").value(true))
                 .andExpect(jsonPath("$.node.recordCount").value(1))
@@ -326,30 +326,30 @@ class SyllabusAdminApiTest {
                 .andExpect(jsonPath("$.summary.percent").value(41));
 
         // 退出了树
-        mockMvc.perform(get("/api/syllabus/tree"))
+        mockMvc.perform(get("/api/v1/syllabus/tree"))
                 .andExpect(jsonPath("$.groups[0].nodes.length()").value(6));
-        mockMvc.perform(get("/api/syllabus/nodes/growth-rate")).andExpect(status().isNotFound());
+        mockMvc.perform(get("/api/v1/syllabus/nodes/growth-rate")).andExpect(status().isNotFound());
 
         // 但历史还在,而且还有名字 —— 归档不是「这段历史不存在了」
-        mockMvc.perform(get("/api/records"))
+        mockMvc.perform(get("/api/v1/records"))
                 .andExpect(jsonPath("$.total").value(8))
                 .andExpect(jsonPath("$.items[0].nodeCode").value("growth-rate"))
                 .andExpect(jsonPath("$.items[0].nodeName").value("增长率计算"));
 
         // 看得见、找得回
-        mockMvc.perform(get("/api/syllabus/archived"))
+        mockMvc.perform(get("/api/v1/syllabus/archived"))
                 .andExpect(jsonPath("$.count").value(1))
                 .andExpect(jsonPath("$.items[0].code").value("growth-rate"))
                 .andExpect(jsonPath("$.items[0].recordCount").value(1));
 
         // 🔴 归档之后挂不上新记录 —— 否则「归档」是一句空话
-        mockMvc.perform(json(post("/api/records"), """
+        mockMvc.perform(json(post("/api/v1/records"), """
                         {"kind":"MANUAL","sourceName":"粉笔 · 资料分析系统班 L12","nodeCode":"growth-rate"}
                         """))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("NODE_NOT_IN_SYLLABUS"));
 
-        mockMvc.perform(post("/api/syllabus/nodes/growth-rate/unarchive"))
+        mockMvc.perform(post("/api/v1/syllabus/nodes/growth-rate/unarchive"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.node.archived").value(false))
                 .andExpect(jsonPath("$.summary.total").value(18))
@@ -362,7 +362,7 @@ class SyllabusAdminApiTest {
     @Test
     @DisplayName("移动考点到另一个题型:code 不变,记录不动,只换了归属")
     void moveNodeKeepsCodeAndRecords() throws Exception {
-        mockMvc.perform(json(post("/api/syllabus/nodes/growth-rate/move"), """
+        mockMvc.perform(json(post("/api/v1/syllabus/nodes/growth-rate/move"), """
                         {"groupCode":"fast-math"}
                         """))
                 .andExpect(status().isOk())
@@ -373,7 +373,7 @@ class SyllabusAdminApiTest {
                 .andExpect(jsonPath("$.summary.total").value(18))
                 .andExpect(jsonPath("$.summary.percent").value(44));
 
-        mockMvc.perform(get("/api/syllabus/nodes/growth-rate"))
+        mockMvc.perform(get("/api/v1/syllabus/nodes/growth-rate"))
                 .andExpect(jsonPath("$.groupName").value("速算技巧"))
                 .andExpect(jsonPath("$.touchCount").value(1));
     }
@@ -381,20 +381,20 @@ class SyllabusAdminApiTest {
     @Test
     @DisplayName("改近五年频次会改「先补这几个」的名次 —— 它是排序权重之一")
     void frequencyChangesTheBlindSpotRanking() throws Exception {
-        mockMvc.perform(get("/api/coverage/blindspots").param("top", "3"))
+        mockMvc.perform(get("/api/v1/coverage/blindspots").param("top", "3"))
                 .andExpect(jsonPath("$.items[1].name").value("平均数计算"));
 
-        mockMvc.perform(json(post("/api/syllabus/nodes/average-calc/frequency"), """
+        mockMvc.perform(json(post("/api/v1/syllabus/nodes/average-calc/frequency"), """
                         {"recent5yCount":1}
                         """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.node.recent5yCount").value(1))
                 .andExpect(jsonPath("$.summary.percent").value(44));    // 频次不影响覆盖率
 
-        mockMvc.perform(get("/api/coverage/blindspots").param("top", "3"))
+        mockMvc.perform(get("/api/v1/coverage/blindspots").param("top", "3"))
                 .andExpect(jsonPath("$.items[1].name").value("截位直除"));
 
-        mockMvc.perform(json(post("/api/syllabus/nodes/average-calc/frequency"), """
+        mockMvc.perform(json(post("/api/v1/syllabus/nodes/average-calc/frequency"), """
                         {"recent5yCount":-1}
                         """))
                 .andExpect(status().isBadRequest())
@@ -406,7 +406,7 @@ class SyllabusAdminApiTest {
     @Test
     @DisplayName("题型:新增是空的;非空不许删;空了才能删")
     void groupLifecycle() throws Exception {
-        String created = mockMvc.perform(json(post("/api/syllabus/groups"), """
+        String created = mockMvc.perform(json(post("/api/v1/syllabus/groups"), """
                         {"name":"自己归纳的一类"}
                         """))
                 .andExpect(status().isCreated())
@@ -416,33 +416,33 @@ class SyllabusAdminApiTest {
                 .andReturn().getResponse().getContentAsString();
         assertTrue(created.contains("g-"), "题型 code 同样由服务端生成:" + created);
 
-        mockMvc.perform(post("/api/syllabus/groups/effect/delete"))
+        mockMvc.perform(post("/api/v1/syllabus/groups/effect/delete"))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("GROUP_NOT_EMPTY"))
                 .andExpect(jsonPath("$.message").value(Matchers.containsString("2 个考点")));
 
         // effect 下面两个考点都没有记录,可以逐个删掉
-        mockMvc.perform(post("/api/syllabus/nodes/contribution-rate/delete")).andExpect(status().isOk());
-        mockMvc.perform(post("/api/syllabus/nodes/pull-growth/delete")).andExpect(status().isOk());
-        mockMvc.perform(post("/api/syllabus/groups/effect/delete"))
+        mockMvc.perform(post("/api/v1/syllabus/nodes/contribution-rate/delete")).andExpect(status().isOk());
+        mockMvc.perform(post("/api/v1/syllabus/nodes/pull-growth/delete")).andExpect(status().isOk());
+        mockMvc.perform(post("/api/v1/syllabus/groups/effect/delete"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.summary.total").value(16))
                 .andExpect(jsonPath("$.summary.whollyEmptyGroups").value(1));   // 原来是 2
 
-        mockMvc.perform(get("/api/syllabus/tree")).andExpect(jsonPath("$.groups.length()").value(5));
+        mockMvc.perform(get("/api/v1/syllabus/tree")).andExpect(jsonPath("$.groups.length()").value(5));
     }
 
     @Test
     @DisplayName("题型改名同样只改 name")
     void renameGroupKeepsCode() throws Exception {
-        mockMvc.perform(json(post("/api/syllabus/groups/effect/rename"), """
+        mockMvc.perform(json(post("/api/v1/syllabus/groups/effect/rename"), """
                         {"name":"效应与拉动"}
                         """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.group.code").value("effect"))
                 .andExpect(jsonPath("$.group.name").value("效应与拉动"));
 
-        mockMvc.perform(get("/api/syllabus/tree"))
+        mockMvc.perform(get("/api/v1/syllabus/tree"))
                 .andExpect(jsonPath("$.groups[2].code").value("effect"))
                 .andExpect(jsonPath("$.groups[2].name").value("效应与拉动"))
                 .andExpect(jsonPath("$.groups[2].whollyEmpty").value(true));
@@ -453,18 +453,18 @@ class SyllabusAdminApiTest {
     @Test
     @DisplayName("🔴 调整树序会改变「先补这几个」里并列项的名次 —— 所以它是产品功能,不是排版")
     void reorderingGroupsChangesTheTieBreak() throws Exception {
-        mockMvc.perform(get("/api/coverage/blindspots").param("top", "5"))
+        mockMvc.perform(get("/api/v1/coverage/blindspots").param("top", "5"))
                 .andExpect(jsonPath("$.items[3].name").value("现期量计算"))
                 .andExpect(jsonPath("$.items[4].name").value("倍数计算"));
 
-        mockMvc.perform(json(post("/api/syllabus/groups/order"), """
+        mockMvc.perform(json(post("/api/v1/syllabus/groups/order"), """
                         {"groupCodes":["multiple","growth","effect","average-share","fast-math"]}
                         """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.groups[0].code").value("multiple"))
                 .andExpect(jsonPath("$.summary.percent").value(44));
 
-        mockMvc.perform(get("/api/coverage/blindspots").param("top", "5"))
+        mockMvc.perform(get("/api/v1/coverage/blindspots").param("top", "5"))
                 .andExpect(jsonPath("$.items[3].name").value("倍数计算"))
                 .andExpect(jsonPath("$.items[4].name").value("现期量计算"));
     }
@@ -472,25 +472,25 @@ class SyllabusAdminApiTest {
     @Test
     @DisplayName("🔴 顺序必须是完整排列:少一个就整体拒绝,不悄悄补")
     void partialOrderIsRejected() throws Exception {
-        mockMvc.perform(json(post("/api/syllabus/groups/order"), """
+        mockMvc.perform(json(post("/api/v1/syllabus/groups/order"), """
                         {"groupCodes":["multiple","growth"]}
                         """))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("ORDER_NOT_A_PERMUTATION"));
 
-        mockMvc.perform(json(post("/api/syllabus/groups/order"), """
+        mockMvc.perform(json(post("/api/v1/syllabus/groups/order"), """
                         {"groupCodes":[]}
                         """))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
 
-        mockMvc.perform(get("/api/syllabus/tree")).andExpect(jsonPath("$.groups[0].code").value("growth"));
+        mockMvc.perform(get("/api/v1/syllabus/tree")).andExpect(jsonPath("$.groups[0].code").value("growth"));
     }
 
     @Test
     @DisplayName("组内调序:考点在树上的先后跟着变")
     void reorderingNodesWithinAGroup() throws Exception {
-        mockMvc.perform(json(post("/api/syllabus/groups/multiple/nodes/order"), """
+        mockMvc.perform(json(post("/api/v1/syllabus/groups/multiple/nodes/order"), """
                         {"nodeCodes":["yoy-mom","multiple-change","multiple-calc"]}
                         """))
                 .andExpect(status().isOk())
@@ -503,20 +503,20 @@ class SyllabusAdminApiTest {
     @Test
     @DisplayName("🔴 考点名有长度上限、不许带换行 —— 挡住把一段题干贴进「考点名」")
     void namesCannotCarryContent() throws Exception {
-        mockMvc.perform(json(post("/api/syllabus/nodes"), """
+        mockMvc.perform(json(post("/api/v1/syllabus/nodes"), """
                         {"groupCode":"growth","name":"%s","recent5yCount":1}
                         """.formatted("题".repeat(200))))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))
                 .andExpect(jsonPath("$.message").value(Matchers.containsString("name")));
 
-        mockMvc.perform(json(post("/api/syllabus/nodes"), """
+        mockMvc.perform(json(post("/api/v1/syllabus/nodes"), """
                         {"groupCode":"growth","name":"增长率\\n2023 年全国粮食总产量为 13908 亿斤","recent5yCount":1}
                         """))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_NAME"));
 
-        mockMvc.perform(get("/api/coverage/summary")).andExpect(jsonPath("$.total").value(18));
+        mockMvc.perform(get("/api/v1/coverage/summary")).andExpect(jsonPath("$.total").value(18));
     }
 
     // ---------------------------------------------------------------- 🔴 名字必须唯一
@@ -531,7 +531,7 @@ class SyllabusAdminApiTest {
     @Test
     @DisplayName("🔴 考点重名 → 409 NAME_TAKEN:同题型如此,【跨题型】同样如此")
     void duplicateNodeNameIsRefusedAcrossTheWholeTree() throws Exception {
-        mockMvc.perform(json(post("/api/syllabus/nodes"), """
+        mockMvc.perform(json(post("/api/v1/syllabus/nodes"), """
                         {"groupCode":"growth","name":"增长量计算","recent5yCount":0}
                         """))
                 .andExpect(status().isConflict())
@@ -540,7 +540,7 @@ class SyllabusAdminApiTest {
                 .andExpect(jsonPath("$.traceId").isNotEmpty());
 
         // 🔴 换个题型再来一次 —— 这一条如果放行,树上就会出现两个渲染完全相同的「增长量计算」
-        mockMvc.perform(json(post("/api/syllabus/nodes"), """
+        mockMvc.perform(json(post("/api/v1/syllabus/nodes"), """
                         {"groupCode":"effect","name":"增长量计算","recent5yCount":0}
                         """))
                 .andExpect(status().isConflict())
@@ -549,18 +549,18 @@ class SyllabusAdminApiTest {
                 .andExpect(jsonPath("$.message").value(Matchers.containsString("整棵树")));
 
         // 改名撞上别人同样是 409
-        mockMvc.perform(json(post("/api/syllabus/nodes/growth-rate/rename"), """
+        mockMvc.perform(json(post("/api/v1/syllabus/nodes/growth-rate/rename"), """
                         {"name":"基期量计算"}
                         """))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("NAME_TAKEN"));
 
         // 🔴 三次都被拒之后,覆盖率一个数都没变
-        mockMvc.perform(get("/api/coverage/summary"))
+        mockMvc.perform(get("/api/v1/coverage/summary"))
                 .andExpect(jsonPath("$.total").value(18))
                 .andExpect(jsonPath("$.covered").value(8))
                 .andExpect(jsonPath("$.percent").value(44));
-        mockMvc.perform(get("/api/syllabus/nodes/growth-rate"))
+        mockMvc.perform(get("/api/v1/syllabus/nodes/growth-rate"))
                 .andExpect(jsonPath("$.name").value("增长率计算"));
     }
 
@@ -568,7 +568,7 @@ class SyllabusAdminApiTest {
     @DisplayName("🔴 前后空格 / 内部多空格 / 全角半角 / 大小写,都不构成区别 → 409")
     void namesThatOnlyLookDifferentAreStillTaken() throws Exception {
         // 前后空格不构成区别
-        mockMvc.perform(json(post("/api/syllabus/nodes"), """
+        mockMvc.perform(json(post("/api/v1/syllabus/nodes"), """
                         {"groupCode":"growth","name":"  增长量计算  ","recent5yCount":0}
                         """))
                 .andExpect(status().isConflict())
@@ -576,26 +576,26 @@ class SyllabusAdminApiTest {
 
         // 内部连续空白折叠成一个。🔴 折叠的是【多个空格】,不是删掉空格 ——
         // 「增长量计算」与「增长量 计算」仍然是两个不同的名字,那个空格是看得见的
-        mockMvc.perform(json(post("/api/syllabus/nodes"), """
+        mockMvc.perform(json(post("/api/v1/syllabus/nodes"), """
                         {"groupCode":"growth","name":"增长量 速算","recent5yCount":1}
                         """))
                 .andExpect(status().isCreated());
         for (String variant : List.of("增长量   速算", " 增长量  速算 ")) {
-            mockMvc.perform(json(post("/api/syllabus/nodes"), """
+            mockMvc.perform(json(post("/api/v1/syllabus/nodes"), """
                             {"groupCode":"effect","name":"%s","recent5yCount":0}
                             """.formatted(variant)))
                     .andExpect(status().isConflict())
                     .andExpect(jsonPath("$.code").value("NAME_TAKEN"));
         }
 
-        mockMvc.perform(json(post("/api/syllabus/nodes"), """
+        mockMvc.perform(json(post("/api/v1/syllabus/nodes"), """
                         {"groupCode":"fast-math","name":"GDP 速算","recent5yCount":1}
                         """))
                 .andExpect(status().isCreated());
 
         // 全角 ＧＤＰ 与半角 GDP、大小写 gdp,渲染出来分得出,挑的时候分不出
         for (String variant : List.of("ＧＤＰ 速算", "gdp 速算", "Gdp 速算")) {
-            mockMvc.perform(json(post("/api/syllabus/nodes"), """
+            mockMvc.perform(json(post("/api/v1/syllabus/nodes"), """
                             {"groupCode":"growth","name":"%s","recent5yCount":0}
                             """.formatted(variant)))
                     .andExpect(status().isConflict())
@@ -603,7 +603,7 @@ class SyllabusAdminApiTest {
         }
 
         // 只成功了两次:「增长量 速算」与「GDP 速算」;被拒的五次一个都没落到树上
-        mockMvc.perform(get("/api/coverage/summary")).andExpect(jsonPath("$.total").value(20));
+        mockMvc.perform(get("/api/v1/coverage/summary")).andExpect(jsonPath("$.total").value(20));
     }
 
     /**
@@ -616,11 +616,11 @@ class SyllabusAdminApiTest {
     @Test
     @DisplayName("🔴 与【已归档】考点重名 → 409,而且报错里必须出现「归档」两个字")
     void aNameHeldByAnArchivedNodeSaysSo() throws Exception {
-        mockMvc.perform(post("/api/syllabus/nodes/growth-amount/archive")).andExpect(status().isOk());
-        mockMvc.perform(get("/api/syllabus/tree"))
+        mockMvc.perform(post("/api/v1/syllabus/nodes/growth-amount/archive")).andExpect(status().isOk());
+        mockMvc.perform(get("/api/v1/syllabus/tree"))
                 .andExpect(jsonPath("$.groups[0].nodes.length()").value(6));   // 树上确实看不见了
 
-        mockMvc.perform(json(post("/api/syllabus/nodes"), """
+        mockMvc.perform(json(post("/api/v1/syllabus/nodes"), """
                         {"groupCode":"effect","name":"增长量计算","recent5yCount":0}
                         """))
                 .andExpect(status().isConflict())
@@ -629,7 +629,7 @@ class SyllabusAdminApiTest {
                 .andExpect(jsonPath("$.message").value(Matchers.containsString("unarchive")));
 
         // 🔴 名字在归档期间没被让出去,所以取消归档不需要再查一次重名,也不会失败
-        mockMvc.perform(post("/api/syllabus/nodes/growth-amount/unarchive"))
+        mockMvc.perform(post("/api/v1/syllabus/nodes/growth-amount/unarchive"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.node.name").value("增长量计算"))
                 .andExpect(jsonPath("$.summary.total").value(18));
@@ -638,7 +638,7 @@ class SyllabusAdminApiTest {
     @Test
     @DisplayName("重命名成自己原来的名字 → 200,不是 409")
     void renamingToItsOwnNameIsFine() throws Exception {
-        mockMvc.perform(json(post("/api/syllabus/nodes/growth-rate/rename"), """
+        mockMvc.perform(json(post("/api/v1/syllabus/nodes/growth-rate/rename"), """
                         {"name":"增长率计算"}
                         """))
                 .andExpect(status().isOk())
@@ -647,13 +647,13 @@ class SyllabusAdminApiTest {
                 .andExpect(jsonPath("$.summary.percent").value(44));
 
         // 只差前后空格的写法同样是自己
-        mockMvc.perform(json(post("/api/syllabus/nodes/growth-rate/rename"), """
+        mockMvc.perform(json(post("/api/v1/syllabus/nodes/growth-rate/rename"), """
                         {"name":"  增长率计算  "}
                         """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.node.name").value("增长率计算"));
 
-        mockMvc.perform(json(post("/api/syllabus/groups/growth/rename"), """
+        mockMvc.perform(json(post("/api/v1/syllabus/groups/growth/rename"), """
                         {"name":"增长类"}
                         """))
                 .andExpect(status().isOk())
@@ -663,20 +663,20 @@ class SyllabusAdminApiTest {
     @Test
     @DisplayName("🔴 题型重名 → 409 NAME_TAKEN")
     void duplicateGroupNameIsRefused() throws Exception {
-        mockMvc.perform(json(post("/api/syllabus/groups"), """
+        mockMvc.perform(json(post("/api/v1/syllabus/groups"), """
                         {"name":"效应类"}
                         """))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("NAME_TAKEN"))
                 .andExpect(jsonPath("$.message").value(Matchers.containsString("效应类")));
 
-        mockMvc.perform(json(post("/api/syllabus/groups/growth/rename"), """
+        mockMvc.perform(json(post("/api/v1/syllabus/groups/growth/rename"), """
                         {"name":" 速算技巧 "}
                         """))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("NAME_TAKEN"));
 
-        mockMvc.perform(get("/api/syllabus/tree"))
+        mockMvc.perform(get("/api/v1/syllabus/tree"))
                 .andExpect(jsonPath("$.groups.length()").value(5))
                 .andExpect(jsonPath("$.groups[0].name").value("增长类"));
     }
@@ -693,7 +693,7 @@ class SyllabusAdminApiTest {
     void zeroWidthNamesAreRejectedButOrdinaryOnesAreNot() throws Exception {
         // JSON 里的 \\u200b 由 Jackson 还原成真正的零宽空格 —— 源码里不放看不见的字符
         for (String escaped : List.of("\\u200b", "\\u200d", "\\ufeff")) {
-            mockMvc.perform(json(post("/api/syllabus/nodes"), """
+            mockMvc.perform(json(post("/api/v1/syllabus/nodes"), """
                             {"groupCode":"growth","name":"%s增长量计算","recent5yCount":0}
                             """.formatted(escaped)))
                     .andExpect(status().isBadRequest())
@@ -706,14 +706,14 @@ class SyllabusAdminApiTest {
                 "增长率计算(逆向)", "GDP compound rate", "2021-2025 年均值",
                 "速算:截位直除法", "A/B 对比,含 %", "题型 #3 —— 特殊情形");
         for (String name : legal) {
-            mockMvc.perform(json(post("/api/syllabus/nodes"), """
+            mockMvc.perform(json(post("/api/v1/syllabus/nodes"), """
                             {"groupCode":"growth","name":"%s","recent5yCount":0}
                             """.formatted(name)))
                     .andExpect(status().isCreated())
                     .andExpect(jsonPath("$.node.name").value(name));
         }
 
-        mockMvc.perform(get("/api/coverage/summary"))
+        mockMvc.perform(get("/api/v1/coverage/summary"))
                 .andExpect(jsonPath("$.total").value(18 + legal.size()));
     }
 
@@ -737,7 +737,7 @@ class SyllabusAdminApiTest {
     void invisibleCharactersBeyondCfCannotMintATwinNode() throws Exception {
         // JSON 里写转义,由 Jackson 还原成真正的字符 —— 源码里不放一个看不见的字符
         for (String escaped : List.of("\\u3164", "\\u2800", "\\u034f", "\\u115f", "\\uffa0")) {
-            mockMvc.perform(json(post("/api/syllabus/nodes"), """
+            mockMvc.perform(json(post("/api/v1/syllabus/nodes"), """
                             {"groupCode":"effect","name":"增长量计算%s","recent5yCount":0}
                             """.formatted(escaped)))
                     .andExpect(status().isBadRequest())
@@ -746,7 +746,7 @@ class SyllabusAdminApiTest {
         }
 
         // 变体选择符:放行进 validName,但 nameKey 剥掉它 → 409,而且报错要说清是被谁占着
-        mockMvc.perform(json(post("/api/syllabus/nodes"), """
+        mockMvc.perform(json(post("/api/v1/syllabus/nodes"), """
                         {"groupCode":"effect","name":"增长量计算\\ufe0f","recent5yCount":0}
                         """))
                 .andExpect(status().isConflict())
@@ -754,14 +754,14 @@ class SyllabusAdminApiTest {
                 .andExpect(jsonPath("$.message").value(Matchers.containsString("增长类")));
 
         // 名字里一个看得见的字符都没有 → 400,否则面板上会出现一个挑不出来的考点
-        mockMvc.perform(json(post("/api/syllabus/nodes"), """
+        mockMvc.perform(json(post("/api/v1/syllabus/nodes"), """
                         {"groupCode":"effect","name":"\\ufe0f\\ufe00","recent5yCount":0}
                         """))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_NAME"));
 
         // 🔴 一次都没成功 —— 覆盖率的分母一个数都没动
-        mockMvc.perform(get("/api/coverage/summary"))
+        mockMvc.perform(get("/api/v1/coverage/summary"))
                 .andExpect(jsonPath("$.total").value(18));
     }
 
@@ -771,7 +771,7 @@ class SyllabusAdminApiTest {
     void rejectionMessagesDoNotEchoUnboundedInput() throws Exception {
         String pastedStem = "2023 年全国粮食总产量为 13908 亿斤,比上年增加 177 亿斤".repeat(40);
 
-        String message = mockMvc.perform(post("/api/syllabus/nodes/{code}/archive", pastedStem))
+        String message = mockMvc.perform(post("/api/v1/syllabus/nodes/{code}/archive", pastedStem))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("NODE_NOT_FOUND"))
                 .andReturn().getResponse().getContentAsString();
@@ -784,9 +784,9 @@ class SyllabusAdminApiTest {
     @Test
     @DisplayName("导出自己的树:名称/层级/频次/归档,四样,没有内容也没有第四层")
     void exportCarriesTheTreeAndNothingElse() throws Exception {
-        mockMvc.perform(post("/api/syllabus/nodes/mixed-growth/archive")).andExpect(status().isOk());
+        mockMvc.perform(post("/api/v1/syllabus/nodes/mixed-growth/archive")).andExpect(status().isOk());
 
-        mockMvc.perform(get("/api/syllabus/export"))
+        mockMvc.perform(get("/api/v1/syllabus/export"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.subject.display").value("山东省考 · 行测 · 资料分析"))
                 .andExpect(jsonPath("$.groups.length()").value(5))
@@ -805,8 +805,8 @@ class SyllabusAdminApiTest {
     @Test
     @DisplayName("🔴 没有「批量导入考点体系」的端点,请求体里也没有能装下一棵子树的位置(R-07)")
     void thereIsNoBulkImportChannel() throws Exception {
-        for (String path : List.of("/api/syllabus/import", "/api/syllabus/nodes/import",
-                "/api/syllabus/groups/import", "/api/syllabus/tree")) {
+        for (String path : List.of("/api/v1/syllabus/import", "/api/v1/syllabus/nodes/import",
+                "/api/v1/syllabus/groups/import", "/api/v1/syllabus/tree")) {
             mockMvc.perform(json(post(path), "{}"))
                     .andExpect(status().is4xxClientError());
         }

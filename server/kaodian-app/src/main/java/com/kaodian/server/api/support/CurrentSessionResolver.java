@@ -25,7 +25,7 @@ import java.util.Optional;
  * 没写,它就一定是公开端点</b>。需不需要鉴权写在方法自己身上,不在别处的一张表里。
  * 代价是「公开」仍然是默认值 —— 所以下面那句注释里的规矩必须被遵守。
  *
- * <h2>它<b>没有</b>接管 {@code /api/records} 与 {@code /api/syllabus}</h2>
+ * <h2>它<b>没有</b>接管 {@code /api/v1/records} 与 {@code /api/v1/syllabus}</h2>
  *
  * 那两组端点现在仍然是<b>单用户</b>的:{@code Touch} 上没有 {@code user_id},
  * 整个进程只有一份 {@code touches.json}。给它们加上鉴权而数据层不分租户,

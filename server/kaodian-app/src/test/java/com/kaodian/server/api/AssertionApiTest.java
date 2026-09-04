@@ -110,11 +110,11 @@ class AssertionApiTest {
      * 在有人把断言并进分子时会被当成过时的数字直接改掉。
      */
     @Test
-    @DisplayName("🔴 POST /api/assertions 之后,GET /coverage/summary 的覆盖率一个字都没变")
+    @DisplayName("🔴 POST /api/v1/assertions 之后,GET /coverage/summary 的覆盖率一个字都没变")
     void assertingDoesNotMoveTheCoverageNumber() throws Exception {
         String before = summaryBody();
 
-        mockMvc.perform(post("/api/assertions")
+        mockMvc.perform(post("/api/v1/assertions")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"nodeCode\":\"" + BLANK_NODE + "\"}"))
                 .andExpect(status().isCreated());
@@ -150,7 +150,7 @@ class AssertionApiTest {
     void theResponseCarriesTheUnchangedSummary() throws Exception {
         int percentBefore = JsonPath.read(summaryBody(), "$.percent");
 
-        mockMvc.perform(post("/api/assertions")
+        mockMvc.perform(post("/api/v1/assertions")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"nodeCode\":\"" + BLANK_NODE + "\"}"))
                 .andExpect(status().isCreated())
@@ -171,15 +171,15 @@ class AssertionApiTest {
     @Test
     @DisplayName("🔴 声明掌握之后,那个考点从 /coverage/blindspots 上消失(§6.4:排除已断言节点)")
     void assertedNodeLeavesTheBlindSpotList() throws Exception {
-        mockMvc.perform(get("/api/coverage/blindspots").param("top", "5"))
+        mockMvc.perform(get("/api/v1/coverage/blindspots").param("top", "5"))
                 .andExpect(jsonPath("$.items[0].code").value(TOP_BLIND_NODE));
 
-        mockMvc.perform(post("/api/assertions")
+        mockMvc.perform(post("/api/v1/assertions")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"nodeCode\":\"" + TOP_BLIND_NODE + "\"}"))
                 .andExpect(status().isCreated());
 
-        mockMvc.perform(get("/api/coverage/blindspots").param("top", "5"))
+        mockMvc.perform(get("/api/v1/coverage/blindspots").param("top", "5"))
                 .andExpect(status().isOk())
                 // 要 5 个还是给 5 个:过滤排在 limit 之前,下一名顶上来,榜不会越按越短
                 .andExpect(jsonPath("$.returned").value(5))
@@ -193,20 +193,20 @@ class AssertionApiTest {
         assertMastery(TOP_BLIND_NODE);
         cancel(TOP_BLIND_NODE);
 
-        mockMvc.perform(get("/api/coverage/blindspots").param("top", "5"))
+        mockMvc.perform(get("/api/v1/coverage/blindspots").param("top", "5"))
                 .andExpect(jsonPath("$.items[0].code").value(TOP_BLIND_NODE));
     }
 
     @Test
     @DisplayName("树上那一格带着 assertedAt —— 否则用户没有任何地方能看到自己按过什么")
     void theTreeShowsWhenItWasAsserted() throws Exception {
-        mockMvc.perform(get("/api/syllabus/tree"))
+        mockMvc.perform(get("/api/v1/syllabus/tree"))
                 .andExpect(jsonPath("$.groups[*].nodes[?(@.code == '" + BLANK_NODE + "')].assertedAt",
                         Matchers.contains(Matchers.nullValue())));
 
         assertMastery(BLANK_NODE);
 
-        mockMvc.perform(get("/api/syllabus/tree"))
+        mockMvc.perform(get("/api/v1/syllabus/tree"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.groups[*].nodes[?(@.code == '" + BLANK_NODE + "')].assertedAt",
                         Matchers.contains(Matchers.notNullValue())))
@@ -227,13 +227,13 @@ class AssertionApiTest {
     @Test
     @DisplayName("🔴 幂等:重复声明同一个考点不报错、不重复落行,第二次是 200 不是 201")
     void assertingTwiceIsIdempotent() throws Exception {
-        String first = mockMvc.perform(post("/api/assertions")
+        String first = mockMvc.perform(post("/api/v1/assertions")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"nodeCode\":\"" + BLANK_NODE + "\"}"))
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
 
-        String second = mockMvc.perform(post("/api/assertions")
+        String second = mockMvc.perform(post("/api/v1/assertions")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"nodeCode\":\"" + BLANK_NODE + "\"}"))
                 .andExpect(status().isOk())
@@ -250,7 +250,7 @@ class AssertionApiTest {
     @Test
     @DisplayName("🔴 幂等:取消一个没声明过的考点同样不报错,回 200")
     void cancellingSomethingNeverAssertedIsNotAnError() throws Exception {
-        mockMvc.perform(delete("/api/assertions")
+        mockMvc.perform(delete("/api/v1/assertions")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"nodeCode\":\"" + BLANK_NODE + "\"}"))
                 .andExpect(status().isOk())
@@ -267,7 +267,7 @@ class AssertionApiTest {
         assertMastery(BLANK_NODE);
         cancel(BLANK_NODE);
 
-        mockMvc.perform(delete("/api/assertions")
+        mockMvc.perform(delete("/api/v1/assertions")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"nodeCode\":\"" + BLANK_NODE + "\"}"))
                 .andExpect(status().isOk())
@@ -280,7 +280,7 @@ class AssertionApiTest {
         assertMastery(BLANK_NODE);
         cancel(BLANK_NODE);
 
-        mockMvc.perform(post("/api/assertions")
+        mockMvc.perform(post("/api/v1/assertions")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"nodeCode\":\"" + BLANK_NODE + "\"}"))
                 .andExpect(status().isCreated())
@@ -304,12 +304,12 @@ class AssertionApiTest {
                 "{\"nodeCode\":\"" + BLANK_NODE + "\",\"name\":\"我自己想的考点\"}",
                 "{\"nodeCode\":\"" + BLANK_NODE + "\",\"reason\":\"因为我会了\"}"}) {
 
-            mockMvc.perform(post("/api/assertions")
+            mockMvc.perform(post("/api/v1/assertions")
                             .contentType(MediaType.APPLICATION_JSON).content(body))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.code").value("UNKNOWN_FIELD"));
 
-            mockMvc.perform(delete("/api/assertions")
+            mockMvc.perform(delete("/api/v1/assertions")
                             .contentType(MediaType.APPLICATION_JSON).content(body))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.code").value("UNKNOWN_FIELD"));
@@ -357,7 +357,7 @@ class AssertionApiTest {
     @DisplayName("nodeCode 缺失或空白 → 400")
     void nodeCodeIsRequired() throws Exception {
         for (String body : new String[]{"{}", "{\"nodeCode\":\"\"}", "{\"nodeCode\":\"   \"}"}) {
-            mockMvc.perform(post("/api/assertions")
+            mockMvc.perform(post("/api/v1/assertions")
                             .contentType(MediaType.APPLICATION_JSON).content(body))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
@@ -367,7 +367,7 @@ class AssertionApiTest {
     @Test
     @DisplayName("🔴 R-07:nodeCode 不在骨架树里 → 400,不猜最接近的考点(只能从树里选,不能新建)")
     void unknownNodeIsRejectedNotGuessed() throws Exception {
-        mockMvc.perform(post("/api/assertions")
+        mockMvc.perform(post("/api/v1/assertions")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"nodeCode\":\"增长率那个\"}"))
                 .andExpect(status().isBadRequest())
@@ -388,7 +388,7 @@ class AssertionApiTest {
     void rejectionDoesNotEchoTheWholeInput() throws Exception {
         String stem = "某市 2023 年全年实现地区生产总值 12345.6 亿元,比上年增长 5.4%".repeat(6);
 
-        String body = mockMvc.perform(post("/api/assertions")
+        String body = mockMvc.perform(post("/api/v1/assertions")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"nodeCode\":\"" + stem + "\"}"))
                 .andExpect(status().isBadRequest())
@@ -406,16 +406,16 @@ class AssertionApiTest {
      * 服务端日志一条都看不到</b>。
      */
     @Test
-    @DisplayName("CORS:DELETE /api/assertions 放行,而全局白名单里照旧没有 DELETE")
+    @DisplayName("CORS:DELETE /api/v1/assertions 放行,而全局白名单里照旧没有 DELETE")
     void corsOpensDeleteForAssertionsOnly() throws Exception {
-        mockMvc.perform(options("/api/assertions")
+        mockMvc.perform(options("/api/v1/assertions")
                         .header("Origin", "http://localhost:5173")
                         .header("Access-Control-Request-Method", "DELETE"))
                 .andExpect(status().isOk())
                 .andExpect(header().string("Access-Control-Allow-Methods",
                         Matchers.containsString("DELETE")));
 
-        mockMvc.perform(options("/api/coverage/summary")
+        mockMvc.perform(options("/api/v1/coverage/summary")
                         .header("Origin", "http://localhost:5173")
                         .header("Access-Control-Request-Method", "DELETE"))
                 .andExpect(status().isForbidden());
@@ -424,21 +424,21 @@ class AssertionApiTest {
     // ---------------------------------------------------------------- 夹具
 
     private void assertMastery(String nodeCode) throws Exception {
-        mockMvc.perform(post("/api/assertions")
+        mockMvc.perform(post("/api/v1/assertions")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"nodeCode\":\"" + nodeCode + "\"}"))
                 .andExpect(status().is2xxSuccessful());
     }
 
     private void cancel(String nodeCode) throws Exception {
-        mockMvc.perform(delete("/api/assertions")
+        mockMvc.perform(delete("/api/v1/assertions")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"nodeCode\":\"" + nodeCode + "\"}"))
                 .andExpect(status().isOk());
     }
 
     private String summaryBody() throws Exception {
-        String body = mockMvc.perform(get("/api/coverage/summary"))
+        String body = mockMvc.perform(get("/api/v1/coverage/summary"))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
         assertNotNull(body);

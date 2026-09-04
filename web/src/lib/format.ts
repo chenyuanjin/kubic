@@ -46,17 +46,16 @@ export function relativeDayTime(iso: string, now: number = Date.now()): string {
   return `${relativeDay(iso, now)} ${hh}:${mm}`
 }
 
-/**
- * 用户自填正确率的显示值。
- *
- * 三种情况都显示「—」,而且都不是 0%:
- * <b>没练过</b>(0% 会被读成「答全错了」,那是一句产品没资格说的话)、
- * <b>算不出来</b>(时间线被截断,做题数不全)。
- * 这一列宁可空着,也不给一个不确定的数 —— 它是覆盖度失真最容易溜进来的地方。
+/*
+ * 🔴 这里原本有一个 accuracyText —— 把 correct/practiced 渲染成百分比的那一列。
+ * KUBI-107 按 `B0` §11.4 整条删掉:`design/README.md:45` 的平铺禁令赢,
+ * 用户自己填的两个整数相除得到的那个比值也算禁的那一个词。
+ * <p>
+ * 删的是<b>比值</b>,不是那两个数 —— {@link drillText} 的「12/10」原样留着,
+ * 因为「练了几道 / 对了几道」是用户自己敲进来的事实,不是产品的判断。
+ * NodeView.accuracy 这个字段没有跟着删:它是服务端 NodeDetailDto 的契约字段,
+ * 前端类型逐字段对着它写(见 api/types.ts 开头那句),删了就不再是同一份契约。
  */
-export function accuracyText(node: NodeView): string {
-  return node.accuracy === null ? '—' : `${Math.round(node.accuracy * 100)}%`
-}
 
 /** 「12/10」这一列:练了几道 / 对了几道。两个数都是用户自己敲进来的。 */
 export function drillText(node: NodeView): string {
@@ -75,7 +74,7 @@ export function drillText(node: NodeView): string {
  */
 export function blindReason(node: NodeView): string {
   if (node.practiced !== null && node.practiced > 0) {
-    return `练 ${node.practiced} 对 ${node.correct ?? 0} · 正确率 ${accuracyText(node)}`
+    return `练 ${node.practiced} 对 ${node.correct ?? 0}`
   }
   if (node.state === 'EMPTY') {
     return `近五年 ${node.recent5yCount} 次 · 无任何记录`

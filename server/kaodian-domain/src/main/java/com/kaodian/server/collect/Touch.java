@@ -29,16 +29,33 @@ import java.time.Instant;
  * <p>
  * 🔴 它是<b>标识,不是内容</b>。上限见 {@link #MAX_CLIENT_TOKEN_LENGTH}。
  *
+ * <h2>{@code userId} —— B0-3 的租户列</h2>
+ *
+ * B0 §4.2:三个行为层实体各加一列归属,类型 {@code long},<b>位置在 {@code id} 之后第一位</b>,
+ * <b>必填、无默认值、无 {@code 0} 哨兵</b>。{@code 0} 不是合法 id(B0 §3.3 ——
+ * auth 侧从 10001 起号),所以构造器里 {@code > 0} 不成立即抛。
+ * <p>
+ * 🔴 它由 <b>{@code app} 从鉴权上下文取出来,显式传进领域方法的参数</b>(B0 §4.3)。
+ * 这个包里<b>没有</b>、也不许有任何「当前用户」类型的入口(禁词全集见 {@link Tenant})——
+ * 那条边(domain → auth)是四模块无环图里唯一还没被建出来的一条,
+ * {@code kaodian-domain/pom.xml} 上的 enforcer 会在构建期拦住它。
+ * 领域层只校验 {@code userId > 0},<b>不去查「这个用户存不存在」</b>。
+ *
  * @param id          记录 id
+ * @param userId      这条记录归谁。🔴 必填且 {@code > 0},见上
  * @param nodeCode    挂到哪个考点。🔴 只接受考点树里已存在的 code,不接受自由文本标签(R-07)
  * @param sourceName  来源名,如「粉笔 · 资料分析系统班 L12」。只是个名字,不含该来源的任何内容
  * @param kind        这一笔是怎么记的
  * @param occurredAt  发生时间 —— 「多久前」的唯一依据
  * @param drill       做题记录;非做题类记录为 null
- * @param clientToken 客户端生成的去重键;<b>在线直接记时可以为 null</b>(见六参构造器)
+ * @param clientToken 客户端生成的去重键;<b>在线直接记时传 {@code null}</b> ——
+ *                    在线记一笔的成败当场就知道,客户端不需要去重键,
+ *                    强迫它编一个只会让「这个字段可以是任何东西」变成事实。
+ *                    需要去重键的只有一条路:断网时进了本地队列、之后要补传的那些记录
  */
 public record Touch(
         String id,
+        long userId,
         String nodeCode,
         String sourceName,
         TouchKind kind,
@@ -71,18 +88,6 @@ public record Touch(
     public static final int MAX_CLIENT_TOKEN_LENGTH = 64;
 
     /**
-     * 没有去重键的那条路 —— <b>在线直接记</b>。
-     *
-     * <p>留这个构造器不是图省事:在线记一笔时客户端<b>不需要</b>去重键(请求成功与否当场就知道),
-     * 强迫它编一个只会让「这个字段可以是任何东西」变成事实。
-     * 需要去重键的只有一条路 —— 断网时进了本地队列、之后要补传的那些记录。
-     */
-    public Touch(String id, String nodeCode, String sourceName,
-                 TouchKind kind, Instant occurredAt, Drill drill) {
-        this(id, nodeCode, sourceName, kind, occurredAt, drill, null);
-    }
-
-    /**
      * 做题记录 —— 练了几道、对了几道。
      *
      * <h2>这两个数是用户自己填的,不是产品判的</h2>
@@ -109,6 +114,9 @@ public record Touch(
     }
 
     public Touch {
+        // 🔴 无默认值、无 0 哨兵(B0 §4.2)。给 0 一个「暂时没有用户」的含义,就等于把
+        // 「这条记录归谁」变成一个可以不填的字段 —— 而覆盖度是按用户过滤算出来的。
+        Tenant.requireUserId(userId);
         if (nodeCode == null || nodeCode.isBlank()) {
             throw new IllegalArgumentException("必须挂到一个考点上");
         }

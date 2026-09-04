@@ -32,6 +32,15 @@ public class FileAccountStore implements AccountStore {
 
     private static final String FILE_NAME = "auth-accounts.json";
 
+    /**
+     * 🔴 发号起始值(B0-2 §3.3)。
+     *
+     * <p><b>{@code 0} 必须在结构上不是一个合法 userId</b> —— {@code 0L} 正是
+     * {@code AgentController} 那个硬编码哨兵。从 {@code 10001} 起号,
+     * 任何残留的 {@code 0} 一眼就是错的,而不是「一个恰好存在的用户」。
+     */
+    private static final long FIRST_USER_ID = 10001L;
+
     private final AuthJsonFile file;
     private final Object lock = new Object();
 
@@ -54,10 +63,22 @@ public class FileAccountStore implements AccountStore {
     }
 
     @Override
-    public Optional<AppUser> findById(String userId) {
+    public Optional<AppUser> findById(long userId) {
         synchronized (lock) {
             ensureLoaded();
             return Optional.ofNullable(state.users.get(userId));
+        }
+    }
+
+    /**
+     * 发号 —— <b>只推进内存里的游标</b>,{@code nextUserId} 这个键与账号数据
+     * 在紧接着那一次 {@link #persist} 里<b>一起</b>落盘。理由见 {@link AccountStore#nextUserId()}。
+     */
+    @Override
+    public long nextUserId() {
+        synchronized (lock) {
+            ensureLoaded();
+            return state.nextUserId++;
         }
     }
 
@@ -71,11 +92,11 @@ public class FileAccountStore implements AccountStore {
     }
 
     @Override
-    public List<UserIdentity> identitiesOf(String userId) {
+    public List<UserIdentity> identitiesOf(long userId) {
         synchronized (lock) {
             ensureLoaded();
             return state.identities.values().stream()
-                    .filter(i -> i.userId().equals(userId))
+                    .filter(i -> i.userId() == userId)
                     .toList();
         }
     }
@@ -87,7 +108,7 @@ public class FileAccountStore implements AccountStore {
             if (state.users.containsKey(user.id())) {
                 throw new IllegalStateException("账号 id 已存在:" + user.id());
             }
-            if (!firstIdentity.userId().equals(user.id())) {
+            if (firstIdentity.userId() != user.id()) {
                 throw new IllegalArgumentException("第一条身份必须属于这个新账号");
             }
             UserIdentity existing = state.identities.get(firstIdentity.uniqueKey());
@@ -114,7 +135,7 @@ public class FileAccountStore implements AccountStore {
             }
             UserIdentity existing = state.identities.get(identity.uniqueKey());
             if (existing != null) {
-                if (existing.userId().equals(identity.userId())) {
+                if (existing.userId() == identity.userId()) {
                     return;                     // 已经绑过了。重复绑定是幂等的,不报错
                 }
                 throw new IdentityTakenException("这个身份已经绑在别的账号上", existing.userId());
@@ -123,7 +144,7 @@ public class FileAccountStore implements AccountStore {
             // 不做这个检查的话,一个账号会挂着两个 phone identity,而「我的手机号是哪个」没有答案。
             if (identity.type() == IdentityType.PHONE) {
                 boolean hasPhone = state.identities.values().stream()
-                        .anyMatch(i -> i.userId().equals(identity.userId()) && i.type() == IdentityType.PHONE);
+                        .anyMatch(i -> i.userId() == identity.userId() && i.type() == IdentityType.PHONE);
                 if (hasPhone) {
                     throw new IllegalStateException("这个账号已经绑了手机号,换号请先解绑");
                 }
@@ -138,7 +159,7 @@ public class FileAccountStore implements AccountStore {
     }
 
     @Override
-    public Optional<PhoneNumberSecret> phoneSecretOf(String userId) {
+    public Optional<PhoneNumberSecret> phoneSecretOf(long userId) {
         synchronized (lock) {
             ensureLoaded();
             return Optional.ofNullable(state.phoneSecrets.get(userId));
@@ -146,7 +167,7 @@ public class FileAccountStore implements AccountStore {
     }
 
     @Override
-    public void deactivate(String userId, Instant now) {
+    public void deactivate(long userId, Instant now) {
         synchronized (lock) {
             ensureLoaded();
             AppUser u = state.users.get(userId);
@@ -161,14 +182,14 @@ public class FileAccountStore implements AccountStore {
             // 🔴 identity 一并摘掉。不摘的话,那个手机号永远登不回来也永远给不了别人 ——
             // 而手机号是会被运营商回收的(docs/technical/INDEX.md §7.1)。
             // 摘掉之后,同一个号再来就是一次全新的注册,那正是「注销」该有的意思。
-            next.identities.values().removeIf(i -> i.userId().equals(userId));
+            next.identities.values().removeIf(i -> i.userId() == userId);
             next.phoneSecrets.remove(userId);
             persist(next);
         }
     }
 
     @Override
-    public AccountMergeLog merge(String fromUserId, String toUserId, int movedRecordCount, Instant now) {
+    public AccountMergeLog merge(long fromUserId, long toUserId, int movedRecordCount, Instant now) {
         synchronized (lock) {
             ensureLoaded();
             AppUser from = state.users.get(fromUserId);
@@ -182,14 +203,14 @@ public class FileAccountStore implements AccountStore {
             State next = state.copy();
             java.util.Set<IdentityType> dropped = new java.util.LinkedHashSet<>();
             List<UserIdentity> moving = next.identities.values().stream()
-                    .filter(i -> i.userId().equals(fromUserId))
+                    .filter(i -> i.userId() == fromUserId)
                     .toList();
             for (UserIdentity i : moving) {
                 UserIdentity moved = new UserIdentity(toUserId, i.type(), i.identifier(), i.boundAt());
                 // 目标账号已经有同类型 identity 时,被并走的那条直接丢弃而不是覆盖:
                 // 覆盖会让留下来的那个账号的手机号在用户毫不知情的情况下换成另一个号。
                 boolean conflict = next.identities.values().stream()
-                        .anyMatch(x -> x.userId().equals(toUserId) && x.type() == i.type());
+                        .anyMatch(x -> x.userId() == toUserId && x.type() == i.type());
                 next.identities.remove(i.uniqueKey());
                 if (conflict) {
                     // 🔴 目标账号已经有同类型身份 —— 被并走的这一条<b>就此消失</b>。
@@ -264,8 +285,8 @@ public class FileAccountStore implements AccountStore {
             ensureLoaded();
             State next = state.copy();
             int n = 0;
-            for (Map.Entry<String, PhoneNumberSecret> e : state.phoneSecrets.entrySet()) {
-                String userId = e.getKey();
+            for (Map.Entry<Long, PhoneNumberSecret> e : state.phoneSecrets.entrySet()) {
+                long userId = e.getKey();
                 PhoneNumberSecret old = e.getValue();
                 PhoneNumberSecret fresh = rehash.apply(old);
 
@@ -302,7 +323,11 @@ public class FileAccountStore implements AccountStore {
                 "账号 / 身份 / 手机号密文 / 合并留痕。",
                 "🔴 这里没有一个手机号明文:identifier 是 HMAC,phoneEnc 是 AES-GCM 密文(docs/technical/INDEX.md §5.2)。",
                 "主表不放任何登录凭证 —— 凭证一律在 identities 里,一个通道一行。",
-                "keyFingerprint 是盖在这份数据上的密钥指纹(R-59):它推不回密钥,只用来发现「换了密钥」。");
+                "keyFingerprint 是盖在这份数据上的密钥指纹(R-59):它推不回密钥,只用来发现「换了密钥」。",
+                "nextUserId 是发号游标(B0-2 §3.3),起始 10001 —— 0 不是合法 userId。");
+        // 🔴 发号游标与账号数据同一次原子落盘。分两次写会出现「发了号但账号没写进去」的中间态,
+        // 与上面 keyFingerprint 同一条理由(§6.11)。换 MySQL 那天这个键丢弃,由 AUTO_INCREMENT 接手。
+        root.put("nextUserId", next.nextUserId);
         ArrayNode users = root.putArray("users");
         for (AppUser u : next.users.values()) {
             users.add(toNode(u));
@@ -312,7 +337,7 @@ public class FileAccountStore implements AccountStore {
             ids.add(toNode(i));
         }
         ArrayNode secrets = root.putArray("phoneSecrets");
-        for (Map.Entry<String, PhoneNumberSecret> e : next.phoneSecrets.entrySet()) {
+        for (Map.Entry<Long, PhoneNumberSecret> e : next.phoneSecrets.entrySet()) {
             secrets.add(toNode(e.getKey(), e.getValue()));
         }
         if (next.fingerprint != null) {
@@ -332,14 +357,17 @@ public class FileAccountStore implements AccountStore {
 
     private static final class State {
 
-        final Map<String, AppUser> users = new LinkedHashMap<>();
+        final Map<Long, AppUser> users = new LinkedHashMap<>();
         /** 键是 {@link UserIdentity#uniqueKey()} —— 唯一索引就是这个 Map 本身。 */
         final Map<String, UserIdentity> identities = new LinkedHashMap<>();
-        final Map<String, PhoneNumberSecret> phoneSecrets = new LinkedHashMap<>();
+        final Map<Long, PhoneNumberSecret> phoneSecrets = new LinkedHashMap<>();
         final List<AccountMergeLog> mergeLogs = new ArrayList<>();
 
         /** 🔴 盖在这份数据上的密钥指纹({@code R-59})。老文件里没有,为 null。 */
         PhoneKeyFingerprint fingerprint;
+
+        /** 下一个要发的 userId({@code B0-2} §3.3)。<b>初值 10001</b>,见 {@link #FIRST_USER_ID}。 */
+        long nextUserId = FIRST_USER_ID;
 
         State copy() {
             State s = new State();
@@ -348,32 +376,38 @@ public class FileAccountStore implements AccountStore {
             s.phoneSecrets.putAll(phoneSecrets);
             s.mergeLogs.addAll(mergeLogs);
             s.fingerprint = fingerprint;
+            s.nextUserId = nextUserId;
             return s;
         }
     }
 
     private static State parse(JsonNode root) {
         State s = new State();
-        for (JsonNode n : requireArray(root, "users")) {
+        JsonNode users = requireArray(root, "users");
+        rejectLegacyUserIds(users);
+        for (JsonNode n : users) {
             String deleted = n.path("deletedAt").asString("");
             AppUser u = new AppUser(
-                    required(n, "id"),
+                    requiredLong(n, "id"),
                     n.path("nickname").asString(null),
                     AccountStatus.valueOf(required(n, "status")),
                     Instant.parse(required(n, "createdAt")),
                     deleted.isEmpty() ? null : Instant.parse(deleted));
             s.users.put(u.id(), u);
         }
+        // 老文件没有这个键;真有那种文件时也不能从 10001 重新发号 —— 那会撞上已有账号。
+        s.nextUserId = Math.max(root.path("nextUserId").asLong(FIRST_USER_ID),
+                s.users.keySet().stream().mapToLong(Long::longValue).max().orElse(0L) + 1);
         for (JsonNode n : requireArray(root, "identities")) {
             UserIdentity i = new UserIdentity(
-                    required(n, "userId"),
+                    requiredLong(n, "userId"),
                     IdentityType.ofWireName(required(n, "type")),
                     required(n, "identifier"),
                     Instant.parse(required(n, "boundAt")));
             s.identities.put(i.uniqueKey(), i);
         }
         for (JsonNode n : requireArray(root, "phoneSecrets")) {
-            s.phoneSecrets.put(required(n, "userId"), new PhoneNumberSecret(
+            s.phoneSecrets.put(requiredLong(n, "userId"), new PhoneNumberSecret(
                     required(n, "phoneHmac"),
                     required(n, "phoneEnc"),
                     n.path("masked").asString("")));
@@ -385,8 +419,8 @@ public class FileAccountStore implements AccountStore {
         }
         for (JsonNode n : requireArray(root, "mergeLogs")) {
             s.mergeLogs.add(new AccountMergeLog(
-                    required(n, "fromUserId"),
-                    required(n, "toUserId"),
+                    requiredLong(n, "fromUserId"),
+                    requiredLong(n, "toUserId"),
                     n.path("movedRecordCount").asInt(0),
                     Instant.parse(required(n, "mergedAt"))));
         }
@@ -417,7 +451,7 @@ public class FileAccountStore implements AccountStore {
         return o;
     }
 
-    private static ObjectNode toNode(String userId, PhoneNumberSecret p) {
+    private static ObjectNode toNode(long userId, PhoneNumberSecret p) {
         ObjectNode o = AuthJsonFile.mapper().createObjectNode();
         o.put("userId", userId);
         o.put("phoneHmac", p.hmac());
@@ -449,5 +483,57 @@ public class FileAccountStore implements AccountStore {
             throw new IllegalStateException("账号记录缺少必填字段:" + field);
         }
         return v;
+    }
+
+    private static long requiredLong(JsonNode n, String field) {
+        JsonNode v = n.path(field);
+        if (!v.isIntegralNumber()) {
+            throw new IllegalStateException("账号记录的 " + field + " 不是 int64:" + v);
+        }
+        return v.longValue();
+    }
+
+    /**
+     * 🔴 <b>B0-2 §3.4 的那道守卫 —— 不是一个迁移器。</b>
+     *
+     * <p>存量 {@code u_} 账号数据 → <b>拒绝启动</b>。为什么不是 WARN:放行的后果是老账号的
+     * {@code u_} id 与新账号的 {@code 10001} 并存,而两种 id 都能通过各自那一层的类型检查 ——
+     * <b>那正好是一次「接口全部 200、日志一条没有」的 {@code R-59} 同构失败</b>。
+     *
+     * <h2>为什么必须在<b>解析成 long 之前</b>探测</h2>
+     *
+     * id 一旦是 {@code long},读一个 {@code "id":"u_3f2a…"} 的旧文件时,
+     * 先炸出来的会是一句「不是 int64」的解析错误 —— 而用户需要看到的是下面这条<b>带出路</b>的消息。
+     * 一个没有出路的守卫,会被撞上它的人在半夜关掉({@link PhoneKeyGuard} 同一条)。
+     * 所以这里读的是 {@code JsonNode} 的原始文本值,不经过 {@link #requiredLong}。
+     */
+    private static void rejectLegacyUserIds(JsonNode users) {
+        long n = 0;
+        for (JsonNode u : users) {
+            if (u.path("id").asString("").startsWith("u_")) {
+                n++;
+            }
+        }
+        if (n > 0) {
+            throw new LegacyUserIdException("""
+                    检测到 B0-2 之前的存量账号数据(id 以 u_ 开头),共 %d 条。
+                    本机开发数据:删掉 ~/.kaodian/auth-*.json 重新注册即可。
+                    这台机器上的数据不能删:停手上报,不要绕过这一条。
+                    """.formatted(n));
+        }
+    }
+
+    /**
+     * 存量 {@code u_} 数据 —— 拒绝启动。
+     *
+     * <p>它是一个<b>独立的类型</b>而不是一句 {@code IllegalStateException},
+     * 只是为了让 {@link AuthJsonFile#read} 原样放它出去:被包进那句
+     * 「鉴权数据文件内容不合法」里,用户看到的就不是上面那条有出路的消息了。
+     */
+    public static final class LegacyUserIdException extends IllegalStateException {
+
+        LegacyUserIdException(String message) {
+            super(message);
+        }
     }
 }

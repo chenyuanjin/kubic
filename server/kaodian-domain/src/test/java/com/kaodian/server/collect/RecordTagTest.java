@@ -37,12 +37,15 @@ class RecordTagTest {
 
     private static final Instant NOW = Instant.parse("2026-08-25T12:00:00Z");
 
+    /** 测试用户 —— 与行为层种子同一个 id(B0 §3.3:auth 侧从 10001 起号)。 */
+    private static final long USER = 10001L;
+
     private static Touch touch(String id, String nodeCode) {
-        return new Touch(id, nodeCode, "自己刷题", TouchKind.MANUAL, NOW, null);
+        return new Touch(id, USER, nodeCode, "自己刷题", TouchKind.MANUAL, NOW, null, null);
     }
 
     private static RecordTag auto(String id, String recordId, String nodeCode, double confidence) {
-        return new RecordTag(id, recordId, nodeCode, confidence, TagOrigin.AUTO, null, false);
+        return new RecordTag(id, USER, recordId, nodeCode, confidence, TagOrigin.AUTO, null, false);
     }
 
     // ———————————————————— 一、origin 写入后不可变 ————————————————————
@@ -107,12 +110,12 @@ class RecordTagTest {
         RecordTagStore store = new InMemoryRecordTagStore();
         store.put(auto("tag-1", "t-1", "growth-rate", 0.91));
 
-        RecordTag flipped = new RecordTag("tag-1", "t-1", "growth-rate",
+        RecordTag flipped = new RecordTag("tag-1", USER, "t-1", "growth-rate",
                 RecordTag.MANUAL_CONFIDENCE, TagOrigin.MANUAL, NOW, false);
         IllegalArgumentException e = assertThrows(IllegalArgumentException.class, () -> store.put(flipped));
         assertTrue(e.getMessage().contains("origin"), () -> "报错得说清是哪条线:" + e.getMessage());
 
-        assertEquals(TagOrigin.AUTO, store.find("tag-1").origin(), "库里那条一个字都不许变");
+        assertEquals(TagOrigin.AUTO, store.find(USER, "tag-1").origin(), "库里那条一个字都不许变");
     }
 
     @Test
@@ -135,13 +138,13 @@ class RecordTagTest {
     @DisplayName("🔴 origin=manual 却带着 0.83 分:构造不出来 —— 那只可能是识别结果换了个 origin")
     void aManualTagCannotCarryAModelConfidence() {
         assertThrows(IllegalArgumentException.class,
-                () -> new RecordTag("tag-1", "t-1", "growth-rate", 0.83, TagOrigin.MANUAL, NOW, false));
+                () -> new RecordTag("tag-1", USER, "t-1", "growth-rate", 0.83, TagOrigin.MANUAL, NOW, false));
         assertThrows(IllegalArgumentException.class,
-                () -> new RecordTag("tag-1", "t-1", "growth-rate", 0.0, TagOrigin.MANUAL, NOW, false),
+                () -> new RecordTag("tag-1", USER, "t-1", "growth-rate", 0.0, TagOrigin.MANUAL, NOW, false),
                 "0 也不行 —— 手动标签没有「有多确定」这回事,不是「不太确定」");
 
         // 对照组:1.0 能过。没有它,上面两条可以靠「manual 一律构造不出来」蒙混过关。
-        assertEquals(TagOrigin.MANUAL, new RecordTag("tag-1", "t-1", "growth-rate",
+        assertEquals(TagOrigin.MANUAL, new RecordTag("tag-1", USER, "t-1", "growth-rate",
                 RecordTag.MANUAL_CONFIDENCE, TagOrigin.MANUAL, NOW, false).origin());
     }
 
@@ -284,7 +287,7 @@ class RecordTagTest {
         // 搬完记录挂在新考点上,而库里那行主标签还写着旧 code。
         // 若拿库里的 nodeCode 算,覆盖度会算到一个用户已经搬离的格子里,而且旧考点马上就要被删。
         Touch afterReassign = touch("t-1", "share-calc");
-        RecordTag storedBefore = new RecordTag("primary-t-1", "t-1", "growth-rate",
+        RecordTag storedBefore = new RecordTag("primary-t-1", USER, "t-1", "growth-rate",
                 RecordTag.MANUAL_CONFIDENCE, TagOrigin.MANUAL, NOW, false);
 
         List<RecordTag> tags = RecordTag.effectiveTagsOf(afterReassign, List.of(storedBefore));

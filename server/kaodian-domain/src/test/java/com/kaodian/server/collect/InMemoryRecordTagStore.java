@@ -23,27 +23,38 @@ public final class InMemoryRecordTagStore implements RecordTagStore {
     private final List<RecordTag> tags = new ArrayList<>();
 
     @Override
-    public List<RecordTag> findAll() {
+    public List<RecordTag> findAll(long userId) {
+        return tags.stream().filter(t -> t.userId() == userId).toList();
+    }
+
+    @Override
+    public List<RecordTag> findAllAcrossUsers() {
         return List.copyOf(tags);
     }
 
     @Override
-    public List<RecordTag> findByRecord(String recordId) {
-        return tags.stream().filter(t -> t.recordId().equals(recordId)).toList();
+    public List<RecordTag> findByRecord(long userId, String recordId) {
+        return tags.stream()
+                .filter(t -> t.userId() == userId && t.recordId().equals(recordId))
+                .toList();
     }
 
     @Override
-    public RecordTag find(String tagId) {
-        if (tagId == null || tagId.isBlank()) {
-            return null;
-        }
-        return tags.stream().filter(t -> t.id().equals(tagId)).findFirst().orElse(null);
+    public RecordTag find(long userId, String tagId) {
+        RecordTag found = lookup(tagId);
+        return found != null && found.userId() == userId ? found : null;
     }
 
-    /** 契约见 {@link RecordTagStore#put} —— 三个字段一个都不许变。 */
+    /**
+     * 契约见 {@link RecordTagStore#put} —— 四个字段一个都不许变。
+     *
+     * <p>🔴 {@code userId} 那道拒绝与另外三道是同一条理由:过户不会报错,只会让一个人的
+     * 那一格记到另一个人头上,而覆盖度是按用户算的。少实现这一道,接口测试就跑在一个
+     * 比生产宽松的存储上。
+     */
     @Override
     public RecordTag put(RecordTag tag) {
-        RecordTag existing = find(tag.id());
+        RecordTag existing = lookup(tag.id());
         if (existing != null) {
             if (existing.origin() != tag.origin()) {
                 throw new IllegalArgumentException(
@@ -56,6 +67,9 @@ public final class InMemoryRecordTagStore implements RecordTagStore {
             if (!existing.nodeCode().equals(tag.nodeCode())) {
                 throw new IllegalArgumentException("标签不能原地改挂考点");
             }
+            if (existing.userId() != tag.userId()) {
+                throw new IllegalArgumentException("标签不能换归属");
+            }
             tags.set(tags.indexOf(existing), tag);
             return tag;
         }
@@ -64,14 +78,21 @@ public final class InMemoryRecordTagStore implements RecordTagStore {
     }
 
     @Override
-    public int deleteByRecord(String recordId) {
+    public int deleteByRecord(long userId, String recordId) {
         int before = tags.size();
-        tags.removeIf(t -> t.recordId().equals(recordId));
+        tags.removeIf(t -> t.userId() == userId && t.recordId().equals(recordId));
         return before - tags.size();
     }
 
     @Override
-    public int count() {
-        return tags.size();
+    public int count(long userId) {
+        return (int) tags.stream().filter(t -> t.userId() == userId).count();
+    }
+
+    private RecordTag lookup(String tagId) {
+        if (tagId == null || tagId.isBlank()) {
+            return null;
+        }
+        return tags.stream().filter(t -> t.id().equals(tagId)).findFirst().orElse(null);
     }
 }

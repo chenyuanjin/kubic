@@ -36,6 +36,36 @@
 	<build>
 		<plugins>
 			<!--
+				依赖图闸门。B0-平台底座与横切契约 §10.2:不写脚本 —— grep 只看直接依赖,
+				有人引一个自己带 kaodian-auth 的库,pom 里一个字样都没有而那条边已经建出来了。
+				enforcer 看的是解析后的依赖树,且随 validate 阶段自动跑(§10.3 主防线)。
+			-->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-enforcer-plugin</artifactId>
+				<version>3.5.0</version>
+				<executions>
+					<execution>
+						<id>无环依赖图</id>
+						<goals>
+							<goal>enforce</goal>
+						</goals>
+						<configuration>
+							<rules>
+								<bannedDependencies>
+									<excludes>
+										<exclude>com.kaodian:kaodian-auth</exclude>
+									</excludes>
+									<!-- 一行不折行:Maven 原样输出,折行会把这里的缩进 tab 一起打到终端上。 -->
+									<message>依赖图上唯一不许有的那条边。domain/agent 依赖 auth,领域层就再也不能脱离账号体系被测。见 B0-平台底座与横切契约 §十。</message>
+								</bannedDependencies>
+							</rules>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+
+			<!--
 				打一个 test-jar。唯一的理由是两个测试替身:
 				{@code InMemoryAssertionStore} / {@code InMemoryRecordTagStore}。
 				它们既被本模块的 TaggingServiceTest 用,也被 app 模块的 6 个接口测试用 ——

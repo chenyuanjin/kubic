@@ -55,6 +55,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class CoverageAssertionCaliberTest {
 
     private static final Instant NOW = Instant.parse("2026-08-25T12:00:00Z");
+
+    /** 测试用户 —— 与行为层种子同一个 id(B0 §3.3:auth 侧从 10001 起号)。 */
+    private static final long USER = 10001L;
     private static final Instant ASSERTED_AT = Instant.parse("2026-08-20T09:00:00Z");
 
     private final CoverageService service = new CoverageService();
@@ -70,14 +73,14 @@ class CoverageAssertionCaliberTest {
         drill(ts, "truncate-divide", "B站 · 资料分析技巧", 6, 2, 4);
         drill(ts, "base-value", "中公 · 资料分析专项", 5, 4, 32);
         drill(ts, "interval-growth", "中公 · 资料分析专项", 3, 2, 33);
-        ts.add(new Touch("t-share-change", "share-change",
-                "粉笔 · 资料分析系统班 L12", TouchKind.VOICE, daysAgo(5), null));
+        ts.add(new Touch("t-share-change", USER, "share-change",
+                "粉笔 · 资料分析系统班 L12", TouchKind.VOICE, daysAgo(5), null, null));
         return ts;
     }
 
     private void drill(List<Touch> ts, String node, String source, int practiced, int correct, int daysAgo) {
-        ts.add(new Touch("t-" + node, node, source, TouchKind.DRILL, daysAgo(daysAgo),
-                new Touch.Drill(practiced, correct)));
+        ts.add(new Touch("t-" + node, USER, node, source, TouchKind.DRILL, daysAgo(daysAgo),
+                new Touch.Drill(practiced, correct), null));
     }
 
     private Instant daysAgo(int d) {
@@ -92,7 +95,7 @@ class CoverageAssertionCaliberTest {
         List<Touch> touches = contractTouches();
         List<UserAssertion> assertions = new ArrayList<>();
         for (String code : assertedCodes) {
-            assertions.add(new UserAssertion(code, ASSERTED_AT));
+            assertions.add(new UserAssertion(USER, code, ASSERTED_AT));
         }
         return service.compute(tree, touches, RecordTag.effectiveTagsOf(touches, List.of()),
                 List.copyOf(assertions), NOW);

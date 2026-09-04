@@ -67,6 +67,10 @@ final class AuthJsonFile {
             return parse.apply(MAPPER.readTree(in));
         } catch (IOException e) {
             throw new IllegalStateException("鉴权数据文件读取失败:" + file, e);
+        } catch (FileAccountStore.LegacyUserIdException e) {
+            // 🔴 原样放出去。这一条自己就带着出路(B0-2 §3.4),包进下面那句
+            // 「文件内容不合法」里,用户看到的就不是那条有出路的消息了。
+            throw e;
         } catch (RuntimeException e) {
             throw new IllegalStateException(
                     "鉴权数据文件内容不合法:" + file

@@ -39,11 +39,14 @@ import java.time.Instant;
  * <b>断言这一侧没有那条风险,因为它根本不动那个比值</b> —— 代价是它必须在别处被看见,
  * 否则用户会以为自己按了个没反应的按钮。所以概览单列一格、树上每个考点带 {@code assertedAt}。
  *
- * <h2>为什么没有 {@code userId}</h2>
+ * <h2>🔴 主键是 {@code (userId, nodeCode)},不再是 {@code nodeCode} 一列</h2>
  *
- * 与 {@link Touch} 逐字同理:阶段 0/1 是单进程单用户的本地文件({@code FileTouchStore} 类注释),
- * 行为层三张表里没有一张带 {@code user_id}。到 {@code 1.2.4} 落库那天一起加,
- * 现在先造一个恒等于同一个值的字段,只是让每一行都多一个不会被读的键。
+ * B0 §4.2 点破的就是这一处:<b>单列主键 {@code nodeCode} 就是「所有人共用一份『我已掌握』」
+ * 的物理形态</b> —— 一个人按下按钮,所有人的盲区榜上都少一行,而且不会报错。
+ * 加上 {@code userId} 之后,「同一个考点最多一条声明」这句话的完整形式是
+ * 「<b>同一个人</b>在同一个考点上最多一条声明」,{@code AssertionStore#put} 的幂等按这一对判重。
+ * <p>
+ * 这个 record 上没有 {@code id},所以归属列放在<b>第一位</b>(B0 §4.2:位置在 {@code id} 之后第一位)。
  *
  * <h2>为什么没有「取消时刻」这类字段</h2>
  *
@@ -52,12 +55,14 @@ import java.time.Instant;
  * 因为它是<b>准确率口径的分母</b>({@code 1.2.5.2});断言没有任何口径要拿它当分母,
  * 留一行「取消了的声明」除了让文件变长以外不产生任何答案。
  *
+ * @param userId    谁声明的。🔴 必填且为正,与 {@code nodeCode} 一起构成主键
  * @param nodeCode  声明掌握了哪个考点。🔴 只接受考点树里已存在的 code(R-07 与 {@link Touch} 同)
  * @param assertedAt 按下按钮的时刻。重复断言<b>不刷新</b>它 —— 见 {@link AssertionStore#put}
  */
-public record UserAssertion(String nodeCode, Instant assertedAt) {
+public record UserAssertion(long userId, String nodeCode, Instant assertedAt) {
 
     public UserAssertion {
+        Tenant.requireUserId(userId);
         if (nodeCode == null || nodeCode.isBlank()) {
             throw new IllegalArgumentException("必须指向一个考点");
         }

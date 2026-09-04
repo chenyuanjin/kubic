@@ -19,23 +19,49 @@ import java.util.List;
  *
  * 因为 {@link Touch} 里根本没有内容可搜。查询维度只有考点、来源名、时间 ——
  * 「有没有、几次、多久前」,与 决策记录 §2.2 的能力边界逐字对应。
+ *
+ * <h2>🔴 谁传 {@code userId} 进来(B0 §4.3)</h2>
+ *
+ * <b>{@code app} 从鉴权上下文取出来,显式传进这些方法的参数。</b>这一层不去拿,
+ * 也不认识 {@code kaodian-auth} 的任何类型 —— 那条边由 enforcer 在构建期拦着。
+ *
+ * <h2>三个方法名里带 {@code AcrossUsers},它们是有意的跨用户口</h2>
+ *
+ * {@link #findAllAcrossUsers()} / {@link #countByNodeAcrossUsers} / {@link #reassign} 三个<b>不按用户收窄</b>。
+ * 名字里写出来,是因为「默认全库」正是 B0-4 要修的那个默认值:一个叫 {@code findAll()} 的方法
+ * 悄悄返回别人的记录,读代码的人看不出来;叫 {@code findAllAcrossUsers()} 就看得出来。
+ * 各自为什么跨用户,写在各自的方法上。
  */
 public interface TouchStore {
 
-    /** 全部记录,按发生时间升序。 */
-    List<Touch> findAll();
-
-    /** 某个考点下的全部记录。 */
-    List<Touch> findByNode(String nodeCode);
+    /** 这个用户的全部记录,按发生时间升序。 */
+    List<Touch> findAll(long userId);
 
     /**
-     * 按去重键找那条已经落过的记录。
+     * 全库记录,<b>跨用户</b>,按发生时间升序。
+     *
+     * <h2>🔴 今天只剩一个调用方:{@code kaodian-agent} 的工具经 {@code CoverageReader#read()}</h2>
+     *
+     * {@code /api/agent/**} 的租户列归 KUBI-78,B0 §5.4 明写「本轮给目标形态,不动手」。
+     * 在它落地之前,agent 那条路读的仍然是全库 —— 而 {@code ApiAuthFilter} 已经让
+     * 那五个端点默认打不通,所以这条路今天在 HTTP 上走不通。
+     * <b>这不是「顺手留的后门」,是一处被登记着的红:B0 §3.5 判据②「延后的是动手时间不是这条判据,
+     * 它现在是红的,红着是对的」。</b>
+     */
+    List<Touch> findAllAcrossUsers();
+
+    /**
+     * 按去重键找这个用户已经落过的那条记录。
+     *
+     * <p>🔴 <b>去重键按用户判,不是全局判。</b>客户端自己生成的键(UUID / 时间戳+序号)
+     * 在两个人之间没有任何约定,全局判重意味着 A 的补传可能被 B 的一条老记录顶掉 ——
+     * 而那正是「他记了却没记上,他不会知道」那一类失败。
      *
      * @param clientToken 客户端生成的去重键;{@code null} 或空白一律返回 {@code null} ——
      *                    「没有去重键」不是一个可以互相匹配的值(见 {@link Touch} 的构造器)
      * @return 已存在的那条;没有则 {@code null}
      */
-    Touch findByClientToken(String clientToken);
+    Touch findByClientToken(long userId, String clientToken);
 
     /**
      * 追加一条记录。
@@ -56,6 +82,10 @@ public interface TouchStore {
      * 而<b>覆盖度的分子里那个考点被数了两次的次数</b>正是这个产品唯一的那个数字。
      * 实现必须在自己的写锁里完成「查 + 写」。
      *
+     * <p>这个方法<b>没有单独的 {@code userId} 参数</b> —— 归属就在 {@code touch.userId()} 上,
+     * 再传一个只会让「两个值对不上时听谁的」变成一个要回答的问题。判重按
+     * {@code (userId, clientToken)},见 {@link #findByClientToken}。
+     *
      * @return 落下的那条;命中去重键时是<b>原来那条</b>(id 与 occurredAt 都是第一次的)
      */
     Touch append(Touch touch);
@@ -74,16 +104,32 @@ public interface TouchStore {
      * 契约里那句「触发覆盖层重算」在这个实现形态下<b>是自动成立的</b>,不是被忽略了。
      *
      * @param id 记录 id
-     * @return 被删掉的那条;{@code id} 不存在时返回 {@code null}(<b>不抛异常</b> ——
-     *         「删一条不存在的记录」是调用方要分辨的情况,不是服务端的故障)
+     * <p>🔴 <b>别人的记录等于不存在。</b>拿着别人的记录 id 来删,返回的是 {@code null} 而不是
+     * {@code 403} —— 与 {@code TaggingService#tagWithId} 那句「先按记录取全集再找 id」同一条:
+     * 分不出「没有这条」与「这条不是你的」,本身就是不该泄露的信息。
+     *
+     * @return 被删掉的那条;{@code id} 不存在<b>或不属于这个用户</b>时返回 {@code null}
+     *         (<b>不抛异常</b> ——「删一条不存在的记录」是调用方要分辨的情况,不是服务端的故障)
      */
-    Touch delete(String id);
+    Touch delete(long userId, String id);
 
-    /** 记录总数。 */
-    int count();
+    /** 这个用户的记录总数。 */
+    int count(long userId);
 
     /**
-     * 把挂在 {@code fromNodeCode} 上的记录整体改挂到 {@code toNodeCode}。
+     * 某个考点上挂着几条记录,<b>跨用户</b>。
+     *
+     * <h2>🔴 这一处必须跨用户,收窄成单用户是错的</h2>
+     *
+     * 它唯一的调用方是骨架层的删除守则({@link com.kaodian.server.syllabus.NodeRecordLedger#countFor}):
+     * 「这个考点上还有记录就不许删」。骨架树是<b>全进程共用的一棵</b>(阶段 0/1 只有一棵,
+     * 见 {@code DomainBeans}),删掉一个节点会让<b>所有人</b>挂在它上面的记录变成孤儿。
+     * 只数当前这个人的记录,他就能删掉别人正在用的考点,而且删得很干净、不报错。
+     */
+    int countByNodeAcrossUsers(String nodeCode);
+
+    /**
+     * 把挂在 {@code fromNodeCode} 上的记录整体改挂到 {@code toNodeCode},<b>跨用户</b>。
      *
      * <h2>🔴 这是「删除守则」给出的出路,不是一个通用的编辑接口</h2>
      *
@@ -96,6 +142,13 @@ public interface TouchStore {
      * <p>
      * 目标 code 是否在骨架树里、是否已归档,由 {@code SyllabusStore#moveRecords} 在调用前判定 ——
      * 这个接口不认识骨架树。
+     *
+     * <h2>🔴 这一处也必须跨用户,理由与 {@link #countByNodeAcrossUsers} 是同一条</h2>
+     *
+     * 它是「这个考点我想删掉」的<b>出路</b>,而删除守则数的是全库的记录数。
+     * 只搬当前这个人的,守则会看到「还剩 3 条」于是仍然不许删 —— 出路走不通;
+     * 或者更糟:先按单用户搬空、守则也按单用户数,于是删掉了别人还挂着记录的考点。
+     * <b>数的口径与搬的口径必须是同一个,否则这条出路会在两个方向上都出错。</b>
      *
      * @return 搬走了几条;来源上本来就没有记录时返回 0
      */

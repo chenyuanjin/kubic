@@ -78,7 +78,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         CoverageController.class,
         TimelineController.class,
         RecordController.class})
-@Import(DomainBeans.class)     // web 切片不扫 @Configuration,领域装配要显式带进来
+// web 切片不扫 @Configuration,领域装配要显式带进来;ApiTestAuth 给每个请求配一条真令牌(B0-4 默认拒绝)。
+// 🔴 令牌里的 userId 与种子数据的 userId 是同一个 10001,那 8 条记录才数得出来 —— 见 ApiTestAuth.USER_ID。
+@Import({DomainBeans.class, ApiTestAuth.class})
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class SyllabusAdminApiTest {
 

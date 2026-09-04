@@ -93,7 +93,7 @@ class WeChatFederationTest {
     @Test
     @DisplayName("已登录状态下绑微信是最顺的路 —— 不产生第二个账号")
     void bindWhileLoggedInIsTheSmoothPath() {
-        String u = service.loginByPhone(phonePassed(), "手机", null).user().id();
+        long u = service.loginByPhone(phonePassed(), "手机", null).user().id();
         assertInstanceOf(AccountService.BindResult.Bound.class,
                 service.bind(u, IdentityType.WX_UNION, UNIONID, null));
 
@@ -140,8 +140,8 @@ class WeChatFederationTest {
     @DisplayName("🔴 分裂已经发生时:登进 unionid 那个,并给出合并建议 —— 但绝不自动合并")
     void existingSplitIsSuggestedNotAutoMerged() {
         // 分裂的造法:入口 A 没绑开放平台时建了账号1;入口 B 绑了,建了账号2
-        String acc1 = service.loginByWeChat(openIdOnly(OPENID_A), "入口A", null).user().id();
-        String acc2 = service.loginByWeChat(withUnion(OPENID_B), "入口B", null).user().id();
+        long acc1 = service.loginByWeChat(openIdOnly(OPENID_A), "入口A", null).user().id();
+        long acc2 = service.loginByWeChat(withUnion(OPENID_B), "入口B", null).user().id();
         assertNotEquals(acc1, acc2);
         assertEquals(2, signups.totalCount());
 
@@ -168,7 +168,7 @@ class WeChatFederationTest {
     @Test
     @DisplayName("🔴 老用户(手机号注册)从小程序一步登录 → 登进原账号,零新账号")
     void oneStepLoginFindsExistingPhoneAccount() {
-        String existing = service.loginByPhone(phonePassed(), "H5", null).user().id();
+        long existing = service.loginByPhone(phonePassed(), "H5", null).user().id();
         assertEquals(1, signups.totalCount());
 
         var r = service.loginByWeChatWithPhone(withUnion(OPENID_A), PHONE, "小程序", null);
@@ -200,8 +200,8 @@ class WeChatFederationTest {
     @Test
     @DisplayName("🔴 两边各有账号时登进【手机号】那个 —— 记录大概率在那边")
     void oneStepPrefersThePhoneAccount() {
-        String phoneAcc = service.loginByPhone(phonePassed(), "H5", null).user().id();
-        String wxAcc = service.loginByWeChat(withUnion(OPENID_A), "小程序", null).user().id();
+        long phoneAcc = service.loginByPhone(phonePassed(), "H5", null).user().id();
+        long wxAcc = service.loginByWeChat(withUnion(OPENID_A), "小程序", null).user().id();
         assertNotEquals(phoneAcc, wxAcc);
 
         var r = service.loginByWeChatWithPhone(withUnion(OPENID_A), PHONE, "小程序", null);
@@ -225,8 +225,8 @@ class WeChatFederationTest {
     void oneStepSeesWeChatInternalSplit() {
         // 造出微信内部分裂:入口 A 没绑开放平台时建了账号1(只有 openid);
         // 入口 B 绑了,建了账号2(unionid)。
-        String openOnlyAcc = service.loginByWeChat(openIdOnly(OPENID_A), "入口A", null).user().id();
-        String unionAcc = service.loginByWeChat(withUnion(OPENID_B), "入口B", null).user().id();
+        long openOnlyAcc = service.loginByWeChat(openIdOnly(OPENID_A), "入口A", null).user().id();
+        long unionAcc = service.loginByWeChat(withUnion(OPENID_B), "入口B", null).user().id();
         assertNotEquals(openOnlyAcc, unionAcc);
 
         // 现在从入口 A 走一步登录:unionid 命中账号2、openidA 命中账号1。
@@ -250,9 +250,9 @@ class WeChatFederationTest {
     @Test
     @DisplayName("一次只给一个合并令牌 —— 合并是不可逆的,一次确认只该授权一次")
     void onlyOneMergeSuggestionAtATime() {
-        String phoneAcc = service.loginByPhone(phonePassed(), "H5", null).user().id();
-        String openOnlyAcc = service.loginByWeChat(openIdOnly(OPENID_A), "入口A", null).user().id();
-        String unionAcc = service.loginByWeChat(withUnion(OPENID_B), "入口B", null).user().id();
+        long phoneAcc = service.loginByPhone(phonePassed(), "H5", null).user().id();
+        long openOnlyAcc = service.loginByWeChat(openIdOnly(OPENID_A), "入口A", null).user().id();
+        long unionAcc = service.loginByWeChat(withUnion(OPENID_B), "入口B", null).user().id();
 
         // 三个账号同时牵进来:手机号一个、unionid 一个、openid 一个
         var r = service.loginByWeChatWithPhone(withUnion(OPENID_A), PHONE, "小程序", null);
@@ -280,7 +280,7 @@ class WeChatFederationTest {
     @Test
     @DisplayName("注销过的账号不会被联合逻辑复活")
     void deactivatedAccountIsNotReused() {
-        String old = service.loginByWeChat(withUnion(OPENID_A), "小程序", null).user().id();
+        long old = service.loginByWeChat(withUnion(OPENID_A), "小程序", null).user().id();
         service.deactivate(old);
 
         var again = service.loginByWeChat(withUnion(OPENID_A), "小程序", null);
@@ -304,9 +304,9 @@ class WeChatFederationTest {
     @DisplayName("补挂身份失败不能让登录失败 —— 登录成功是这条路的底线")
     void linkingFailureDoesNotBreakLogin() {
         // 让 openidA 先属于另一个账号
-        String other = service.loginByWeChat(openIdOnly(OPENID_A), "别人的入口", null).user().id();
+        long other = service.loginByWeChat(openIdOnly(OPENID_A), "别人的入口", null).user().id();
         // 再让一个已有 unionid 的账号带着同一个 openidA 登录 → openid 挂不上去
-        String mine = service.loginByWeChat(withUnion(OPENID_B), "我的", null).user().id();
+        long mine = service.loginByWeChat(withUnion(OPENID_B), "我的", null).user().id();
 
         var r = service.loginByWeChat(withUnion(OPENID_A), "我的另一个入口", null);
         assertNotNull(r.token().plaintext(), "无论如何都要登进来");

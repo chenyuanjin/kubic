@@ -22,8 +22,10 @@ red()  { printf '\033[31m%s\033[0m\n' "$*" >&2; }
 dim()  { printf '\033[2m%s\033[0m\n'  "$*" >&2; }
 
 # ── ① 敏感文件 ──
-SENSITIVE='auth-keys\.properties|auth-accounts\.json|\.env($|\.)|\.(pem|jks|p12)$|(^|/)cache/|\.orig\.(jpg|png)$'
-hits="$(staged | grep -E "$SENSITIVE" || true)"
+# 🔴 正则不在这里,在 scripts/sensitive-paths.txt —— CI 那道闸读的是同一个文件(B0 §8.2)。
+# 抄两遍那一版三个月后一定分叉。过滤 # 与空行是必须的:grep -f 不认注释,空模式匹配一切。
+SENSITIVE="$(git rev-parse --show-toplevel)/scripts/sensitive-paths.txt"
+hits="$(staged | grep -E -f <(grep -vE '^#|^$' "$SENSITIVE") || true)"
 if [[ -n "$hits" ]]; then
   red "✗ 拒绝提交 —— 暂存区里有密钥/运行时数据/原图缓存:"
   printf '%s\n' "$hits" | list_

@@ -21,17 +21,22 @@ public final class InMemoryAssertionStore implements AssertionStore {
     private final List<UserAssertion> assertions = new ArrayList<>();
 
     @Override
-    public List<UserAssertion> findAll() {
+    public List<UserAssertion> findAll(long userId) {
+        return assertions.stream().filter(a -> a.userId() == userId).toList();
+    }
+
+    @Override
+    public List<UserAssertion> findAllAcrossUsers() {
         return List.copyOf(assertions);
     }
 
     @Override
-    public UserAssertion find(String nodeCode) {
+    public UserAssertion find(long userId, String nodeCode) {
         if (nodeCode == null || nodeCode.isBlank()) {
             return null;
         }
         return assertions.stream()
-                .filter(a -> a.nodeCode().equals(nodeCode))
+                .filter(a -> a.userId() == userId && a.nodeCode().equals(nodeCode))
                 .findFirst()
                 .orElse(null);
     }
@@ -39,7 +44,7 @@ public final class InMemoryAssertionStore implements AssertionStore {
     /** 契约见 {@link AssertionStore#put} —— 已经声明过就原样返回,<b>不刷新 assertedAt</b>。 */
     @Override
     public UserAssertion put(UserAssertion assertion) {
-        UserAssertion existing = find(assertion.nodeCode());
+        UserAssertion existing = find(assertion.userId(), assertion.nodeCode());
         if (existing != null) {
             return existing;
         }
@@ -49,8 +54,8 @@ public final class InMemoryAssertionStore implements AssertionStore {
 
     /** 契约见 {@link AssertionStore#remove} —— 没有那一行就返回 false,<b>不抛</b>。 */
     @Override
-    public boolean remove(String nodeCode) {
-        UserAssertion existing = find(nodeCode);
+    public boolean remove(long userId, String nodeCode) {
+        UserAssertion existing = find(userId, nodeCode);
         if (existing == null) {
             return false;
         }
@@ -59,8 +64,8 @@ public final class InMemoryAssertionStore implements AssertionStore {
     }
 
     @Override
-    public int count() {
-        return assertions.size();
+    public int count(long userId) {
+        return (int) assertions.stream().filter(a -> a.userId() == userId).count();
     }
 
     /** 测试夹具用:把这张表清空。 */

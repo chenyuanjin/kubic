@@ -28,6 +28,12 @@ class FileRecordTagStoreTest {
 
     private static final Instant NOW = Instant.parse("2026-08-25T12:00:00Z");
 
+    /** 测试用户 —— 与行为层种子同一个 id(B0 §3.3:auth 侧从 10001 起号)。 */
+    private static final long USER = 10001L;
+
+    /** 另一个真实存在的用户 —— 用来证明「按用户查」不是摆设。 */
+    private static final long OTHER_USER = 10002L;
+
     @TempDir
     Path dataDir;
 
@@ -36,7 +42,7 @@ class FileRecordTagStoreTest {
     }
 
     private static RecordTag auto(String id, String recordId, String nodeCode) {
-        return new RecordTag(id, recordId, nodeCode, 0.91, TagOrigin.AUTO, null, false);
+        return new RecordTag(id, USER, recordId, nodeCode, 0.91, TagOrigin.AUTO, null, false);
     }
 
     @Test
@@ -46,19 +52,19 @@ class FileRecordTagStoreTest {
         // 但那会多出一份【会和行为层对不上】的状态:种子记录改了 nodeCode,标签文件不会跟着改。
         FileRecordTagStore store = store();
 
-        assertEquals(0, store.count());
-        assertEquals(List.of(), store.findAll());
+        assertEquals(0, store.count(USER));
+        assertEquals(List.of(), store.findAll(USER));
         assertFalse(Files.exists(store.dataFile()), "只是读了一下,不该在用户目录里造出文件");
     }
 
     @Test
     @DisplayName("写进去、换个实例读出来,七个字段一个不少")
     void aTagSurvivesAReopen() {
-        RecordTag written = new RecordTag("tag-1", "t-1", "growth-rate",
+        RecordTag written = new RecordTag("tag-1", USER, "t-1", "growth-rate",
                 0.913, TagOrigin.AUTO, NOW, true);
         store().put(written);
 
-        List<RecordTag> read = store().findAll();
+        List<RecordTag> read = store().findAll(USER);
 
         assertEquals(1, read.size());
         assertEquals(written, read.get(0), "落盘再读回来必须逐字段相等 —— 差一个字段就是一次静默的数据损失");
@@ -70,7 +76,7 @@ class FileRecordTagStoreTest {
         // 读侧若把缺键读成 Instant.EPOCH 或「现在」,一批没人确认过的自动标签会集体变成已确认,
         // 而准确率口径(标对的/标了的)的分子会一夜之间等于分母。
         store().put(auto("tag-1", "t-1", "growth-rate"));
-        assertNull(store().findAll().get(0).confirmedAt());
+        assertNull(store().findAll(USER).get(0).confirmedAt());
     }
 
     @Test
@@ -79,11 +85,11 @@ class FileRecordTagStoreTest {
         store().put(auto("tag-1", "t-1", "growth-rate"));
 
         FileRecordTagStore reopened = store();
-        RecordTag flipped = new RecordTag("tag-1", "t-1", "growth-rate",
+        RecordTag flipped = new RecordTag("tag-1", USER, "t-1", "growth-rate",
                 RecordTag.MANUAL_CONFIDENCE, TagOrigin.MANUAL, NOW, false);
 
         assertThrows(IllegalArgumentException.class, () -> reopened.put(flipped));
-        assertEquals(TagOrigin.AUTO, store().find("tag-1").origin(), "磁盘上那一行也不许被改");
+        assertEquals(TagOrigin.AUTO, store().find(USER, "tag-1").origin(), "磁盘上那一行也不许被改");
     }
 
     @Test
@@ -94,9 +100,9 @@ class FileRecordTagStoreTest {
         store.put(tag);
         store.put(tag.confirm(NOW));
 
-        assertEquals(1, store.count(), "确认是改一行,不是加一行");
-        assertEquals(NOW, store.find("tag-1").confirmedAt());
-        assertEquals(TagOrigin.AUTO, store.find("tag-1").origin());
+        assertEquals(1, store.count(USER), "确认是改一行,不是加一行");
+        assertEquals(NOW, store.find(USER, "tag-1").confirmedAt());
+        assertEquals(TagOrigin.AUTO, store.find(USER, "tag-1").origin());
     }
 
     @Test
@@ -107,10 +113,10 @@ class FileRecordTagStoreTest {
         store.put(auto("tag-2", "t-1", "share-calc"));
         store.put(auto("tag-3", "t-2", "share-calc"));
 
-        assertEquals(2, store.deleteByRecord("t-1"));
-        assertEquals(List.of("tag-3"), store().findAll().stream().map(RecordTag::id).toList(),
+        assertEquals(2, store.deleteByRecord(USER, "t-1"));
+        assertEquals(List.of("tag-3"), store().findAll(USER).stream().map(RecordTag::id).toList(),
                 "而且删除要落盘 —— 只改内存的话进程一重启丢弃过的标签就全回来了");
-        assertEquals(0, store.deleteByRecord("t-1"), "删一次不存在的返回 0,不抛");
+        assertEquals(0, store.deleteByRecord(USER, "t-1"), "删一次不存在的返回 0,不抛");
     }
 
     @Test
@@ -125,21 +131,24 @@ class FileRecordTagStoreTest {
                 "[]",
                 "{\"tags\":{}}"}) {
             write(broken);
-            assertThrows(IllegalStateException.class, () -> store().findAll(), broken);
+            assertThrows(IllegalStateException.class, () -> store().findAll(USER), broken);
         }
     }
 
     @Test
     @DisplayName("行里少了必填字段 / origin 认不出来 → 同样吵着失败,不静默跳过那一行")
     void aBrokenRowFailsLoudlyToo() throws IOException {
+        // 每行都带上 userId:没有它的行会被当成无归属数据静默丢弃(B0 §4.4),
+        // 那样这些断言验的就成了「孤儿被丢掉」,而不是「坏行会炸」
         for (String row : new String[]{
-                "{\"recordId\":\"t-1\",\"nodeCode\":\"growth-rate\",\"origin\":\"auto\"}",
-                "{\"id\":\"tag-1\",\"nodeCode\":\"growth-rate\",\"origin\":\"auto\"}",
-                "{\"id\":\"tag-1\",\"recordId\":\"t-1\",\"origin\":\"auto\"}",
-                "{\"id\":\"tag-1\",\"recordId\":\"t-1\",\"nodeCode\":\"growth-rate\"}",
-                "{\"id\":\"tag-1\",\"recordId\":\"t-1\",\"nodeCode\":\"growth-rate\",\"origin\":\"MANUAL\"}"}) {
+                "{\"userId\":10001,\"recordId\":\"t-1\",\"nodeCode\":\"growth-rate\",\"origin\":\"auto\"}",
+                "{\"id\":\"tag-1\",\"userId\":10001,\"nodeCode\":\"growth-rate\",\"origin\":\"auto\"}",
+                "{\"id\":\"tag-1\",\"userId\":10001,\"recordId\":\"t-1\",\"origin\":\"auto\"}",
+                "{\"id\":\"tag-1\",\"userId\":10001,\"recordId\":\"t-1\",\"nodeCode\":\"growth-rate\"}",
+                "{\"id\":\"tag-1\",\"userId\":10001,\"recordId\":\"t-1\",\"nodeCode\":\"growth-rate\","
+                        + "\"origin\":\"MANUAL\"}"}) {
             write("{\"tags\":[" + row + "]}");
-            assertThrows(IllegalStateException.class, () -> store().findAll(), row);
+            assertThrows(IllegalStateException.class, () -> store().findAll(USER), row);
         }
     }
 
@@ -149,12 +158,12 @@ class FileRecordTagStoreTest {
         // 与 FileTouchStore 同一条:读写都逐字段列举。即便有人手工往文件里塞了内容,
         // 它既进不了内存,更不会因为 RecordTag 将来多了个字段就悄悄流回文件。
         write("""
-                {"tags":[{"id":"tag-1","recordId":"t-1","nodeCode":"growth-rate",
+                {"tags":[{"id":"tag-1","userId":10001,"recordId":"t-1","nodeCode":"growth-rate",
                   "origin":"auto","confidence":0.91,"discarded":false,
                   "stem":"某年某省考资料分析材料第一段……","label":"【某机构】增长率速算"}]}
                 """);
 
-        assertEquals(1, store().count());
+        assertEquals(1, store().count(USER));
 
         // 再写一次是全量重写,那两个键必须不会被原样带回去
         FileRecordTagStore store = store();
@@ -165,17 +174,49 @@ class FileRecordTagStoreTest {
     }
 
     @Test
-    @DisplayName("落盘的键就是那七个,一个不多 —— 文件里能出现哪些键由代码显式列出")
+    @DisplayName("落盘的键就是那八个,一个不多 —— 文件里能出现哪些键由代码显式列出")
     void theFileCarriesExactlyTheDeclaredKeys() throws IOException {
         FileRecordTagStore store = store();
-        store.put(new RecordTag("tag-1", "t-1", "growth-rate", 0.91, TagOrigin.AUTO, NOW, true));
+        store.put(new RecordTag("tag-1", USER, "t-1", "growth-rate", 0.91, TagOrigin.AUTO, NOW, true));
 
         String onDisk = Files.readString(store.dataFile(), StandardCharsets.UTF_8);
-        for (String key : new String[]{"id", "recordId", "nodeCode", "confidence",
+        for (String key : new String[]{"id", "userId", "recordId", "nodeCode", "confidence",
                 "origin", "confirmedAt", "discarded"}) {
             assertTrue(onDisk.contains("\"" + key + "\""), "少了键 " + key + ":" + onDisk);
         }
         assertTrue(onDisk.contains("\"auto\""), "origin 按契约写小写(docs/technical/INDEX.md §5.2)");
+    }
+
+    // ——————————————————— 🔴 B0-3 租户列 ———————————————————
+
+    @Test
+    @DisplayName("🔴 userId 不是正数就构造不出来 —— 一条没有归属的标签只会被静默丢弃或算错人头上")
+    void aTagWithoutAPositiveUserIdCannotExist() {
+        for (long bad : new long[]{0L, -1L, Long.MIN_VALUE}) {
+            assertThrows(IllegalArgumentException.class,
+                    () -> new RecordTag("tag-1", bad, "t-1", "growth-rate",
+                            0.91, TagOrigin.AUTO, null, false),
+                    "userId=" + bad);
+        }
+    }
+
+    @Test
+    @DisplayName("🔴 别人的标签查不到、级联删也带不走 —— 覆盖度是按人算的")
+    void oneUserNeverSeesOrDeletesAnotherUsersTags() {
+        // 记录 id 是 UUID,撞不上;但「拿着一个 id 直接查库」的写法根本不看归属,
+        // 于是别人的标签会出现在这个人的记录详情里,而两边都不会报错。
+        FileRecordTagStore store = store();
+        store.put(auto("tag-mine", "t-1", "growth-rate"));
+        store.put(new RecordTag("tag-theirs", OTHER_USER, "t-1", "share-calc",
+                0.91, TagOrigin.AUTO, null, false));
+
+        assertEquals(1, store.count(USER));
+        assertEquals(List.of("tag-mine"), store.findByRecord(USER, "t-1").stream()
+                .map(RecordTag::id).toList(), "同一个 recordId 下也只该看见自己那条");
+        assertNull(store.find(USER, "tag-theirs"), "拿着别人的 tagId 也查不出来");
+
+        assertEquals(1, store.deleteByRecord(USER, "t-1"), "级联删只收走自己那条");
+        assertEquals(1, store.count(OTHER_USER), "别人那条一个字都没被动");
     }
 
     private void write(String json) throws IOException {

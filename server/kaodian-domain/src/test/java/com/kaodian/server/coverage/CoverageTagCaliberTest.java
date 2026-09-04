@@ -45,6 +45,9 @@ class CoverageTagCaliberTest {
 
     private static final Instant NOW = Instant.parse("2026-08-25T12:00:00Z");
 
+    /** 测试用户 —— 与行为层种子同一个 id(B0 §3.3:auth 侧从 10001 起号)。 */
+    private static final long USER = 10001L;
+
     private final CoverageService service = new CoverageService();
     private final Syllabus syllabus = SyllabusLoader.loadDefault();
 
@@ -58,14 +61,14 @@ class CoverageTagCaliberTest {
         drill(ts, "truncate-divide", "B站 · 资料分析技巧", 6, 2, 4);
         drill(ts, "base-value", "中公 · 资料分析专项", 5, 4, 32);
         drill(ts, "interval-growth", "中公 · 资料分析专项", 3, 2, 33);
-        ts.add(new Touch("t-share-change", "share-change",
-                "粉笔 · 资料分析系统班 L12", TouchKind.VOICE, daysAgo(5), null));
+        ts.add(new Touch("t-share-change", USER, "share-change",
+                "粉笔 · 资料分析系统班 L12", TouchKind.VOICE, daysAgo(5), null, null));
         return ts;
     }
 
     private void drill(List<Touch> ts, String node, String source, int practiced, int correct, int daysAgo) {
-        ts.add(new Touch("t-" + node, node, source, TouchKind.DRILL, daysAgo(daysAgo),
-                new Touch.Drill(practiced, correct)));
+        ts.add(new Touch("t-" + node, USER, node, source, TouchKind.DRILL, daysAgo(daysAgo),
+                new Touch.Drill(practiced, correct), null));
     }
 
     private Instant daysAgo(int d) {
@@ -129,7 +132,7 @@ class CoverageTagCaliberTest {
     void discardingOneOfTwoRecordsOnTheSameNodeKeepsItCovered() {
         // 这条防的是「前端自己减一」那种写法,也防实现里把「丢弃数」直接从 covered 里扣掉。
         List<Touch> touches = new ArrayList<>(contractTouches());
-        touches.add(new Touch("t-extra", "growth-rate", "自己刷题", TouchKind.MANUAL, daysAgo(1), null));
+        touches.add(new Touch("t-extra", USER, "growth-rate", "自己刷题", TouchKind.MANUAL, daysAgo(1), null, null));
 
         Summary before = summaryWith(touches, List.of());
         Summary after = summaryWith(touches, List.of(RecordTag.primaryOf(touches.get(0)).discard()));
@@ -147,7 +150,7 @@ class CoverageTagCaliberTest {
         // 把「没点确认」也算成不覆盖,等于要求用户对每条自动标签点一次才承认他学过 ——
         // 覆盖率会变成点击率,而北极星指标看的正是这一屏。
         List<Touch> touches = contractTouches();
-        RecordTag unconfirmed = new RecordTag("tag-auto", "t-growth-rate", "average-calc",
+        RecordTag unconfirmed = new RecordTag("tag-auto", USER, "t-growth-rate", "average-calc",
                 0.91, TagOrigin.AUTO, null, false);
 
         Summary withUnconfirmed = summaryWith(touches, List.of(unconfirmed));
@@ -164,7 +167,7 @@ class CoverageTagCaliberTest {
     @DisplayName("一条记录挂到第二个考点上 → 两个考点都算碰过,做题数在两边都算一遍")
     void oneRecordCanCoverTwoNodes() {
         List<Touch> touches = contractTouches();
-        RecordTag extra = new RecordTag("tag-extra", "t-growth-rate", "average-calc",
+        RecordTag extra = new RecordTag("tag-extra", USER, "t-growth-rate", "average-calc",
                 RecordTag.MANUAL_CONFIDENCE, TagOrigin.MANUAL, NOW, false);
 
         Summary after = summaryWith(touches, List.of(extra));
@@ -183,9 +186,9 @@ class CoverageTagCaliberTest {
         // 表现出来只是触达次数变多,没有任何一处报错。
         List<Touch> touches = contractTouches();
         List<RecordTag> twice = List.of(
-                new RecordTag("tag-a", "t-growth-rate", "growth-rate",
+                new RecordTag("tag-a", USER, "t-growth-rate", "growth-rate",
                         RecordTag.MANUAL_CONFIDENCE, TagOrigin.MANUAL, NOW, false),
-                new RecordTag("tag-b", "t-growth-rate", "growth-rate", 0.9, TagOrigin.AUTO, null, false));
+                new RecordTag("tag-b", USER, "t-growth-rate", "growth-rate", 0.9, TagOrigin.AUTO, null, false));
 
         NodeCoverage node = nodeWith(touches, twice, "growth-rate");
         NodeCoverage baseline = nodeWith(touches, List.of(), "growth-rate");
@@ -203,12 +206,12 @@ class CoverageTagCaliberTest {
         // 当时【整个套件一条都不红】—— 因为契约数据里每个考点下正好只有一条记录。
         // 换句话说,「顺序」这件事当时完全没有被守着,而它错了只表现为界面上来源名换了个次序。
         List<Touch> touches = new ArrayList<>();
-        touches.add(new Touch("t-old", "growth-rate", "中公 · 资料分析专项",
-                TouchKind.MANUAL, daysAgo(10), null));
-        touches.add(new Touch("t-mid", "growth-rate", "华图 · 资料速算网课",
-                TouchKind.MANUAL, daysAgo(5), null));
-        touches.add(new Touch("t-new", "growth-rate", "B站 · 资料分析技巧",
-                TouchKind.MANUAL, daysAgo(1), null));
+        touches.add(new Touch("t-old", USER, "growth-rate", "中公 · 资料分析专项",
+                TouchKind.MANUAL, daysAgo(10), null, null));
+        touches.add(new Touch("t-mid", USER, "growth-rate", "华图 · 资料速算网课",
+                TouchKind.MANUAL, daysAgo(5), null, null));
+        touches.add(new Touch("t-new", USER, "growth-rate", "B站 · 资料分析技巧",
+                TouchKind.MANUAL, daysAgo(1), null, null));
 
         // 标签故意按【与行为层相反】的顺序给进去:排序必须由记录顺序决定,不由标签顺序决定。
         List<RecordTag> reversed = new ArrayList<>(
@@ -233,7 +236,7 @@ class CoverageTagCaliberTest {
         // 万一留下了,正确的行为是它安静地不算数 —— 而不是让整棵树算不出来,
         // 更不是让那个考点凭空保持「碰过」。
         List<Touch> touches = contractTouches();
-        RecordTag orphan = new RecordTag("tag-orphan", "t-已经删了", "average-calc",
+        RecordTag orphan = new RecordTag("tag-orphan", USER, "t-已经删了", "average-calc",
                 RecordTag.MANUAL_CONFIDENCE, TagOrigin.MANUAL, NOW, false);
 
         assertEquals(summaryWith(touches, List.of()).covered(),
@@ -245,7 +248,7 @@ class CoverageTagCaliberTest {
     @DisplayName("标签指向树外的 code(考点被删了)→ 同样不计,不影响别的格子")
     void aTagPointingOutsideTheTreeChangesNothing() {
         List<Touch> touches = contractTouches();
-        RecordTag gone = new RecordTag("tag-gone", "t-growth-rate", "已经被删掉的考点",
+        RecordTag gone = new RecordTag("tag-gone", USER, "t-growth-rate", "已经被删掉的考点",
                 RecordTag.MANUAL_CONFIDENCE, TagOrigin.MANUAL, NOW, false);
 
         assertEquals(summaryWith(touches, List.of()).covered(),

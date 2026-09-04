@@ -1,43 +1,46 @@
 package com.kaodian.server.api.dto.common;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.kaodian.server.coverage.CoverageService.NodeCoverage;
 
-import java.time.Instant;
-
 /**
- * 树上的一个考点 —— 差集运算的最小单位。
+ * 树上的一个叶子考点 —— {@code GET /api/v1/syllabus/tree} 里最深那一层
+ * ({@code M3-骨架与覆盖度差集} §9.2)。
  *
- * <h2>🔴 这里没有讲解、没有例题、没有解析</h2>
+ * <h2>🔴 这里没有 {@code state} / {@code stateLabel}</h2>
  *
- * 名称、频次、状态、碰过几次、最近哪天,五样。R-05 / 决策记录 §2.2「不做教研」在接口形状上
- * 就是这个字段表 —— <b>不是不填,是不建这个位置</b>。学科判断外包给外部模型,
- * 这个产品从不产出「这题该怎么做」。
+ * 上一版每个节点带着五态的名字与中文标签。新五态
+ * ({@code UNTOUCHED} / {@code TOUCHED} / {@code ASSERTED} / {@code ARCHIVED} / {@code GONE})
+ * 是<b>服务端的推导中间量</b>,不是一个上屏的东西:树上要显示的事实只有
+ * 「碰过几次」与「说过会了没」两件,它们各自有自己的字段。
+ * <p>
+ * 把状态名送出去会立刻长出第二条渲染路径 —— 端可以选择看 {@code state},
+ * 也可以选择看 {@code touchCount},而两者在「断言过又碰过」那一格上给出不同的画面。
+ * <b>一个事实一个来源。</b>
  *
- * @param recent5yCount 近五年出现次数,统计事实(docs/data/INDEX.md),也是「值不值得补」的权重
- * @param state         枚举名,前端按它分支与配色
- * @param stateLabel    中文名,前端直接显示,不硬编码
- * @param touchCount    我在这个考点上有几条记录
- * @param latestAt      最近一次触达;从没碰过是 {@code null},界面显示「—」而不是某个默认日期
- * @param assertedAt    用户按下「我已掌握」的时刻;没按过是 {@code null}。
- *                      <b>它与 {@code state} 是两个维度</b>,不是第六态 —— 一个考点可以
- *                      「空白 + 已声明」。这个字段在树上必须给出来,因为断言的<b>唯一效果</b>
- *                      是让那个考点从盲区榜上消失:再不在树上留个印子,用户就没有任何地方
- *                      能看到自己按过什么、更没有地方能取消
+ * <p>中文标签更不能来自服务端:{@code web/} 那道 {@code capability-boundary-scan.mjs}
+ * 守的是<b>文案</b>,而服务端下发的文案绕过它。
+ *
+ * @param recent5yCount 近五年出现次数。{@code null} → key 不出现,界面写
+ *                      「这个考点没有出现次数记录」;<b>不返回 0 冒充</b>(§二)
+ * @param touchCount    碰过几次。🔴 <b>恒在</b>,没碰过就是 {@code 0} ——
+ *                      界面据此写「你没碰过」,<b>不写「碰过 0 次」</b>
+ * @param asserted      用户按过「我已经会了」这个开关吗。<b>原始开关状态</b>,
+ *                      不是「它现在算不算没碰过」——后者是 {@code touchCount == 0}
  */
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public record NodeDto(
         String code,
         String name,
-        int recent5yCount,
-        String state,
-        String stateLabel,
+        Integer recent5yCount,
         int touchCount,
-        Instant latestAt,
-        Instant assertedAt
+        boolean asserted
 ) {
+
+    // 🔴 没有 archived 字段:归档节点【不在这一层】(见 GroupDto.from 的过滤)。
+    //    留一个恒为 false 的字段,下一个人会拿它去写「树上把归档的灰掉」——
+    //    而那正是 R-49 要挡的那个开关的另一种形态。
     public static NodeDto from(NodeCoverage n) {
-        return new NodeDto(
-                n.code(), n.name(), n.recent5yCount(),
-                n.state().name(), n.state().label(),
-                n.touchCount(), n.latestAt(), n.assertedAt());
+        return new NodeDto(n.code(), n.name(), n.recent5yCount(), n.touchCount(), n.asserted());
     }
 }

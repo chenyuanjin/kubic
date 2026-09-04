@@ -92,16 +92,24 @@ class ExportApiTest {
     private static Map<String, List<String>> pinnedColumns() {
         Map<String, List<String>> m = new LinkedHashMap<>();
         m.put("meta", List.of("导出时间", "记录总数", "模块 code", "模块"));
-        m.put("summary", List.of("考点总数", "已触达", "空白", "覆盖率", "整块空白的题型"));
-        m.put("states", List.of("状态代码", "状态", "考点数"));
-        m.put("nodes", List.of("考点 code", "考点", "题型 code", "题型", "近五年频次",
-                "状态代码", "状态", "触达次数", "练了几道", "对了几道", "正确率", "最近触达", "来源"));
+        // 🔴 上一版这一块是「考点总数 / 已触达 / 空白 / 覆盖率 / 整块空白的题型」。
+        //    「覆盖率」那一列整列去掉:§7.2 用户侧任何位置不出现百分比,而一份导出文件
+        //    比屏幕更持久 —— 读它的人不会记得那个数是怎么算出来的。
+        //    「已归档」从此单列一格(R-49「归档计数常驻可见」),不再靠读者自己从两块里对。
+        m.put("summary", List.of("考点总数", "碰过", "没碰过", "已归档", "我说会了"));
+        // 🔴 上一版这里还有一块 states(五态分布)。整块删掉:WEAK / STABLE 回答的是
+        //    「答得怎么样」,正面撞红线一。它承载的事实由「最近触达」那一列承担。
+        // 🔴 「练了几道 / 对了几道 / 正确率」三列一并去掉(§7.4)。理由不是「用户自填就没事」:
+        //    一列出现在导出文件里,读它的第二个人就会把它当成产品记的分。
+        m.put("nodes", List.of("考点 code", "考点", "路径", "近五年频次",
+                "触达次数", "最近触达", "来源"));
         m.put("archived", List.of("考点 code", "考点", "题型 code", "题型", "近五年频次", "记录数"));
         // 「我已掌握」—— docs/technical/INDEX.md §5.2 user_assertion 那一行的最后四个字:「导出时可区分」。
-        // 每一列的值都来自已有的字段:前四列是骨架层的 code 与名字,末一列是用户按按钮那一刻。
-        // 🔴 没有一列装得下机构的内容,也没有一列能写一句「为什么我觉得我会了」——
-        //    那个字段一年后装的就是题干(R-01)。
-        m.put("asserted", List.of("考点 code", "考点", "题型 code", "题型", "声明时刻"));
+        // 三列的值全部来自骨架层的 code 与名字。🔴 上一版有一列「声明时刻」,它跟着
+        // NodeDetailDto#assertedAt 一起去掉了:这一块要回答的是「这个开关开着吗」,
+        // 不是「你什么时候按的」—— 留下那一列会让这份文件读起来像一条学习轨迹,而那是学习分析。
+        // 🔴 仍然没有一列能写一句「为什么我觉得我会了」——那个字段一年后装的就是题干(R-01)。
+        m.put("asserted", List.of("考点 code", "考点", "路径"));
         m.put("records", List.of("记录 id", "时间", "方式代码", "方式", "来源",
                 "考点 code", "考点", "题型 code", "题型", "练了几道", "对了几道"));
         return Map.copyOf(m);
@@ -262,7 +270,7 @@ class ExportApiTest {
     // ---------------------------------------------------------------- 内容边界
 
     @Test
-    @DisplayName("🔴 R-06:导出的列被钉死 —— 七块,列名逐字一致,md 与 csv 用的是同一张表")
+    @DisplayName("🔴 R-06:导出的列被钉死 —— 六块,列名逐字一致,md 与 csv 用的是同一张表")
     void exportColumnsArePinned() throws Exception {
         syllabus.archive("growth-rate");        // 每一块都非空,md 才会把全部表头都写出来
         assertions.put(new UserAssertion(ApiTestAuth.USER_ID, "share-calc",
@@ -276,8 +284,11 @@ class ExportApiTest {
             assertTrue(csv.contains(csvHeader),
                     "csv 里「" + block.getKey() + "」这一块的列变了。期望表头:\n" + csvHeader + "实际:\n" + csv);
 
+            // 🔴 整行相等,不是 contains:「考点」块的表头以「已声明掌握的考点」块的表头开头
+            //    (前三列一模一样),用 contains 的话后者永远为真 —— 一条永远为真的断言
+            //    和一条被注释掉的断言,外观是一样的。
             String mdHeader = "| " + String.join(" | ", block.getValue()) + " |";
-            assertTrue(md.contains(mdHeader),
+            assertTrue(md.lines().anyMatch(line -> line.equals(mdHeader)),
                     "md 里「" + block.getKey() + "」这一块的列与 csv 对不上了。期望表头:\n"
                             + mdHeader + "\n实际:\n" + md);
         }
@@ -287,14 +298,55 @@ class ExportApiTest {
     }
 
     /**
+     * 🔴 五态分布那一块<b>整块没了</b>,而「整块没了」是一件只有显式断言才守得住的事。
+     *
+     * <p>上一版导出里有 {@code states} 一块(状态代码 / 状态 / 考点数),列的是
+     * {@code EMPTY / TOUCHED_ONLY / RUSTY / WEAK / STABLE} 五档。{@code WEAK} 与 {@code STABLE}
+     * 回答的是「答得怎么样」,正面撞红线一 —— §7.4 把它们从这一域整个拿掉了。
+     * <p>
+     * 上面那条钉的是「列不许多」,它数的是 {@code section} 行的<b>条数</b>;条数对得上,
+     * 换一块进来它也不会红。所以这一条按<b>名字</b>再扫一遍:这些词一个都不许再出现在导出文件里。
+     */
+    @Test
+    @DisplayName("🔴 §7.4:导出里没有五态、没有百分比、没有「答得怎么样」的任何一列")
+    void theFiveStateBlockIsGoneFromEveryFormat() throws Exception {
+        syllabus.archive("growth-rate");
+        assertions.put(new UserAssertion(ApiTestAuth.USER_ID, "share-calc",
+                Instant.parse("2026-08-20T09:00:00Z")));
+
+        List<String> gone = List.of(
+                "状态代码", "状态", "覆盖率", "整块空白的题型",
+                "EMPTY", "TOUCHED_ONLY", "RUSTY", "WEAK", "STABLE",
+                "空白", "仅接触", "生疏", "正确率");
+
+        for (String format : List.of("md", "csv", "json")) {
+            String exported = body(format);
+            for (String bad : gone) {
+                assertFalse(exported.contains(bad), format + " 的导出里还有「" + bad + "」—— "
+                        + "五态回答的是「答得怎么样」(§7.4),百分比在用户侧任何位置都不出现(§7.2)");
+            }
+        }
+
+        // 🔴 一个扫不到东西的断言等于没有断言:概览那一块必须真的在,而且那五个数就是它。
+        //    归档 growth-rate 之后:分母 17、碰过 4、没碰过 13、归档 1、我说会了 0
+        //    (share-calc 被声明过,但它是碰过的 —— assertedCount 只数【确实没碰过】的那些)
+        assertTrue(body("csv").contains("summary,17,4,13,1,0\n"),
+                "概览那一块不见了或者数变了 —— 上面那圈 assertFalse 就成了空转:\n" + body("csv"));
+    }
+
+    /**
      * 🔴 docs/technical/INDEX.md §5.2 {@code user_assertion} 那一行的最后四个字:<b>「导出时可区分」</b>。
      *
      * <h2>为什么这一条要在三种格式里各验一遍</h2>
      *
-     * json 那一份是<b>白来的</b> —— {@code NodeDetailDto} 上有 {@code assertedAt},
+     * json 那一份是<b>白来的</b> —— {@code NodeDetailDto} 上有 {@code asserted} 这个开关,
      * 拿走整份 json 自然就看得出来。而 md 与 csv 的「考点」那张表列名是钉死的,
      * 没有一列装得下这件事;只在 json 里能区分,等于<b>对拿 csv 的人删减了</b>(§6.5「无删减」)。
      * 所以「已声明掌握的考点」单成一块。
+     *
+     * <p>⚠️ 这一块<b>不再带「声明时刻」</b>:{@code NodeDetailDto} 已经没有 {@code assertedAt}。
+     * 所以「可区分」现在的判据是<b>这一块里有它、「考点」块里也还有它</b>,
+     * 而不是「多了一列时间」。
      *
      * <h2>⚠️ 顺带钉住:它没有被并进「已归档的考点」</h2>
      *
@@ -309,16 +361,15 @@ class ExportApiTest {
                 Instant.parse("2026-08-20T09:00:00Z")));
 
         String json = body("json");
-        assertEquals("base-value", JsonPath.read(json, "$.assertedNodes[0].code"));
-        assertEquals(1, ((List<?>) JsonPath.read(json, "$.assertedNodes[*].code")).size());
+        assertEquals("base-value", JsonPath.read(json, "$.assertedNodes[0].nodeId"));
+        assertEquals(1, ((List<?>) JsonPath.read(json, "$.assertedNodes[*].nodeId")).size());
         assertEquals(0, ((List<?>) JsonPath.read(json, "$.archivedNodes[*].code")).size(),
                 "声明不是归档 —— 它一行都不该出现在归档清单里");
 
         List<String> csvRows = csvRowsOf(body("csv"), "asserted");
         assertEquals(1, csvRows.size(), "csv 里没有「已声明掌握的考点」这一块");
-        assertTrue(csvRows.get(0).contains("base-value"), csvRows.get(0));
-        assertTrue(csvRows.get(0).contains("2026-08-20T09:00:00Z"),
-                "「什么时候按的」是这一块唯一比「考点」块多出来的信息:" + csvRows.get(0));
+        // 🔴 三列逐字对上,不是「包含 base-value 就算」:那样少一列多一列都不会红
+        assertEquals("asserted,base-value,基期量计算,增长类 / 基期量计算", csvRows.get(0));
 
         List<String> mdRows = mdRowsOf(body("md"), "已声明掌握的考点");
         assertEquals(1, mdRows.size(), "md 里没有「已声明掌握的考点」这一块");
@@ -334,7 +385,7 @@ class ExportApiTest {
     void theAssertedBlockStaysEvenWhenEmpty() throws Exception {
         assertEquals(0, csvRowsOf(body("csv"), "asserted").size());
         assertEquals(List.of(), mdRowsOf(body("md"), "已声明掌握的考点"));
-        assertEquals(0, ((List<?>) JsonPath.read(body("json"), "$.assertedNodes[*].code")).size());
+        assertEquals(0, ((List<?>) JsonPath.read(body("json"), "$.assertedNodes[*].nodeId")).size());
     }
 
     @Test

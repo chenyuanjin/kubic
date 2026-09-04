@@ -130,7 +130,7 @@ public class TagController {
                 tag == null ? null : TagDto.from(tag, tree),
                 toDtos(tags, tree),
                 tag == null ? null : nodeDetail(snapshot, tag.nodeCode()),
-                SummaryDto.from(reader.summarize(snapshot)));
+                SummaryDto.of(reader.summarize(snapshot), null));
     }
 
     /**
@@ -230,7 +230,7 @@ public class TagController {
                 touch.id(),
                 toDtos(tagging.tagsOf(touch), snapshot.syllabus()),
                 nodeDetail(snapshot, nodeCode),
-                SummaryDto.from(reader.summarize(snapshot)));
+                SummaryDto.of(reader.summarize(snapshot), null));
     }
 
     private static List<TagDto> toDtos(List<RecordTag> tags, Syllabus tree) {

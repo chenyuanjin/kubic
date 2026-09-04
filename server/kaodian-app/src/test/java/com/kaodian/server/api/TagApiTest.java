@@ -147,7 +147,7 @@ class TagApiTest {
                 .andExpect(jsonPath("$.candidateCount").value(0))
                 .andExpect(jsonPath("$.tag").doesNotExist())
                 // 补标失败不该动覆盖度:两条记录,两个考点,还是碰过的
-                .andExpect(jsonPath("$.summary.covered").value(2));
+                .andExpect(jsonPath("$.summary.nodeTouched").value(2));
     }
 
     @Test
@@ -264,8 +264,11 @@ class TagApiTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.recordId").value("t-1"))
                 .andExpect(jsonPath("$.tags.length()").value(2))
-                .andExpect(jsonPath("$.node.code").value("average-calc"))
-                .andExpect(jsonPath("$.summary.covered").value(3))   // 基线 2 → 3
+                .andExpect(jsonPath("$.node.nodeId").value("average-calc"))
+                .andExpect(jsonPath("$.summary.nodeTouched").value(3))     // 基线 2 → 3
+                // 🔴 分子与差集同一次响应里对得上:碰过 3、没碰过 15,加起来正好是 18。
+                //    两个数各自数出来(CoverageService#summarize),恒等式是结论不是定义
+                .andExpect(jsonPath("$.summary.nodeUntouched").value(15))
                 .andReturn().getResponse().getContentAsString();
 
         String tagId = JsonPath.read(created, "$.tags[1].id");
@@ -276,7 +279,7 @@ class TagApiTest {
                         .content("{\"nodeCode\":\"average-calc\"}"))
                 .andExpect(status().isOk())     // 200,不是 201 —— 服务端什么都没新建
                 .andExpect(jsonPath("$.tags.length()").value(2))
-                .andExpect(jsonPath("$.summary.covered").value(3));
+                .andExpect(jsonPath("$.summary.nodeTouched").value(3));
     }
 
     // ———————————————————— 三、确认 ————————————————————
@@ -307,7 +310,7 @@ class TagApiTest {
                 0.91, TagOrigin.AUTO, null, false));
 
         mockMvc.perform(post("/api/v1/records/t-1/tags/tag-auto/confirm"))
-                .andExpect(jsonPath("$.summary.covered").value(3))
+                .andExpect(jsonPath("$.summary.nodeTouched").value(3))
                 .andExpect(jsonPath("$.tags[1].countsInCoverage").value(true));
     }
 
@@ -331,9 +334,14 @@ class TagApiTest {
                 .andExpect(jsonPath("$.tags[0].discarded").value(true))
                 .andExpect(jsonPath("$.tags[0].countsInCoverage").value(false))
                 .andExpect(jsonPath("$.tags[0].origin").value("manual"))         // 丢弃同样不动 origin
-                .andExpect(jsonPath("$.summary.covered").value(1))               // 基线 2 → 1
-                .andExpect(jsonPath("$.node.state").value("EMPTY"))              // 那个考点回到盲区
-                .andExpect(jsonPath("$.node.touchCount").value(0));
+                .andExpect(jsonPath("$.summary.nodeTouched").value(1))           // 基线 2 → 1
+                .andExpect(jsonPath("$.summary.nodeUntouched").value(17))        // 差集反过来多一个
+                // 🔴 那个考点回到盲区。上一版这里断言 state == EMPTY,而五态没了 ——
+                //    承载这件事的现在是两个字段:碰过几次(0),和最近一次是什么时候(没有,所以 key 不出现)。
+                //    「没碰过」由 touchCount 的 0 表达,不需要第二种形态(NodeDetailDto §二)
+                .andExpect(jsonPath("$.node.touchCount").value(0))
+                .andExpect(jsonPath("$.node.lastTouchAt").doesNotExist())
+                .andExpect(jsonPath("$.node.sourceNames").doesNotExist());
     }
 
     @Test

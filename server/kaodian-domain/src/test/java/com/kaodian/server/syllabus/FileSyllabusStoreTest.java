@@ -1,7 +1,10 @@
 package com.kaodian.server.syllabus;
 
 import com.kaodian.server.collect.FileTouchStore;
+import com.kaodian.server.collect.RecordTag;
 import com.kaodian.server.collect.TouchLedger;
+import com.kaodian.server.coverage.BlindspotFilter;
+import com.kaodian.server.coverage.BlindspotOrder;
 import com.kaodian.server.coverage.CoverageService;
 import com.kaodian.server.coverage.CoverageService.Summary;
 import org.junit.jupiter.api.DisplayName;
@@ -271,6 +274,9 @@ class FileSyllabusStoreTest {
     void renameKeepsCodeAndAllRecords() {
         FileSyllabusStore store = store();
         Summary before = summarize(store);
+        assertEquals(18, before.nodeTotal());
+        assertEquals(8, before.nodeTouched());
+        assertEquals(10, before.nodeUntouched());
 
         Syllabus.Node renamed = store.renameNode("growth-rate", "增长率(我自己的说法)");
 
@@ -278,11 +284,13 @@ class FileSyllabusStoreTest {
         assertEquals("增长率(我自己的说法)", renamed.name());
         assertEquals(1, onNode("growth-rate").size(), "记录挂在 code 上,改名之后还在原处");
 
+        // 🔴 三个数各自再写一遍字面量,不写 assertEquals(before.nodeTotal(), after.nodeTotal()):
+        //    拿响应比响应的话,两边一起错时它照样全绿。改名不动 code 的全部理由就落在这三个整数上。
+        // ⚠️ 这里没有百分比可比了 —— §7.2 这一域不存在浮点,「一个数都没变」由三个整数分别钉住。
         Summary after = summarize(store);
-        assertEquals(before.total(), after.total(), "分母不动");
-        assertEquals(before.covered(), after.covered(), "分子不动");
-        assertEquals(before.percent(), after.percent(),
-                "🔴 改名之后覆盖率必须逐字不变 —— 这就是当初用 code 而不是中文名做主键的全部理由");
+        assertEquals(18, after.nodeTotal(), "分母不动");
+        assertEquals(8, after.nodeTouched(), "分子不动");
+        assertEquals(10, after.nodeUntouched(), "没碰过的一个都没多 —— 记录没跟着名字走丢");
     }
 
     @Test
@@ -293,7 +301,11 @@ class FileSyllabusStoreTest {
 
         assertEquals("fast-math", store.current().groupOf("growth-rate").code());
         assertEquals(1, onNode("growth-rate").size());
-        assertEquals(18, summarize(store).total(), "总数不变 —— 只是换了个题型");
+
+        // 换题型只动归属,不动五态 —— 分母分子都必须原地不动。
+        Summary after = summarize(store);
+        assertEquals(18, after.nodeTotal(), "总数不变 —— 只是换了个题型");
+        assertEquals(8, after.nodeTouched(), "碰过的还是那 8 个 —— 换组不是一次触达");
     }
 
     // ——————————————————— 🔴 删除守则 ———————————————————
@@ -313,7 +325,9 @@ class FileSyllabusStoreTest {
         assertTrue(e.getMessage().contains("归档"), "必须给出正确出路,否则用户只会去找更硬的删法");
 
         assertNotNull(store.current().node("growth-rate"), "被拒之后考点还在");
-        assertEquals(18, summarize(store).total());
+        Summary after = summarize(store);
+        assertEquals(18, after.nodeTotal());
+        assertEquals(8, after.nodeTouched(), "一次被拒的删除不该在差集上留下任何痕迹");
         assertEquals(1, onNode("growth-rate").size(), "记录一条都没少");
     }
 
@@ -336,8 +350,13 @@ class FileSyllabusStoreTest {
 
         store.deleteNode("growth-rate");
         assertNull(store.current().node("growth-rate"));
-        assertEquals(17, summarize(store).total(), "删掉一个空考点,分母 −1");
-        assertEquals(8, summarize(store).covered(), "有记录的考点数不变 —— 记录只是换了个家");
+
+        // 搬家 + 删除之后手算:average-calc 由「没碰过」变「碰过」,growth-rate 整个离开骨架。
+        // 于是 18→17 / 8→8(一进一出)/ 10→9。三个数各写各的字面量,谁都不由另外两个推出来。
+        Summary after = summarize(store);
+        assertEquals(17, after.nodeTotal(), "删掉一个空考点,分母 −1");
+        assertEquals(8, after.nodeTouched(), "有记录的考点数不变 —— 记录只是换了个家");
+        assertEquals(9, after.nodeUntouched(), "接收方从差集里出来了,所以没碰过的 −1");
     }
 
     /**
@@ -384,15 +403,32 @@ class FileSyllabusStoreTest {
         assertEquals(0, onNode("share-calc").size());
     }
 
+    /**
+     * 🔴 归档是<b>唯一一个不用真学就能让覆盖度上升</b>的操作,所以它必须<b>同时退分子与分母</b>,
+     * 并且<b>单列计数</b>({@link com.kaodian.server.coverage.NodeState#ARCHIVED})。
+     *
+     * <p>这里归档的 {@code growth-rate} 是一个<b>碰过</b>的考点,所以它是从<b>分子那一侧</b>退出去的:
+     * {@code 18/8/10} → {@code 17/7/10}。上一版这条断言的是「分子也 −1 —— 比值仍然诚实」,
+     * 那句话只在有比值的模型里说得通;现在没有比值,诚实由四个整数各自钉住 ——
+     * 而 {@code archivedCount} 正是上一版<b>根本表达不出来</b>的那个数:
+     * 归档节点当时只是从两个数里同时消失,消失去了哪里没有任何一处说得出来。
+     *
+     * <p>与 {@code refusedNameConflictMovesNoNumbers} 成对:那边归档的是<b>没碰过</b>的考点,
+     * 退的是差集那一侧。两条合起来才说完「同时退两边」。
+     */
     @Test
     @DisplayName("🔴 出路二:归档 —— 退出差集,但 code 和记录一条都没动,还能接回来")
     void archivingRetiresANodeWithoutLosingAnything() {
         FileSyllabusStore store = store();
 
-        store.archiveNode("growth-rate");
+        store.archiveNode("growth-rate");                 // 这个考点【碰过】—— 退的是分子那一侧
         Summary archived = summarize(store);
-        assertEquals(17, archived.total(), "分母 −1");
-        assertEquals(7, archived.covered(), "分子也 −1 —— 比值仍然诚实");
+        assertEquals(17, archived.nodeTotal(), "分母 −1");
+        assertEquals(7, archived.nodeTouched(), "分子也 −1 —— 两边同时退,只退一边就是在编数");
+        assertEquals(10, archived.nodeUntouched(),
+                "🔴 没碰过的一个都没多 —— 归档节点不许掉进差集,否则它会出现在「先补这几个」里");
+        assertEquals(1, archived.archivedCount(),
+                "🔴 退出去的那一个单列在这里,不是凭空消失 —— 上一版的五个数说不出这一句");
         assertEquals(1, onNode("growth-rate").size(), "🔴 记录一条都没动");
         assertNull(store.current().node("growth-rate"), "退出差集");
         assertNotNull(store.current().nodeIncludingArchived("growth-rate"),
@@ -400,9 +436,10 @@ class FileSyllabusStoreTest {
 
         store.unarchiveNode("growth-rate");
         Summary back = summarize(store);
-        assertEquals(18, back.total());
-        assertEquals(8, back.covered());
-        assertEquals(44, back.percent(), "接回来之后一切照旧");
+        assertEquals(18, back.nodeTotal(), "接回来之后一切照旧");
+        assertEquals(8, back.nodeTouched());
+        assertEquals(10, back.nodeUntouched());
+        assertEquals(0, back.archivedCount(), "🔴 恒在,为 0 也返回(R-49:归档三件事都不做成开关)");
     }
 
     @Test
@@ -426,8 +463,11 @@ class FileSyllabusStoreTest {
         assertEquals(0, store.recordCount("average-calc"));
 
         store.deleteNode("average-calc");
-        assertEquals(17, summarize(store).total());
-        assertEquals(8, summarize(store).covered());
+        // 删掉的是一个【没碰过】的考点:分母 −1、分子不动、差集 −1。
+        Summary after = summarize(store);
+        assertEquals(17, after.nodeTotal());
+        assertEquals(8, after.nodeTouched());
+        assertEquals(9, after.nodeUntouched(), "删掉的正是差集里的一个 —— 它从没碰过的那一侧走");
     }
 
     @Test
@@ -453,27 +493,43 @@ class FileSyllabusStoreTest {
 
     // ——————————————————— 顺序 ———————————————————
 
+    /**
+     * 「先补这几个」的排序是<b>三级链</b>:当前口径 → <b>骨架自然序</b> → code 字典序。
+     * 第二级就是这棵树上从上到下的顺序,所以调一次组序,榜上同口径并列的那些必须跟着换位。
+     *
+     * <p>口径取 {@code RECENT5Y_COUNT} + {@code UNTOUCHED} —— 这一对就是「先补这几个」的默认档
+     * ({@code M3-骨架与覆盖度差集} §9.3)。上一版这里没有这两个参数,榜单混着「碰过但答得不好」的节点;
+     * 那种排法的输入里有正确率,回答的是「答得怎么样」,已经整个移出这一域(§7.4)。
+     */
     @Test
     @DisplayName("🔴 树序改得动「先补这几个」的名次 —— 所以它必须能改,而且要落盘")
     void treeOrderDecidesTiesInBlindSpots() {
         FileSyllabusStore store = store();
         CoverageService service = new CoverageService();
 
-        List<String> before = service.blindSpots(
-                        service.compute(store.current(), touches.findAll(USER), Instant.now()), 5)
-                .stream().map(CoverageService.NodeCoverage::name).toList();
-        assertEquals(List.of("增长量计算", "平均数计算", "截位直除", "现期量计算", "倍数计算"), before);
+        // 手算:没碰过的 10 个里,按出现次数是 平均数计算6 · 现期量计算5 · 倍数计算5 · 年均增长率4 · 同比与环比4。
+        // 两对并列(5 与 5、4 与 4)现在都由骨架序决定先后 —— 增长类在倍数与比较前面,所以增长类那两个在前。
+        assertEquals(List.of("平均数计算", "现期量计算", "倍数计算", "年均增长率", "同比与环比"),
+                blindSpotNames(service, store));
 
-        // 把「倍数与比较」提到「增长类」前面 —— 5.0 分并列的那两个应当换位
+        // 把「倍数与比较」提到「增长类」前面 —— 两对并列的都应当当场换位
         store.reorderGroups(List.of("multiple", "growth", "effect", "average-share", "fast-math"));
 
-        List<String> after = service.blindSpots(
-                        service.compute(store.current(), touches.findAll(USER), Instant.now()), 5)
-                .stream().map(CoverageService.NodeCoverage::name).toList();
-        assertEquals(List.of("增长量计算", "平均数计算", "截位直除", "倍数计算", "现期量计算"), after);
+        assertEquals(List.of("平均数计算", "倍数计算", "现期量计算", "同比与环比", "年均增长率"),
+                blindSpotNames(service, store),
+                "🔴 一次组序调整换掉两对名次 —— 树序不是展示顺序,它是榜单的第二排序键");
 
         assertEquals("multiple", emptyLedgerStore().current().groups().get(0).code(),
                 "顺序要落盘,换个实例读出来还是新的排布");
+    }
+
+    /** 默认档的「先补这几个」前五 —— 与 {@code CoverageReader.blindSpots} 同一组参数。 */
+    private List<String> blindSpotNames(CoverageService service, FileSyllabusStore store) {
+        var records = touches.findAll(USER);
+        List<CoverageService.GroupCoverage> groups = service.compute(store.current(), records,
+                RecordTag.effectiveTagsOf(records, List.of()), List.of(), Instant.now());
+        return service.blindSpots(groups, BlindspotOrder.RECENT5Y_COUNT, BlindspotFilter.UNTOUCHED, false, 5)
+                .stream().map(CoverageService.NodeCoverage::name).toList();
     }
 
     @Test
@@ -915,16 +971,23 @@ class FileSyllabusStoreTest {
     }
 
     @Test
-    @DisplayName("🔴 重名被拒之后,覆盖率的 total / covered / percent 一个数都没变")
+    @DisplayName("🔴 重名被拒之后,覆盖概览那四个整数一个都没变")
     void refusedNameConflictMovesNoNumbers() {
         FileSyllabusStore store = store();
         Summary before = summarize(store);
-        assertEquals(18, before.total());
-        assertEquals(8, before.covered());
-        assertEquals(44, before.percent());
+        assertEquals(18, before.nodeTotal());
+        assertEquals(8, before.nodeTouched());
+        assertEquals(10, before.nodeUntouched());
+        assertEquals(0, before.archivedCount());
 
         store.archiveNode("mixed-growth");                  // 造一个「名字被归档考点占着」的场景
+        // 🔴 混合增长率是【没碰过】的,与 archivingRetiresANodeWithoutLosingAnything 归档的那个正好相反:
+        //    这一次退出的是差集那一侧(10→9),分子不动。两条合起来才说完「归档同时退两边」。
         Summary afterArchive = summarize(store);
+        assertEquals(17, afterArchive.nodeTotal(), "分母 −1");
+        assertEquals(8, afterArchive.nodeTouched(), "分子不动 —— 归档的这个本来就不在分子里");
+        assertEquals(9, afterArchive.nodeUntouched(), "差集 −1");
+        assertEquals(1, afterArchive.archivedCount(), "🔴 它去了这里,不是消失了");
 
         assertThrows(SyllabusEditException.class, () -> store.addNode("growth", "增长量计算", 5));
         assertThrows(SyllabusEditException.class, () -> store.addNode("effect", "  增长量计算 ", 5));
@@ -933,10 +996,13 @@ class FileSyllabusStoreTest {
         assertThrows(SyllabusEditException.class, () -> store.addGroup("速算技巧"));
         assertThrows(SyllabusEditException.class, () -> store.renameGroup("growth", "效应类"));
 
+        // 六次拒绝之后逐字重复归档后的那四个数。写成 assertEquals(afterArchive.nodeTotal(), ...)
+        // 是拿响应比响应:一次拒绝要是把两边一起改坏了,那种写法照样绿。
         Summary after = summarize(store);
-        assertEquals(afterArchive.total(), after.total(), "分母不动");
-        assertEquals(afterArchive.covered(), after.covered(), "分子不动");
-        assertEquals(afterArchive.percent(), after.percent(), "百分比逐字不动");
+        assertEquals(17, after.nodeTotal(), "分母不动");
+        assertEquals(8, after.nodeTouched(), "分子不动");
+        assertEquals(9, after.nodeUntouched(), "差集不动 —— 被拒的新考点一个都没落到树上");
+        assertEquals(1, after.archivedCount(), "归档计数也不动");
         assertEquals("增长率计算", store.current().node("growth-rate").name(), "被拒的改名没有落下");
         assertEquals(5, store.current().groups().size(), "被拒的新题型没有落下");
     }
@@ -1079,9 +1145,18 @@ class FileSyllabusStoreTest {
 
     // ——————————————————— 夹具 ———————————————————
 
+    /**
+     * 🔴 标签走 {@link RecordTag#effectiveTagsOf} 派生、断言表恒空 —— <b>与 {@code CoverageReader.read} 同一条路</b>。
+     *
+     * <p>直接把空标签表递给 {@code compute} 的话,那 8 条种子记录一条都不计覆盖度,
+     * 整个文件的差集会安静地变成 18/0/18 —— 每一条「归档之后这个数变没变」都还是绿的,
+     * 只是它们守的已经不是产品跑起来的那个数了。
+     */
     private Summary summarize(SyllabusStore store) {
         CoverageService service = new CoverageService();
-        return service.summarize(service.compute(store.current(), touches().findAll(USER), Instant.now()));
+        var records = touches().findAll(USER);
+        return service.summarize(service.compute(store.current(), records,
+                RecordTag.effectiveTagsOf(records, List.of()), List.of(), Instant.now()));
     }
 
     private FileTouchStore touches() {

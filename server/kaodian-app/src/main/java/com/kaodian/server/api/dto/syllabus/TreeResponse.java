@@ -31,7 +31,7 @@ public record TreeResponse(
     public static TreeResponse of(Syllabus syllabus, Summary summary, List<GroupCoverage> groups) {
         return new TreeResponse(
                 SubjectDto.from(syllabus.subject()),
-                SummaryDto.from(summary),
+                SummaryDto.of(summary, null),
                 groups.stream().map(GroupDto::from).toList());
     }
 }

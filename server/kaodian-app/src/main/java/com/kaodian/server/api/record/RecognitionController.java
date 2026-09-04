@@ -580,7 +580,7 @@ public class RecognitionController {
                 tag == null ? null : TagDto.from(tag, tree),
                 tags.stream().map(t -> TagDto.from(t, tree)).toList(),
                 tag == null ? null : nodeDetail(snapshot, tag.nodeCode()),
-                SummaryDto.from(reader.summarize(snapshot)));
+                SummaryDto.of(reader.summarize(snapshot), null));
     }
 
     /** 考点已不在树里(被删了)时返回 {@code null} —— 那不该让这次请求 500。 */

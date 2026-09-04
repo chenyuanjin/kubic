@@ -6,6 +6,11 @@ import com.kaodian.server.agent.channel.AgentResult;
 import com.kaodian.server.agent.channel.AgentSseEvent;
 import com.kaodian.server.agent.channel.SseChannelAdapter;
 import com.kaodian.server.agent.orchestrator.Orchestrator;
+import com.kaodian.server.agent.session.AgentSession;
+import com.kaodian.server.agent.session.SessionRepository;
+import com.kaodian.server.api.dto.common.ErrorCode;
+import com.kaodian.server.api.support.ApiException;
+import com.kaodian.server.api.support.CurrentSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
@@ -50,10 +55,28 @@ public class AgentController {
      */
     private static final long SSE_TIMEOUT_MS = 5 * 60 * 1000L;
 
+    /**
+     * 🔴 一条会话最多 20 轮 —— ⚠️ <b>成本闸,不是产品判断</b>({@code 接口契约} §12.6)。
+     *
+     * <p>写成常量而不是配置项:它是一条<b>契约</b>(端要按它写「开一段新的」那句提示),
+     * 而契约放进配置文件之后,两个环境就会给出两个上限,端上那句提示只能猜一个。
+     */
+    static final int MAX_TURNS_PER_SESSION = 20;
+
     private final Orchestrator orchestrator;
     private final SseChannelAdapter adapter;
 
-    public AgentController(Orchestrator orchestrator, SseChannelAdapter adapter) {
+    /**
+     * 只用来<b>在开流之前</b>看一眼这条会话归谁、聊了几轮。
+     *
+     * <p>它不写会话 —— 落库仍然只有 {@code Orchestrator} 一处,
+     * 否则「什么时候算一轮」会有两个答案。
+     */
+    private final SessionRepository sessions;
+
+    public AgentController(Orchestrator orchestrator, SseChannelAdapter adapter,
+                           SessionRepository sessions) {
+        this.sessions = sessions;
         this.orchestrator = orchestrator;
         this.adapter = adapter;
     }
@@ -72,11 +95,17 @@ public class AgentController {
      * </pre>
      */
     @PostMapping(value = "/chat", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public SseEmitter chat(@RequestBody ChatRequest body) {
-        // userId 暂时恒为 0:agent 这一层还没有接鉴权。
-        // 🔴 不是忘了 —— kaodian-agent 的 pom 里【没有】kaodian-auth,它拿不到账号体系。
-        // 接的时候要走 CurrentSession(与其它端点同一条路),而不是让 agent 自己去认账号。
-        AgentRequest request = new AgentRequest(0L, body.sessionId(), body.message(), body.images());
+    public SseEmitter chat(CurrentSession current, @RequestBody ChatRequest body) {
+        current.requireWrite();
+
+        // 🔴 userId 由 app 传进去,agent 不自己查账号:kaodian-agent 的 pom 里【没有】
+        //    kaodian-auth,那条边永不建(M3 §12)。app 是唯一知道「谁在调用」的那一层。
+        //    ⚠️ 上一版这里是硬编码的 0L —— 于是所有人的会话都记在同一个不存在的账号下,
+        //       而 0 在 AccountStore 里被结构性地保留为「不是一个合法用户」。
+        long userId = current.userId();
+        requireMineAndUnderTurnLimit(userId, body.sessionId());
+
+        AgentRequest request = new AgentRequest(userId, body.sessionId(), body.message(), body.images());
         Orchestrator.Stream stream = orchestrator.run(request);
 
         SseEmitter emitter = new SseEmitter(SSE_TIMEOUT_MS);
@@ -103,6 +132,48 @@ public class AgentController {
      * 写不进去就说明连接已经断了(用户关了页面),这在 SSE 上是<b>正常结束方式之一</b>。
      * 记 debug 而不是 error —— 用 error 的话,日志里会被用户关页面这件事刷满。
      */
+    /**
+     * 续聊之前的两道闸 —— <b>都在 {@code app},都在开流之前</b>。
+     *
+     * <h2>为什么必须在开流之前</h2>
+     *
+     * SSE 一旦开流,状态码就已经是 {@code 200} 了 —— 之后再发现「这条会话不是你的」,
+     * 能做的只有发一帧 {@code error},而端上处理 {@code 403} 与处理一帧 {@code error}
+     * 是两条完全不同的路。<b>拒绝要发生在还能用状态码说话的时候。</b>
+     *
+     * <h2>两道闸各自守什么</h2>
+     *
+     * <ul>
+     *   <li><b>归属</b>:不属于当前 {@code userId} → {@code 403 NOT_YOUR_SESSION}
+     *       (🔴 不是 {@code 404},理由见 {@code AgentSessionController#mine})。
+     *       没有它,任何人传一个别人的 {@code sessionId} 就能把自己的问题续进别人的对话里 ——
+     *       而历史会被读进模型上下文</li>
+     *   <li><b>轮数上限 20</b> → {@code 409 SESSION_TURN_LIMIT}。⚠️ 这是一道<b>成本闸</b>,
+     *       不是一次产品判断:每一轮都会把整段历史重新送进模型,第 21 轮的账单不是第 1 轮的 21 倍
+     *       也差不多。端拿到它的动作是「开一段新的」,而不是重试</li>
+     * </ul>
+     *
+     * <p>🔴 {@code sessionId} 不传 = 单轮提问,没有会话可校验,两道闸都不适用。
+     * 首轮(传了一个服务端还没见过的 {@code sessionId})同样直接放行 —— 会话由
+     * {@code Orchestrator} 在 {@code done{ok}} 时落库,这里看不到它是正常的。
+     */
+    private void requireMineAndUnderTurnLimit(long userId, String sessionId) {
+        if (sessionId == null || sessionId.isBlank()) {
+            return;
+        }
+        AgentSession session = sessions.find(sessionId).orElse(null);
+        if (session == null) {
+            return;                                   // 首轮,还没落库
+        }
+        if (session.userId() != userId) {
+            throw new ApiException(ErrorCode.NOT_YOUR_SESSION, "这条会话不属于你。");
+        }
+        if (session.runCount() >= MAX_TURNS_PER_SESSION) {
+            throw new ApiException(ErrorCode.SESSION_TURN_LIMIT,
+                    "这条会话已经聊了 " + MAX_TURNS_PER_SESSION + " 轮,开一段新的吧。");
+        }
+    }
+
     private void send(SseEmitter emitter, AgentSseEvent event) {
         try {
             emitter.send(SseEmitter.event().name(event.event()).data(event.data()));

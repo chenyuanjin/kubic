@@ -2,12 +2,10 @@ package com.kaodian.server.api.insight;
 
 import com.kaodian.server.api.dto.insight.ExportResponse;
 import com.kaodian.server.api.dto.common.NodeDetailDto;
-import com.kaodian.server.api.dto.insight.StateCountDto;
 import com.kaodian.server.api.dto.common.SyllabusNodeDto;
 import com.kaodian.server.api.dto.common.TimelineItemDto;
 import com.kaodian.server.api.dto.insight.ExportResponse;
 import com.kaodian.server.api.dto.common.NodeDetailDto;
-import com.kaodian.server.api.dto.insight.StateCountDto;
 import com.kaodian.server.api.dto.common.SyllabusNodeDto;
 import com.kaodian.server.api.dto.common.TimelineItemDto;
 
@@ -69,15 +67,19 @@ final class ExportRenderer {
     private static final List<String> META_COLUMNS =
             List.of("导出时间", "记录总数", "模块 code", "模块");
 
+    // 🔴 上一版这里有「覆盖率」一列(一个百分数)和「五态分布」一整块。两者一起去掉:
+    //    看盲区 §2.9 写死用户侧任何位置不出现百分比,而一份导出文件就是用户侧 ——
+    //    它比屏幕更持久,读它的人不会记得那个数是怎么算出来的。
+    //    「归档」单列成一个计数(R-49「归档计数常驻可见」),不再靠读者自己从两块里对。
     private static final List<String> SUMMARY_COLUMNS =
-            List.of("考点总数", "已触达", "空白", "覆盖率", "整块空白的题型");
+            List.of("考点总数", "碰过", "没碰过", "已归档", "我说会了");
 
-    private static final List<String> STATE_COLUMNS =
-            List.of("状态代码", "状态", "考点数");
-
+    // 🔴 上一版这里有「练了几道」「对了几道」「正确率」三列。它们回答的是「答得怎么样」,
+    //    正面撞红线一。理由不是「用户自填就没事」:一列出现在导出文件里,读它的第二个人
+    //    就会把它当成产品记的分 —— 而这个产品从没判过任何一道题。
+    //    它们承载的事实由「最近触达」承担:多久前是事实,答得怎么样不是。
     private static final List<String> NODE_COLUMNS = List.of(
-            "考点 code", "考点", "题型 code", "题型", "近五年频次",
-            "状态代码", "状态", "触达次数", "练了几道", "对了几道", "正确率", "最近触达", "来源");
+            "考点 code", "考点", "路径", "近五年频次", "触达次数", "最近触达", "来源");
 
     private static final List<String> ARCHIVED_COLUMNS = List.of(
             "考点 code", "考点", "题型 code", "题型", "近五年频次", "记录数");
@@ -93,8 +95,11 @@ final class ExportRenderer {
      * 归档的考点<b>不在</b>「考点」块里(它退出了差集),而声明过的考点<b>在</b>。
      * 两者摆在一起会让读这份文件的人以为它们对那个百分比做了同一件事,而它们没有。
      */
+    // 🔴 上一版有「声明时刻」一列。它去掉了,因为 NodeDetailDto 已经不带 assertedAt ——
+    //    详情屏要回答的是「这个开关开着吗」,不是「你什么时候按的」。
+    //    留一列「什么时候按的」会让这份文件读起来像一条学习轨迹,而那是学习分析。
     private static final List<String> ASSERTED_COLUMNS = List.of(
-            "考点 code", "考点", "题型 code", "题型", "声明时刻");
+            "考点 code", "考点", "路径");
 
     private static final List<String> RECORD_COLUMNS = List.of(
             "记录 id", "时间", "方式代码", "方式", "来源",
@@ -116,20 +121,13 @@ final class ExportRenderer {
                 e.exportedAt(), e.recordCount(), e.subject().code(), e.subject().display()))));
 
         sections.add(new Section("summary", "覆盖度", SUMMARY_COLUMNS, List.of(row(
-                e.summary().total(), e.summary().covered(), e.summary().empty(),
-                e.summary().percent() + "%", e.summary().whollyEmptyGroups()))));
-
-        List<List<String>> states = new ArrayList<>();
-        for (StateCountDto s : e.summary().distribution()) {
-            states.add(row(s.state(), s.label(), s.count()));
-        }
-        sections.add(new Section("states", "五态分布", STATE_COLUMNS, states));
+                e.summary().nodeTotal(), e.summary().nodeTouched(), e.summary().nodeUntouched(),
+                e.summary().archivedCount(), e.summary().assertedCount()))));
 
         List<List<String>> nodes = new ArrayList<>();
         for (NodeDetailDto n : e.nodes()) {
-            nodes.add(row(n.code(), n.name(), n.groupCode(), n.groupName(), n.recent5yCount(),
-                    n.state(), n.stateLabel(), n.touchCount(), n.practiced(), n.correct(),
-                    percent(n.accuracy()), n.latestAt(), join(n.sources())));
+            nodes.add(row(n.nodeId(), n.name(), n.path(), n.recent5yCount(),
+                    n.touchCount(), n.lastTouchAt(), join(n.sourceNames())));
         }
         sections.add(new Section("nodes", "考点", NODE_COLUMNS, nodes));
 
@@ -142,7 +140,7 @@ final class ExportRenderer {
 
         List<List<String>> asserted = new ArrayList<>();
         for (NodeDetailDto n : e.assertedNodes()) {
-            asserted.add(row(n.code(), n.name(), n.groupCode(), n.groupName(), n.assertedAt()));
+            asserted.add(row(n.nodeId(), n.name(), n.path()));
         }
         sections.add(new Section("asserted", "已声明掌握的考点", ASSERTED_COLUMNS, asserted));
 
@@ -278,19 +276,6 @@ final class ExportRenderer {
             out.add(c == null ? "" : String.valueOf(c));
         }
         return List.copyOf(out);
-    }
-
-    /**
-     * 用户自填正确率 → 百分比。
-     *
-     * <p>没练过是空的(md 显示「—」),<b>不是 0%</b> —— 与 {@code NodeDetailDto#accuracy} 同一条口径。
-     *
-     * <p>取整不丢信息:同一行里「练了几道」「对了几道」两个原始整数都在,
-     * 想要精确值随时能自己除。json 那一份给的是未取整的比值(那是 API 契约里的字段),
-     * <b>md/csv 与 json 说的是同一个数,只是一个给人看、一个给机器看</b>。
-     */
-    private static String percent(Double accuracy) {
-        return accuracy == null ? null : Math.round(accuracy * 100) + "%";
     }
 
     /**

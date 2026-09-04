@@ -286,7 +286,7 @@ public class RecordController {
         return new RecordDeletedResponse(
                 deleted.id(),
                 node == null ? null : NodeDetailDto.from(node),
-                SummaryDto.from(reader.summarize(snapshot)));
+                SummaryDto.of(reader.summarize(snapshot), null));
     }
 
     // ---------------------------------------------------------------- 读

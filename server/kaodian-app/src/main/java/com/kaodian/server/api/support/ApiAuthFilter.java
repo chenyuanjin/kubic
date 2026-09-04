@@ -67,7 +67,7 @@ public class ApiAuthFilter extends OncePerRequestFilter {
      *
      * <p>健康检查不在 {@code /api} 下,所以它不需要进白名单(`接口契约` §三 已写)。
      */
-    static final String PREFIX = "/api";
+    static final String PREFIX = "/api/v1";
 
     /**
      * 🔴 <b>匿名端点全集,七行。</b>加一行要在 {@code 接口契约} §三 同时加一行 ——
@@ -155,7 +155,7 @@ public class ApiAuthFilter extends OncePerRequestFilter {
 
         String path = normalize(request.getRequestURI());
 
-        // 生效范围只有 /api/**。健康检查不在这个前缀下,所以它不需要进白名单。
+        // 生效范围只有 /api/v1/**。健康检查不在这个前缀下,所以它不需要进白名单。
         if (!path.equals(PREFIX) && !path.startsWith(PREFIX + "/")) {
             chain.doFilter(request, response);
             return;

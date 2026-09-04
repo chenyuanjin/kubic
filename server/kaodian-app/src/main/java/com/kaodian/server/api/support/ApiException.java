@@ -154,6 +154,52 @@ public class ApiException extends RuntimeException {
                 "不认识的" + what + ":" + echo(userInput));
     }
 
+    /**
+     * {@code orderBy} 不在四个取值里 —— 🔴 <b>422,不是静默按默认返回</b>
+     * ({@code M3-骨架与覆盖度差集} §9.3)。
+     *
+     * <p>它与 {@link #invalidArgument} 分档的理由只有一条:{@code orderBy}
+     * <b>有</b>服务端默认值,于是「翻不动就用默认」是一个随时会被写出来的实现 ——
+     * 而静默之后端永远不知道自己传错了,屏上那句口径说明会一直在撒谎。
+     * 给它一个自己的码,就是让那条路必须显式地被绕过才走得通。
+     */
+    public static ApiException unknownOrderBy(String userInput) {
+        return new ApiException(ErrorCode.UNKNOWN_ORDER_BY,
+                "不认识的排序口径:" + echo(userInput) + "。四个取值:recent5y_count / last_touch_at "
+                        + "/ touch_count / syllabus_order。");
+    }
+
+    /**
+     * 参数值不合法 —— <b>端上 bug 那一档</b>。
+     *
+     * <p>🔴 <b>不给它专码</b>({@code M3} §十)。这些位置的界面都是闭集选择器或段控,
+     * 用户<b>选不出</b>非法值 —— 走到这里就是端上的 bug,而<b>「bug」不是一档界面状态</b>。
+     * 新起一个码的判据是「界面需要后端能区分 N 档」,bug 不满足它。
+     */
+    public static ApiException invalidArgument(String what, String userInput) {
+        return new ApiException(ErrorCode.INVALID_ARGUMENT,
+                what + " 不合法:" + echo(userInput));
+    }
+
+    /**
+     * 该科目的骨架还没建好 —— 🔴 <b>与 {@code 5xx} 必须两档</b>({@code U4.4}:缺骨架 ≠ 请求失败),
+     * 也与「数过了,是空的」两档。
+     *
+     * <p>返回 {@code 200 {"nodeTotal": 0, ...}} 在语法上完全合法,界面也拿得到一个数 ——
+     * 而那个「0 个考点」是一句<b>假话</b>({@code U3.1} §2.4)。所以它走状态码不走字段:
+     * 整屏进空态,一个数都不显示,连 {@code total = 0} 都不写。
+     */
+    public static ApiException syllabusEmpty() {
+        return new ApiException(ErrorCode.SYLLABUS_EMPTY,
+                "这个科目的考点树还没建好。");
+    }
+
+    /** 节点已归档,标不了 —— 🔴 与「找不到」必须两档,合成一档用户会以为记录被删了。 */
+    public static ApiException nodeArchived(String code) {
+        return new ApiException(ErrorCode.NODE_ARCHIVED,
+                "这个考点已经归档了:" + echo(code));
+    }
+
     private static String echo(String userInput) {
         if (userInput == null) {
             return "(空)";

@@ -18,242 +18,207 @@ import java.util.Set;
  * 整个产品的那一行公式:<b>{@code 盲区 = 骨架层 − 行为层}</b>。
  *
  * <p>骨架层是一棵维护好的考点树({@link Syllabus}),行为层是用户真实碰过的记录
- * ({@link Touch})。两者做差集,得出「你还没碰过什么」。
+ * ({@link Touch} + {@link RecordTag})。两者做差集,得出「你还没碰过什么」。
  *
  * <h2>这个类里没有任何学科判断</h2>
  *
- * 全部运算只有三类:计数、比时间、把用户自己填的两个整数相除。
- * 没有判题、没有解析、没有难度模型、没有掌握度预测 —— 决策记录 §2.2 的能力边界在这里是
+ * 全部运算只有两类:<b>计数</b>和<b>比时间</b>。没有判题、没有解析、没有难度模型、
+ * 没有掌握度预测,<b>也没有任何一次除法</b> —— 决策记录 §2.2 的能力边界在这里是
  * <b>算法上的事实</b>,不是一句承诺。
+ *
+ * <h2>🔴 「有没有 / 几次 / 多久前」三件事,没有一件需要小数</h2>
+ *
+ * 三件事的答案分别是 {@code bool} / {@code int} / 带时区的绝对时间。
+ * 一个浮点数出现在这一域,它<b>一定</b>是一个比值 —— 而比值只有两种:掌握度,或百分比,
+ * 两种都不许上屏({@code M3-骨架与覆盖度差集} §7.2)。所以这个文件里
+ * <b>一个 {@code double} / {@code float} / {@code BigDecimal} 都没有</b>。
+ * 这条比字段名黑名单硬:<b>改个名字绕不过它。</b>
  */
 public class CoverageService {
 
     /**
-     * 盲区排序权重 —— 「先补这几个」用的就是它。
+     * 一个考点的完整视图 —— 骨架侧的事实 + 我这边的事实 + 推出来的状态。
      *
-     * <p>排序分 = {@code 近五年频次 × 状态权重}。两个因子都在能力边界内:
-     * 频次是真题统计事实(docs/data/INDEX.md),状态由「有没有 / 几次 / 多久前」推出({@link NodeState})。
+     * <h2>字段分三组,分组本身是契约(§9.4)</h2>
      *
-     * <p><b>权重的排序逻辑:完全没碰过 > 听过没练 > 练了但用户说错得多 > 太久没碰 > 近期练过且用户说还行。</b>
-     * 「仅接触」排在「弱」前面,因为听过课但一道题没练,比练过只是错得多更接近盲区 ——
-     * 后者至少已经上过手,前者连手都没上过。
+     * <table border="1">
+     *   <caption>三组字段分别关于谁</caption>
+     *   <tr><th>组</th><th>字段</th><th>关于谁</th></tr>
+     *   <tr><td>骨架事实</td><td>{@link #recent5yCount}</td><td>关于<b>真题</b></td></tr>
+     *   <tr><td>我的事实</td><td>{@link #touchCount} · {@link #lastTouchAt} · {@link #sourceNames}</td>
+     *       <td>关于<b>用户</b></td></tr>
+     *   <tr><td>节点自身</td><td>{@link #code} · {@link #name} · {@link #state} · {@link #asserted}</td>
+     *       <td>——</td></tr>
+     * </table>
      *
-     * <p><b>case 一律按权重降序书写。</b> 这不是排版洁癖:这段注释曾经把「弱」和「仅接触」写反过,
-     * 错因就是 case 顺序与权重顺序不一致,读代码时对不上号。顺序一致就没有对错可言。
-     */
-    static double weightOf(NodeState state) {
-        return switch (state) {
-            case EMPTY -> 1.0;          // 空白 —— 差集的正主
-            case TOUCHED_ONLY -> 0.9;   // 听过看过,一道没练
-            case WEAK -> 0.8;           // 练过,但用户自填正确率低
-            case RUSTY -> 0.7;          // 练过,但超过 30 天没碰
-            case STABLE -> 0.0;         // 近期练过且用户说还行 —— 不需要补
-        };
-    }
-
-    /**
-     * 一个考点的完整视图:骨架侧的事实 + 行为侧的统计 + 推出来的状态。
+     * <h2>🔴 这里没有的东西,是结构上没有,不是「查的时候不查」</h2>
      *
-     * @param assertedAt 用户按下「我已掌握」的时刻;<b>没按过是 {@code null}</b>。
-     *                   🔴 它<b>不参与</b> {@link #state} 的推导,也不参与覆盖率 ——
-     *                   见 {@link UserAssertion} 与 {@link #summarize}。它是<b>独立状态</b>
-     *                   (docs/technical/INDEX.md §5.2),摆在五态旁边,不是第六态
+     * 没有题干、没有讲解 / 解析 / 例题、没有难度、<b>没有掌握度 / 正确率 / 得分 / 星级</b>、
+     * 没有置信度 / 匹配分、没有相似考点、<b>没有任何比值</b>、<b>没有任何天数</b>。
+     * 上一版这里有 {@code practiced} / {@code correct} / {@code accuracy()} 三个 ——
+     * 它们回答的是「答得怎么样」,正面撞红线一,§7.4 把它们从这一域整个拿掉了。
+     *
+     * @param syllabusOrder 骨架自然序里的位置。🔴 <b>排序的第二级</b>,让同口径同分的两行
+     *                      永远得到同一个顺序,不随 map 遍历顺序抖动
+     * @param state         五态。由 {@link NodeState#derive} 一处推出,这里只是存放
+     * @param recent5yCount 近五年出现次数。{@code null} = <b>这个考点没有出现次数记录</b> ——
+     *                      与「数过了,是 0」是两档,响应里前者 key 不出现、后者 key 在值为 0(§二)
+     * @param touchCount    碰过几次。🔴 <b>恒有值</b>,没碰过就是 {@code 0} ——
+     *                      「没碰过」这一档由这个 0 表达,不需要第二种形态
+     * @param lastTouchAt   最近一次碰过的<b>绝对时刻</b>;没碰过是 {@code null}。
+     *                      🔴 服务端<b>不返回「多久前」</b>——「今天 / 昨天 / n 天前」全部由端算
+     * @param asserted      用户按过「我已经会了」这个开关吗。🔴 <b>它是那一行的原始存在性,
+     *                      不是 {@code state == ASSERTED}</b>:一个断言过之后又碰过的节点
+     *                      {@code state} 是 {@code TOUCHED} 而这里仍然是 {@code true} ——
+     *                      断言行保留不删(§1.1),否则用户要为一次他从没做过的取消再按一遍
      */
     public record NodeCoverage(
             String code,
             String name,
             String groupCode,
             String groupName,
-            int recent5yCount,
+            int syllabusOrder,
             NodeState state,
+            Integer recent5yCount,
             int touchCount,
-            int practiced,
-            int correct,
-            Instant latestAt,
-            List<String> sources,
-            Instant assertedAt
+            Instant lastTouchAt,
+            List<String> sourceNames,
+            boolean asserted
     ) {
-        /** 用户声明过掌握这个考点。<b>与「碰过」无关</b>,两者可以任意组合。 */
-        public boolean asserted() {
-            return assertedAt != null;
-        }
-
-        /**
-         * 用户自填正确率。{@code null} 表示没练过 —— 界面上显示为「—」,不是 0%。
-         *
-         * <p>再说一次:这是用户敲进来的两个数相除,不是产品判出来的分。
-         */
-        public Double accuracy() {
-            return practiced == 0 ? null : (double) correct / practiced;
-        }
-
-        /**
-         * 排序分 = 频次 × 状态权重。
-         *
-         * <p><b>取一位小数不是四舍五入的洁癖,是因为这个数会直接显示在界面上。</b>
-         * IEEE754 下 {@code 7 * 0.8 == 5.6000000000000005},不处理就会原样出现在
-         * 「先补这几个」那一栏里。取整放在这里而不是前端,是为了让排序与显示用同一个数 ——
-         * 两处各自取整,迟早会出现「显示相同但排序不同」的诡异现象。
-         */
-        public double blindScore() {
-            return Math.round(recent5yCount * weightOf(state) * 10.0) / 10.0;
-        }
     }
 
-    /** 一个题型的汇总。{@link #whollyEmpty} 是这棵树相对扁平清单的唯一优势。 */
+    /**
+     * 一个题型的汇总。
+     *
+     * @param touchedCount   这个题型下碰过的考点数。🔴 <b>由服务端给,端不从子树求和</b> ——
+     *                       「前端不做任何一次减法」({@code U3.1} §2.1)在树上同样成立
+     * @param untouchedCount 没碰过的考点数。🔴 同样是<b>数出来的</b>,不是
+     *                       {@code nodes.size() - touchedCount} 减出来的,理由见 {@link #summarize}
+     */
     public record GroupCoverage(
             String code,
             String name,
             List<NodeCoverage> nodes,
-            int coveredCount,
-            int recent5yCount
+            int touchedCount,
+            int untouchedCount
     ) {
-        public int nodeCount() {
-            return nodes.size();
-        }
 
         /**
          * <b>整块空白</b> —— 这个题型下一个考点都没碰过。
          *
          * <p>决策记录 §2.5:能表达「整块题型都没碰过」是树相对扁平清单的<b>唯一优势</b>。
-         * 界面上它由红色分组头承担,不用图表。
+         * 界面上它由分组头承担,不用图表。
          */
         public boolean whollyEmpty() {
-            return coveredCount == 0 && !nodes.isEmpty();
+            return touchedCount == 0 && untouchedCount > 0;
         }
     }
 
     /**
-     * 覆盖概览。北极星指标「主动查看盲区的人数」看的就是这一屏。
+     * 覆盖概览 —— <b>那三个数,加两个单列的计数</b>。
      *
-     * @param asserted 声明「我已掌握」的考点数 —— docs/technical/INDEX.md §6.4:<b>断言单列不并入</b>。
-     *                 它<b>不是</b> {@link #covered} 的一部分,也<b>不是</b> {@link #empty}
-     *                 的对立面:一个被声明的考点如果确实一条记录都没有,它<b>同时</b>
-     *                 记在 {@code empty} 和这里。两个数相加没有意义,界面上也不该并排求和 ——
-     *                 它是另一个维度的计数,理由见 {@link UserAssertion}
+     * <h2>🔴 五个字段,一个浮点都没有,也没有 {@code percent}</h2>
+     *
+     * 上一版这里有 {@code ratio()} 与 {@code percent()}。{@code 看盲区} §2.9 写死
+     * <b>用户侧任何位置不出现百分比</b>,落在契约上就是一句更硬的话:
+     * <b>这一域的响应体里没有任何一个浮点字段</b>。
+     * <p>
+     * {@code 覆盖率 = 行为层 ÷ 骨架层} 作为一个<b>内部量</b>可以存在于日志与运维视图里,
+     * 但它不许跨过 HTTP 边界 —— 所以它也不在这个 record 上:<b>一个字段一旦存在,
+     * 第二个消费方就会把它送出去</b>。
+     *
+     * @param nodeTotal     {@code |D|} —— 未归档的骨架叶子节点数
+     * @param nodeTouched   {@code |N|} —— 其中有计覆盖度标签的
+     * @param nodeUntouched {@code |D∖N|} —— 🔴 <b>数出来的,不是减出来的</b>,见 {@link #summarize}
+     * @param archivedCount {@code |R|} —— 归档节点数。🔴 <b>恒在,为 0 也返回</b>({@code R-49}:
+     *                      归档三件事都不做成开关)
+     * @param assertedCount {@code |A|} —— 「我已经会了」且确实没碰过的节点数。
+     *                      🔴 <b>单列,不并入那三个数</b>;它是 {@code nodeUntouched} 的<b>子集</b>
      */
     public record Summary(
-            int total,
-            int covered,
-            int empty,
-            int whollyEmptyGroups,
-            int asserted,
-            Map<NodeState, Integer> distribution
+            int nodeTotal,
+            int nodeTouched,
+            int nodeUntouched,
+            int archivedCount,
+            int assertedCount
     ) {
-        /**
-         * 覆盖率。分母是考点总数,分子是有记录的考点数。
-         *
-         * <p>🔴 {@link #asserted} 没有出现在这个式子里,这是它整件事的重点:
-         * <b>按「我已掌握」不会让这个数动一下</b>(决策记录 §5.2:补丁不是解法)。
-         */
-        public double ratio() {
-            return total == 0 ? 0 : (double) covered / total;
-        }
-
-        /** 取整后的百分比,界面上那个大字。 */
-        public int percent() {
-            return (int) Math.round(ratio() * 100);
-        }
     }
 
     /**
-     * 骨架 + 行为 → 全树的覆盖视图,<b>不看标签表</b>。
+     * 骨架 + 行为 + 标签 + 「我已经会了」 → 全树的覆盖视图。<b>这一域唯一的计算入口。</b>
      *
-     * <p>等价于「每条记录只有采集那一刻挂上的那条主标签,没有人确认过、也没有人丢弃过」——
-     * 这正是标签表出现之前的口径,所以它不是一条并行的算法,是
-     * {@link #compute(Syllabus, List, List, Instant)} 的一次<b>纯委托</b>:
-     * 真正的计算只有一处,不会出现「两处算同一个数就一定会算出两个数」。
-     */
-    public List<GroupCoverage> compute(Syllabus syllabus, List<Touch> touches, Instant now) {
-        return compute(syllabus, touches, RecordTag.effectiveTagsOf(touches, List.of()), now);
-    }
-
-    /**
-     * 骨架 + 行为 + <b>标签</b> → 全树的覆盖视图。
+     * <h2>🔴 {@code N} 只能由 {@code D} 过滤而来</h2>
      *
-     * <h2>🔴 覆盖度的分子由标签数出来,不由记录数出来</h2>
+     * 这个循环<b>遍历骨架</b>,对每个节点去问「它上面有没有计覆盖度的标签」;
+     * 它<b>不遍历标签</b>再去数不同的 {@code nodeCode}。两种写法今天算出同一个数,
+     * 而后者是覆盖度能算出负数的<b>唯一</b>成因:
+     * <pre>
+     * ❌ touched = COUNT(DISTINCT tag.node_id)   ← 不受 level / archived / subject / 骨架版本约束
+     *    untouched = total − touched             ← 四个缺口任意一个被踩到就为负
+     * </pre>
+     * 四个缺口都是<b>现实可达</b>的:归档发生在打标之后、手动挂载挂到了非叶子上、
+     * 多科目、骨架换版。在这个循环里它们<b>全部结构性地不可能</b> ——
+     * 一条指向树外节点的标签根本不会被查到({@link NodeState#GONE}),
+     * 一条挂在已归档节点上的标签查到了也不进 {@code D}({@link NodeState#ARCHIVED} 优先)。
      *
-     * docs/technical/INDEX.md §6.4:「分子 = <b>{@code discarded=0}</b> 的触达节点数」;
-     * docs/technical/INDEX.md §5.2:「{@code discarded=1} 即宁缺毋滥的落地:<b>可见,但不计覆盖度</b>」({@code P1-7})。
-     * 落到这里就是 {@link #project} 里那一句 {@code countsInCoverage()} 的过滤 ——
-     * 被丢弃的标签仍然查得到、看得见,只是不再把它那个考点算成「碰过」。
-     * <p>
-     * 这条口径必须在这一层实现,不能留给接口层「查的时候顺手过滤一下」:
-     * 覆盖率、五态、盲区排序三个数都是从这里出去的,漏掉任何一个都会让同一屏上出现两套口径。
+     * <p>🔴 <b>四条脏数据一律安静忽略,不抛异常、不报错</b> —— 它们是数据问题不是请求问题,
+     * 报错会让一屏正常内容因为一条脏标签整个打不开。
      *
-     * @param tags 有效标签,来自 {@link RecordTag#effectiveTagsOf} ——
-     *             <b>不是</b> {@code RecordTagStore.findAll()} 的原样返回:
-     *             那里面没有推出来的主标签,直接拿来算会让绝大多数记录凭空消失
-     */
-    public List<GroupCoverage> compute(Syllabus syllabus, List<Touch> touches,
-                                       List<RecordTag> tags, Instant now) {
-        return compute(syllabus, touches, tags, List.of(), now);
-    }
-
-    /**
-     * 骨架 + 行为 + 标签 + <b>「我已掌握」</b> → 全树的覆盖视图。
+     * <h2>四个集合来自同一次遍历</h2>
      *
-     * <h2>🔴 断言是第五个输入,而不是第六种状态</h2>
+     * {@code D} / {@code N} / {@code A} / {@code R} 在这一个循环里同时产出,
+     * {@link GroupCoverage} 与 {@link Summary} 从同一份中间结果投影。
+     * 理由与这个类原本那句话一致:<b>两处算同一个数就一定会算出两个数</b>。
      *
-     * 它<b>只被记在 {@link NodeCoverage#assertedAt} 上</b>,不参与 {@link NodeState#derive}、
-     * 不改 {@code covered}、不改 {@code blindScore}。三处口径全在下游:
-     * <table border="1">
-     *   <caption>断言在三处的落法(docs/technical/INDEX.md §6.4 / §5.2)</caption>
-     *   <tr><th>口径</th><th>怎么落</th><th>在哪</th></tr>
-     *   <tr><td>覆盖率<b>分子不变</b></td>
-     *       <td>什么都不做 —— {@code covered} 只数 {@code state().covered()}</td>
-     *       <td>就在下面这个循环里,<b>看不到 asserted 这个词</b></td></tr>
-     *   <tr><td>概览<b>单列一格</b></td><td>数一遍 {@code asserted()}</td>
-     *       <td>{@link #summarize}</td></tr>
-     *   <tr><td>盲区榜<b>排除</b></td><td>过滤掉 {@code asserted()}</td>
-     *       <td>{@link #blindSpots}</td></tr>
-     * </table>
-     *
-     * <p>为什么放进 {@code compute} 而不是让三个查询端点各自去查一次声明表:
-     * 与类注释里那句「两处算同一个数就一定会算出两个数」是同一条 ——
-     * 覆盖率、盲区榜、树上的格子必须来自<b>同一次读取</b>,否则同一屏上会出现
-     * 「盲区榜里没有它,但树上它没有已掌握标记」这种自相矛盾的画面。
-     *
-     * @param assertions 「我已掌握」的全部行。指向树外 / 已归档考点的行会被<b>安静地忽略</b>:
-     *                   那不是错误,是考点被删了或被归档了,而归档本来就退出差集
+     * @param tags       有效标签,来自 {@link RecordTag#effectiveTagsOf} —— <b>不是</b>
+     *                   {@code RecordTagStore.findAll()} 的原样返回:那里面没有推出来的主标签
+     * @param assertions 「我已经会了」的全部行。指向树外 / 已归档考点的行被<b>安静忽略</b>
+     * @param now        判定基准时刻。🔴 <b>注入,不许 {@code Instant.now()}</b> ——
+     *                   「多久前」是这一域的三件事之一,不可注入就不可回放
      */
     public List<GroupCoverage> compute(Syllabus syllabus, List<Touch> touches, List<RecordTag> tags,
                                        List<UserAssertion> assertions, Instant now) {
         Map<String, List<Touch>> byNode = project(touches, tags);
 
-        Map<String, Instant> assertedAt = new LinkedHashMap<>();
+        Set<String> assertedCodes = new HashSet<>();
         for (UserAssertion a : assertions) {
-            // 同一个考点最多一行(主键就是 nodeCode,见 FileAssertionStore),
-            // 万一文件被手工改出两行,取先写下的那条 —— 与「重复断言不刷新时刻」同一句话。
-            assertedAt.putIfAbsent(a.nodeCode(), a.assertedAt());
+            assertedCodes.add(a.nodeCode());
         }
 
         List<GroupCoverage> result = new ArrayList<>();
+        int order = 0;
         for (Syllabus.Group g : syllabus.groups()) {
             List<NodeCoverage> nodes = new ArrayList<>();
-            int covered = 0;
+            int touched = 0;
+            int untouched = 0;
 
-            // activeNodes():已归档的考点退出差集 —— 分母和分子同时少一个,比值仍然诚实,
-            // 而它的历史记录一条都没动(见 Syllabus.Group#activeNodes)。
-            for (Syllabus.Node n : g.activeNodes()) {
+            // 🔴 g.nodes() 而不是 g.activeNodes():已归档节点也要走一遍,
+            //    因为 archivedCount 是响应的必填字段,为 0 也返回(R-49「归档计数常驻可见」)。
+            //    它退分子也退分母 —— 那由 NodeState.ARCHIVED 的 inDenominator()/inNumerator()
+            //    负责,不由「先过滤掉再说」负责。过滤掉的那一版数不出 archivedCount。
+            for (Syllabus.Node n : g.nodes()) {
                 List<Touch> ts = byNode.getOrDefault(n.code(), List.of());
-                NodeState state = NodeState.derive(ts, now);
-                if (state.covered()) {
-                    covered++;
-                    // 🔴 这一句里没有 assertedAt。「我已掌握」不让任何考点变成「碰过」——
-                    //    决策记录 §5.2:它是补丁不是解法,而一个能靠点按钮刷高的覆盖率
-                    //    与没有覆盖率是一样的。加一句 `|| asserted` 就是把补丁伪装成疗效。
+
+                // 五态推导的唯一一处。四个入参都是「有没有」,一个都不是「对不对」。
+                // inSyllabus 恒 true —— 我们正在遍历骨架本身,GONE 只可能由外部查询得到。
+                NodeState state = NodeState.derive(
+                        true, n.archived(), !ts.isEmpty(), assertedCodes.contains(n.code()));
+
+                // 🔴 三个数在同一个循环里各自 ++,谁都不是别人减出来的。
+                //    写成 untouched = nodes.size() - touched 的那一版今天恰好也对,
+                //    但它把「N ⊆ D」从一条结构事实降级成一条巧合 —— 一旦降级,
+                //    上面四个缺口里任何一个被引入时不会有任何东西报错,
+                //    屏幕上直接出现「没碰过 −3 个」,而那一屏是这个产品唯一的产出。
+                if (state.inNumerator()) {
+                    touched++;
+                }
+                if (state.inBlindSet()) {
+                    untouched++;
                 }
 
-                int practiced = 0;
-                int correct = 0;
                 Instant latest = null;
                 List<String> sources = new ArrayList<>();
                 for (Touch t : ts) {
-                    if (t.hasDrill()) {
-                        practiced += t.drill().practiced();
-                        correct += t.drill().correct();
-                    }
                     if (latest == null || t.occurredAt().isAfter(latest)) {
                         latest = t.occurredAt();
                     }
@@ -263,11 +228,11 @@ public class CoverageService {
                 }
 
                 nodes.add(new NodeCoverage(
-                        n.code(), n.name(), g.code(), g.name(), n.recent5yCount(),
-                        state, ts.size(), practiced, correct, latest, List.copyOf(sources),
-                        assertedAt.get(n.code())));
+                        n.code(), n.name(), g.code(), g.name(), order++, state,
+                        n.recent5yCount(), ts.size(), latest, List.copyOf(sources),
+                        assertedCodes.contains(n.code())));
             }
-            result.add(new GroupCoverage(g.code(), g.name(), List.copyOf(nodes), covered, g.recent5yCount()));
+            result.add(new GroupCoverage(g.code(), g.name(), List.copyOf(nodes), touched, untouched));
         }
         return List.copyOf(result);
     }
@@ -285,8 +250,7 @@ public class CoverageService {
      *   <tr><td>指不到记录的标签跳过</td>
      *       <td>记录删了、标签行还在时,那个考点会凭空保持「碰过」</td></tr>
      *   <tr><td>同一记录同一考点只算一次</td>
-     *       <td>一条记录被手动挂到同一个考点两次(或补标与手动挂撞上),
-     *           它的做题数会被<b>加两遍</b> —— 而做题数直接决定五态里的「弱」</td></tr>
+     *       <td>一条记录被手动挂到同一个考点两次时,它的 {@code touchCount} 会被加两遍</td></tr>
      * </table>
      *
      * <p>每个考点下的记录按<b>行为层原本的顺序</b>重排,而不是按标签的顺序。
@@ -328,78 +292,128 @@ public class CoverageService {
     }
 
     /**
-     * 覆盖概览。
+     * 覆盖概览 —— 五个数,<b>五个都是数出来的</b>。
      *
-     * <h2>🔴 「我已掌握」在这里<b>单列一格</b>,不并入任何一个已有的数</h2>
+     * <h2>🔴 {@code nodeUntouched} 不许由减法得出</h2>
      *
-     * docs/technical/INDEX.md §6.4:「分母 = level 3 节点数;分子 = {@code discarded=0} 的触达节点数;
-     * <b>断言单列不并入</b>」。所以下面 {@code asserted} 是自己数自己的一遍循环变量,
-     * 它<b>不加进 {@code covered}</b>(那会让覆盖率因为点按钮而上升)、
-     * <b>也不从 {@code empty} 里减掉</b>(那个考点确实还是一条记录都没有)、
-     * <b>更不占 {@code distribution} 里的一格</b>(五态是从记录推出来的,断言不是记录)。
-     * <p>
-     * 这三个「不」合起来的效果是:一个用户把 18 个考点全部声明掌握之后,这一屏上
-     * <b>只有一个数变了</b> —— 「已声明 18 个」。覆盖率还是 44%,盲区还是 10 个。
-     * 变的只是他不会再在「先补这几个」里看到它们({@link #blindSpots})。
+     * <pre>
+     * 🔴 nodeUntouched = |D ∖ N|                    合法 —— 就是下面这个 ++
+     * 🔴 nodeUntouched = nodeTotal − nodeTouched    禁止。哪怕今天两边恰好相等
+     * </pre>
+     *
+     * 为什么连「今天恰好相等」都不许写成减法:减法把 {@code N ⊆ D} 从一条<b>结构事实</b>
+     * 降级成一条<b>巧合</b>。恒等式 {@code nodeTouched + nodeUntouched == nodeTotal}
+     * 在这里是<b>结论</b>,不是定义 —— 它由 {@link NodeState} 五态互斥且穷尽保证,
+     * 所以它可以被测试断言;把它写成定义,它就永远为真,也就永远测不出任何东西。
+     *
+     * <h2>{@code assertedCount} 为什么在这里数,不去数一遍断言表的行数</h2>
+     *
+     * {@code |A| = |{ n ∈ B | asserted }|},定义里含着 {@code B = D∖N}。
+     * 数断言表行数的那一版在「断言过、后来又碰过」的节点上会比屏上该显示的<b>多一个</b> ——
+     * 那个节点的 {@code state} 是 {@code TOUCHED},它<b>不在</b> {@code B} 里。
      */
     public Summary summarize(List<GroupCoverage> groups) {
-        Map<NodeState, Integer> dist = new LinkedHashMap<>();
-        for (NodeState s : NodeState.values()) {
-            dist.put(s, 0);
-        }
-        int total = 0;
-        int covered = 0;
-        int whollyEmptyGroups = 0;
-        int asserted = 0;
+        int nodeTotal = 0;
+        int nodeTouched = 0;
+        int nodeUntouched = 0;
+        int archivedCount = 0;
+        int assertedCount = 0;
 
         for (GroupCoverage g : groups) {
-            if (g.whollyEmpty()) {
-                whollyEmptyGroups++;
-            }
             for (NodeCoverage n : g.nodes()) {
-                total++;
-                if (n.state().covered()) {
-                    covered++;
+                NodeState state = n.state();
+                if (state.inDenominator()) {
+                    nodeTotal++;
                 }
-                if (n.asserted()) {
-                    asserted++;
+                if (state.inNumerator()) {
+                    nodeTouched++;
                 }
-                dist.merge(n.state(), 1, Integer::sum);
+                if (state.inBlindSet()) {
+                    nodeUntouched++;
+                }
+                if (state == NodeState.ARCHIVED) {
+                    archivedCount++;
+                }
+                if (state == NodeState.ASSERTED) {
+                    assertedCount++;
+                }
             }
         }
-        return new Summary(total, covered, total - covered, whollyEmptyGroups,
-                asserted, Map.copyOf(dist));
+        return new Summary(nodeTotal, nodeTouched, nodeUntouched, archivedCount, assertedCount);
     }
 
     /**
-     * 「先补这几个」—— 盲区 Top N。
+     * 「先补这几个」—— 按给定口径排好序的那一份清单。
      *
-     * <p>按 {@link NodeCoverage#blindScore()} 降序;<b>同分时按树的顺序</b>,
-     * 保证同样的输入永远得到同样的排序,不会因为 map 遍历顺序而抖动。
+     * <h2>🔴 三级排序链在服务端满足</h2>
      *
-     * <p>{@code STABLE} 权重为 0,自然落在最后,不需要额外过滤。
+     * <pre>当前口径  →  骨架自然序  →  nodeId 字典序</pre>
      *
-     * <h2>🔴 已经声明「我已掌握」的考点<b>排除在外</b>(docs/technical/INDEX.md §6.4)</h2>
+     * 禁止随机、禁止打散、禁止按更新时间兜底。三级之后<b>不可能再有并列</b>
+     * ({@code code} 在一棵树里唯一),所以同样的输入永远得到同样的一份清单 ——
+     * 「先补这几个」每次刷新换一批,和没有这份清单是一样的。
      *
-     * 这是断言这个按钮<b>唯一真正做的事</b> —— 用户按它,要的就是这份清单别再提它。
-     * 覆盖率不动、五态不动、分母不动,只有这一份清单短了一行。
-     * <p>
-     * 过滤必须排在 {@code limit(top)} <b>之前</b>:排在后面的话,声明过的考点会先占掉名额、
-     * 再被删掉,于是「要 5 个」返回 3 个,而榜上明明还有别的盲区。
+     * <h2>🔴 排序键缺失的那些,排在该在的一端</h2>
+     *
+     * {@code recent5y_count} 下没有出现次数记录的沉到<b>末尾</b>(它们提供不了这个口径要的信息);
+     * {@code last_touch_at} 下从没碰过的排在<b>最前</b>(从没碰过就是「最久没碰」那一档)。
+     * 端只在 key 状态变化处画一条分隔线 —— <b>所以响应里不加 {@code group} / {@code section} 字段</b>,
+     * 加一个就是给同一个事实造第二个来源(§9.3)。
+     *
+     * @param top 要几个。🔴 <b>它不是一个查询参数</b> —— N 的唯一来源是
+     *            {@code GET /config/effective} 的 {@code blindspotTop},调用方从那里取
      */
-    public List<NodeCoverage> blindSpots(List<GroupCoverage> groups, int top) {
+    public List<NodeCoverage> blindSpots(List<GroupCoverage> groups, BlindspotOrder orderBy,
+                                         BlindspotFilter filter, boolean hasStatsOnly, int top) {
         List<NodeCoverage> flat = new ArrayList<>();
         for (GroupCoverage g : groups) {
-            flat.addAll(g.nodes());
+            for (NodeCoverage n : g.nodes()) {
+                if (!filter.accepts(n.state())) {
+                    continue;                    // 归档节点一档都不进 —— 见 BlindspotFilter
+                }
+                if (hasStatsOnly && n.recent5yCount() == null) {
+                    continue;                    // 「只看有出现次数记录的」
+                }
+                flat.add(n);
+            }
         }
-        List<NodeCoverage> ordered = new ArrayList<>(flat);
-        ordered.sort(Comparator
-                .comparingDouble(NodeCoverage::blindScore).reversed()
-                .thenComparingInt(flat::indexOf));          // 同分 → 树序
-        return ordered.stream()
-                .filter(n -> n.blindScore() > 0)
-                .filter(n -> !n.asserted())      // 🔴 排除已断言节点(docs/technical/INDEX.md §6.4),必须在 limit 之前
-                .limit(top)
-                .toList();
+        flat.sort(comparator(orderBy));
+        return flat.size() <= top ? List.copyOf(flat) : List.copyOf(flat.subList(0, top));
+    }
+
+    /**
+     * 三级排序链。<b>第二、三级恒定</b>,只有第一级随口径变。
+     *
+     * <p>缺键的处理不用 {@code Comparator.nullsFirst/nullsLast} 包一层,而是先比一个
+     * {@code int} 档位:{@code nullsFirst} 只在<b>该级</b>决定不了时才往下走,
+     * 而这里要的是「缺键的整块聚在一端,块内部继续按二三级排」—— 两者在
+     * 「一个缺键、一个不缺」之外的行为一样,在那一格上前者更容易被读成「随便排」。
+     */
+    private static Comparator<NodeCoverage> comparator(BlindspotOrder orderBy) {
+        Comparator<NodeCoverage> primary = switch (orderBy) {
+            case RECENT5Y_COUNT -> Comparator
+                    .comparingInt((NodeCoverage n) -> missingRank(n.recent5yCount() == null, orderBy))
+                    .thenComparingInt(n -> -orElseZero(n.recent5yCount()));      // 多的在前
+            case LAST_TOUCH_AT -> Comparator
+                    .comparingInt((NodeCoverage n) -> missingRank(n.lastTouchAt() == null, orderBy))
+                    .thenComparingLong(n -> n.lastTouchAt() == null ? 0L : n.lastTouchAt().toEpochMilli());
+            case TOUCH_COUNT -> Comparator.comparingInt(NodeCoverage::touchCount);   // 少的在前
+            case SYLLABUS_ORDER -> Comparator.comparingInt(n -> 0);                  // 一级不区分
+        };
+        return primary
+                .thenComparingInt(NodeCoverage::syllabusOrder)          // 二级:骨架自然序
+                .thenComparing(NodeCoverage::code);                     // 三级:字典序,到此必唯一
+    }
+
+    /** 缺键的那一块排在最前({@code 0})还是最后({@code 1})。 */
+    private static int missingRank(boolean missing, BlindspotOrder orderBy) {
+        if (!missing) {
+            return orderBy.missingKeyFirst() ? 1 : 0;
+        }
+        return orderBy.missingKeyFirst() ? 0 : 1;
+    }
+
+    private static int orElseZero(Integer value) {
+        return value == null ? 0 : value;
     }
 }

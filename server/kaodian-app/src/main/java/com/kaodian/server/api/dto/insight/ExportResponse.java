@@ -114,7 +114,7 @@ public record ExportResponse(
         // 「我已掌握」的那些。从上面已经算好的 nodes 里筛,不去问 AssertionStore ——
         // 免得同一件事有两个出处:一个指向已删除考点的声明行不在 nodes 里,也就不该在这里。
         List<NodeDetailDto> asserted = nodes.stream()
-                .filter(n -> n.assertedAt() != null)
+                .filter(NodeDetailDto::asserted)
                 .toList();
 
         List<TimelineItemDto> records = touches.stream()
@@ -124,7 +124,7 @@ public record ExportResponse(
         return new ExportResponse(
                 exportedAt,
                 SubjectDto.from(syllabus.subject()),
-                SummaryDto.from(summary),
+                SummaryDto.of(summary, null),
                 touches.size(),
                 nodes,
                 List.copyOf(archived),

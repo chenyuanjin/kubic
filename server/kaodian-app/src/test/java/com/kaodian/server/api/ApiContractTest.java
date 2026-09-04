@@ -129,89 +129,162 @@ class ApiContractTest {
 
     // ---------------------------------------------------------------- 查询
 
+    /**
+     * 🔴 那三个数,加两个单列的计数 —— <b>五个都是整数</b>。
+     *
+     * <p>上一版这里断言的是 {@code total / covered / percent / empty / whollyEmptyGroups}。
+     * {@code percent} 整个去掉:§7.2 写死这一域的响应体里<b>没有任何一个浮点字段</b>,
+     * 而 {@code 覆盖率 = 行为层 ÷ 骨架层} 只要作为字段存在,第二个消费方就会把它送出去。
+     * 「这个数没变」那件事由剩下的整数承担 —— 它们全都数得出来。
+     */
     @Test
-    @DisplayName("GET /api/v1/coverage/summary —— total=18 covered=8 percent=44,与设计稿逐字一致")
+    @DisplayName("GET /api/v1/coverage/summary —— nodeTotal=18 nodeTouched=8 nodeUntouched=10,与设计稿逐字一致")
     void summaryMatchesDesignContract() throws Exception {
         mockMvc.perform(get("/api/v1/coverage/summary"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.total").value(18))
-                .andExpect(jsonPath("$.covered").value(8))
-                .andExpect(jsonPath("$.percent").value(44))
-                .andExpect(jsonPath("$.empty").value(10))
-                .andExpect(jsonPath("$.whollyEmptyGroups").value(2));
+                .andExpect(jsonPath("$.nodeTotal").value(18))
+                .andExpect(jsonPath("$.nodeTouched").value(8))
+                // 🔴 数出来的,不是 18 − 8 减出来的(CoverageService#summarize)。
+                //    恒等式在这里是【结论】不是定义,所以它可以被断言
+                .andExpect(jsonPath("$.nodeUntouched").value(10))
+                // 🔴 归档计数恒在,为 0 也返回(R-49:归档三件事都不做成开关)
+                .andExpect(jsonPath("$.archivedCount").value(0))
+                .andExpect(jsonPath("$.assertedCount").value(0))
+                .andExpect(jsonPath("$.recalculating").value(false))
+                // 🔴 §二:骨架层今天没有「统计截至哪一年」这个事实的来源,「没数过」那一档的
+                //    正确形态是 key 不出现,不是补一个 0
+                .andExpect(jsonPath("$.statsAsOfYear").doesNotExist());
     }
 
+    /**
+     * 🔴 §7.2 / §7.4 在概览上的形状 —— <b>这几个 key 一个都不许再出现</b>。
+     *
+     * <p>上一版有 {@code percent}(一个百分数)和 {@code distribution}(五态分布,
+     * 里面 {@code WEAK} / {@code STABLE} 回答的是「答得怎么样」)。
+     * 上面那条钉的是「留下来的数对不对」,它数的是值;值对得上,把 {@code percent}
+     * 加回来它也不会红。所以这一条按 <b>key</b> 再扫一遍。
+     */
     @Test
-    @DisplayName("五态分布带枚举名 + 中文 label,顺序固定 —— 前端不硬编码中文")
-    void stateDistributionCarriesBothNameAndLabel() throws Exception {
+    @DisplayName("🔴 概览里没有百分比、没有五态分布 —— 加回任何一个都当场红")
+    void summaryCarriesNoPercentageAndNoFiveStateDistribution() throws Exception {
         mockMvc.perform(get("/api/v1/coverage/summary"))
-                .andExpect(jsonPath("$.distribution.length()").value(5))
-                .andExpect(jsonPath("$.distribution[0].state").value("EMPTY"))
-                .andExpect(jsonPath("$.distribution[0].label").value("空白"))
-                .andExpect(jsonPath("$.distribution[0].count").value(10))
-                .andExpect(jsonPath("$.distribution[1].state").value("TOUCHED_ONLY"))
-                .andExpect(jsonPath("$.distribution[1].count").value(1))
-                .andExpect(jsonPath("$.distribution[2].state").value("RUSTY"))
-                .andExpect(jsonPath("$.distribution[2].count").value(2))
-                .andExpect(jsonPath("$.distribution[3].state").value("WEAK"))
-                .andExpect(jsonPath("$.distribution[3].count").value(2))
-                .andExpect(jsonPath("$.distribution[4].state").value("STABLE"))
-                .andExpect(jsonPath("$.distribution[4].count").value(3));
+                .andExpect(status().isOk())
+                // §7.2:这一域的响应体里没有任何一个浮点字段
+                .andExpect(jsonPath("$.percent").doesNotExist())
+                .andExpect(jsonPath("$.ratio").doesNotExist())
+                .andExpect(jsonPath("$.coverage").doesNotExist())
+                // §7.4:五态整个换掉了,分布这一块跟着没了
+                .andExpect(jsonPath("$.distribution").doesNotExist())
+                .andExpect(jsonPath("$.states").doesNotExist())
+                // 旧名字也不许悄悄留着 —— 留一个,端就有两个来源可挑
+                .andExpect(jsonPath("$.total").doesNotExist())
+                .andExpect(jsonPath("$.covered").doesNotExist())
+                .andExpect(jsonPath("$.empty").doesNotExist())
+                .andExpect(jsonPath("$.asserted").doesNotExist())
+                // whollyEmptyGroups 挪到了树上:每个题型自己带一个 whollyEmpty,
+                // 概览不再替端做一次加法(见 treeReturnsWholeModuleInOneShot)
+                .andExpect(jsonPath("$.whollyEmptyGroups").doesNotExist());
     }
 
     @Test
-    @DisplayName("GET /api/v1/syllabus/tree —— 整棵树一次返回,顶上的 44% 与概览同源")
+    @DisplayName("GET /api/v1/syllabus/tree —— 整棵树一次返回,顶上那三个数与概览同源")
     void treeReturnsWholeModuleInOneShot() throws Exception {
         mockMvc.perform(get("/api/v1/syllabus/tree"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.subject.display").value("山东省考 · 行测 · 资料分析"))
-                .andExpect(jsonPath("$.summary.percent").value(44))
+                // 🔴 与 /coverage/summary 同一份 SummaryDto。上一版比的是 percent ——
+                //    那个字段没了,而「两处不许各算一遍」这条纪律没变,改用这两个整数比
+                .andExpect(jsonPath("$.summary.nodeTotal").value(18))
+                .andExpect(jsonPath("$.summary.nodeTouched").value(8))
                 .andExpect(jsonPath("$.groups.length()").value(5))
                 .andExpect(jsonPath("$.groups[0].code").value("growth"))
                 .andExpect(jsonPath("$.groups[0].nodes.length()").value(7))
-                // 整块空白 —— 树相对扁平清单的唯一优势,落在「倍数与比较」与「效应类」上
+                // 🔴 题型上的两个数由服务端给,端不从子树求和(U3.1 §2.1「前端不做任何一次减法」)
+                .andExpect(jsonPath("$.groups[0].touchedCount").value(4))
+                .andExpect(jsonPath("$.groups[0].untouchedCount").value(3))
+                // 整块空白 —— 树相对扁平清单的唯一优势,落在「倍数与比较」与「效应类」上。
+                // 🔴 概览上那个 whollyEmptyGroups 去掉之后,这两格就是它唯一的来源
                 .andExpect(jsonPath("$.groups[1].name").value("倍数与比较"))
                 .andExpect(jsonPath("$.groups[1].whollyEmpty").value(true))
                 .andExpect(jsonPath("$.groups[2].name").value("效应类"))
                 .andExpect(jsonPath("$.groups[2].whollyEmpty").value(true))
                 .andExpect(jsonPath("$.groups[0].whollyEmpty").value(false))
-                // 状态两个字段一起给
-                .andExpect(jsonPath("$.groups[0].nodes[0].state").value("STABLE"))
-                .andExpect(jsonPath("$.groups[0].nodes[0].stateLabel").value("稳"));
+                .andExpect(jsonPath("$.groups[?(@.whollyEmpty == true)].code",
+                        Matchers.containsInAnyOrder("multiple", "effect")))
+                // 🔴 树叶上剩三个数,没有一个是「答得怎么样」:出现几次、碰过几次、
+                //    按没按过按钮(§7.4 把 state / stateLabel 整个拿掉了)
+                .andExpect(jsonPath("$.groups[0].nodes[0].code").value("growth-rate"))
+                .andExpect(jsonPath("$.groups[0].nodes[0].recent5yCount").value(9))
+                .andExpect(jsonPath("$.groups[0].nodes[0].touchCount").value(1))
+                .andExpect(jsonPath("$.groups[0].nodes[0].asserted").value(false))
+                .andExpect(jsonPath("$.groups[0].nodes[0].state").doesNotExist())
+                .andExpect(jsonPath("$.groups[0].nodes[0].stateLabel").doesNotExist())
+                // ⚠️ 树上没有 archived 这个键 —— 归档的叶子压根不出现在树里(GroupDto 过滤掉了)。
+                //    「归没归档」由 /syllabus/archived 与 /syllabus/nodes/{code} 回答,树不重复答一遍
+                .andExpect(jsonPath("$.groups[0].nodes[0].archived").doesNotExist());
     }
 
+    /**
+     * 🔴 详情屏只回答三件事:<b>有没有 / 几次 / 多久前</b>。
+     *
+     * <p>上一版这里还断言 {@code practiced} / {@code correct} / {@code accuracy} 三个 ——
+     * 它们回答的是「答得怎么样」,§7.4 把它们从这一域整个拿掉了。删掉的三行没有替代品:
+     * 「多久前」由 {@code lastTouchAt} 承担(<b>绝对时刻,服务端不算天数</b>),
+     * 「答得怎么样」没有承担者,因为这个产品从没判过任何一道题。
+     */
     @Test
-    @DisplayName("GET /api/v1/syllabus/nodes/{code} —— 四统计 + 我的触达,🔴 没有讲解字段")
+    @DisplayName("GET /api/v1/syllabus/nodes/{code} —— 出现几次 + 我碰过几次 + 多久前,🔴 没有讲解、也没有「答得怎么样」")
     void nodeDetailHasNoTeachingFields() throws Exception {
         mockMvc.perform(get("/api/v1/syllabus/nodes/growth-amount"))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$.nodeId").value("growth-amount"))
                 .andExpect(jsonPath("$.name").value("增长量计算"))
-                .andExpect(jsonPath("$.groupName").value("增长类"))
-                .andExpect(jsonPath("$.recent5yCount").value(8))
-                .andExpect(jsonPath("$.state").value("WEAK"))
-                .andExpect(jsonPath("$.stateLabel").value("弱"))
-                .andExpect(jsonPath("$.touchCount").value(1))
-                .andExpect(jsonPath("$.practiced").value(8))
-                .andExpect(jsonPath("$.correct").value(4))
-                .andExpect(jsonPath("$.accuracy").value(Matchers.closeTo(0.5, 1e-9)))
-                .andExpect(jsonPath("$.sources[0]").value("自己刷题 · 2023 国考真题"))
+                // 🔴 一行能直接显示的路径,不是 groupCode + groupName 两个字段让端自己拼(§9.4)
+                .andExpect(jsonPath("$.path").value("增长类 / 增长量计算"))
+                .andExpect(jsonPath("$.level").value(3))
+                .andExpect(jsonPath("$.archived").value(false))
+                .andExpect(jsonPath("$.asserted").value(false))
+                .andExpect(jsonPath("$.recent5yCount").value(8))        // 关于真题
+                .andExpect(jsonPath("$.touchCount").value(1))           // 关于我
+                .andExpect(jsonPath("$.lastTouchAt").isNotEmpty())      // 多久前 —— 端自己算天数
+                .andExpect(jsonPath("$.sourceNames[0]").value("自己刷题 · 2023 国考真题"))
                 // 🔴 讲解类字段一个都不能出现
                 .andExpect(jsonPath("$.explanation").doesNotExist())
                 .andExpect(jsonPath("$.content").doesNotExist())
                 .andExpect(jsonPath("$.answer").doesNotExist())
                 .andExpect(jsonPath("$.difficulty").doesNotExist())
-                .andExpect(jsonPath("$.mastery").doesNotExist());
+                .andExpect(jsonPath("$.mastery").doesNotExist())
+                // 🔴 §7.4:「答得怎么样」那一侧也一个都不能出现,包括它们的旧名字
+                .andExpect(jsonPath("$.practiced").doesNotExist())
+                .andExpect(jsonPath("$.correct").doesNotExist())
+                .andExpect(jsonPath("$.accuracy").doesNotExist())
+                .andExpect(jsonPath("$.state").doesNotExist())
+                .andExpect(jsonPath("$.stateLabel").doesNotExist())
+                // 🔴 服务端不返回「多久前」:「今天 / 昨天 / n 天前」全部由端从 lastTouchAt 算
+                .andExpect(jsonPath("$.daysAgo").doesNotExist());
     }
 
+    /**
+     * 🔴 「没碰过」的正确形态是 <b>key 直接不出现</b>,不是补一个 0 或一个 null。
+     *
+     * <p>{@code NodeDetailDto} 是 {@code @JsonInclude(NON_NULL)} 的,而这一条守的就是那个注解:
+     * 「数过了,是 0」与「没数过」是两档(§二)。{@code touchCount} 属于前者 —— 它<b>恒有值</b>,
+     * 没碰过就是 0;{@code lastTouchAt} / {@code sourceNames} 属于后者 —— 没有这件事,
+     * 所以键不出现。补一个 {@code "lastTouchAt": null} 会让端多一个要判的分支,
+     * 而那个分支和「服务端还没算完」长得一模一样。
+     */
     @Test
-    @DisplayName("没练过的考点 accuracy 是 null —— 界面显示「—」,不是 0%")
-    void untouchedNodeHasNullAccuracy() throws Exception {
+    @DisplayName("🔴 一条记录都没有的考点:touchCount 是 0,而 lastTouchAt / sourceNames 两个 key 根本不出现")
+    void anUntouchedNodeOmitsTheKeysItHasNothingToSay() throws Exception {
         mockMvc.perform(get("/api/v1/syllabus/nodes/average-calc"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.state").value("EMPTY"))
-                .andExpect(jsonPath("$.accuracy").value(Matchers.nullValue()))
-                .andExpect(jsonPath("$.latestAt").value(Matchers.nullValue()))
-                .andExpect(jsonPath("$.sources.length()").value(0));
+                .andExpect(jsonPath("$.nodeId").value("average-calc"))
+                .andExpect(jsonPath("$.path").value("平均与比重 / 平均数计算"))
+                .andExpect(jsonPath("$.recent5yCount").value(6))    // 骨架侧的事实,与碰没碰过无关
+                .andExpect(jsonPath("$.touchCount").value(0))       // 「数过了,是 0」
+                .andExpect(jsonPath("$.lastTouchAt").doesNotExist())    // 「没数过」
+                .andExpect(jsonPath("$.sourceNames").doesNotExist())
+                .andExpect(jsonPath("$.asserted").value(false));
     }
 
     @Test
@@ -223,36 +296,145 @@ class ApiContractTest {
                 .andExpect(jsonPath("$.traceId").isNotEmpty());
     }
 
+    /**
+     * 「先补这几个」—— 北极星落点。
+     *
+     * <p>上一版这里比的是 {@code rank} 与 {@code blindScore}(近五年频次 × 状态权重)。
+     * 两个字段都没了:名次由<b>数组下标</b>表达,而 {@code blindScore} 的「状态权重」那一半
+     * 来自 {@code WEAK} —— 它随五态一起被 §7.4 拿掉了。留下的排序口径只由
+     * <b>骨架侧的出现次数</b>加两级恒定的 tie-break 决定,一个因子都不来自「答得对不对」。
+     */
     @Test
-    @DisplayName("GET /api/v1/coverage/blindspots —— Top 5 的名次、分数与设计稿一致(北极星落点)")
+    @DisplayName("GET /api/v1/coverage/blindspots —— 默认 recent5y_count 口径,10 个没碰过的按频次排(北极星落点)")
     void blindSpotsMatchDesignContract() throws Exception {
+        mockMvc.perform(get("/api/v1/coverage/blindspots"))
+                .andExpect(status().isOk())
+                // 🔴 口径回显 snake_case,与 GET /config/effective 下发的是同一个词
+                .andExpect(jsonPath("$.orderBy").value("recent5y_count"))
+                .andExpect(jsonPath("$.top").value(20))
+                // 默认档 untouched:18 个考点里 8 个碰过,剩 10 个
+                .andExpect(jsonPath("$.items.length()").value(10))
+                .andExpect(jsonPath("$.items[0].nodeId").value("average-calc"))
+                .andExpect(jsonPath("$.items[0].name").value("平均数计算"))
+                .andExpect(jsonPath("$.items[0].path").value("平均与比重 / 平均数计算"))
+                .andExpect(jsonPath("$.items[0].recent5yCount").value(6))
+                .andExpect(jsonPath("$.items[0].touchCount").value(0))
+                .andExpect(jsonPath("$.items[0].lastTouchAt").doesNotExist())
+                // 并列 5 —— 二级是骨架自然序:现期量计算(增长类,树上第 5)在倍数计算之前
+                .andExpect(jsonPath("$.items[1].name").value("现期量计算"))
+                .andExpect(jsonPath("$.items[2].name").value("倍数计算"))
+                // 并列 4 —— 同样按树序
+                .andExpect(jsonPath("$.items[3].name").value("年均增长率"))
+                .andExpect(jsonPath("$.items[4].name").value("同比与环比"))
+                .andExpect(jsonPath("$.items[9].name").value("混合增长率"))
+                // 🔴 碰过的一个都不在榜上 —— 这份清单就是差集本身
+                .andExpect(jsonPath("$.items[*].nodeId",
+                        Matchers.not(Matchers.hasItem("growth-rate"))))
+                // 🔴 上一版那四个字段都没了。名次是下标、盲区分随五态一起去掉、
+                //    条数由 items.length() 数得出来 —— 同一个事实不给第二个来源(§9.3)
+                .andExpect(jsonPath("$.items[0].rank").doesNotExist())
+                .andExpect(jsonPath("$.items[0].blindScore").doesNotExist())
+                .andExpect(jsonPath("$.items[0].state").doesNotExist())
+                .andExpect(jsonPath("$.items[0].stateLabel").doesNotExist())
+                .andExpect(jsonPath("$.requestedTop").doesNotExist())
+                .andExpect(jsonPath("$.returned").doesNotExist());
+    }
+
+    /**
+     * 🔴 <b>{@code top} 不是查询参数</b>(§9.3 / §十四 增量 1)。
+     *
+     * <p>N 的唯一来源是 {@code GET /config/effective} 的 {@code blindspotTop},服务端在这里执行它。
+     * 只要 {@code top} 还是一个参数,「前端不硬编码」就只能靠自觉 ——
+     * 而端上写下 {@code top=5} 的那一刻<b>不会有任何东西报错</b>。所以这一条真的传一个进去:
+     * 服务端必须忽略它,并且回显自己那个 20。
+     */
+    @Test
+    @DisplayName("🔴 blindspots 没有 top 参数:传 top=5 也照样按服务端口径返回,响应回显 20")
+    void blindSpotsTopComesFromTheServerNotFromTheQuery() throws Exception {
         mockMvc.perform(get("/api/v1/coverage/blindspots").param("top", "5"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.requestedTop").value(5))
-                .andExpect(jsonPath("$.returned").value(5))
-                .andExpect(jsonPath("$.items[0].rank").value(1))
-                .andExpect(jsonPath("$.items[0].name").value("增长量计算"))
-                .andExpect(jsonPath("$.items[0].blindScore").value(Matchers.closeTo(6.4, 1e-9)))
-                .andExpect(jsonPath("$.items[1].name").value("平均数计算"))
-                .andExpect(jsonPath("$.items[1].blindScore").value(Matchers.closeTo(6.0, 1e-9)))
-                .andExpect(jsonPath("$.items[2].name").value("截位直除"))
-                .andExpect(jsonPath("$.items[2].blindScore").value(Matchers.closeTo(5.6, 1e-9)))
-                // 并列 5.0 —— 按树序,现期量计算在倍数计算之前
-                .andExpect(jsonPath("$.items[3].name").value("现期量计算"))
-                .andExpect(jsonPath("$.items[4].name").value("倍数计算"));
+                .andExpect(jsonPath("$.top").value(20))
+                .andExpect(jsonPath("$.items.length()").value(10))
+                .andExpect(jsonPath("$.items[0].nodeId").value("average-calc"));
+    }
+
+    /**
+     * 🔴 两个闭集参数,<b>两档不同的错</b>(§9.5 / §十)。
+     *
+     * <p>{@code orderBy} <b>有</b>服务端默认值,于是「翻不动就用默认」是一个随时会被写出来的实现 ——
+     * 静默之后端永远不知道自己传错了,屏上那句口径说明会一直在撒谎,所以给它专码 422。
+     * {@code filter} <b>没有</b>服务端默认值,界面是四选一段控,用户选不出非法值 ——
+     * 走到这里是端上的 bug,而 <b>bug 不是一档</b>,所以它只拿通用的 400。
+     */
+    @Test
+    @DisplayName("🔴 未知 orderBy → 422 UNKNOWN_ORDER_BY;未知 filter → 400 INVALID_ARGUMENT,两档不许合并")
+    void closedSetParametersAreRejectedNeverSilentlyDefaulted() throws Exception {
+        mockMvc.perform(get("/api/v1/coverage/blindspots").param("orderBy", "blind_score"))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.code").value("UNKNOWN_ORDER_BY"))
+                .andExpect(jsonPath("$.traceId").isNotEmpty());
+
+        mockMvc.perform(get("/api/v1/coverage/blindspots").param("filter", "weak"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_ARGUMENT"));
+
+        // 四个 orderBy 都认得 —— 上面那两条不能是「凡是带参数就报错」
+        for (String order : List.of("recent5y_count", "last_touch_at", "touch_count", "syllabus_order")) {
+            mockMvc.perform(get("/api/v1/coverage/blindspots").param("orderBy", order))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.orderBy").value(order));
+        }
+    }
+
+    /**
+     * 🔴 {@code last_touch_at} 下,<b>从没碰过的排在最前</b>,不是最后。
+     *
+     * <p>这一栏问的是「多久没碰了」,而从没碰过就是最久的那一档 —— 它正是差集的正主。
+     * 排到末尾的那一版今天也能返回一份看着挺像的清单,而用户往下翻十行才看得见真正的盲区。
+     * <p>
+     * 端靠 {@code lastTouchAt} 这个 key 缺不缺画分组分隔线,<b>所以响应里不加 group / section 字段</b> ——
+     * 加一个就是给同一个事实造第二个来源(§9.3)。这一条同时钉住那个「不加」。
+     */
+    @Test
+    @DisplayName("🔴 orderBy=last_touch_at:从没碰过的排在最前,碰过的按「久的在前」接在后面")
+    void neverTouchedSortsFirstUnderLastTouchAt() throws Exception {
+        mockMvc.perform(get("/api/v1/coverage/blindspots")
+                        .param("orderBy", "last_touch_at").param("filter", "all"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.orderBy").value("last_touch_at"))
+                .andExpect(jsonPath("$.items.length()").value(18))
+                // 前 10 个:一条记录都没有的那些,块内按骨架自然序
+                .andExpect(jsonPath("$.items[0].nodeId").value("current-value"))
+                .andExpect(jsonPath("$.items[0].lastTouchAt").doesNotExist())
+                .andExpect(jsonPath("$.items[9].nodeId").value("fraction-compare"))
+                .andExpect(jsonPath("$.items[9].lastTouchAt").doesNotExist())
+                // 后 8 个:碰过的,33 天前那条打头、今天那条收尾
+                .andExpect(jsonPath("$.items[10].nodeId").value("interval-growth"))
+                .andExpect(jsonPath("$.items[10].lastTouchAt").isNotEmpty())
+                .andExpect(jsonPath("$.items[11].nodeId").value("base-value"))
+                .andExpect(jsonPath("$.items[17].nodeId").value("growth-rate"))
+                // 🔴 分组边界只由 lastTouchAt 缺不缺表达,不给第二个来源
+                .andExpect(jsonPath("$.items[0].group").doesNotExist())
+                .andExpect(jsonPath("$.items[0].section").doesNotExist());
     }
 
     @Test
-    @DisplayName("blindspots 的 top 越界被拒;默认 20")
-    void blindSpotsTopIsValidated() throws Exception {
-        mockMvc.perform(get("/api/v1/coverage/blindspots").param("top", "0"))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
-        mockMvc.perform(get("/api/v1/coverage/blindspots").param("top", "101"))
-                .andExpect(status().isBadRequest());
-        mockMvc.perform(get("/api/v1/coverage/blindspots"))
+    @DisplayName("filter 四档各选一段:all=18 · untouched=10 · touched=8 · asserted=0")
+    void filterSelectsExactlyOneSliceOfTheDenominator() throws Exception {
+        mockMvc.perform(get("/api/v1/coverage/blindspots").param("filter", "all"))
+                .andExpect(jsonPath("$.items.length()").value(18));
+        mockMvc.perform(get("/api/v1/coverage/blindspots").param("filter", "untouched"))
+                .andExpect(jsonPath("$.items.length()").value(10));
+        mockMvc.perform(get("/api/v1/coverage/blindspots").param("filter", "touched"))
+                .andExpect(jsonPath("$.items.length()").value(8))
+                // 碰过的那一档里,频次最高的是增长率计算(9 次),而它碰过 1 次
+                .andExpect(jsonPath("$.items[0].nodeId").value("growth-rate"))
+                .andExpect(jsonPath("$.items[0].touchCount").value(1))
+                .andExpect(jsonPath("$.items[0].lastTouchAt").isNotEmpty());
+        // 一个人都没按过按钮 —— 空清单是 200,不是 404
+        mockMvc.perform(get("/api/v1/coverage/blindspots").param("filter", "asserted"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.requestedTop").value(20));
+                .andExpect(jsonPath("$.items.length()").value(0));
     }
 
     // ---------------------------------------------------------------- 时间线聚合(§6.4)
@@ -500,13 +682,18 @@ class ApiContractTest {
                 .andExpect(jsonPath("$.record.nodeCode").value("average-calc"))
                 .andExpect(jsonPath("$.record.kindLabel").value("记做题"))
                 .andExpect(jsonPath("$.record.id").isNotEmpty())
-                .andExpect(jsonPath("$.node.state").value("STABLE"))   // 原来是 EMPTY
-                .andExpect(jsonPath("$.node.practiced").value(10));
+                // 🔴 那个考点当场从「没碰过」翻面。上一版比的是 state(EMPTY → STABLE),
+                //    而五态没了 —— 承载这件事的是这两个字段:碰过一次了,而且刚刚碰的
+                .andExpect(jsonPath("$.node.nodeId").value("average-calc"))
+                .andExpect(jsonPath("$.node.touchCount").value(1))
+                .andExpect(jsonPath("$.node.lastTouchAt").isNotEmpty())
+                .andExpect(jsonPath("$.node.sourceNames[0]").value("自己刷题 · 2024 省考真题"));
 
-        // 覆盖度从 8/18 变成 9/18
+        // 覆盖度从 8/18 变成 9/18 —— 分子 +1,差集 −1,两个数各自数出来
         mockMvc.perform(get("/api/v1/coverage/summary"))
-                .andExpect(jsonPath("$.covered").value(9))
-                .andExpect(jsonPath("$.percent").value(50));
+                .andExpect(jsonPath("$.nodeTotal").value(18))
+                .andExpect(jsonPath("$.nodeTouched").value(9))
+                .andExpect(jsonPath("$.nodeUntouched").value(9));
     }
 
     @Test
@@ -537,7 +724,8 @@ class ApiContractTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("NODE_NOT_IN_SYLLABUS"));
 
-        mockMvc.perform(get("/api/v1/coverage/summary")).andExpect(jsonPath("$.covered").value(8));
+        mockMvc.perform(get("/api/v1/coverage/summary"))
+                .andExpect(jsonPath("$.nodeTouched").value(8));
     }
 
     @Test
@@ -707,7 +895,9 @@ class ApiContractTest {
                 .andExpect(jsonPath("$.results[2].error").doesNotExist());
 
         assertEquals(11, store.count(ApiTestAuth.USER_ID));
-        mockMvc.perform(get("/api/v1/coverage/summary")).andExpect(jsonPath("$.covered").value(11));
+        mockMvc.perform(get("/api/v1/coverage/summary"))
+                .andExpect(jsonPath("$.nodeTouched").value(11))
+                .andExpect(jsonPath("$.nodeUntouched").value(7));
     }
 
     /**
@@ -885,12 +1075,17 @@ class ApiContractTest {
         mockMvc.perform(delete("/api/v1/records/{id}", "t-share-change"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value("t-share-change"))
-                .andExpect(jsonPath("$.node.state").value("EMPTY"))
-                .andExpect(jsonPath("$.summary.covered").value(7))
-                .andExpect(jsonPath("$.summary.percent").value(39));
+                // 🔴 那个考点退回盲区。上一版比的是 state == EMPTY,现在由「碰过 0 次、
+                //    没有最近一次」这两件事承担 —— 都是「有没有 / 几次 / 多久前」
+                .andExpect(jsonPath("$.node.nodeId").value("share-change"))
+                .andExpect(jsonPath("$.node.touchCount").value(0))
+                .andExpect(jsonPath("$.node.lastTouchAt").doesNotExist())
+                .andExpect(jsonPath("$.summary.nodeTouched").value(7))
+                .andExpect(jsonPath("$.summary.nodeUntouched").value(11));
 
         assertEquals(7, store.count(ApiTestAuth.USER_ID));
-        mockMvc.perform(get("/api/v1/coverage/summary")).andExpect(jsonPath("$.covered").value(7));
+        mockMvc.perform(get("/api/v1/coverage/summary"))
+                .andExpect(jsonPath("$.nodeTouched").value(7));
     }
 
     @Test

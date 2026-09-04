@@ -103,11 +103,16 @@ public class AssertionController {
         // 🔴 「已经声明过」问的是【这个人】声明过没有 —— 主键是 (userId, nodeCode)。
         //    按 nodeCode 单列判的那一版,第二个人的第一次声明会被当成重复,回 200 而且不落行。
         UserAssertion existing = store.find(session.userId(), nodeCode);
-        store.put(new UserAssertion(session.userId(), nodeCode, clock.instant()));
+        if (existing == null) {
+            store.put(new UserAssertion(session.userId(), nodeCode, clock.instant()));
+        }
+        // 🔴 已经声明过就【什么都不做】,不重写那一行。契约 §11.2:「已断言再 POST → 200,
+        //    不报错,不刷新断言时刻」。上一版无条件 put(clock.instant()),第二次点按钮
+        //    会把时刻推到现在 —— 而「什么时候按的」是这一行仅有的事实,刷新它等于伪造它。
 
         return ResponseEntity
                 .status(existing == null ? HttpStatus.CREATED : HttpStatus.OK)
-                .body(responseFor(session.userId(), nodeCode));
+                .body(AssertionResponse.unchanged());
     }
 
     /**
@@ -129,7 +134,11 @@ public class AssertionController {
         session.requireWrite();
         String nodeCode = requireNodeInSyllabus(req.nodeCode());
         store.remove(session.userId(), nodeCode);
-        return responseFor(session.userId(), nodeCode);
+        // 🔴 取消一个没声明过的节点也返 200,不是 404(§9.5 / §十四 增量 6)。
+        //    断言是一次【集合成员关系】,不是一个有身份的资源。DELETE 侧不对称的话,
+        //    离线队列补传一条「取消」会拿到 404,按队列纪律(4xx 从队列里删掉)被端当
+        //    失败丢弃 —— 而它本来是成功的。一半天然幂等的接口比不幂等更危险。
+        return AssertionResponse.unchanged();
     }
 
     // ---------------------------------------------------------------- 内部
@@ -146,33 +155,19 @@ public class AssertionController {
      */
     private String requireNodeInSyllabus(String nodeCode) {
         Syllabus tree = reader.syllabus();
-        Syllabus.Node node = tree.node(nodeCode);
+        Syllabus.Node node = tree.nodeIncludingArchived(nodeCode);
         if (node == null) {
             // 这个工厂方法已经把用户输入过了一遍截断,这里不再拼一次(与 TagController 同一条)。
-            throw ApiException.nodeNotInSyllabus(nodeCode);
+            throw ApiException.nodeNotFound(nodeCode);
+        }
+        // 🔴 「已归档」与「不存在」必须能区分到两档(§9.5 / §十)。
+        //    上一版两者都走 400 NODE_NOT_IN_SYLLABUS —— 界面只能说一句
+        //    「这个考点不见了」,而用户会以为自己的记录被删了。
+        //    归档是产品做的一次整理,不是他的数据没了。
+        if (node.archived()) {
+            throw ApiException.nodeArchived(node.code());
         }
         return node.code();
     }
 
-    /**
-     * 写完之后再读一次差集,把这个考点和整体概览一起带回去。
-     *
-     * <p><b>读的是 {@link CoverageReader},不是把 {@code store.count()} 直接拿来用。</b>
-     * 后者会得到一个「声明表里有几行」的数,而概览要的是「树上有几个考点被声明了」——
-     * 一个指向已删除 / 已归档考点的声明行不该出现在那一格里(见
-     * {@code CoverageService#compute} 的 {@code assertions} 参数说明)。
-     * <b>两处算同一个数就一定会算出两个数。</b>
-     */
-    private AssertionResponse responseFor(long userId, String nodeCode) {
-        CoverageReader.Snapshot snapshot = reader.read(userId);
-        NodeCoverage node = snapshot.node(nodeCode);
-        SummaryDto summary = SummaryDto.from(reader.summarize(snapshot));
-
-        return new AssertionResponse(
-                node != null && node.asserted(),
-                node == null ? null : node.assertedAt(),
-                summary.asserted(),
-                node == null ? null : NodeDetailDto.from(node),
-                summary);
-    }
 }

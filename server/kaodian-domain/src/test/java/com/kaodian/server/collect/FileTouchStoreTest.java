@@ -1,5 +1,7 @@
 package com.kaodian.server.collect;
 
+import com.kaodian.server.coverage.BlindspotFilter;
+import com.kaodian.server.coverage.BlindspotOrder;
 import com.kaodian.server.coverage.CoverageService;
 import com.kaodian.server.coverage.CoverageService.GroupCoverage;
 import com.kaodian.server.coverage.CoverageService.NodeCoverage;
@@ -82,34 +84,49 @@ class FileTouchStoreTest {
         assertEquals(file().toAbsolutePath(), store.dataFile());
     }
 
+    /**
+     * 🔒 <b>种子文件与数据契约之间的锁</b> —— 落盘的那 8 条,原样喂进差集必须还是那几个数。
+     *
+     * <p>这个测试的对象<b>不是</b> {@code CoverageService}(那边由 {@code CoverageServiceTest} 钉),
+     * 而是<b>这条链路</b>:种子 → 落盘 → 读回 → 派生标签 → 差集。中间任何一步吃掉一条记录,
+     * 覆盖度都会安静地少一格,而没有任何一处报错。
+     *
+     * <p>⚠️ 上一版这里还断言过 {@code 44%} 与「稳 3 · 弱 2 · 生疏 2」。两组都已不存在:
+     * 前者是浮点(§7.2 这一域没有百分比),后者从「练了几道 / 对了几道」推出来,
+     * 回答的是「答得怎么样」(§7.4 已整个移出这一域)。
+     */
     @Test
-    @DisplayName("🔒 种子经 CoverageService 算出来就是 18/8/44%,五态 稳3·弱2·生疏2·仅接触1·空白10")
+    @DisplayName("🔒 种子经 CoverageService 算出来就是 18 个考点 / 8 个碰过 / 10 个没碰过 / 2 组整块空白")
     void seedIsTheDesignContract() {
         List<Touch> touches = store().findAll(USER);
         assertEquals(8, touches.size());
 
         Syllabus syllabus = SyllabusLoader.loadDefault();
         CoverageService service = new CoverageService();
-        List<GroupCoverage> groups = service.compute(syllabus, touches, Instant.now());
+        // 走 effectiveTagsOf 派生主标签 —— 与 CoverageReader.read 同一条路。
+        // 直接把空标签表递进去的话,这 8 条记录一条都不计覆盖度,而差集会安静地变成 18/0/18。
+        List<GroupCoverage> groups = service.compute(syllabus, touches,
+                RecordTag.effectiveTagsOf(touches, List.of()), List.of(), Instant.now());
         Summary s = service.summarize(groups);
 
-        assertEquals(18, s.total(), "考点总数");
-        assertEquals(8, s.covered(), "有记录");
-        assertEquals(10, s.empty(), "空白");
-        assertEquals(44, s.percent(), "覆盖率(设计稿上那个大字)");
-        assertEquals(2, s.whollyEmptyGroups(), "整块空白的题型组数");
+        assertEquals(18, s.nodeTotal(), "考点总数");
+        assertEquals(8, s.nodeTouched(), "碰过");
+        assertEquals(10, s.nodeUntouched(), "没碰过 —— 数出来的,不是 18−8 减出来的");
+        assertEquals(0, s.archivedCount());
+        assertEquals(0, s.assertedCount());
+        assertEquals(2, groups.stream().filter(GroupCoverage::whollyEmpty).count(), "整块空白的题型组数");
 
-        assertEquals(3, s.distribution().get(NodeState.STABLE), "稳");
-        assertEquals(2, s.distribution().get(NodeState.WEAK), "弱");
-        assertEquals(2, s.distribution().get(NodeState.RUSTY), "生疏");
-        assertEquals(1, s.distribution().get(NodeState.TOUCHED_ONLY), "仅接触");
-        assertEquals(10, s.distribution().get(NodeState.EMPTY), "空白");
+        // 那条 VOICE 记录(听过课、一道题没练)必须是「碰过」——
+        // 它与「完全没碰过」分开,正是这份种子存在的理由,差集没有这条线就没有意义。
+        assertEquals(NodeState.TOUCHED, node(groups, "share-change").state());
+        assertEquals(NodeState.UNTOUCHED, node(groups, "average-calc").state());
 
-        // 「先补这几个」也一并锁住:状态对了,排序分才会对
-        List<NodeCoverage> top = service.blindSpots(groups, 5);
-        assertEquals(List.of("增长量计算", "平均数计算", "截位直除", "现期量计算", "倍数计算"),
+        // 「先补这几个」也一并锁住:默认档 = 没碰过 + 按近五年出现次数
+        List<NodeCoverage> top = service.blindSpots(
+                groups, BlindspotOrder.RECENT5Y_COUNT, BlindspotFilter.UNTOUCHED, false, 5);
+        assertEquals(List.of("平均数计算", "现期量计算", "倍数计算", "年均增长率", "同比与环比"),
                 top.stream().map(NodeCoverage::name).toList());
-        assertEquals(6.4, top.get(0).blindScore(), 1e-9);
+        assertEquals(6, top.get(0).recent5yCount(), "榜首的出现次数");
     }
 
     @Test
@@ -123,7 +140,9 @@ class FileTouchStoreTest {
 
         Touch oldest = touches.get(0);
         long days = java.time.Duration.between(oldest.occurredAt(), Instant.now()).toDays();
-        assertEquals(33, days, "最旧一条是 33 天前 —— 它必须落在 RUSTY_AFTER(30 天)之外");
+        // 「多久前」是这一域的三件事之一,而服务端只给绝对时刻(lastTouchAt),天数由端算。
+        // 种子写死日期的话,这个跨度会随时间漂,端上那句「33 天前」跟着变成任意一个数。
+        assertEquals(33, days, "最旧一条必须正好是 33 天前 —— 相对天数是相对播种那一刻算的");
     }
 
     @Test
@@ -551,6 +570,14 @@ class FileTouchStoreTest {
         assertTrue(e.getMessage().contains("bad-1"), "报错要指出是哪一条,否则没法修文件");
     }
 
+    /**
+     * 🔒 播种必须走<b>注入的</b> {@link Clock},不是 {@code Instant.now()}。
+     *
+     * <p>「多久前」是这一域的三件事之一,而它唯一的依据是 {@code lastTouchAt} 这个绝对时刻。
+     * 播种时偷偷用一次 {@code Instant.now()},固定时钟回放出来的记录就落在<b>另一条时间线</b>上 ——
+     * 那一格显示的「多久前」全错,而覆盖度那三个数照样是 18/8/10,<b>没有任何一处会红</b>。
+     * 所以这条断言必须钉在时刻上,不能钉在计数上。
+     */
     @Test
     @DisplayName("🔒 播种走注入的 Clock —— 固定时钟回放时,种子和差集必须在同一条时间线上")
     void seedFollowsTheInjectedClock() {
@@ -558,15 +585,27 @@ class FileTouchStoreTest {
         FileTouchStore store = new FileTouchStore(file(), Clock.fixed(fixed, ZoneOffset.UTC));
 
         CoverageService service = new CoverageService();
-        Summary s = service.summarize(
-                service.compute(SyllabusLoader.loadDefault(), store.findAll(USER), fixed));
+        List<Touch> touches = store.findAll(USER);
+        List<GroupCoverage> groups = service.compute(SyllabusLoader.loadDefault(), touches,
+                RecordTag.effectiveTagsOf(touches, List.of()), List.of(), fixed);
 
-        // 用 Instant.now() 播种的话,这里会不报错地变成 稳5·弱2·生疏0 —— 契约被时间线错位吃掉了。
-        assertEquals(3, s.distribution().get(NodeState.STABLE), "稳");
-        assertEquals(2, s.distribution().get(NodeState.WEAK), "弱");
-        assertEquals(2, s.distribution().get(NodeState.RUSTY), "生疏");
-        assertEquals(1, s.distribution().get(NodeState.TOUCHED_ONLY), "仅接触");
-        assertEquals(44, s.percent());
+        // 种子里 daysAgo=0 的那条落在【播种那一刻】,daysAgo=33 的那条落在它之前 33 天。
+        assertEquals(fixed, node(groups, "growth-rate").lastTouchAt(), "最新一条就是播种时刻本身");
+        assertEquals(fixed.minus(java.time.Duration.ofDays(33)),
+                node(groups, "interval-growth").lastTouchAt(), "最旧一条是播种时刻前 33 天");
+        assertNull(node(groups, "average-calc").lastTouchAt(), "没碰过的仍然是 null,不是一个假时刻");
+
+        // 时间线对上了,那三个数也得对上 —— 两者分开断言,一个错另一个不会替它遮住
+        Summary s = service.summarize(groups);
+        assertEquals(18, s.nodeTotal());
+        assertEquals(8, s.nodeTouched());
+        assertEquals(10, s.nodeUntouched());
+    }
+
+    /** 按 code 取那一格的覆盖视图。取不到就让测试当场失败 —— 夹具错了比断言错了更难查。 */
+    private static NodeCoverage node(List<GroupCoverage> groups, String code) {
+        return groups.stream().flatMap(g -> g.nodes().stream())
+                .filter(n -> n.code().equals(code)).findFirst().orElseThrow();
     }
 
     private static JsonNode readSeedResource() {

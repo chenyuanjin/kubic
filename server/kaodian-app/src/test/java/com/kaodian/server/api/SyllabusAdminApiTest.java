@@ -62,9 +62,16 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * 考点管理的接口契约 —— <b>骨架层可写之后,红线还在不在。</b>
  *
- * <p>起点永远是那份设计契约:<b>18 个考点 / 8 个有记录 / 覆盖 44%</b>。
- * 每个测试先动一下树,再看那个百分比动没动、动得对不对 ——
- * 因为覆盖率是这个产品唯一的那个数,而考点管理是唯一能从<b>分母那一侧</b>动它的东西。
+ * <p>起点永远是那份设计契约:<b>18 个考点 / 8 个有记录 / 10 个没碰过</b>。
+ * 每个测试先动一下树,再看那三个数动没动、动得对不对 ——
+ * 因为差集是这个产品唯一的产出,而考点管理是唯一能从<b>分母那一侧</b>动它的东西。
+ *
+ * <h2>⚠️ 这里比的不再是那个百分比</h2>
+ *
+ * 上一版每条用例都盯着 {@code summary.percent}。{@code M3-骨架与覆盖度差集} §7.2 把它整个拿掉了
+ * (这一域的响应体里没有任何一个浮点字段),所以「这个数没变」改由<b>剩下的整数</b>承担:
+ * {@code nodeTotal} / {@code nodeTouched} / {@code nodeUntouched}。
+ * 三个数一起比,比一个百分比更严 —— 分子分母同时错一格的那种改动,百分比可能还是 44。
  *
  * <h2>为什么用真的 {@code FileSyllabusStore} 而不是内存假实现</h2>
  *
@@ -111,10 +118,10 @@ class SyllabusAdminApiTest {
                 .andExpect(jsonPath("$.node.recent5yCount").value(2))
                 .andExpect(jsonPath("$.node.archived").value(false))
                 .andExpect(jsonPath("$.node.recordCount").value(0))
-                // 🔴 分母 +1:18 → 19,覆盖率 8/19 = 42%
-                .andExpect(jsonPath("$.summary.total").value(19))
-                .andExpect(jsonPath("$.summary.covered").value(8))
-                .andExpect(jsonPath("$.summary.percent").value(42))
+                // 🔴 分母 +1:18 → 19。分子不动,差集跟着 +1 —— 新考点一出生就在盲区里
+                .andExpect(jsonPath("$.summary.nodeTotal").value(19))
+                .andExpect(jsonPath("$.summary.nodeTouched").value(8))
+                .andExpect(jsonPath("$.summary.nodeUntouched").value(11))
                 .andReturn().getResponse().getContentAsString();
 
         assertTrue(body.contains("\"code\" : \"n-") || body.contains("\"code\":\"n-"),
@@ -124,7 +131,7 @@ class SyllabusAdminApiTest {
         // 树上也真的多了一个 —— 不是只在响应里多了一个
         mockMvc.perform(get("/api/v1/syllabus/tree"))
                 .andExpect(jsonPath("$.groups[0].nodes.length()").value(8))
-                .andExpect(jsonPath("$.summary.total").value(19));
+                .andExpect(jsonPath("$.summary.nodeTotal").value(19));
     }
 
     @Test
@@ -137,7 +144,8 @@ class SyllabusAdminApiTest {
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.code").value("UNKNOWN_FIELD"));
         }
-        mockMvc.perform(get("/api/v1/coverage/summary")).andExpect(jsonPath("$.total").value(18));
+        mockMvc.perform(get("/api/v1/coverage/summary"))
+                .andExpect(jsonPath("$.nodeTotal").value(18));
     }
 
     @Test
@@ -160,8 +168,8 @@ class SyllabusAdminApiTest {
     // ---------------------------------------------------------------- 重命名
 
     @Test
-    @DisplayName("🔴 重命名只改 name:code 不变、记录不丢、覆盖率逐字不变")
-    void renameKeepsCodeRecordsAndPercent() throws Exception {
+    @DisplayName("🔴 重命名只改 name:code 不变、记录不丢、那三个数逐字不变")
+    void renameKeepsCodeRecordsAndTheNumbers() throws Exception {
         mockMvc.perform(json(post("/api/v1/syllabus/nodes/growth-rate/rename"), """
                         {"name":"增长率(我自己的说法)"}
                         """))
@@ -170,16 +178,21 @@ class SyllabusAdminApiTest {
                 .andExpect(jsonPath("$.node.name").value("增长率(我自己的说法)"))
                 .andExpect(jsonPath("$.node.recordCount").value(1))
                 // 🔴 记录挂 code 不挂名字,所以这三个数必须逐字不变
-                .andExpect(jsonPath("$.summary.total").value(18))
-                .andExpect(jsonPath("$.summary.covered").value(8))
-                .andExpect(jsonPath("$.summary.percent").value(44));
+                .andExpect(jsonPath("$.summary.nodeTotal").value(18))
+                .andExpect(jsonPath("$.summary.nodeTouched").value(8))
+                .andExpect(jsonPath("$.summary.nodeUntouched").value(10));
 
         mockMvc.perform(get("/api/v1/syllabus/nodes/growth-rate"))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$.nodeId").value("growth-rate"))
                 .andExpect(jsonPath("$.name").value("增长率(我自己的说法)"))
+                // 路径那一行跟着换名字,而 code 那一半没动 —— 它是拼出来的,不是存下来的
+                .andExpect(jsonPath("$.path").value("增长类 / 增长率(我自己的说法)"))
+                // 🔴 那条记录还在:碰过 1 次,还留着来源名。上一版这里比的是 practiced=12
+                //    与 state=STABLE,两个都回答「答得怎么样」,§7.4 把它们拿掉了
                 .andExpect(jsonPath("$.touchCount").value(1))
-                .andExpect(jsonPath("$.practiced").value(12))
-                .andExpect(jsonPath("$.state").value("STABLE"));
+                .andExpect(jsonPath("$.lastTouchAt").isNotEmpty())
+                .andExpect(jsonPath("$.sourceNames[0]").value("粉笔 · 资料分析系统班 L12"));
 
         // 记录列表上那条老记录也跟着显示新名字 —— 它本来就是按 code 反查的。
         // 逐条的记录读 /api/v1/records(§6.2);/api/v1/timeline 现在只出按天/周的格子(§6.4)
@@ -198,7 +211,8 @@ class SyllabusAdminApiTest {
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("NODE_NOT_FOUND"));
 
-        mockMvc.perform(get("/api/v1/coverage/summary")).andExpect(jsonPath("$.total").value(18));
+        mockMvc.perform(get("/api/v1/coverage/summary"))
+                .andExpect(jsonPath("$.nodeTotal").value(18));
     }
 
     // ---------------------------------------------------------------- 🔴 删除守则
@@ -218,9 +232,9 @@ class SyllabusAdminApiTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.touchCount").value(1));
         mockMvc.perform(get("/api/v1/coverage/summary"))
-                .andExpect(jsonPath("$.total").value(18))
-                .andExpect(jsonPath("$.covered").value(8))
-                .andExpect(jsonPath("$.percent").value(44));
+                .andExpect(jsonPath("$.nodeTotal").value(18))
+                .andExpect(jsonPath("$.nodeTouched").value(8))
+                .andExpect(jsonPath("$.nodeUntouched").value(10));
         mockMvc.perform(get("/api/v1/records")).andExpect(jsonPath("$.total").value(8));
     }
 
@@ -238,10 +252,10 @@ class SyllabusAdminApiTest {
                 .andExpect(jsonPath("$.fromNodeCode").value("growth-rate"))
                 .andExpect(jsonPath("$.toNodeCode").value("average-calc"))
                 .andExpect(jsonPath("$.movedCount").value(1))
-                // 搬家不改总数:还是 8 个考点有记录、还是 44%
-                .andExpect(jsonPath("$.summary.total").value(18))
-                .andExpect(jsonPath("$.summary.covered").value(8))
-                .andExpect(jsonPath("$.summary.percent").value(44));
+                // 搬家不改总数:还是 8 个考点有记录、10 个没碰过 —— 只是换了是哪 8 个
+                .andExpect(jsonPath("$.summary.nodeTotal").value(18))
+                .andExpect(jsonPath("$.summary.nodeTouched").value(8))
+                .andExpect(jsonPath("$.summary.nodeUntouched").value(10));
 
         mockMvc.perform(get("/api/v1/records"))
                 .andExpect(jsonPath("$.total").value(8))                       // 🔴 一条都没丢
@@ -251,9 +265,11 @@ class SyllabusAdminApiTest {
         mockMvc.perform(post("/api/v1/syllabus/nodes/growth-rate/delete"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value("growth-rate"))
-                .andExpect(jsonPath("$.summary.total").value(17))               // 分母 −1
-                .andExpect(jsonPath("$.summary.covered").value(8))              // 分子不动
-                .andExpect(jsonPath("$.summary.percent").value(47));
+                .andExpect(jsonPath("$.summary.nodeTotal").value(17))           // 分母 −1
+                .andExpect(jsonPath("$.summary.nodeTouched").value(8))          // 分子不动
+                .andExpect(jsonPath("$.summary.nodeUntouched").value(9))        // 差集跟着 −1
+                // 🔴 删掉的那个考点不进归档计数 —— 删除与归档是两件事(R-49)
+                .andExpect(jsonPath("$.summary.archivedCount").value(0));
 
         mockMvc.perform(get("/api/v1/syllabus/nodes/growth-rate")).andExpect(status().isNotFound());
     }
@@ -323,14 +339,36 @@ class SyllabusAdminApiTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.node.archived").value(true))
                 .andExpect(jsonPath("$.node.recordCount").value(1))
-                .andExpect(jsonPath("$.summary.total").value(17))       // 分母 −1
-                .andExpect(jsonPath("$.summary.covered").value(7))      // 分子也 −1,比值仍然诚实
-                .andExpect(jsonPath("$.summary.percent").value(41));
+                // 🔴 归档【同时】退分子与分母:只退一边都是在编数(NodeState.ARCHIVED)。
+                //    上一版靠 percent 41 说这件事,而一个百分比说不出「两边各退了一个」——
+                //    17/7/10 三个数一起看才说得出:没碰过的那 10 个一个都没动
+                .andExpect(jsonPath("$.summary.nodeTotal").value(17))
+                .andExpect(jsonPath("$.summary.nodeTouched").value(7))
+                .andExpect(jsonPath("$.summary.nodeUntouched").value(10))
+                // 🔴 单列一格,恒在(R-49「归档计数常驻可见」)—— 那 44% 变高的原因必须看得见
+                .andExpect(jsonPath("$.summary.archivedCount").value(1));
 
         // 退出了树
         mockMvc.perform(get("/api/v1/syllabus/tree"))
                 .andExpect(jsonPath("$.groups[0].nodes.length()").value(6));
-        mockMvc.perform(get("/api/v1/syllabus/nodes/growth-rate")).andExpect(status().isNotFound());
+
+        // 🔴 但详情<b>照常返回 200</b>,带 archived: true —— 归档不是删除(§9.4)。
+        //    上一版这里是 404,也就是把「已归档」与「不存在」合成了一档 ——
+        //    而合成之后用户看到的是「找不到这个考点」,他会以为自己那条记录被删了。
+        //    两档必须分得开:404 说「这个考点从来没有过 / 已经不在了」,
+        //    200 + archived 说「它还在,只是我们把它收进归档区了,你的记录一条没少」。
+        mockMvc.perform(get("/api/v1/syllabus/nodes/growth-rate"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.archived").value(true))
+                .andExpect(jsonPath("$.nodeId").value("growth-rate"))
+                .andExpect(jsonPath("$.name").value("增长率计算"))
+                // 内容照常返回:那一条记录还挂在它身上
+                .andExpect(jsonPath("$.touchCount").value(1));
+
+        // 而一个真的不存在的 code 仍然是 404 —— 这一行是上一行的对照,少了它「两档」就没被测到
+        mockMvc.perform(get("/api/v1/syllabus/nodes/never-existed"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("NODE_NOT_FOUND"));
 
         // 但历史还在,而且还有名字 —— 归档不是「这段历史不存在了」
         mockMvc.perform(get("/api/v1/records"))
@@ -354,9 +392,10 @@ class SyllabusAdminApiTest {
         mockMvc.perform(post("/api/v1/syllabus/nodes/growth-rate/unarchive"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.node.archived").value(false))
-                .andExpect(jsonPath("$.summary.total").value(18))
-                .andExpect(jsonPath("$.summary.covered").value(8))
-                .andExpect(jsonPath("$.summary.percent").value(44));
+                .andExpect(jsonPath("$.summary.nodeTotal").value(18))
+                .andExpect(jsonPath("$.summary.nodeTouched").value(8))
+                .andExpect(jsonPath("$.summary.nodeUntouched").value(10))
+                .andExpect(jsonPath("$.summary.archivedCount").value(0));
     }
 
     // ---------------------------------------------------------------- 移动 / 频次
@@ -372,29 +411,51 @@ class SyllabusAdminApiTest {
                 .andExpect(jsonPath("$.node.groupCode").value("fast-math"))
                 .andExpect(jsonPath("$.node.groupName").value("速算技巧"))
                 .andExpect(jsonPath("$.node.recordCount").value(1))
-                .andExpect(jsonPath("$.summary.total").value(18))
-                .andExpect(jsonPath("$.summary.percent").value(44));
+                .andExpect(jsonPath("$.summary.nodeTotal").value(18))
+                .andExpect(jsonPath("$.summary.nodeTouched").value(8));
 
         mockMvc.perform(get("/api/v1/syllabus/nodes/growth-rate"))
-                .andExpect(jsonPath("$.groupName").value("速算技巧"))
+                // 🔴 详情屏那一行路径跟着换题型 —— 上一版是 groupName 一个字段,
+                //    现在是一整行 path,端不再自己拼(§9.4)
+                .andExpect(jsonPath("$.path").value("速算技巧 / 增长率计算"))
                 .andExpect(jsonPath("$.touchCount").value(1));
     }
 
+    /**
+     * 🔴 近五年频次是默认口径 {@code recent5y_count} 的<b>排序键本身</b>,不再是「权重之一」。
+     *
+     * <p>上一版排序用 {@code blindScore = 频次 × 状态权重},而状态权重那一半来自 {@code WEAK} ——
+     * 它随五态一起被 §7.4 拿掉了。现在这一栏只由骨架侧的出现次数决定,
+     * 所以改一次频次的效果是<b>可以逐位算出来</b>的:平均数计算从 6 掉到 1,
+     * 它就从榜首掉到榜尾,中间那些一个都不动。
+     */
     @Test
-    @DisplayName("改近五年频次会改「先补这几个」的名次 —— 它是排序权重之一")
-    void frequencyChangesTheBlindSpotRanking() throws Exception {
-        mockMvc.perform(get("/api/v1/coverage/blindspots").param("top", "3"))
-                .andExpect(jsonPath("$.items[1].name").value("平均数计算"));
+    @DisplayName("🔴 改近五年频次直接改「先补这几个」的顺序 —— 6 → 1,榜首掉到榜尾")
+    void frequencyChangesTheBlindSpotOrder() throws Exception {
+        // 默认口径 recent5y_count + 默认档 untouched:10 个没碰过的,平均数计算(6)打头
+        mockMvc.perform(get("/api/v1/coverage/blindspots"))
+                .andExpect(jsonPath("$.items.length()").value(10))
+                .andExpect(jsonPath("$.items[0].name").value("平均数计算"))
+                .andExpect(jsonPath("$.items[1].name").value("现期量计算"))
+                .andExpect(jsonPath("$.items[9].name").value("混合增长率"));   // 频次 2,最低
 
         mockMvc.perform(json(post("/api/v1/syllabus/nodes/average-calc/frequency"), """
                         {"recent5yCount":1}
                         """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.node.recent5yCount").value(1))
-                .andExpect(jsonPath("$.summary.percent").value(44));    // 频次不影响覆盖率
+                // 频次是骨架侧关于真题的事实,与「我碰没碰过」无关 —— 那三个数一个都不该动
+                .andExpect(jsonPath("$.summary.nodeTotal").value(18))
+                .andExpect(jsonPath("$.summary.nodeTouched").value(8))
+                .andExpect(jsonPath("$.summary.nodeUntouched").value(10));
 
-        mockMvc.perform(get("/api/v1/coverage/blindspots").param("top", "3"))
-                .andExpect(jsonPath("$.items[1].name").value("截位直除"));
+        mockMvc.perform(get("/api/v1/coverage/blindspots"))
+                .andExpect(jsonPath("$.items.length()").value(10))
+                .andExpect(jsonPath("$.items[0].name").value("现期量计算"))   // 5,顶上来
+                .andExpect(jsonPath("$.items[0].recent5yCount").value(5))
+                .andExpect(jsonPath("$.items[8].name").value("混合增长率"))   // 2,整体上移一位
+                .andExpect(jsonPath("$.items[9].name").value("平均数计算"))   // 1,沉到末尾
+                .andExpect(jsonPath("$.items[9].recent5yCount").value(1));
 
         mockMvc.perform(json(post("/api/v1/syllabus/nodes/average-calc/frequency"), """
                         {"recent5yCount":-1}
@@ -414,7 +475,7 @@ class SyllabusAdminApiTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.group.name").value("自己归纳的一类"))
                 .andExpect(jsonPath("$.group.nodeCount").value(0))
-                .andExpect(jsonPath("$.summary.total").value(18))   // 空题型不影响分母
+                .andExpect(jsonPath("$.summary.nodeTotal").value(18))   // 空题型不影响分母
                 .andReturn().getResponse().getContentAsString();
         assertTrue(created.contains("g-"), "题型 code 同样由服务端生成:" + created);
 
@@ -428,10 +489,18 @@ class SyllabusAdminApiTest {
         mockMvc.perform(post("/api/v1/syllabus/nodes/pull-growth/delete")).andExpect(status().isOk());
         mockMvc.perform(post("/api/v1/syllabus/groups/effect/delete"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.summary.total").value(16))
-                .andExpect(jsonPath("$.summary.whollyEmptyGroups").value(1));   // 原来是 2
+                .andExpect(jsonPath("$.summary.nodeTotal").value(16))
+                .andExpect(jsonPath("$.summary.nodeTouched").value(8))     // 删的两个本来就没记录
+                .andExpect(jsonPath("$.summary.nodeUntouched").value(8));
 
-        mockMvc.perform(get("/api/v1/syllabus/tree")).andExpect(jsonPath("$.groups.length()").value(5));
+        // 🔴 「整块空白的题型」上一版是概览里的一个数(whollyEmptyGroups),它去掉了 ——
+        //    这件事现在只由树上每个题型自己那一格 whollyEmpty 表达。原来有两块(倍数与比较、效应类),
+        //    效应类被删掉之后只剩一块;新建的那个空题型【不算】整块空白:一个考点都没有的题型,
+        //    说它「整块都没碰过」是在说一句没有内容的话(GroupCoverage#whollyEmpty)
+        mockMvc.perform(get("/api/v1/syllabus/tree"))
+                .andExpect(jsonPath("$.groups.length()").value(5))
+                .andExpect(jsonPath("$.groups[?(@.whollyEmpty == true)].code",
+                        Matchers.contains("multiple")));
     }
 
     @Test
@@ -452,23 +521,43 @@ class SyllabusAdminApiTest {
 
     // ---------------------------------------------------------------- 顺序
 
+    /**
+     * 🔴 三级排序链的<b>第二级</b>就是骨架自然序,所以调树序是产品功能,不是排版。
+     *
+     * <p>「现期量计算」与「倍数计算」近五年都出现 5 次,一级口径分不出高下;
+     * 分出高下的是<b>它们各自的题型在树上排第几</b>。把「倍数与比较」提到第一位,
+     * 两行当场对调 —— 而三级之后不可能再有并列({@code code} 在一棵树里唯一),
+     * 所以同样的输入永远得到同样的一份清单。
+     */
     @Test
-    @DisplayName("🔴 调整树序会改变「先补这几个」里并列项的名次 —— 所以它是产品功能,不是排版")
+    @DisplayName("🔴 调整树序会改变「先补这几个」里并列项的先后 —— 所以它是产品功能,不是排版")
     void reorderingGroupsChangesTheTieBreak() throws Exception {
-        mockMvc.perform(get("/api/v1/coverage/blindspots").param("top", "5"))
-                .andExpect(jsonPath("$.items[3].name").value("现期量计算"))
-                .andExpect(jsonPath("$.items[4].name").value("倍数计算"));
+        mockMvc.perform(get("/api/v1/coverage/blindspots"))
+                .andExpect(jsonPath("$.items[0].name").value("平均数计算"))     // 6,不并列
+                .andExpect(jsonPath("$.items[1].name").value("现期量计算"))     // 并列 5,增长类在前
+                .andExpect(jsonPath("$.items[2].name").value("倍数计算"))
+                .andExpect(jsonPath("$.items[1].recent5yCount").value(5))
+                .andExpect(jsonPath("$.items[2].recent5yCount").value(5))
+                .andExpect(jsonPath("$.items[3].name").value("年均增长率"))     // 并列 4,同理
+                .andExpect(jsonPath("$.items[4].name").value("同比与环比"));
 
         mockMvc.perform(json(post("/api/v1/syllabus/groups/order"), """
                         {"groupCodes":["multiple","growth","effect","average-share","fast-math"]}
                         """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.groups[0].code").value("multiple"))
-                .andExpect(jsonPath("$.summary.percent").value(44));
+                // 调序不动任何一个数 —— 它换的只是并列项之间的先后
+                .andExpect(jsonPath("$.summary.nodeTotal").value(18))
+                .andExpect(jsonPath("$.summary.nodeTouched").value(8))
+                .andExpect(jsonPath("$.summary.nodeUntouched").value(10));
 
-        mockMvc.perform(get("/api/v1/coverage/blindspots").param("top", "5"))
-                .andExpect(jsonPath("$.items[3].name").value("倍数计算"))
-                .andExpect(jsonPath("$.items[4].name").value("现期量计算"));
+        mockMvc.perform(get("/api/v1/coverage/blindspots"))
+                .andExpect(jsonPath("$.items[0].name").value("平均数计算"))     // 不并列的不受影响
+                .andExpect(jsonPath("$.items[1].name").value("倍数计算"))       // 并列 5,对调
+                .andExpect(jsonPath("$.items[2].name").value("现期量计算"))
+                // 并列 4 的那一对同样跟着对调 —— 这不是一次巧合
+                .andExpect(jsonPath("$.items[3].name").value("同比与环比"))
+                .andExpect(jsonPath("$.items[4].name").value("年均增长率"));
     }
 
     @Test
@@ -518,7 +607,8 @@ class SyllabusAdminApiTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_NAME"));
 
-        mockMvc.perform(get("/api/v1/coverage/summary")).andExpect(jsonPath("$.total").value(18));
+        mockMvc.perform(get("/api/v1/coverage/summary"))
+                .andExpect(jsonPath("$.nodeTotal").value(18));
     }
 
     // ---------------------------------------------------------------- 🔴 名字必须唯一
@@ -557,11 +647,11 @@ class SyllabusAdminApiTest {
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("NAME_TAKEN"));
 
-        // 🔴 三次都被拒之后,覆盖率一个数都没变
+        // 🔴 三次都被拒之后,那三个数一个都没变
         mockMvc.perform(get("/api/v1/coverage/summary"))
-                .andExpect(jsonPath("$.total").value(18))
-                .andExpect(jsonPath("$.covered").value(8))
-                .andExpect(jsonPath("$.percent").value(44));
+                .andExpect(jsonPath("$.nodeTotal").value(18))
+                .andExpect(jsonPath("$.nodeTouched").value(8))
+                .andExpect(jsonPath("$.nodeUntouched").value(10));
         mockMvc.perform(get("/api/v1/syllabus/nodes/growth-rate"))
                 .andExpect(jsonPath("$.name").value("增长率计算"));
     }
@@ -605,7 +695,8 @@ class SyllabusAdminApiTest {
         }
 
         // 只成功了两次:「增长量 速算」与「GDP 速算」;被拒的五次一个都没落到树上
-        mockMvc.perform(get("/api/v1/coverage/summary")).andExpect(jsonPath("$.total").value(20));
+        mockMvc.perform(get("/api/v1/coverage/summary"))
+                .andExpect(jsonPath("$.nodeTotal").value(20));
     }
 
     /**
@@ -634,7 +725,10 @@ class SyllabusAdminApiTest {
         mockMvc.perform(post("/api/v1/syllabus/nodes/growth-amount/unarchive"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.node.name").value("增长量计算"))
-                .andExpect(jsonPath("$.summary.total").value(18));
+                .andExpect(jsonPath("$.summary.nodeTotal").value(18))
+                // 取消归档把它接回来:分子分母同时 +1,归档计数回到 0
+                .andExpect(jsonPath("$.summary.nodeTouched").value(8))
+                .andExpect(jsonPath("$.summary.archivedCount").value(0));
     }
 
     @Test
@@ -646,7 +740,8 @@ class SyllabusAdminApiTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.node.code").value("growth-rate"))
                 .andExpect(jsonPath("$.node.name").value("增长率计算"))
-                .andExpect(jsonPath("$.summary.percent").value(44));
+                .andExpect(jsonPath("$.summary.nodeTotal").value(18))
+                .andExpect(jsonPath("$.summary.nodeTouched").value(8));
 
         // 只差前后空格的写法同样是自己
         mockMvc.perform(json(post("/api/v1/syllabus/nodes/growth-rate/rename"), """
@@ -716,7 +811,7 @@ class SyllabusAdminApiTest {
         }
 
         mockMvc.perform(get("/api/v1/coverage/summary"))
-                .andExpect(jsonPath("$.total").value(18 + legal.size()));
+                .andExpect(jsonPath("$.nodeTotal").value(18 + legal.size()));
     }
 
     /**
@@ -762,9 +857,9 @@ class SyllabusAdminApiTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_NAME"));
 
-        // 🔴 一次都没成功 —— 覆盖率的分母一个数都没动
+        // 🔴 一次都没成功 —— 差集的分母一个数都没动
         mockMvc.perform(get("/api/v1/coverage/summary"))
-                .andExpect(jsonPath("$.total").value(18));
+                .andExpect(jsonPath("$.nodeTotal").value(18));
     }
 
 

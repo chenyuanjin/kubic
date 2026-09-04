@@ -80,7 +80,14 @@ public class CoverageReader {
      */
     public record Snapshot(Syllabus syllabus, Instant at, List<Touch> touches, List<GroupCoverage> groups) {
 
-        /** 按 code 找考点的覆盖视图;不在骨架树里返回 {@code null}。 */
+        /**
+         * 按 code 找考点的覆盖视图;不在骨架树里返回 {@code null}。
+         *
+         * <p>🔴 {@code null} 在这里就是 {@link NodeState#GONE} 那一档 ——
+         * 调用方要么翻成 {@code 404 NODE_NOT_FOUND}(用户明确查了它),
+         * 要么<b>安静跳过</b>(它只是一条指向旧版骨架的脏标签)。两种都不许抛异常:
+         * 那是数据问题不是请求问题,报错会让一屏正常内容因为一条脏标签整个打不开。
+         */
         public NodeCoverage node(String code) {
             return groups.stream()
                     .flatMap(g -> g.nodes().stream())
@@ -145,9 +152,16 @@ public class CoverageReader {
         return coverage.summarize(snapshot.groups());
     }
 
-    /** 纯转发给 {@link CoverageService#blindSpots}。 */
-    public List<NodeCoverage> blindSpots(Snapshot snapshot, int top) {
-        return coverage.blindSpots(snapshot.groups(), top);
+    /**
+     * 纯转发给 {@link CoverageService#blindSpots}。
+     *
+     * @param top 🔴 <b>不是一个查询参数</b> —— N 的唯一来源是 {@code GET /config/effective}
+     *            的 {@code blindspotTop}。只要它还是参数,「前端不硬编码」就只能靠自觉,
+     *            而端上写下 {@code top=20} 的那一刻不会有任何东西报错(M3 §9.3)
+     */
+    public List<NodeCoverage> blindSpots(Snapshot snapshot, BlindspotOrder orderBy,
+                                         BlindspotFilter filter, boolean hasStatsOnly, int top) {
+        return coverage.blindSpots(snapshot.groups(), orderBy, filter, hasStatsOnly, top);
     }
 
     /** 当前骨架树本身(不含行为层)。校验 nodeCode 用它,不需要先算一遍差集。 */

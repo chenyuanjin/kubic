@@ -86,7 +86,11 @@ public class ApiCorsConfig implements WebMvcConfigurer {
         registry.addMapping("/api/v1/**")
                 .allowedOrigins(allowedOrigins.toArray(String[]::new))
                 .allowedMethods("GET", "POST")
-                .allowedHeaders("Content-Type", "Authorization")
+                // 🔴 X-Config-Fallback 必须在这里放行,否则它在跨域这条路上【永远发不出去,
+                //    而且端侧静默失败】—— 浏览器在预检就拒了,端拿不到任何可以上报的信号,
+                //    而这个头本身就是「口径拿不到」的上报通道。壳走 loopback 同源代理不受影响,
+                //    但 web/ 直连的那条路会让整条偏离登记链路无声地不存在(M3 §3.2)。
+                .allowedHeaders("Content-Type", "Authorization", "X-Config-Fallback")
                 // 现在没有 Cookie 会话(令牌方案见 docs/technical/INDEX.md §7.4),不需要带凭据的跨域。
                 // 关掉它才能让 allowedOrigins 保持成一份可枚举的清单。
                 .allowCredentials(false)

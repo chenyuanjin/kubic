@@ -163,8 +163,8 @@ class NoStemFieldTest {
      * ({@link #tokens}:驼峰与下划线切开、小写化)。相邻两个 token 拼起来<b>也比一次</b> ——
      * {@code checkIn} / {@code check_in} 是 {@code checkin} 最自然的 Java 写法,漏掉它这一行只是摆设。
      *
-     * <p>⚠️ <b>token 比对收窄的是英文巧合,不是禁词本身。</b>{@code blindScore} 切出来就是
-     * {@code score},照样命中;它进不进得来靠下面那张<b>逐行写明理由</b>的豁免表,
+     * <p>⚠️ <b>token 比对收窄的是英文巧合,不是禁词本身。</b>一个叫 {@code blindScore} 的字段
+     * 切出来就是 {@code score},照样命中;它进不进得来靠下面那张<b>逐行写明理由</b>的豁免表,
      * 不靠把匹配放松到「看不见它」。
      */
     private static final List<String> BANNED_JUDGEMENT = List.of(
@@ -175,48 +175,46 @@ class NoStemFieldTest {
             "正确率", "得分", "排名", "讲解", "学习建议", "复习提醒", "打卡", "徽章");
 
     /**
-     * 判断类禁词的豁免只有三档,而且<b>每一档都必须能在汇报里点名</b>。
+     * 判断类禁词的豁免只剩一档,而且<b>它必须能在汇报里点名</b>。
      *
      * <p>这张表故意做得难加:能力边界是这个产品的全部,一行「看着还行」就能把它化掉。
+     *
+     * <h2>⚪ 那个升给人的缺口,§7.4 按「走严」那一侧收掉了</h2>
+     *
+     * 上一版这里有第二档 {@code ESCALATED_TO_HUMAN},记的是「用户自己填的两个整数相除得到的
+     * 正确率算不算被禁的那个正确率」——`B0-平台底座与横切契约` §11.3 把它升给了 chenyj,
+     * 而本表当时把它记成豁免,是走松的那一侧。
+     * <p>
+     * {@code M3-骨架与覆盖度差集} §7.4 给了走严的那个答复:{@code NodeDetailDto#accuracy /
+     * practiced / correct}、{@code CoverageService.NodeCoverage#accuracy()} 与导出里那一列
+     * <b>全部删掉</b>,不是豁免掉。所以那一档现在<b>一行都没有</b> —— 而一档空着就是一行死行,
+     * 于是它跟着字段一起删了(决策记录 §5:没解决的事不拿话盖过去,解决了的也不留半句)。
      */
     private enum JudgementReason {
 
         /**
          * 排的是<b>考点</b>,不是人。
          *
-         * <p>{@code BlindSpotDto#rank} 是盲区清单里的名次(「先补这几个」),
-         * {@code blindScore} = 近五年频次 × 状态权重 —— 两个因子都在能力边界内,
-         * <b>没有任何一项来自「判断你答得对不对」</b>(理由写在 {@code BlindSpotDto} 的类注释里)。
-         * <p>
-         * 也包括<b>红线自己的否定式声明</b>:{@code AgentPrompt} 的系统提示词里必须写出
-         * 「不讲解知识点」「不要说『正确率偏低』」,否则这条红线根本没法用中文说出口。
+         * <p>今天这一档只覆盖<b>红线自己的否定式声明</b>:{@code AgentPrompt} 的系统提示词里
+         * 必须写出「不讲解知识点」「不要说『正确率偏低』」,否则这条红线根本没法用中文说出口。
          * CLAUDE.md「每条断言都必须红过一次」那一段点的就是这种假阳性 ——
          * <b>黑名单不得命中本仓库自己那些否定式的合规声明</b>。
          */
-        NOT_ABOUT_THE_USER,
-
-        /**
-         * ⚪ <b>这不是理由,是缺口 —— 而且是已经升给人的那个缺口。</b>
-         *
-         * <p>「用户自己填的两个整数相除得到的正确率」到底算不算被禁的那个「正确率」,
-         * `B0-平台底座与横切契约` §11.3 末尾写明:<b>这是产品边界不是技术选型,已升给 chenyj</b>,
-         * 技术侧不自行放宽也不自行收窄。
-         * <p>
-         * 🔴 <b>本表把它记成豁免,是「走松」的那一侧,与 §11.3「在它落定之前按走严的那一侧」不一致。</b>
-         * 之所以还是记在这里而不是让闸门常红:走严要删掉的是
-         * {@code NodeDetailDto#accuracy / practiced / correct}、{@code CoverageService#accuracy}、
-         * 导出的那一列,以及它们上游的整条用户自填入口 —— 那是产品决定,不是这个测试能替谁做的。
-         * <b>所以摆在这里,可数、可查、可在议题里点名</b>(决策记录 §5:没解决的事不拿话盖过去)。
-         * 这一档<b>不接受新增</b>。
-         */
-        ESCALATED_TO_HUMAN
+        NOT_ABOUT_THE_USER
     }
 
-    /** key 是 {@code 类名#字段名} —— 与 {@link #ALLOWED} 同一套 key。 */
-    private static final Map<String, JudgementReason> JUDGEMENT_ALLOWED_FIELDS = Map.of(
-            "BlindSpotDto#rank", JudgementReason.NOT_ABOUT_THE_USER,
-            "BlindSpotDto#blindScore", JudgementReason.NOT_ABOUT_THE_USER,
-            "NodeDetailDto#accuracy", JudgementReason.ESCALATED_TO_HUMAN);
+    /**
+     * key 是 {@code 类名#字段名} —— 与 {@link #ALLOWED} 同一套 key。
+     *
+     * <p>🔴 <b>空的,而且空着是对的。</b>上一版有三行:{@code BlindSpotDto#rank}(名次)、
+     * {@code BlindSpotDto#blindScore}(频次 × 状态权重)、{@code NodeDetailDto#accuracy}。
+     * 三个字段在 §9.3 / §7.4 里<b>都被删掉了</b> —— 名次由数组下标表达、盲区分随五态一起没了、
+     * 正确率整条拿掉。所以这三行不是「改判成不豁免」,是它们指向的东西不存在了。
+     * <p>
+     * 空表不等于闸门空转:{@link #noFieldNameJudgesTheUser} 照样扫全量成员,
+     * 现在<b>任何一个</b>命中判断类禁词的字段都会直接红。
+     */
+    private static final Map<String, JudgementReason> JUDGEMENT_ALLOWED_FIELDS = Map.of();
 
     /**
      * key 是 {@code 文件名#命中的那个词}。
@@ -225,10 +223,12 @@ class NoStemFieldTest {
      * ⚠️ 代价是同一个文件里同一个词的<b>下一处</b>也会被放行 ——
      * {@code AgentPrompt} 那两行的天花板就在这里,它另有 {@code R-88} 两句话实测在守。
      */
+    // 🔴 上一版还有一行 ExportRenderer.java#正确率 —— 那是导出里「正确率」那一【列名】,
+    //    一个真的会被吐进文件的字面量。§7.4 把那一列删了,它现在只剩一句 // 注释,
+    //    而注释不在这个扫描里。字面量没了,豁免行也删掉。
     private static final Map<String, JudgementReason> JUDGEMENT_ALLOWED_LITERALS = Map.of(
             "AgentPrompt.java#讲解", JudgementReason.NOT_ABOUT_THE_USER,
-            "AgentPrompt.java#正确率", JudgementReason.NOT_ABOUT_THE_USER,
-            "ExportRenderer.java#正确率", JudgementReason.ESCALATED_TO_HUMAN);
+            "AgentPrompt.java#正确率", JudgementReason.NOT_ABOUT_THE_USER);
 
     /** 白名单里每一行都要挑一个理由。挑不出来,就别加这一行。 */
     private enum Reason {
@@ -354,31 +354,30 @@ class NoStemFieldTest {
             entry("UnknownFieldException#fieldName", Reason.TRUNCATED_AT_THE_EXIT),
 
             // ———————————————————————— api.dto:覆盖率与骨架的只读投影 ————————————————————————
-            entry("BlindSpotDto#code", Reason.SERVER_ISSUED_ID),
-            entry("BlindSpotDto#groupCode", Reason.SERVER_ISSUED_ID),
+            // 🔴 上一版这里有 BlindSpotDto / NodeDto / NodeDetailDto 的 state + stateLabel 六行,
+            //    外加 StateCountDto 那一整个类的两行。五态在 §7.4 被换掉了(WEAK / STABLE 回答的是
+            //    「答得怎么样」),state / stateLabel 不再上线,StateCountDto 整个删了 —— 所以这八行
+            //    不是「改判」,是它们指向的字段没了。死行比宽白名单更危险,见 whitelistHasNoStaleEntries。
+            entry("BlindSpotDto#nodeId", Reason.SERVER_ISSUED_ID),
             entry("BlindSpotDto#name", Reason.BOUNDED_UPSTREAM),
-            entry("BlindSpotDto#groupName", Reason.BOUNDED_UPSTREAM),
-            entry("BlindSpotDto#state", Reason.SERVER_CONSTANT),
-            entry("BlindSpotDto#stateLabel", Reason.SERVER_CONSTANT),
+            // path = 题型名 + " / " + 考点名,两段都由 FileSyllabusStore.MAX_NAME_LENGTH = 40 收口。
+            // 🔴 它替掉了上一版的 groupCode + groupName:端要的是一行能直接显示的路径,
+            //    给两个字段让端自己拼,拼法就会有第二种(§9.4)。
+            entry("BlindSpotDto#path", Reason.BOUNDED_UPSTREAM),
+            // 排序口径的回显,值是 BlindspotOrder#wireName() 那四个字面量之一,编译期定死。
+            entry("BlindSpotsResponse#orderBy", Reason.SERVER_CONSTANT),
             entry("DeletedResponse#code", Reason.SERVER_ISSUED_ID),
             entry("GroupDto#code", Reason.SERVER_ISSUED_ID),
             entry("GroupDto#name", Reason.BOUNDED_UPSTREAM),
             entry("NodeDto#code", Reason.SERVER_ISSUED_ID),
             entry("NodeDto#name", Reason.BOUNDED_UPSTREAM),
-            entry("NodeDto#state", Reason.SERVER_CONSTANT),
-            entry("NodeDto#stateLabel", Reason.SERVER_CONSTANT),
-            entry("NodeDetailDto#code", Reason.SERVER_ISSUED_ID),
-            entry("NodeDetailDto#groupCode", Reason.SERVER_ISSUED_ID),
+            entry("NodeDetailDto#nodeId", Reason.SERVER_ISSUED_ID),
             entry("NodeDetailDto#name", Reason.BOUNDED_UPSTREAM),
-            entry("NodeDetailDto#groupName", Reason.BOUNDED_UPSTREAM),
-            entry("NodeDetailDto#state", Reason.SERVER_CONSTANT),
-            entry("NodeDetailDto#stateLabel", Reason.SERVER_CONSTANT),
-            // sources 的元素就是 Touch#sourceName,写入口 @Size(max = 60)
-            entry("NodeDetailDto#sources", Reason.BOUNDED_UPSTREAM),
+            entry("NodeDetailDto#path", Reason.BOUNDED_UPSTREAM),
+            // sourceNames 的元素就是 Touch#sourceName,写入口 @Size(max = 60)(上一版叫 sources)
+            entry("NodeDetailDto#sourceNames", Reason.BOUNDED_UPSTREAM),
             entry("RecordsMovedResponse#fromNodeCode", Reason.SERVER_ISSUED_ID),
             entry("RecordsMovedResponse#toNodeCode", Reason.SERVER_ISSUED_ID),
-            entry("StateCountDto#state", Reason.SERVER_CONSTANT),
-            entry("StateCountDto#label", Reason.SERVER_CONSTANT),
             entry("SubjectDto#code", Reason.SERVER_CONSTANT),
             entry("SubjectDto#region", Reason.SERVER_CONSTANT),
             entry("SubjectDto#exam", Reason.SERVER_CONSTANT),

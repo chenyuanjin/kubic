@@ -28,7 +28,7 @@ import org.springframework.web.bind.annotation.RestController;
  * ({@code B0} §12.4:落在 {@code app},静态配置,不进 {@code domain} 也不进 {@code auth})。
  */
 @RestController
-@RequestMapping("/api/auth/agreements")
+@RequestMapping("/api/v1/auth/agreements")
 public class AgreementController {
 
     private final String version;

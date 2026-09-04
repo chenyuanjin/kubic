@@ -316,7 +316,7 @@ public class SyllabusAdminController {
      */
     private SummaryDto summary(long userId) {
         CoverageReader.Snapshot snapshot = reader.read(userId);
-        return SummaryDto.from(reader.summarize(snapshot));
+        return SummaryDto.of(reader.summarize(snapshot), null);
     }
 
     private TreeResponse tree(long userId) {

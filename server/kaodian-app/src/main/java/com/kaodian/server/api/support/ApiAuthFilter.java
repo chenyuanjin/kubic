@@ -62,12 +62,21 @@ import java.util.function.LongFunction;
 public class ApiAuthFilter extends OncePerRequestFilter {
 
     /**
-     * 🔴 生效前缀。见类注释 —— <b>B0 唯一一处「写了但今天按临时前缀生效」的东西</b>,
-     * 迁 {@code /api/v1} 时这里跟着改一次(B0 §16.1 第 2 条)。
+     * 🔴 生效前缀。
+     *
+     * <p>B0 分支上它是 {@code "/api"} —— 那条分支的基线(`fe5fa33`)早于前缀迁移,
+     * 类注释里写着「迁 {@code /api/v1} 时这里跟着改一次(B0 §16.1 第 2 条)」。
+     * <b>KUBI-107 已经把 11 处 {@code @RequestMapping} 迁完并合进 {@code v1}</b>,
+     * 所以这里就是那「一次」——它属于 B0 与 KUBI-107 的<b>合并对齐</b>,不是某个模块改了白名单。
+     * <p>
+     * 🔴 不做这次对齐的后果<b>不是报错,是假绿</b>:七行白名单全部写成 {@code /api/auth/...},
+     * 而端点在 {@code /api/v1/auth/...} —— 白名单一行都匹配不上,于是
+     * 「白名单外的端点都 401」这条判据自然成立(因为白名单里的路径一个都不存在),
+     * 同时六个匿名端点全部变成 401,登录这条路整个打不通。
      *
      * <p>健康检查不在 {@code /api} 下,所以它不需要进白名单(`接口契约` §三 已写)。
      */
-    static final String PREFIX = "/api";
+    static final String PREFIX = "/api/v1";
 
     /**
      * 🔴 <b>匿名端点全集,七行。</b>加一行要在 {@code 接口契约} §三 同时加一行 ——

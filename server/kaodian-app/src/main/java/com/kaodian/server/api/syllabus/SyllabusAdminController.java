@@ -1,5 +1,6 @@
 package com.kaodian.server.api.syllabus;
 
+import com.kaodian.server.api.support.CurrentSession;
 import com.kaodian.server.api.dto.syllabus.ArchivedNodesResponse;
 import com.kaodian.server.api.dto.syllabus.CreateGroupRequest;
 import com.kaodian.server.api.dto.syllabus.CreateNodeRequest;
@@ -111,9 +112,9 @@ public class SyllabusAdminController {
      */
     @PostMapping("/nodes")
     @ResponseStatus(HttpStatus.CREATED)
-    public NodeEditResponse createNode(@Valid @RequestBody CreateNodeRequest req) {
+    public NodeEditResponse createNode(CurrentSession session, @Valid @RequestBody CreateNodeRequest req) {
         Syllabus.Node created = store.addNode(req.groupCode(), req.name(), req.recent5yCount());
-        return nodeResponse(created.code());
+        return nodeResponse(session.userId(), created.code());
     }
 
     /**
@@ -130,23 +131,23 @@ public class SyllabusAdminController {
      * 一夜之间全变成空白 —— 而那恰恰是这个产品最不能出的错。
      */
     @PostMapping("/nodes/{code}/rename")
-    public NodeEditResponse renameNode(@PathVariable String code, @Valid @RequestBody RenameRequest req) {
+    public NodeEditResponse renameNode(CurrentSession session, @PathVariable String code, @Valid @RequestBody RenameRequest req) {
         store.renameNode(code, req.name());
-        return nodeResponse(code);              // 🔴 还是原来那个 code
+        return nodeResponse(session.userId(), code);              // 🔴 还是原来那个 code
     }
 
     /** 把考点移到另一个题型下。code 不变,记录一条都不受影响。 */
     @PostMapping("/nodes/{code}/move")
-    public NodeEditResponse moveNode(@PathVariable String code, @Valid @RequestBody MoveNodeRequest req) {
+    public NodeEditResponse moveNode(CurrentSession session, @PathVariable String code, @Valid @RequestBody MoveNodeRequest req) {
         store.moveNode(code, req.groupCode());
-        return nodeResponse(code);
+        return nodeResponse(session.userId(), code);
     }
 
     /** 改近五年频次。这是统计事实,不是难度也不是权重 —— 见 {@link SetFrequencyRequest}。 */
     @PostMapping("/nodes/{code}/frequency")
-    public NodeEditResponse setFrequency(@PathVariable String code, @Valid @RequestBody SetFrequencyRequest req) {
+    public NodeEditResponse setFrequency(CurrentSession session, @PathVariable String code, @Valid @RequestBody SetFrequencyRequest req) {
         store.setRecent5yCount(code, req.recent5yCount());
-        return nodeResponse(code);
+        return nodeResponse(session.userId(), code);
     }
 
     /**
@@ -157,16 +158,16 @@ public class SyllabusAdminController {
      * 想找回来走 {@link #unarchiveNode},想看有哪些走 {@link #archivedNodes}。
      */
     @PostMapping("/nodes/{code}/archive")
-    public NodeEditResponse archiveNode(@PathVariable String code) {
+    public NodeEditResponse archiveNode(CurrentSession session, @PathVariable String code) {
         store.archiveNode(code);
-        return nodeResponse(code);
+        return nodeResponse(session.userId(), code);
     }
 
     /** 取消归档,把考点接回差集。 */
     @PostMapping("/nodes/{code}/unarchive")
-    public NodeEditResponse unarchiveNode(@PathVariable String code) {
+    public NodeEditResponse unarchiveNode(CurrentSession session, @PathVariable String code) {
         store.unarchiveNode(code);
-        return nodeResponse(code);
+        return nodeResponse(session.userId(), code);
     }
 
     /**
@@ -186,9 +187,9 @@ public class SyllabusAdminController {
      * 判断在 {@link SyllabusStore#deleteNode} 里做,不在这里,因为控制器可以再写一个。
      */
     @PostMapping("/nodes/{code}/delete")
-    public DeletedResponse deleteNode(@PathVariable String code) {
+    public DeletedResponse deleteNode(CurrentSession session, @PathVariable String code) {
         store.deleteNode(code);
-        return new DeletedResponse(code, summary());
+        return new DeletedResponse(code, summary(session.userId()));
     }
 
     /**
@@ -199,10 +200,10 @@ public class SyllabusAdminController {
      * 让一批记录因为搬家而集体变年轻,五态会不报错地整体漂移。
      */
     @PostMapping("/nodes/{code}/records/move")
-    public RecordsMovedResponse moveRecords(@PathVariable String code,
+    public RecordsMovedResponse moveRecords(CurrentSession session, @PathVariable String code,
                                             @Valid @RequestBody MoveRecordsRequest req) {
         int moved = store.moveRecords(code, req.toNodeCode());
-        return new RecordsMovedResponse(code, req.toNodeCode(), moved, summary());
+        return new RecordsMovedResponse(code, req.toNodeCode(), moved, summary(session.userId()));
     }
 
     // ———————————————————————— 题型 ————————————————————————
@@ -210,16 +211,16 @@ public class SyllabusAdminController {
     /** 新增题型。新建的题型一定是空的 —— 见 {@link CreateGroupRequest} 里关于批量导入的那段。 */
     @PostMapping("/groups")
     @ResponseStatus(HttpStatus.CREATED)
-    public GroupEditResponse createGroup(@Valid @RequestBody CreateGroupRequest req) {
+    public GroupEditResponse createGroup(CurrentSession session, @Valid @RequestBody CreateGroupRequest req) {
         Syllabus.Group created = store.addGroup(req.name());
-        return new GroupEditResponse(SyllabusGroupDto.from(created), summary());
+        return new GroupEditResponse(SyllabusGroupDto.from(created), summary(session.userId()));
     }
 
     /** 重命名题型。同样只改 name,code 不动。 */
     @PostMapping("/groups/{code}/rename")
-    public GroupEditResponse renameGroup(@PathVariable String code, @Valid @RequestBody RenameRequest req) {
+    public GroupEditResponse renameGroup(CurrentSession session, @PathVariable String code, @Valid @RequestBody RenameRequest req) {
         store.renameGroup(code, req.name());
-        return groupResponse(code);
+        return groupResponse(session.userId(), code);
     }
 
     /**
@@ -229,9 +230,9 @@ public class SyllabusAdminController {
      * 那是「删一个考点会丢数据」的放大版,没有理由在题型这一层反而更宽松。
      */
     @PostMapping("/groups/{code}/delete")
-    public DeletedResponse deleteGroup(@PathVariable String code) {
+    public DeletedResponse deleteGroup(CurrentSession session, @PathVariable String code) {
         store.deleteGroup(code);
-        return new DeletedResponse(code, summary());
+        return new DeletedResponse(code, summary(session.userId()));
     }
 
     // ———————————————————————— 顺序 ————————————————————————
@@ -243,16 +244,16 @@ public class SyllabusAdminController {
      * 而「先补这几个」的前几名就是用户唯一会看的东西。所以它不是排版偏好,要显式持久化。
      */
     @PostMapping("/groups/order")
-    public TreeResponse reorderGroups(@Valid @RequestBody GroupOrderRequest req) {
+    public TreeResponse reorderGroups(CurrentSession session, @Valid @RequestBody GroupOrderRequest req) {
         store.reorderGroups(req.groupCodes());
-        return tree();
+        return tree(session.userId());
     }
 
     /** 调整某个题型下考点的顺序。已归档的不参与排序,重排后沉到末尾。 */
     @PostMapping("/groups/{code}/nodes/order")
-    public TreeResponse reorderNodes(@PathVariable String code, @Valid @RequestBody NodeOrderRequest req) {
+    public TreeResponse reorderNodes(CurrentSession session, @PathVariable String code, @Valid @RequestBody NodeOrderRequest req) {
         store.reorderNodes(code, req.nodeCodes());
-        return tree();
+        return tree(session.userId());
     }
 
     // ———————————————————————— 查看 ————————————————————————
@@ -264,7 +265,7 @@ public class SyllabusAdminController {
      * 取消归档接回来,或者把记录搬走之后真正删掉。
      */
     @GetMapping("/archived")
-    public ArchivedNodesResponse archivedNodes() {
+    public ArchivedNodesResponse archivedNodes(CurrentSession session) {
         Syllabus s = store.current();
         List<SyllabusNodeDto> items = s.groups().stream()
                 .flatMap(g -> g.archivedNodes().stream()
@@ -281,7 +282,7 @@ public class SyllabusAdminController {
      * 恢复备份是「把这份文件放回 {@code ~/.kaodian/syllabus.json}」,不是一次 API 调用。
      */
     @GetMapping("/export")
-    public SyllabusExportResponse export() {
+    public SyllabusExportResponse export(CurrentSession session) {
         return SyllabusExportResponse.from(store.current());
     }
 
@@ -293,25 +294,33 @@ public class SyllabusAdminController {
      * <p>不在这里自己拼一个「大概是这样」的概览:覆盖率的口径只有一处
      * ({@code CoverageService}),两处算同一个数就一定会算出两个数。
      */
-    private NodeEditResponse nodeResponse(String nodeCode) {
+    private NodeEditResponse nodeResponse(long userId, String nodeCode) {
         Syllabus s = store.current();
         Syllabus.Node node = s.nodeIncludingArchived(nodeCode);
         return new NodeEditResponse(
                 SyllabusNodeDto.of(node, s.groupOf(nodeCode), store.recordCount(nodeCode)),
-                summary());
+                summary(userId));
     }
 
-    private GroupEditResponse groupResponse(String groupCode) {
-        return new GroupEditResponse(SyllabusGroupDto.from(store.current().group(groupCode)), summary());
+    private GroupEditResponse groupResponse(long userId, String groupCode) {
+        return new GroupEditResponse(
+                SyllabusGroupDto.from(store.current().group(groupCode)), summary(userId));
     }
 
-    private SummaryDto summary() {
-        CoverageReader.Snapshot snapshot = reader.read();
+    /**
+     * 🔴 概览是<b>按用户</b>算的,即便这次改的是全进程共用的那棵树。
+     *
+     * <p>骨架层的编辑对所有人可见(阶段 0/1 只有一棵树),但「改完之后覆盖率变成多少」
+     * 只能是<b>发起这次编辑的这个人</b>的覆盖率 —— 拿全库算出来的那个数,
+     * 对谁都不成立,而且不会报错。
+     */
+    private SummaryDto summary(long userId) {
+        CoverageReader.Snapshot snapshot = reader.read(userId);
         return SummaryDto.from(reader.summarize(snapshot));
     }
 
-    private TreeResponse tree() {
-        CoverageReader.Snapshot snapshot = reader.read();
+    private TreeResponse tree(long userId) {
+        CoverageReader.Snapshot snapshot = reader.read(userId);
         return TreeResponse.of(snapshot.syllabus(), reader.summarize(snapshot), snapshot.groups());
     }
 }

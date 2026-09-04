@@ -1,5 +1,6 @@
 package com.kaodian.server.api.insight;
 
+import com.kaodian.server.api.support.CurrentSession;
 import com.kaodian.server.api.dto.insight.BlindSpotsResponse;
 import com.kaodian.server.api.dto.common.SummaryDto;
 import com.kaodian.server.coverage.CoverageReader;
@@ -33,8 +34,8 @@ public class CoverageController {
      * 判据在 {@code CoverageService.summarize} 里,<b>这里一个数都不算</b>。
      */
     @GetMapping("/summary")
-    public SummaryDto summary() {
-        Snapshot snapshot = reader.read();
+    public SummaryDto summary(CurrentSession session) {
+        Snapshot snapshot = reader.read(session.userId());
         return SummaryDto.from(reader.summarize(snapshot));
     }
 
@@ -57,8 +58,10 @@ public class CoverageController {
             @RequestParam(defaultValue = "20")
             @Min(value = 1, message = "至少要 1 个")
             @Max(value = 100, message = "一次最多 100 个,全量请走导出接口")
-            int top) {
-        Snapshot snapshot = reader.read();
+            int top,
+
+            CurrentSession session) {
+        Snapshot snapshot = reader.read(session.userId());
         return BlindSpotsResponse.of(top, reader.blindSpots(snapshot, top));
     }
 }

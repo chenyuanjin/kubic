@@ -81,7 +81,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * 是<b>库里真的多了一行 {@code origin=auto}</b>。
  */
 @WebMvcTest(controllers = RecognitionController.class)
-@Import(DomainBeans.class)     // web 切片不扫 @Configuration,领域装配要显式带进来
+// web 切片不扫 @Configuration,领域装配要显式带进来;ApiTestAuth 给每个请求配一条真令牌(B0-4 默认拒绝)
+@Import({DomainBeans.class, ApiTestAuth.class})
 class RecognitionApiTest {
 
     /** 这个来源名召回得出 6 个候选(见 {@code CandidateRecallTest}),所以模型真的会被调到。 */
@@ -123,9 +124,12 @@ class RecognitionApiTest {
     void reset() {
         Instant now = Instant.now();
         store.reset(List.of(
-                new Touch("t-1", RECORD_NODE, RECALLING_SOURCE, TouchKind.PHOTO, now.minusSeconds(600), null),
-                new Touch("t-2", RECORD_NODE, SILENT_SOURCE, TouchKind.VOICE, now.minusSeconds(1200), null)));
-        tags.findAll().forEach(t -> tags.deleteByRecord(t.recordId()));
+                new Touch("t-1", ApiTestAuth.USER_ID, RECORD_NODE, RECALLING_SOURCE,
+                        TouchKind.PHOTO, now.minusSeconds(600), null, null),
+                new Touch("t-2", ApiTestAuth.USER_ID, RECORD_NODE, SILENT_SOURCE,
+                        TouchKind.VOICE, now.minusSeconds(1200), null, null)));
+        tags.findAll(ApiTestAuth.USER_ID)
+                .forEach(t -> tags.deleteByRecord(ApiTestAuth.USER_ID, t.recordId()));
         tagger.reset();
         asr.reset();
 
@@ -164,7 +168,7 @@ class RecognitionApiTest {
                 //    1.2.5.2 的准确率口径(标对的/标了的)当场失真
                 .andExpect(jsonPath("$.tag.origin").value("auto"));
 
-        List<RecordTag> stored = tags.findByRecord("t-1");
+        List<RecordTag> stored = tags.findByRecord(ApiTestAuth.USER_ID, "t-1");
         assertEquals(1, stored.size(), "命中应当【真的往库里落一行】,不是只在响应里说一声");
         assertEquals(TagOrigin.AUTO, stored.get(0).origin(),
                 "🔴 这一行的 origin 必须是 auto —— RecordTag.primaryOf 上那处 ⚪ 说的就是这条路");
@@ -197,7 +201,7 @@ class RecognitionApiTest {
                 .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
 
         assertEquals(0, tagger.calls(), "整批被拒时,一次模型都不该调 —— 拒绝要发生在花钱之前");
-        assertTrue(tags.findAll().isEmpty());
+        assertTrue(tags.findAll(ApiTestAuth.USER_ID).isEmpty());
     }
 
     @Test
@@ -210,7 +214,7 @@ class RecognitionApiTest {
                 .andExpect(jsonPath("$.code").value("UNKNOWN_FIELD"));
 
         assertEquals(0, tagger.calls());
-        assertTrue(tags.findAll().isEmpty(), "被拒的请求一条标签都不该落");
+        assertTrue(tags.findAll(ApiTestAuth.USER_ID).isEmpty(), "被拒的请求一条标签都不该落");
     }
 
     @Test
@@ -257,7 +261,7 @@ class RecognitionApiTest {
                 .andExpect(jsonPath("$.outcome").value("SUGGESTED"));
 
         assertEquals(1, tagger.calls(), "挂上考点之后继续送,只是再花钱 —— 连拍是同一份材料的多张");
-        assertEquals(1, tags.findByRecord("t-1").size(), "一条记录不该因为连拍而挂上三个考点");
+        assertEquals(1, tags.findByRecord(ApiTestAuth.USER_ID, "t-1").size(), "一条记录不该因为连拍而挂上三个考点");
     }
 
     @Test
@@ -274,7 +278,7 @@ class RecognitionApiTest {
                 .andExpect(jsonPath("$.confidence").value(0.42));
 
         assertEquals(3, tagger.calls(), "这一张没认出来,下一张可能拍得更清楚 —— 连拍的意义就在这");
-        assertTrue(tags.findAll().isEmpty(), "宁缺毋滥:没认出来就不挂,不硬凑最接近的考点");
+        assertTrue(tags.findAll(ApiTestAuth.USER_ID).isEmpty(), "宁缺毋滥:没认出来就不挂,不硬凑最接近的考点");
     }
 
     @Test
@@ -308,7 +312,7 @@ class RecognitionApiTest {
 
         assertEquals(1, tagger.calls(), "厂商挂了就别再试 5 次 —— 用户只会多等 5 倍时间");
 
-        Touch survivor = tagging.findRecord("t-1");
+        Touch survivor = tagging.findRecord(ApiTestAuth.USER_ID, "t-1");
         assertNotNull(survivor, "🔴 识别不可用 ≠ 记录失败(docs/execution/INDEX.md §1.3.7.1)");
         // 「还能手动挂载」不是一句安慰:直接走打标服务验一次
         TaggingService.MountResult mounted = tagging.mount(survivor, RECALLED_NODE);
@@ -393,8 +397,8 @@ class RecognitionApiTest {
                 // 契约原文:「失败提示重录」
                 .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("重录")));
 
-        assertNotNull(tagging.findRecord("t-1"), "转写失败不该动那条记录");
-        assertTrue(tags.findAll().isEmpty());
+        assertNotNull(tagging.findRecord(ApiTestAuth.USER_ID, "t-1"), "转写失败不该动那条记录");
+        assertTrue(tags.findAll(ApiTestAuth.USER_ID).isEmpty());
     }
 
     @Test
@@ -441,7 +445,7 @@ class RecognitionApiTest {
                 "转写文本进了响应体 —— AudioRecognitionResponse 里本来就没有能装下它的位置,"
                         + "出现它说明有人加了一个。先去 docs/technical/INDEX.md §5.2「不建的表」那一行看一眼。\n" + body);
         assertNoLogContains(spoken);
-        assertTrue(tags.findAll().isEmpty(), "转写不产生标签 —— 「文字 → 考点」那一段还没建");
+        assertTrue(tags.findAll(ApiTestAuth.USER_ID).isEmpty(), "转写不产生标签 —— 「文字 → 考点」那一段还没建");
     }
 
     @Test
@@ -741,18 +745,23 @@ class RecognitionApiTest {
             touches.addAll(seed);
         }
 
+        // 🔴 按 userId 真的过滤。忽略这个参数等于让接口测试跑在一个没有租户列的存储上,
+        //    而「别人的记录读不到」正是 B0-3 唯一要立住的那件事。
         @Override
-        public List<Touch> findAll() {
+        public List<Touch> findAll(long userId) {
+            return touches.stream()
+                    .filter(t -> t.userId() == userId)
+                    .sorted(Comparator.comparing(Touch::occurredAt))
+                    .toList();
+        }
+
+        @Override
+        public List<Touch> findAllAcrossUsers() {
             return touches.stream().sorted(Comparator.comparing(Touch::occurredAt)).toList();
         }
 
         @Override
-        public List<Touch> findByNode(String nodeCode) {
-            return touches.stream().filter(t -> t.nodeCode().equals(nodeCode)).toList();
-        }
-
-        @Override
-        public Touch findByClientToken(String clientToken) {
+        public Touch findByClientToken(long userId, String clientToken) {
             return null;
         }
 
@@ -763,8 +772,9 @@ class RecognitionApiTest {
         }
 
         @Override
-        public Touch delete(String id) {
-            return touches.stream().filter(t -> t.id().equals(id)).findFirst()
+        public Touch delete(long userId, String id) {
+            return touches.stream()
+                    .filter(t -> t.userId() == userId && t.id().equals(id)).findFirst()
                     .map(t -> {
                         touches.remove(t);
                         return t;
@@ -772,8 +782,14 @@ class RecognitionApiTest {
         }
 
         @Override
-        public int count() {
-            return touches.size();
+        public int count(long userId) {
+            return (int) touches.stream().filter(t -> t.userId() == userId).count();
+        }
+
+        /** 骨架层的删除守则数的是全库 —— 这一处按契约就是跨用户的。 */
+        @Override
+        public int countByNodeAcrossUsers(String nodeCode) {
+            return (int) touches.stream().filter(t -> t.nodeCode().equals(nodeCode)).count();
         }
 
         @Override

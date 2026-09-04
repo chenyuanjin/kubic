@@ -1,0 +1,15 @@
+# 敏感路径模式 —— 密钥 / 账号数据 / 原图缓存。每行一条 ERE,喂给 grep -E -f。
+#
+# 🔴 这是【两处共用的唯一真源】,改这个文件 = 同时改两道闸:
+#     .githooks/pre-commit  ── 提交期(本地,core.hooksPath 不随 clone 传播,所以它不是防线)
+#     .github/workflows/ci.yml ── CI 期(唯一一处「不装也躲不掉」的位置)
+#   见 B0-平台底座与横切契约 §8.2:抄两遍那一版三个月后一定分叉。
+#
+# ⚠ grep -f 把文件里【每一行】都当模式 —— 它不认 # 注释,也不认空行(空模式匹配一切)。
+#   所以两个消费方都必须先过滤:grep -E -f <(grep -vE '^#|^$' scripts/sensitive-paths.txt)
+auth-keys\.properties
+auth-accounts\.json
+\.env($|\.)
+\.(pem|jks|p12)$
+(^|/)cache/
+\.orig\.(jpg|png)$

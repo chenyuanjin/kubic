@@ -1,6 +1,7 @@
 package com.kaodian.server.api.record;
 
 import com.kaodian.server.api.support.ApiException;
+import com.kaodian.server.api.support.CurrentSession;
 import com.kaodian.server.api.dto.record.AudioRecognitionResponse;
 import com.kaodian.server.api.dto.common.NodeDetailDto;
 import com.kaodian.server.api.dto.record.PhotoRecognitionRequest;
@@ -160,9 +161,10 @@ public class RecognitionController {
      * 把 {@code photos} 存到字段、缓存、静态 Map 里的写法 —— 它们全都是「短期留存」的另一种拼法。
      */
     @PostMapping("/image")
-    public SuggestTagResponse recognizePhotos(@PathVariable String id,
+    public SuggestTagResponse recognizePhotos(CurrentSession session, @PathVariable String id,
                                              @Valid @RequestBody PhotoRecognitionRequest req) {
-        Touch touch = requireRecord(id);
+        session.requireWrite();
+        Touch touch = requireRecord(session.userId(), id);
         List<byte[]> photos = req.photos();
 
         // 🔴 先把每一张都认一遍格式,再开始送模型。
@@ -229,10 +231,12 @@ public class RecognitionController {
      *             而不是一个来自 Spring 的、没有错误码的通用拒绝
      */
     @PostMapping("/audio")
-    public AudioRecognitionResponse transcribe(@PathVariable String id,
+    public AudioRecognitionResponse transcribe(CurrentSession session, @PathVariable String id,
                                                @RequestPart(name = "audio", required = false)
                                                MultipartFile part) {
-        requireRecord(id);      // 记录不在了就没必要读那段音频,更没必要送出去
+        session.requireWrite();
+        // 记录不在了(或者不是这个人的)就没必要读那段音频,更没必要送出去
+        requireRecord(session.userId(), id);
 
         byte[] clip = requireAudioBytes(part);
         requireAtMostSixtySeconds(clip);
@@ -545,8 +549,9 @@ public class RecognitionController {
      * 与 {@code TagController} / {@code RecordController#delete} 是同一条纪律,
      * <b>措辞也刻意逐字相同</b>:同一件事在两个端点上说两句不一样的话,前端就得写两条分支。
      */
-    private Touch requireRecord(String id) {
-        Touch touch = tagging.findRecord(id);
+    private Touch requireRecord(long userId, String id) {
+        // 🔴 只在这个用户名下找 —— 别人的记录等于不存在,与 TagController 同一条。
+        Touch touch = tagging.findRecord(userId, id);
         if (touch == null) {
             throw new ApiException(HttpStatus.NOT_FOUND, "RECORD_NOT_FOUND",
                     "找不到这条记录 —— 它可能已经被删掉了。");
@@ -562,7 +567,8 @@ public class RecognitionController {
      */
     private SuggestTagResponse responseFor(Touch touch, Suggestion suggestion) {
         List<RecordTag> tags = tagging.tagsOf(touch);
-        CoverageReader.Snapshot snapshot = reader.read();
+        // 归属取自记录本身 —— 它是从当前用户名下查出来的(见 requireRecord)
+        CoverageReader.Snapshot snapshot = reader.read(touch.userId());
         Syllabus tree = snapshot.syllabus();
         RecordTag tag = suggestion.tag();
 

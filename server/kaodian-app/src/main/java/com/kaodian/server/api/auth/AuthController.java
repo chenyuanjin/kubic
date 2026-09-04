@@ -183,14 +183,28 @@ public class AuthController {
         return new RefreshResponse(session.token().expiresAt());
     }
 
-    /** 退出这一台 —— <b>只吊销当前令牌</b>(docs/technical/INDEX.md §6.1)。 */
+    /**
+     * 退出这一台 —— <b>只吊销当前令牌</b>(docs/technical/INDEX.md §6.1)。
+     *
+     * <h2>🔴 它已经被收进鉴权面,需要 {@code full}(`接口契约` §三 下面那张表)</h2>
+     *
+     * 2026-09-03 实测这个端点<b>不带令牌也能打通</b>,而它不该匿名。
+     * 现在挡它的是 {@code ApiAuthFilter}:白名单七行里没有它,所以没带令牌 / 令牌过期 /
+     * 令牌已吊销都在<b>进这个方法之前</b>就 {@code 401} 了。
+     * <p>
+     * <b>语义没变</b>:「一条已经失效的令牌不需要被吊销,端本地清即可」——
+     * 那种请求现在拿到的是 {@code 401} 而不是 {@code 200},端该做的事(清本地)是同一件。
+     * <p>
+     * 这里仍然自己从 header 抠明文,因为<b>吊销要的是明文</b>而 {@link CurrentSession}
+     * 只带得到已解析的 {@link com.kaodian.server.auth.AccessToken}(里面是哈希)。
+     * 分工是清楚的:<b>过滤器判「能不能进」,这里只负责吊销</b> ——
+     * 它不再做任何一次「这个令牌有效吗」的判断。
+     */
     @PostMapping("/logout")
     public java.util.Map<String, Object> logout(HttpServletRequest http) {
         String header = http.getHeader("Authorization");
         boolean revoked = header != null && header.startsWith("Bearer ")
                 && tokens.revoke(header.substring(7).trim());
-        // 🔴 没带令牌 / 令牌已失效也回 200。「退出登录」在网络不稳时会被点两次,
-        // 第二次报错只会让人以为没退成功,然后反复点。
         return java.util.Map.of("revoked", revoked);
     }
 
@@ -417,7 +431,8 @@ public class AuthController {
         return new LoginResponse(
                 r.token().plaintext(),                  // 唯一一次出现明文令牌的地方
                 r.token().stored().expiresAt(),
-                r.user().id(),
+                // 🔴 JSON 线上仍是字符串(契约 §1.1):变的是里面装什么,"u_3f2a…" → "10001"
+                String.valueOf(r.user().id()),
                 r.isNewAccount(),
                 masked,
                 // 🔴 没有手机号 = 这个人下次换个入口进来可能又多一个账号(R-33)。

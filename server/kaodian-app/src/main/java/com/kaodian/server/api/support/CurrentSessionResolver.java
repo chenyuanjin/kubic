@@ -55,8 +55,11 @@ public class CurrentSessionResolver implements HandlerMethodArgumentResolver {
                                   NativeWebRequest webRequest, WebDataBinderFactory binder) {
         HttpServletRequest req = webRequest.getNativeRequest(HttpServletRequest.class);
         return resolve(req).map(CurrentSession::new)
-                // 🔴 四种失败(没带头、格式不对、查不到、已过期/已吊销)对外是同一个 401。
-                // 区分它们对用户没有区别(都要重新登录),对攻击者却是信息。
+                // 🔴 档位判定已经上移到 TokenService#check / TokenCheck(B0 §5.3)——
+                // 契约 §1.2 要三档(UNAUTHORIZED / TOKEN_EXPIRED / ACCOUNT_DEACTIVATED),
+                // 「四种失败对外是同一个 401」这句话在本文件的上一版是与契约冲突的。
+                // 消费 TokenCheck 的是【下一轮的鉴权过滤器】(B0-4 §5.2);
+                // 这个解析器从此只负责一件事:进来的是谁。拿不到人就是 401,不在这里分档。
                 .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "UNAUTHORIZED",
                         "请先登录。"));
     }

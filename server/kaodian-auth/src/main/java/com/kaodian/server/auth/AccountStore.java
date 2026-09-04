@@ -15,12 +15,33 @@ import java.util.Optional;
  */
 public interface AccountStore {
 
-    Optional<AppUser> findById(String userId);
+    Optional<AppUser> findById(long userId);
 
     /** 登录查号的那一步。{@code (type, identifier)} 是唯一索引。 */
     Optional<AppUser> findByIdentity(IdentityType type, String identifier);
 
-    List<UserIdentity> identitiesOf(String userId);
+    List<UserIdentity> identitiesOf(long userId);
+
+    /**
+     * 发一个新 userId(B0-2 §3.3「发号(文件态)」)。
+     *
+     * <h2>🔴 它只<b>预留</b>号,落盘发生在紧接着那一次 {@link #create} 的同一次原子写里</h2>
+     *
+     * 「发号先写一次盘,建账号再写一次」会出现<b>「发了号但账号没写进去」</b>的中间态 ——
+     * 与 §6.11 密钥指纹同一条理由。所以这里推进的是内存里的游标,
+     * 而 {@code nextUserId} 这个键与 {@code users} 数组<b>一起</b>落盘。
+     * <p>
+     * 代价是进程崩在两步之间会让这个号被跳过 —— 而那正是想要的:
+     * <b>没被用掉的号不该占着位置,重复发出去才是灾难。</b>
+     *
+     * <p>🔴 起始值 {@code 10001}:{@code 0} 必须在结构上不是一个合法 userId,
+     * 因为 {@code 0L} 正是 {@code AgentController} 那个硬编码哨兵。从 10001 起号,
+     * 任何残留的 {@code 0} 一眼就是错的,而不是「一个恰好存在的用户」。
+     * <p>
+     * 换 MySQL 那天这个方法与 {@code nextUserId} 这个键一起丢弃,由
+     * {@code app_user.id BIGINT AUTO_INCREMENT} 接手。
+     */
+    long nextUserId();
 
     /**
      * 建账号 + 第一行 identity。<b>两件事必须一起成功</b> ——
@@ -40,17 +61,17 @@ public interface AccountStore {
     void addIdentity(UserIdentity identity, PhoneNumberSecret phoneSecret);
 
     /** 手机号密文。没绑手机号则为空。 */
-    Optional<PhoneNumberSecret> phoneSecretOf(String userId);
+    Optional<PhoneNumberSecret> phoneSecretOf(long userId);
 
     /** 注销。只改状态与 {@code deletedAt};🔴 硬删时点由 {@code L-A5} 的律师稿定,本层不做。 */
-    void deactivate(String userId, Instant now);
+    void deactivate(long userId, Instant now);
 
     /**
      * 执行合并:{@code from} 的全部 identity 改挂到 {@code to},{@code from} 标记注销,写留痕。
      *
      * <p><b>不可逆。</b> 调用方必须先走过预览与二次确认(docs/technical/INDEX.md §7.1)。
      */
-    AccountMergeLog merge(String fromUserId, String toUserId, int movedRecordCount, Instant now);
+    AccountMergeLog merge(long fromUserId, long toUserId, int movedRecordCount, Instant now);
 
     List<AccountMergeLog> mergeLogs();
 
@@ -90,15 +111,15 @@ public interface AccountStore {
     /** identity 已被别人占了。 */
     class IdentityTakenException extends RuntimeException {
 
-        private final String ownerUserId;
+        private final long ownerUserId;
 
-        public IdentityTakenException(String message, String ownerUserId) {
+        public IdentityTakenException(String message, long ownerUserId) {
             super(message);
             this.ownerUserId = ownerUserId;
         }
 
         /** 占用者。合并预览要它 —— <b>但绝不回给客户端</b>,那等于告诉别人「这个号有账号」。 */
-        public String ownerUserId() {
+        public long ownerUserId() {
             return ownerUserId;
         }
     }

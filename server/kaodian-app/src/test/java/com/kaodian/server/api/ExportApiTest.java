@@ -64,7 +64,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * 少一条、多一条、或者某一格错位,这条都会红。
  */
 @WebMvcTest(controllers = ExportController.class)
-@Import(DomainBeans.class)     // web 切片不扫 @Configuration,领域装配要显式带进来
+// web 切片不扫 @Configuration,领域装配要显式带进来;ApiTestAuth 给每个请求装上真令牌(B0-4 默认拒绝)
+@Import({DomainBeans.class, ApiTestAuth.class})
 class ExportApiTest {
 
     /**
@@ -130,7 +131,7 @@ class ExportApiTest {
     @Test
     @DisplayName("🔴 无删减:三种格式里的记录条数都等于库里的条数,一条不少")
     void everyFormatCarriesEveryRecord() throws Exception {
-        assertEquals(RECORD_COUNT, store.count(), "夹具自己先得对");
+        assertEquals(RECORD_COUNT, store.count(ApiTestAuth.USER_ID), "夹具自己先得对");
 
         String json = body("json");
         String md = body("md");
@@ -264,7 +265,8 @@ class ExportApiTest {
     @DisplayName("🔴 R-06:导出的列被钉死 —— 七块,列名逐字一致,md 与 csv 用的是同一张表")
     void exportColumnsArePinned() throws Exception {
         syllabus.archive("growth-rate");        // 每一块都非空,md 才会把全部表头都写出来
-        assertions.put(new UserAssertion("share-calc", Instant.parse("2026-08-20T09:00:00Z")));
+        assertions.put(new UserAssertion(ApiTestAuth.USER_ID, "share-calc",
+                Instant.parse("2026-08-20T09:00:00Z")));
 
         String csv = body("csv");
         String md = body("md");
@@ -303,7 +305,8 @@ class ExportApiTest {
     @Test
     @DisplayName("🔴 导出时可区分「我已掌握」—— 三种格式各有一块,而且它没有被并进归档清单(§5.2)")
     void assertedNodesAreDistinguishableInAllThreeFormats() throws Exception {
-        assertions.put(new UserAssertion("base-value", Instant.parse("2026-08-20T09:00:00Z")));
+        assertions.put(new UserAssertion(ApiTestAuth.USER_ID, "base-value",
+                Instant.parse("2026-08-20T09:00:00Z")));
 
         String json = body("json");
         assertEquals("base-value", JsonPath.read(json, "$.assertedNodes[0].code"));
@@ -436,6 +439,9 @@ class ExportApiTest {
      * <p>最后一条的来源名里塞了逗号、引号、竖线和换行 —— 这四个字符恰好是 csv 与 md
      * 各自的分隔符。<b>它们都能合法出现在一个 60 字以内的来源名里</b>
      * (「粉笔,资料分析(强化)| L12」),所以转义不是可选项。
+     *
+     * <p>全部挂在 {@link ApiTestAuth#USER_ID} 名下 —— 令牌里的人和夹具里的人必须是同一个,
+     * 否则按用户过滤之后导出是空的,而「无删减」那几条会以「一条都没有」的形式红。
      */
     private static List<Touch> manyTouches() {
         Instant now = Instant.now();
@@ -444,22 +450,23 @@ class ExportApiTest {
         List<Touch> ts = new ArrayList<>();
         for (int i = 0; i < RECORD_COUNT - 1; i++) {
             boolean drill = i % 3 == 0;
-            ts.add(new Touch("t-" + i, nodes.get(i % nodes.size()), "来源 " + i,
+            ts.add(new Touch("t-" + i, ApiTestAuth.USER_ID, nodes.get(i % nodes.size()), "来源 " + i,
                     drill ? TouchKind.DRILL : TouchKind.VOICE,
                     now.minus(Duration.ofDays(i)),
-                    drill ? new Touch.Drill(10, 7) : null));
+                    drill ? new Touch.Drill(10, 7) : null,
+                    null));
         }
-        ts.add(new Touch("t-tricky", "growth-rate", "粉笔, \"资料\" | 系统班\nL12",
-                TouchKind.PASTE, now.minus(Duration.ofHours(1)), null));
+        ts.add(new Touch("t-tricky", ApiTestAuth.USER_ID, "growth-rate", "粉笔, \"资料\" | 系统班\nL12",
+                TouchKind.PASTE, now.minus(Duration.ofHours(1)), null, null));
         return ts;
     }
 
     /**
      * 行为层的读桩。
      *
-     * <h2>只有 {@link #findAll} 和 {@link #count} 是真的,其余一律拒绝</h2>
+     * <h2>只有读侧是真的,写侧一律拒绝</h2>
      *
-     * 导出<b>是一个只读端点</b>,它在 {@link TouchStore} 上只该用到这两个方法。
+     * 导出<b>是一个只读端点</b>,它在 {@link TouchStore} 上只该用到读的那几个方法。
      * 把写侧的方法实现成「一调用就炸」,本身就是一条断言:哪天有人在导出路径上
      * 顺手 append 或 delete 了什么,这个测试会当场红,而不是安静地通过。
      * <p>
@@ -475,24 +482,36 @@ class ExportApiTest {
             touches.addAll(seed);
         }
 
-        /** 契约:按发生时间升序。导出的记录顺序直接来自这里。 */
+        /** 契约:按发生时间升序,且只给这个用户自己的。导出的记录顺序直接来自这里。 */
         @Override
-        public List<Touch> findAll() {
-            return touches.stream().sorted(Comparator.comparing(Touch::occurredAt)).toList();
+        public List<Touch> findAll(long userId) {
+            return touches.stream()
+                    .filter(t -> t.userId() == userId)
+                    .sorted(Comparator.comparing(Touch::occurredAt))
+                    .toList();
         }
 
         @Override
-        public int count() {
-            return touches.size();
+        public List<Touch> findAllAcrossUsers() {
+            // 🔴 导出这条路【永远】不该跨用户读:它导的是「我的数据」(决策记录 §2.6),不是全库。
+            //    这个替身用「一调用就炸」把它钉住 —— 与本类写侧那三条 AssertionError 同一种写法。
+            //    跨用户那个口今天只留给 kaodian-agent(见 TouchStore#findAllAcrossUsers),
+            //    而 /api/agent/** 已经被 ApiAuthFilter 默认挡住。
+            throw new AssertionError("导出跨用户读了行为层 —— 它导的是这个人的数据,不是全库");
         }
 
         @Override
-        public List<Touch> findByNode(String nodeCode) {
-            return touches.stream().filter(t -> t.nodeCode().equals(nodeCode)).toList();
+        public int count(long userId) {
+            return (int) touches.stream().filter(t -> t.userId() == userId).count();
         }
 
         @Override
-        public Touch findByClientToken(String clientToken) {
+        public int countByNodeAcrossUsers(String nodeCode) {
+            return (int) touches.stream().filter(t -> t.nodeCode().equals(nodeCode)).count();
+        }
+
+        @Override
+        public Touch findByClientToken(long userId, String clientToken) {
             throw new AssertionError("导出是只读的,不该去查去重键");
         }
 
@@ -502,7 +521,7 @@ class ExportApiTest {
         }
 
         @Override
-        public Touch delete(String id) {
+        public Touch delete(long userId, String id) {
             throw new AssertionError("导出路径上出现了删除 —— 只读端点不该改动任何东西");
         }
 

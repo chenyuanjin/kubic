@@ -1,5 +1,6 @@
 package com.kaodian.server.api.insight;
 
+import com.kaodian.server.api.support.CurrentSession;
 import com.kaodian.server.api.dto.insight.TimelineBucketDto;
 import com.kaodian.server.api.dto.insight.TimelineResponse;
 import com.kaodian.server.api.dto.insight.BucketSourceDto;
@@ -109,7 +110,9 @@ public class TimelineController {
             @RequestParam(defaultValue = "" + TimelineResponse.DEFAULT_BUCKETS)
             @Min(value = 1, message = "至少要 1 格")
             @Max(value = TimelineResponse.MAX_BUCKETS, message = "一次最多 366 格,全量请走导出接口")
-            int buckets) {
+            int buckets,
+
+            CurrentSession session) {
 
         TimelineGranularity unit = TimelineGranularity.ofWireName(granularity);
 
@@ -117,7 +120,7 @@ public class TimelineController {
         LocalDate lastStart = unit.bucketOf(today);
         LocalDate firstStart = unit.shift(lastStart, -(buckets - 1L));
 
-        List<Touch> all = store.findAll();
+        List<Touch> all = store.findAll(session.userId());
 
         // 先把窗口内的记录按格分好。窗口外的一条都不进这个 map ——
         // 它们仍然计进 total,只是不属于任何一格(见 TimelineResponse 的 total/counted 那段)。

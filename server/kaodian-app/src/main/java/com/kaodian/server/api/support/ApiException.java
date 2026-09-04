@@ -1,5 +1,6 @@
 package com.kaodian.server.api.support;
 
+import com.kaodian.server.api.dto.common.ErrorCode;
 import com.kaodian.server.syllabus.SyllabusEditException;
 import org.springframework.http.HttpStatus;
 
@@ -36,6 +37,28 @@ public class ApiException extends RuntimeException {
     private final HttpStatus status;
     private final String code;
 
+    /**
+     * 🔴 <b>新代码用这一个</b> —— 状态码从 {@link ErrorCode} 取,不在这里重新决定一次。
+     *
+     * <p>状态散在各个工厂方法里的写法,下一个新码就会随手挑一个,而
+     * {@code 接口契约} §1.3 把状态收窄到一张小表 —— <b>收窄只有在一处决定时才守得住</b>。
+     *
+     * @throws IllegalStateException 码是 {@code REQUEST_REJECTED} / {@code MISSING_CLIENT_TOKEN}
+     *                               这两个「无固定状态码」的成员时。它们本来就不该从这里出去,
+     *                               理由见 {@link ErrorCode} 类注释
+     */
+    public ApiException(ErrorCode code, String message) {
+        super(message);
+        this.status = code.httpStatus();
+        this.code = code.name();
+    }
+
+    /**
+     * @deprecated 用 {@link #ApiException(ErrorCode, String)}。留着只是为了不必一次改完所有调用点 ——
+     *             这个构造器让状态码与错误码在<b>每一个调用点</b>各决定一次,
+     *             正是 {@link ErrorCode} 要收掉的那件事。
+     */
+    @Deprecated
     public ApiException(HttpStatus status, String code, String message) {
         super(message);
         this.status = status;

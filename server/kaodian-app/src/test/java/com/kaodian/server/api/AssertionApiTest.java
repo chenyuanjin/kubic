@@ -77,7 +77,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * 报一个「你已经声明过了」的错,用户除了困惑之外什么都做不了。
  */
 @WebMvcTest(controllers = {AssertionController.class, CoverageController.class, SyllabusController.class})
-@Import(DomainBeans.class)     // web 切片不扫 @Configuration,领域装配要显式带进来
+// web 切片不扫 @Configuration,领域装配要显式带进来;ApiTestAuth 给每个请求装上真令牌(B0-4 默认拒绝)
+@Import({DomainBeans.class, ApiTestAuth.class})
 class AssertionApiTest {
 
     /** 一个彻头彻尾的空白考点 —— 一条记录都没有,最容易被「按一下就算碰过」。 */
@@ -241,7 +242,8 @@ class AssertionApiTest {
                 .andExpect(jsonPath("$.assertedTotal").value(1))
                 .andReturn().getResponse().getContentAsString();
 
-        assertEquals(1, assertions.count(), "🔴 库里落了两行 —— 「已声明 N 个」从此开始说谎");
+        assertEquals(1, assertions.count(ApiTestAuth.USER_ID),
+                "🔴 库里落了两行 —— 「已声明 N 个」从此开始说谎");
         assertEquals(JsonPath.read(first, "$.assertedAt").toString(),
                 JsonPath.read(second, "$.assertedAt").toString(),
                 "重复声明不该刷新时刻 —— 连点两下不该改写「你在 X 月 X 日说过你会了」这句话");
@@ -258,7 +260,7 @@ class AssertionApiTest {
                 .andExpect(jsonPath("$.assertedAt").value(Matchers.nullValue()))
                 .andExpect(jsonPath("$.assertedTotal").value(0));
 
-        assertEquals(0, assertions.count());
+        assertEquals(0, assertions.count(ApiTestAuth.USER_ID));
     }
 
     @Test
@@ -314,7 +316,7 @@ class AssertionApiTest {
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.code").value("UNKNOWN_FIELD"));
         }
-        assertEquals(0, assertions.count(), "被拒的请求不该留下任何一行");
+        assertEquals(0, assertions.count(ApiTestAuth.USER_ID), "被拒的请求不该留下任何一行");
     }
 
     /**
@@ -373,7 +375,7 @@ class AssertionApiTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("NODE_NOT_IN_SYLLABUS"));
 
-        assertEquals(0, assertions.count());
+        assertEquals(0, assertions.count(ApiTestAuth.USER_ID));
     }
 
     /**
@@ -445,7 +447,12 @@ class AssertionApiTest {
         return body;
     }
 
-    /** 与 {@code ApiContractTest.contractTouches} 同一份数据契约:8 个考点有记录,覆盖 44%。 */
+    /**
+     * 与 {@code ApiContractTest.contractTouches} 同一份数据契约:8 个考点有记录,覆盖 44%。
+     *
+     * <p>全部挂在 {@link ApiTestAuth#USER_ID} 名下 —— 令牌里的人和夹具里的人必须是同一个,
+     * 否则按用户过滤之后一条都读不到,而失败会以「覆盖率怎么是 0」的形式出现。
+     */
     private static List<Touch> contractTouches() {
         Instant now = Instant.now();
         List<Touch> ts = new ArrayList<>();
@@ -456,15 +463,15 @@ class AssertionApiTest {
         drill(ts, now, "truncate-divide", "B站 · 资料分析技巧", 6, 2, 4);
         drill(ts, now, "base-value", "中公 · 资料分析专项", 5, 4, 32);
         drill(ts, now, "interval-growth", "中公 · 资料分析专项", 3, 2, 33);
-        ts.add(new Touch("t-share-change", "share-change",
-                "粉笔 · 资料分析系统班 L12", TouchKind.VOICE, now.minus(Duration.ofDays(5)), null));
+        ts.add(new Touch("t-share-change", ApiTestAuth.USER_ID, "share-change",
+                "粉笔 · 资料分析系统班 L12", TouchKind.VOICE, now.minus(Duration.ofDays(5)), null, null));
         return ts;
     }
 
     private static void drill(List<Touch> ts, Instant now, String node, String source,
                               int practiced, int correct, int daysAgo) {
-        ts.add(new Touch("t-" + node, node, source, TouchKind.DRILL,
-                now.minus(Duration.ofDays(daysAgo)), new Touch.Drill(practiced, correct)));
+        ts.add(new Touch("t-" + node, ApiTestAuth.USER_ID, node, source, TouchKind.DRILL,
+                now.minus(Duration.ofDays(daysAgo)), new Touch.Drill(practiced, correct), null));
     }
 
     /**
@@ -483,22 +490,30 @@ class AssertionApiTest {
         }
 
         @Override
-        public List<Touch> findAll() {
+        public List<Touch> findAll(long userId) {
+            return touches.stream()
+                    .filter(t -> t.userId() == userId)
+                    .sorted(Comparator.comparing(Touch::occurredAt))
+                    .toList();
+        }
+
+        @Override
+        public List<Touch> findAllAcrossUsers() {
             return touches.stream().sorted(Comparator.comparing(Touch::occurredAt)).toList();
         }
 
         @Override
-        public List<Touch> findByNode(String nodeCode) {
-            return touches.stream().filter(t -> t.nodeCode().equals(nodeCode)).toList();
+        public int countByNodeAcrossUsers(String nodeCode) {
+            return (int) touches.stream().filter(t -> t.nodeCode().equals(nodeCode)).count();
         }
 
         @Override
-        public int count() {
-            return touches.size();
+        public int count(long userId) {
+            return (int) touches.stream().filter(t -> t.userId() == userId).count();
         }
 
         @Override
-        public Touch findByClientToken(String clientToken) {
+        public Touch findByClientToken(long userId, String clientToken) {
             throw new AssertionError("「我已掌握」不写记录,不该去查去重键");
         }
 
@@ -509,7 +524,7 @@ class AssertionApiTest {
         }
 
         @Override
-        public Touch delete(String id) {
+        public Touch delete(long userId, String id) {
             throw new AssertionError("「我已掌握」不删记录");
         }
 

@@ -27,15 +27,15 @@ import java.time.Instant;
  * @param boundAt    绑定时刻
  */
 public record UserIdentity(
-        String userId,
+        long userId,
         IdentityType type,
         String identifier,
         Instant boundAt
 ) {
 
     public UserIdentity {
-        if (userId == null || userId.isBlank()) {
-            throw new IllegalArgumentException("身份必须属于某个账号");
+        if (userId <= 0) {
+            throw new IllegalArgumentException("身份必须属于某个账号(userId > 0):" + userId);
         }
         if (type == null) {
             throw new IllegalArgumentException("身份必须有类型");

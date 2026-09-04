@@ -399,17 +399,30 @@ class AuthApiTest {
                 .andExpect(jsonPath("$.activeSessionCount", greaterThanOrEqualTo(1)));
     }
 
+    /**
+     * 🔴 {@code POST /auth/logout} 本轮被<b>收进鉴权面</b>(`接口契约` §三 下面那张表:
+     * 「收进鉴权面,需 {@code full}。语义不变:一条已经失效的令牌不需要被吊销,端本地清即可」)。
+     *
+     * <p>所以「点两次不报错」这条断言换了形状:<b>端该做的事没变(清本地),
+     * 只是服务端不再回 200</b> —— 白名单七行里没有这个端点,没带令牌 / 令牌已吊销
+     * 都在进 controller 之前就被 {@code ApiAuthFilter} 挡成 401。
+     */
     @Test
-    @DisplayName("退出登录是幂等的 —— 点两次不报错")
-    void logoutIsIdempotent() throws Exception {
+    @DisplayName("🔴 退出登录已收进鉴权面:第一次 200 revoked=true,再点一次(令牌已失效)是 401")
+    void logoutNeedsALiveToken() throws Exception {
         String token = login(freshPhone(6));
 
         mvc.perform(post("/api/auth/logout").header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.revoked", is(true)));
         mvc.perform(post("/api/auth/logout").header("Authorization", "Bearer " + token))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.revoked", is(false)));
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code", is("UNAUTHORIZED")));
+
+        // 不带令牌同样进不来 —— 这个端点不在白名单那七行里
+        mvc.perform(post("/api/auth/logout"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code", is("UNAUTHORIZED")));
 
         // 吊销立刻生效
         mvc.perform(get("/api/account").header("Authorization", "Bearer " + token))
@@ -420,7 +433,8 @@ class AuthApiTest {
     @DisplayName("🔴 只读令牌换不出写能力")
     void readonlyTokenCannotWrite(@Autowired TokenService tokens) throws Exception {
         Session s = loginFull(freshPhone(7));
-        String ro = tokens.issue(s.userId(), TokenScope.READONLY, "MCP").plaintext();
+        // JSON 里的 userId 是字符串(契约 §1.1),服务端签名是 long(B0-2 §3.3)—— 这一行就是那道边界。
+        String ro = tokens.issue(Long.parseLong(s.userId()), TokenScope.READONLY, "MCP").plaintext();
 
         // 读得到
         mvc.perform(get("/api/account").header("Authorization", "Bearer " + ro))
@@ -467,10 +481,16 @@ class AuthApiTest {
     }
 
     @Test
-    @DisplayName("阶段 3 的那个累计数读得到")
+    @DisplayName("阶段 3 的那个累计数读得到 —— 但它现在需要令牌")
     void signupCount() throws Exception {
-        login(freshPhone(10));
+        String token = login(freshPhone(10));
+        // 🔴 收进鉴权面(`接口契约` §三 下面那张表)。裁定是「不删这个端点,给它加一道门」——
+        //    它是阶段 3 判据的唯一读口,删掉等于把那个数藏起来。
         mvc.perform(get("/api/account/signup-count"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code", is("UNAUTHORIZED")));
+
+        mvc.perform(get("/api/account/signup-count").header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.totalSignups", greaterThanOrEqualTo(1)))
                 .andExpect(jsonPath("$.note", containsString("人工判定")));

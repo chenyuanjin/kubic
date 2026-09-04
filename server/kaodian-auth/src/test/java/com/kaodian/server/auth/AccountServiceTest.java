@@ -89,8 +89,8 @@ class AccountServiceTest {
     @DisplayName("🔴 合并抹掉了一个账号,但累计注册数不能跟着往回走")
     void signupLedgerSurvivesMerge() {
         // 两端各建过一个账号 —— 正是 R-33 描述的那个场面
-        String a = service.loginByPhone(passed(PHONE_A), "手机", null).user().id();
-        String b = service.loginByWeChat(wx("union_xyz"), "电脑", null).user().id();
+        long a = service.loginByPhone(passed(PHONE_A), "手机", null).user().id();
+        long b = service.loginByWeChat(wx("union_xyz"), "电脑", null).user().id();
         assertEquals(2, service.totalSignups());
 
         // b 想把 a 的手机号绑过来 → 已属他人 → 给出合并令牌
@@ -113,8 +113,8 @@ class AccountServiceTest {
     @Test
     @DisplayName("目标身份已属他人 → 只给合并令牌,绝不自动合并")
     void bindNeverAutoMerges() {
-        String a = service.loginByPhone(passed(PHONE_A), "手机", null).user().id();
-        String b = service.loginByWeChat(wx("union_xyz"), "电脑", null).user().id();
+        long a = service.loginByPhone(passed(PHONE_A), "手机", null).user().id();
+        long b = service.loginByWeChat(wx("union_xyz"), "电脑", null).user().id();
 
         var result = service.bind(b, IdentityType.PHONE, cipher.hmacOf(PHONE_A), PHONE_A);
         assertInstanceOf(AccountService.BindResult.TakenByAnother.class, result);
@@ -128,7 +128,7 @@ class AccountServiceTest {
     @Test
     @DisplayName("已登录状态下绑微信是最顺的那条路 —— 不产生第二个账号")
     void bindWeChatWhileLoggedIn() {
-        String u = service.loginByPhone(passed(PHONE_A), "手机", null).user().id();
+        long u = service.loginByPhone(passed(PHONE_A), "手机", null).user().id();
         assertInstanceOf(AccountService.BindResult.Bound.class,
                 service.bind(u, IdentityType.WX_UNION, "union_abc", null));
 
@@ -140,7 +140,7 @@ class AccountServiceTest {
     @Test
     @DisplayName("重复绑同一个身份是幂等的,不报错")
     void bindIsIdempotent() {
-        String u = service.loginByPhone(passed(PHONE_A), "手机", null).user().id();
+        long u = service.loginByPhone(passed(PHONE_A), "手机", null).user().id();
         service.bind(u, IdentityType.WX_UNION, "union_abc", null);
         assertInstanceOf(AccountService.BindResult.Bound.class,
                 service.bind(u, IdentityType.WX_UNION, "union_abc", null));
@@ -153,8 +153,8 @@ class AccountServiceTest {
     @DisplayName("合并令牌一次性,而且别人的令牌用不了")
     void mergeTokenIsSingleUseAndScoped() {
         service.loginByPhone(passed(PHONE_A), "手机", null);
-        String b = service.loginByWeChat(wx("u1"), "电脑", null).user().id();
-        String c = service.loginByWeChat(wx("u2"), "平板", null).user().id();
+        long b = service.loginByWeChat(wx("u1"), "电脑", null).user().id();
+        long c = service.loginByWeChat(wx("u2"), "平板", null).user().id();
 
         var taken = assertInstanceOf(AccountService.BindResult.TakenByAnother.class,
                 service.bind(b, IdentityType.PHONE, cipher.hmacOf(PHONE_A), PHONE_A));
@@ -172,7 +172,7 @@ class AccountServiceTest {
     @DisplayName("合并令牌 5 分钟过期 —— 它授权的是一件不可逆的事")
     void mergeTokenExpires() {
         service.loginByPhone(passed(PHONE_A), "手机", null);
-        String b = service.loginByWeChat(wx("u1"), "电脑", null).user().id();
+        long b = service.loginByWeChat(wx("u1"), "电脑", null).user().id();
         var taken = assertInstanceOf(AccountService.BindResult.TakenByAnother.class,
                 service.bind(b, IdentityType.PHONE, cipher.hmacOf(PHONE_A), PHONE_A));
 
@@ -185,7 +185,7 @@ class AccountServiceTest {
     @DisplayName("合并会立刻断掉被并走那个账号的全部会话")
     void mergeRevokesSessionsOfMergedAccount() {
         var a = service.loginByPhone(passed(PHONE_A), "手机", null);
-        String b = service.loginByWeChat(wx("u1"), "电脑", null).user().id();
+        long b = service.loginByWeChat(wx("u1"), "电脑", null).user().id();
         var taken = assertInstanceOf(AccountService.BindResult.TakenByAnother.class,
                 service.bind(b, IdentityType.PHONE, cipher.hmacOf(PHONE_A), PHONE_A));
 
@@ -198,7 +198,7 @@ class AccountServiceTest {
     @DisplayName("预览是只读的:调两次不产生任何副作用")
     void previewHasNoSideEffects() {
         service.loginByPhone(passed(PHONE_A), "手机", null);
-        String b = service.loginByWeChat(wx("u1"), "电脑", null).user().id();
+        long b = service.loginByWeChat(wx("u1"), "电脑", null).user().id();
         var taken = assertInstanceOf(AccountService.BindResult.TakenByAnother.class,
                 service.bind(b, IdentityType.PHONE, cipher.hmacOf(PHONE_A), PHONE_A));
 
@@ -213,8 +213,8 @@ class AccountServiceTest {
     @DisplayName("🔴 两边都绑了手机号:合并会丢弃来源那个号,而且必须留下痕迹")
     void mergeDropsSourcePhoneWhenTargetAlreadyHasOne() {
         // A、B 各绑一个手机号,再用微信把它们牵到一起
-        String a = service.loginByPhone(passed(PHONE_A), "A的手机", null).user().id();
-        String b = service.loginByPhone(passed(PHONE_B), "B的手机", null).user().id();
+        long a = service.loginByPhone(passed(PHONE_A), "A的手机", null).user().id();
+        long b = service.loginByPhone(passed(PHONE_B), "B的手机", null).user().id();
         assertInstanceOf(AccountService.BindResult.Bound.class,
                 service.bind(a, IdentityType.WX_UNION, "u_same", null));
 
@@ -260,7 +260,7 @@ class AccountServiceTest {
     @Test
     @DisplayName("注销之后同一个号再来是一次全新的注册,而旧的那笔流水还在")
     void reRegisterAfterDeactivate() {
-        String old = service.loginByPhone(passed(PHONE_A), "手机", null).user().id();
+        long old = service.loginByPhone(passed(PHONE_A), "手机", null).user().id();
         service.deactivate(old);
 
         var again = service.loginByPhone(passed(PHONE_A), "手机", null);
@@ -275,7 +275,7 @@ class AccountServiceTest {
     @Test
     @DisplayName("重启之后账号还在,而且文件里没有手机号明文")
     void survivesRestartWithoutPlaintextPhone() throws Exception {
-        String id = service.loginByPhone(passed(PHONE_A), "手机", null).user().id();
+        long id = service.loginByPhone(passed(PHONE_A), "手机", null).user().id();
 
         String raw = java.nio.file.Files.readString(dir.resolve("acc.json"));
         assertFalse(raw.contains(PHONE_A), "🔴 账号文件里不能出现手机号明文");

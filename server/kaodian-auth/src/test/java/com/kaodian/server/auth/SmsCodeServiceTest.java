@@ -261,6 +261,65 @@ class SmsCodeServiceTest {
         assertInstanceOf(SmsCodeService.SendOutcome.Sent.class, send());
     }
 
+    // —— ⓪ 号码锁定排在滑块之前(M5-1,§2.5 判据 ①)——
+
+    @Test
+    @DisplayName("🔴 M5-1 第 ⓪ 道在第 ① 道之前 —— 锁定态下滑块【一次都没被调用】")
+    void phoneLockGateRunsBeforeCaptcha() {
+        lockThePhone();
+        clock.advance(Duration.ofSeconds(61));
+
+        int captchaCallsBefore = captcha.calls;
+        int sentBefore = sender.sent.size();
+
+        assertInstanceOf(SmsCodeService.SendOutcome.PhoneLocked.class, send());
+
+        // 🔴 这一条断言就是这道闸存在的全部理由。「没发短信」不够 ——
+        // 把 ⓪ 挪到滑块后面,短信照样不会发,但每一次重发都白烧一次滑块厂商调用,
+        // 而滑块调用同样有额度(M5 §2.1 那张「拦一次省多少 / 自己花多少」的表)。
+        assertEquals(captchaCallsBefore, captcha.calls,
+                "被锁定的号不该消耗一次滑块调用 —— ⓪ 比 ① 更早、更便宜,所以它必须在前面");
+        assertEquals(sentBefore, sender.sent.size(), "更不该发短信");
+
+        // 解锁后滑块才重新被调 —— 否则上面那条断言可能只是因为滑块根本没接上
+        clock.advance(PhoneLock.LOCK_WINDOW.plusSeconds(1));
+        assertInstanceOf(SmsCodeService.SendOutcome.Sent.class, send());
+        assertEquals(captchaCallsBefore + 1, captcha.calls);
+    }
+
+    @Test
+    @DisplayName("🔴 M5 §9.1 真实供应商在用时 devCode 永远是 null —— 否则验证码从接口里明文流出")
+    void devCodeIsNullWhenSenderIsReal() {
+        // 这个 sender 自称 isReal(),其余行为不变 —— 变的只有那一个三目运算符看的那个值
+        SmsCodeService real = new SmsCodeService(store, limiter, captcha, new SmsSender() {
+            @Override
+            public void sendVerificationCode(String e164Phone, String code) {
+                sender.sent.add(code);
+            }
+
+            @Override
+            public boolean isReal() {
+                return true;
+            }
+        }, cipher, clock);
+
+        var sent = assertInstanceOf(SmsCodeService.SendOutcome.Sent.class,
+                real.send(PHONE, SmsPurpose.LOGIN, "ticket", "randstr", IP));
+        assertNull(sent.devCode(),
+                "🔴 devCode 只在本机开发模式非空。这一行被改成恒返回 code 就是一次「验证码明文流出」,"
+                        + "而接口全部 200、日志一条没有 —— 所以它必须被一个测试钉住");
+        assertFalse(sender.sent.isEmpty(), "短信本身还是发了 —— 断言的是响应体,不是发送行为");
+    }
+
+    /** 连错 5 次把号锁上。锁定本身在 {@link #locksAfterFiveFailures} 里已经测过,这里只是前置条件。 */
+    private void lockThePhone() {
+        send();
+        String wrong = wrongCodeOtherThan(sender.lastCode());
+        for (int i = 1; i <= PhoneLock.MAX_FAILURES; i++) {
+            service.verify(PHONE, wrong, SmsPurpose.LOGIN);
+        }
+    }
+
     @Test
     @DisplayName("解锁后仍有 5 次机会 —— 计数在锁上的那一刻归零")
     void failureCounterResetsOnLock() {

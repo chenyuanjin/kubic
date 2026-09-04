@@ -59,8 +59,10 @@ export interface LoginResponse {
 }
 
 export interface AccountDto {
+  /** long(int64)以字符串传输,如 `"10001"`(B0 §3.3)。不要 parseInt —— 它是标识不是数量 */
   userId: string
-  nickname: string | null
+  // nickname 已随后端一起删掉(M5 §9.9):微信那条路昵称头像一概丢弃,
+  // 手机号那条路没有昵称来源 —— 一个永远为 null 的字段,下一个人会去把它填上。
   createdAt: string
   maskedPhone: string | null
   identities: string[]

@@ -250,7 +250,7 @@ public class AccountService {
                                  PhoneNumberSecret phoneSecret, Instant now) {
         AccountStore.IdentityTakenException last = null;
         for (int attempt = 1; attempt <= CREATE_ATTEMPTS; attempt++) {
-            String id = newUserId();
+            long id = accounts.nextUserId();
             try {
                 AppUser user = accounts.create(AppUser.fresh(id, now),
                         new UserIdentity(id, type, identifier, now), phoneSecret);
@@ -309,7 +309,7 @@ public class AccountService {
         Optional<AppUser> byOpen = activeByIdentity(IdentityType.WX_OPEN, wx.openid());
 
         if (byUnion.isPresent() && byOpen.isPresent()
-                && !byUnion.get().id().equals(byOpen.get().id())) {
+                && byUnion.get().id() != byOpen.get().id()) {
             return new WeChatResolution(byUnion, byOpen);       // 分裂已经发生
         }
         return new WeChatResolution(byUnion.isPresent() ? byUnion : byOpen, Optional.empty());
@@ -330,7 +330,7 @@ public class AccountService {
     private PendingMerge suggestMergeFor(AppUser chosen, Instant now, Optional<AppUser>... candidates) {
         List<AppUser> others = java.util.Arrays.stream(candidates)
                 .flatMap(Optional::stream)
-                .filter(a -> !a.id().equals(chosen.id()))
+                .filter(a -> a.id() != chosen.id())
                 .collect(java.util.stream.Collectors.toMap(AppUser::id, a -> a, (a, b) -> a,
                         java.util.LinkedHashMap::new))
                 .values().stream().toList();
@@ -358,7 +358,7 @@ public class AccountService {
      * 的补齐动作,而<b>登录不能因为一条补充身份挂不上去就失败</b>。
      * 真正的冲突(两个账号)已经在上面被识别并给出了合并建议 —— 这里再抛一次只会把用户挡在门外。
      */
-    private void linkQuietly(String userId, IdentityType type, String identifier, Instant now) {
+    private void linkQuietly(long userId, IdentityType type, String identifier, Instant now) {
         if (identifier == null || identifier.isBlank()) {
             return;
         }
@@ -376,7 +376,7 @@ public class AccountService {
         }
     }
 
-    private void linkPhoneQuietly(String userId, String phone, String phoneHmac, Instant now) {
+    private void linkPhoneQuietly(long userId, String phone, String phoneHmac, Instant now) {
         try {
             accounts.addIdentity(new UserIdentity(userId, IdentityType.PHONE, phoneHmac, now),
                     cipher.protect(phone));
@@ -393,7 +393,7 @@ public class AccountService {
      * @return {@link BindResult.Bound} 或 {@link BindResult.TakenByAnother}。
      *         <b>后者绝不自动合并</b> —— 只返回「可以合并」这个事实
      */
-    public BindResult bind(String userId, IdentityType type, String identifier, String phonePlain) {
+    public BindResult bind(long userId, IdentityType type, String identifier, String phonePlain) {
         Instant now = clock.instant();
         try {
             accounts.addIdentity(new UserIdentity(userId, type, identifier, now),
@@ -425,7 +425,7 @@ public class AccountService {
      * openid 挂不上去不算失败({@link #linkQuietly}),因为那可能只是它属于同一个人的另一个旧账号,
      * 而那种情况该走的是合并,不是把绑定整个否掉。
      */
-    public BindResult bindWeChat(String userId, com.kaodian.server.auth.vendor.WeChatIdentity wx) {
+    public BindResult bindWeChat(long userId, com.kaodian.server.auth.vendor.WeChatIdentity wx) {
         IdentityType primary = wx.hasUnionId() ? IdentityType.WX_UNION : IdentityType.WX_OPEN;
         String identifier = wx.hasUnionId() ? wx.unionid() : wx.openid();
         BindResult result = bind(userId, primary, identifier, null);
@@ -442,7 +442,7 @@ public class AccountService {
      *
      * @param mergeToken {@link BindResult.TakenByAnother} 里那个一次性令牌
      */
-    public MergePreview previewMerge(String userId, String mergeToken) {
+    public MergePreview previewMerge(long userId, String mergeToken) {
         PendingMerge pm = requirePending(userId, mergeToken);
         return new MergePreview(
                 maskOf(pm.fromUserId()),
@@ -456,7 +456,7 @@ public class AccountService {
      *
      * @throws IllegalStateException 令牌不存在 / 已过期 / 已用过 / 不属于这个账号
      */
-    public AccountMergeLog confirmMerge(String userId, String mergeToken) {
+    public AccountMergeLog confirmMerge(long userId, String mergeToken) {
         PendingMerge pm = requirePending(userId, mergeToken);
         pendingMerges.remove(mergeToken);       // 一次性:先摘掉再执行,防重复提交打两次
         Instant now = clock.instant();
@@ -480,31 +480,50 @@ public class AccountService {
      * 而那会让覆盖率的分子在某些账号上凭空少一截。
      * <p>
      * 合并端点因此与微信登录一起被关在<b>阶段 2 后</b>的开关后面(docs/technical/INDEX.md §6.1)。
+     *
+     * <h2>🔴 {@code B0-3} 落地之后,这个数也不会在这里算({@code M5} §5.5)</h2>
+     *
+     * 那时它的真实语义是「{@code fromUserId} 名下的 {@code Touch} 条数」,而
+     * <b>{@code auth} 算不出这个数</b> —— 算它要么注入 {@code collect} 包里 {@code Touch} 的那个存储接口
+     * (建出 {@code auth → domain} 这条边,此后<b>注销一个账号会牵动覆盖度计算</b>),
+     * 要么传一个 {@code LongToIntFunction} 进来(边没建出来,但「什么时候算这个数」
+     * 这个决定被藏进了 {@code auth},而那次查询可能很贵)。
+     * <p>
+     * ✅ 定下的是第三条:<b>{@code app} 算好,把 {@code int} 传进来</b> ——
+     * 边没建出来,而且那次查询在调用点是可见的。目标签名:
+     * <pre>
+     *   MergePreview   previewMerge(long userId, String mergeToken, int movableRecordCount);
+     *   AccountMergeLog confirmMerge(long userId, String mergeToken, int movableRecordCount);
+     * </pre>
+     * ⚠️ <b>本轮不改成这个形状</b>:账号合并冲突({@code U5.4})整体不做({@code M5} §十四),
+     * 而在 {@code B0-3} 的租户列落地之前,「A 的记录」这个概念在数据里根本不存在。
+     * 写在这里是因为「{@code movableRecordCount} 恒为 0 什么时候不再是 0」必然被问到,
+     * 而答案不是「等合并做的时候再说」—— 答案是「它取决于一条不许建出来的边怎么绕过去」。
      */
-    private int movableRecordCount(String fromUserId) {
+    private int movableRecordCount(long fromUserId) {
         return 0;
     }
 
-    private PendingMerge startMerge(String fromUserId, String toUserId, Instant now) {
+    private PendingMerge startMerge(long fromUserId, long toUserId, Instant now) {
         String token = UUID.randomUUID().toString().replace("-", "");
         PendingMerge pm = new PendingMerge(token, fromUserId, toUserId, now.plus(MERGE_TOKEN_TTL));
         pendingMerges.put(token, pm);
         return pm;
     }
 
-    private PendingMerge requirePending(String userId, String mergeToken) {
+    private PendingMerge requirePending(long userId, String mergeToken) {
         PendingMerge pm = mergeToken == null ? null : pendingMerges.get(mergeToken);
         if (pm == null || !clock.instant().isBefore(pm.expiresAt())) {
             pendingMerges.remove(mergeToken);
             throw new IllegalStateException("合并令牌不存在或已过期,请重新发起");
         }
-        if (!pm.toUserId().equals(userId)) {
+        if (pm.toUserId() != userId) {
             throw new IllegalStateException("这个合并请求不属于当前账号");
         }
         return pm;
     }
 
-    private String maskOf(String userId) {
+    private String maskOf(long userId) {
         return accounts.phoneSecretOf(userId).map(PhoneNumberSecret::masked).orElse("微信账号");
     }
 
@@ -519,7 +538,7 @@ public class AccountService {
      * <p>
      * 界面(D27)里那一格因此是<b>故意留白</b>的:不写任何具体天数。
      */
-    public void deactivate(String userId) {
+    public void deactivate(long userId) {
         accounts.deactivate(userId, clock.instant());
         int revoked = tokens.revokeAll(userId);
         log.info("账号注销 userId={} 吊销会话={} 条", userId, revoked);
@@ -527,15 +546,15 @@ public class AccountService {
 
     // —— 读 ——
 
-    public Optional<AppUser> find(String userId) {
+    public Optional<AppUser> find(long userId) {
         return accounts.findById(userId);
     }
 
-    public List<UserIdentity> identitiesOf(String userId) {
+    public List<UserIdentity> identitiesOf(long userId) {
         return accounts.identitiesOf(userId);
     }
 
-    public Optional<String> maskedPhoneOf(String userId) {
+    public Optional<String> maskedPhoneOf(long userId) {
         return accounts.phoneSecretOf(userId).map(PhoneNumberSecret::masked);
     }
 
@@ -544,23 +563,43 @@ public class AccountService {
         return signups.totalCount();
     }
 
-    // —— 内部 ——
+    // —— 启动期对账 ——
 
     /**
-     * 新账号 id。
+     * 🔴 <b>注册流水少于账号数就吼一声</b>({@code M5-账号与登录通道} §8.2)。
      *
-     * <p>调用点必须<b>把返回值存进一个局部变量</b>,再同时用在 {@link AppUser} 与
-     * {@link UserIdentity} 上 —— 调两次会得到一个账号和一条挂在别处的身份,
-     * 也就是一个<b>谁也登不进去、而且不报错</b>的账号。
-     * ({@link AccountStore#create} 里那句「第一条身份必须属于这个新账号」是这条的兜底。)
+     * <h2>「允许偏差」不等于「偏差不可见」</h2>
      *
-     * <p>用<b>完整</b> UUID,不截断。截到 16 个十六进制字符只有 64 位,而
-     * {@code create} 撞上重复 id 抛的是 {@code IllegalStateException} ——
-     * 那一条<b>不在 {@link #createOrJoin} 的捕获范围里</b>,会直接逃成 500。
-     * 概率极小,但省下那 16 个字符换不来任何东西。
+     * {@code R-69} 已裁定:建号跨三个文件({@code auth-accounts} / {@code auth-signups} /
+     * {@code auth-tokens})不原子,{@code create} 成功后崩溃会少记一笔流水。
+     * 那只影响统计,不影响可用性,所以<b>不做两阶段提交</b> ——
+     * 文件态下「三个文件一起原子写」本身就是一次要自己实现的两阶段提交,
+     * 换 JDBC 那天它自然变成一个事务。
+     * <p>
+     * 但少记的那一笔<b>正好落在阶段 3 判据的数据源上</b>(「累计 50 个陌生注册」)。
+     * 一条能发现偏差的日志比一套自制的两阶段提交划算得多 —— 前提是有人知道要补。
+     *
+     * <h2>为什么是 WARN 不是拒绝启动</h2>
+     *
+     * 与 {@code accept-key-loss} 那格同一条判据:<b>拒绝启动要留给「放行就会毁数据」的情形</b>。
+     * 这里数据没毁,毁的是一个统计口径,而统计口径可以由人补回来。
+     * (对照 {@link PhoneKeyGuard}:那一个会毁账号,所以它拒绝启动。)
+     *
+     * @return 差了几条;不差或流水更多时为 {@code 0}
      */
-    private static String newUserId() {
-        return "u_" + UUID.randomUUID().toString().replace("-", "");
+    public int reconcileSignupLedger() {
+        int accountCount = accounts.countCreated();
+        int entryCount = signups.totalCount();
+        int gap = accountCount - entryCount;
+        if (gap <= 0) {
+            return 0;
+        }
+        log.warn("""
+                注册流水少于账号数:账号 {} 条,流水 {} 条,差 {} 条。
+                成因通常是 R-69(建号跨三个文件不原子,create 成功后崩溃会少记一笔)。
+                🔴 阶段 3 的「累计注册」据此人工加回 —— 这一行是唯一线索。""",
+                accountCount, entryCount, gap);
+        return gap;
     }
 
     // —— 结果类型 ——
@@ -611,7 +650,7 @@ public class AccountService {
      * @param fromUserId 会被并走并注销的那个
      * @param toUserId   留下来的那个(= 当前登录的账号)
      */
-    public record PendingMerge(String token, String fromUserId, String toUserId, Instant expiresAt) {
+    public record PendingMerge(String token, long fromUserId, long toUserId, Instant expiresAt) {
     }
 
     /**

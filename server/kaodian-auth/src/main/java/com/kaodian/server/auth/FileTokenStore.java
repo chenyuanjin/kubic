@@ -64,11 +64,11 @@ public class FileTokenStore implements TokenStore {
     }
 
     @Override
-    public List<AccessToken> findByUser(String userId) {
+    public List<AccessToken> findByUser(long userId) {
         synchronized (lock) {
             ensureLoaded();
             return tokens.values().stream()
-                    .filter(t -> t.userId().equals(userId))
+                    .filter(t -> t.userId() == userId)
                     .sorted(Comparator.comparing(AccessToken::lastUsedAt,
                             Comparator.nullsFirst(Comparator.naturalOrder())).reversed())
                     .toList();
@@ -104,14 +104,14 @@ public class FileTokenStore implements TokenStore {
     }
 
     @Override
-    public int revokeAllOfUser(String userId, Instant now) {
+    public int revokeAllOfUser(long userId, Instant now) {
         synchronized (lock) {
             ensureLoaded();
             Map<String, AccessToken> next = new LinkedHashMap<>(tokens);
             int n = 0;
             for (Map.Entry<String, AccessToken> e : next.entrySet()) {
                 AccessToken t = e.getValue();
-                if (t.userId().equals(userId) && !t.isRevoked()) {
+                if (t.userId() == userId && !t.isRevoked()) {
                     e.setValue(t.revoked(now));
                     n++;
                 }
@@ -184,7 +184,7 @@ public class FileTokenStore implements TokenStore {
         for (JsonNode n : arr) {
             all.add(new AccessToken(
                     required(n, "tokenHash"),
-                    required(n, "userId"),
+                    AuthJsonFile.userId(n, "userId"),
                     TokenScope.ofWireName(required(n, "scope")),
                     n.path("deviceLabel").asString(""),
                     Instant.parse(required(n, "issuedAt")),
@@ -202,7 +202,7 @@ public class FileTokenStore implements TokenStore {
     private static ObjectNode toNode(AccessToken t) {
         ObjectNode o = AuthJsonFile.mapper().createObjectNode();
         o.put("tokenHash", t.tokenHash());
-        o.put("userId", t.userId());
+        o.put("userId", AuthJsonFile.userIdString(t.userId()));
         o.put("scope", t.scope().wireName());
         o.put("deviceLabel", t.deviceLabel());
         o.put("issuedAt", t.issuedAt().toString());

@@ -70,7 +70,7 @@ import java.time.format.DateTimeFormatter;
  * <h2>控制器不含规则</h2>
  *
  * docs/technical/后端系统设计与组件接入.md §二:{@code api} 包只做「收参数、翻 DTO、出错误码」。
- * 四道闸的顺序在 {@link SmsCodeService},建号与合并在 {@link AccountService} ——
+ * 五道闸的顺序在 {@link SmsCodeService},建号与合并在 {@link AccountService} ——
  * <b>controller 可以再写一个,service 只有这一个。</b>
  * 这里唯一的实质工作是把 sealed 的结果类型翻成错误码与人话,
  * 而那件事本身就是契约的一部分:四种终态要给四句不同的话。
@@ -117,7 +117,7 @@ public class AuthController {
 
     // —— 手机号通道(阶段 2)——
 
-    /** 发验证码。四道闸的顺序见 {@link SmsCodeService#send}。 */
+    /** 发验证码。五道闸的顺序见 {@link SmsCodeService#send}。 */
     @PostMapping("/sms/send")
     public SmsSendResponse send(@Valid @RequestBody SmsSendRequest req, HttpServletRequest http) {
         SmsPurpose purpose = parsePurpose(req.purpose());
@@ -245,7 +245,7 @@ public class AuthController {
      *   ③ 换手机号                      ← <b>0.03 元/次,这一步开始花钱</b>
      * </pre>
      *
-     * 与验证码四道闸完全同构(docs/technical/后端系统设计与组件接入.md §1.8):<b>拦要拦在花钱那一步之前。</b>
+     * 与验证码五道闸完全同构(docs/technical/后端系统设计与组件接入.md §1.8):<b>拦要拦在花钱那一步之前。</b>
      * 反过来写 —— 先换手机号再限流 —— 前面那道闸就只是在给账单排队。
      * <p>
      * 频控键用 openid 而不是手机号,是因为<b>手机号要花完那 0.03 元才知道</b>。
@@ -417,7 +417,9 @@ public class AuthController {
         return new LoginResponse(
                 r.token().plaintext(),                  // 唯一一次出现明文令牌的地方
                 r.token().stored().expiresAt(),
-                r.user().id(),
+                // 🔴 long 以字符串传输(B0 §3.3)。值从 "u_3f2a…" 变成 "10001",类型不变 ——
+                // 前端那一侧一个字都不用改,而 int64 直接进 JSON number 会在 JS 里悄悄丢精度。
+                Long.toString(r.user().id()),
                 r.isNewAccount(),
                 masked,
                 // 🔴 没有手机号 = 这个人下次换个入口进来可能又多一个账号(R-33)。
@@ -427,8 +429,21 @@ public class AuthController {
     }
 
     private WeChatIdentity exchange(WeChatEntry entry, String code, String state) {
-        // 🔴 小程序没有回跳,因此没有 state;其余两条入口必须校验,否则可被 CSRF 绑号。
-        if (entry != WeChatEntry.MINI_PROGRAM && !states.consume(state)) {
+        // 🔴 小程序那条分支【显式写在这里】,不是靠「传空就跳过」顺带覆盖(M5 §3.2)。
+        // 两者不是一回事:前者是「这条路本来就没有回跳,所以没有 CSRF 面」,
+        // 后者是一个 null 判断 —— 而 null 判断会在某次重构里悄悄扩大到别的入口,
+        // 于是 official_h5 只要不传 state 就绕过了这道防线。
+        if (entry == WeChatEntry.MINI_PROGRAM) {
+            if (state != null) {
+                // 契约 §9.3:mini 必须【不带】state。带了(哪怕是空串)说明调用方把三条入口
+                // 当成一条在写 —— 静默忽略等于让那个误解活到它撞上真正需要 state 的入口。
+                throw new ApiException(HttpStatus.BAD_REQUEST, "WECHAT_STATE_INVALID",
+                        "小程序入口没有回跳,不该带 state。");
+            }
+        } else if (!states.consume(state)) {
+            // 其余两条入口必须校验,否则可被 CSRF 绑号。
+            // 🔴 「不带」与「带了空串」是两件事:后者走到这里、consume 失败、回 400 ——
+            // 而不是被当成「这条路不需要 state」放过去。
             throw new ApiException(HttpStatus.BAD_REQUEST, "WECHAT_STATE_INVALID",
                     "授权已过期,请重新发起微信登录。");
         }

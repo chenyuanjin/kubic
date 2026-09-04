@@ -70,6 +70,24 @@ public class AuthBeans {
     }
 
     /**
+     * 启动期对一次账 —— <b>注册流水少于账号数就吼一声</b>({@code M5-账号与登录通道} §8.2)。
+     *
+     * <p>与 {@link #phoneKeyGuard} 同一形态(启动期实例化的 bean,不是懒检查),
+     * 但<b>只 WARN 不拒绝启动</b>:那边毁的是账号,这边毁的是一个统计口径,
+     * 而统计口径可以由人补回来 —— 前提是有人知道要补,这条日志就是那个前提。
+     *
+     * @return 差了几条。做成一个 bean 而不是 {@code void},是为了让测试能直接断言这个数
+     */
+    @Bean
+    public SignupReconciliation signupReconciliation(AccountService accounts) {
+        return new SignupReconciliation(accounts.reconcileSignupLedger());
+    }
+
+    /** @param gap 账号数 − 流水数;不差为 {@code 0} */
+    public record SignupReconciliation(int gap) {
+    }
+
+    /**
      * 🔴 {@code R-59} 的防线 —— 启动期跑一次,把「换了手机号密钥」从一次无声的数据损坏
      * 变成一次响亮的事件。四种情形四种处置,只有「AES 也变了且救不回来」才拒绝启动。
      *

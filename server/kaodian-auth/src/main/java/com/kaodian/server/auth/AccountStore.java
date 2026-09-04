@@ -15,12 +15,33 @@ import java.util.Optional;
  */
 public interface AccountStore {
 
-    Optional<AppUser> findById(String userId);
+    Optional<AppUser> findById(long userId);
 
     /** 登录查号的那一步。{@code (type, identifier)} 是唯一索引。 */
     Optional<AppUser> findByIdentity(IdentityType type, String identifier);
 
-    List<UserIdentity> identitiesOf(String userId);
+    List<UserIdentity> identitiesOf(long userId);
+
+    /**
+     * 发一个新号 —— <b>发号器在 store 里,不在 service 里</b>({@code B0} §3.2)。
+     *
+     * <h2>为什么不能让 {@link AccountService} 自己算</h2>
+     *
+     * {@code long} 是连续的,发号必须先读一次当前最大值 ——
+     * 而那一读只有 store 手里的锁能保护。旧的 {@code u_}+UUID 没有这个问题(随机不用读),
+     * 这正是<b>换成连续 id 之后必须多出这个方法</b>的原因 —— 它不是顺手加的。
+     *
+     * <p>🔴 <b>实现必须保证同一个号不被发两次,而「读最大值 + 1」做不到这一点</b> ——
+     * 发号与 {@link #create} 是两次调用,中间锁是放开的。踩法与后果见
+     * {@link FileAccountStore#nextUserId()}(一个被并发测试当场抓住的 500)。
+     *
+     * <p>发出去的号<b>不保证被用掉</b>,所以 id 允许跳号。要求不跳号就得在失败时把号还回去,
+     * 而那是一个会写错的回滚。
+     */
+    long nextUserId();
+
+    /** 建过几个账号(含已注销的)。启动期与 {@link SignupLedger#totalCount()} 对账用。 */
+    int countCreated();
 
     /**
      * 建账号 + 第一行 identity。<b>两件事必须一起成功</b> ——
@@ -40,17 +61,34 @@ public interface AccountStore {
     void addIdentity(UserIdentity identity, PhoneNumberSecret phoneSecret);
 
     /** 手机号密文。没绑手机号则为空。 */
-    Optional<PhoneNumberSecret> phoneSecretOf(String userId);
+    Optional<PhoneNumberSecret> phoneSecretOf(long userId);
 
-    /** 注销。只改状态与 {@code deletedAt};🔴 硬删时点由 {@code L-A5} 的律师稿定,本层不做。 */
-    void deactivate(String userId, Instant now);
+    /**
+     * 注销 —— <b>一次原子落盘做四件事</b>({@code M5-账号与登录通道} §5.1):
+     * ① {@code status} 改 {@code DEACTIVATED} ② 写 {@code deletedAt}
+     * ③ <b>摘掉该账号的全部 identity</b> ④ <b>删掉手机号密文</b>。
+     *
+     * <p>⚠️ 上一版这里写的是「只改状态与 {@code deletedAt}」,而实现
+     * ({@link FileAccountStore#deactivate})一直是四件事 —— 读接口的人会以为 identity 还在。
+     * 这是同一模块内文档与实现的一处不一致,{@code M5} §十二 已登记,<b>改的是注释不是行为</b>。
+     *
+     * <p>③ 为什么必须摘:不摘的话那个手机号<b>永远登不回来也永远给不了别人</b>,
+     * 而手机号是会被运营商回收的。
+     *
+     * <p>🔴 行为层({@code Touch} / {@code RecordTag} / {@code UserAssertion})<b>不在这里删</b> ——
+     * 那三个 {@code deleteAllOf} 归 {@code app} 编排,在本方法<b>之后</b>调
+     * ({@code M5} §5.2)。在这里删就等于建出 {@code auth → domain} 这条不许有的边。
+     *
+     * <p>🔴 硬删时点由 {@code L-A5} 的律师稿定,本层不做。
+     */
+    void deactivate(long userId, Instant now);
 
     /**
      * 执行合并:{@code from} 的全部 identity 改挂到 {@code to},{@code from} 标记注销,写留痕。
      *
      * <p><b>不可逆。</b> 调用方必须先走过预览与二次确认(docs/technical/INDEX.md §7.1)。
      */
-    AccountMergeLog merge(String fromUserId, String toUserId, int movedRecordCount, Instant now);
+    AccountMergeLog merge(long fromUserId, long toUserId, int movedRecordCount, Instant now);
 
     List<AccountMergeLog> mergeLogs();
 
@@ -90,15 +128,15 @@ public interface AccountStore {
     /** identity 已被别人占了。 */
     class IdentityTakenException extends RuntimeException {
 
-        private final String ownerUserId;
+        private final long ownerUserId;
 
-        public IdentityTakenException(String message, String ownerUserId) {
+        public IdentityTakenException(String message, long ownerUserId) {
             super(message);
             this.ownerUserId = ownerUserId;
         }
 
         /** 占用者。合并预览要它 —— <b>但绝不回给客户端</b>,那等于告诉别人「这个号有账号」。 */
-        public String ownerUserId() {
+        public long ownerUserId() {
             return ownerUserId;
         }
     }

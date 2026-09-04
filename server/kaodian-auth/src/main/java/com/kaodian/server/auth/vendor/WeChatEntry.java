@@ -34,7 +34,7 @@ public enum WeChatEntry {
      * <p>形态上最省事的一条(没有回跳、没有 state),但它排在最后 ——
      * 小程序依赖 ICP 备案,而备案是 3-5 周的行政等待(docs/technical/INDEX.md §7.2)。
      */
-    MINI_PROGRAM("mini_program"),
+    MINI_PROGRAM("mini"),
 
     /**
      * 公众号网页授权(微信内置浏览器里的 H5)。
@@ -47,7 +47,7 @@ public enum WeChatEntry {
     OFFICIAL_ACCOUNT_H5("official_h5"),
 
     /** 网站应用扫码登录,{@code scope=snsapi_login}。桌面端用。 */
-    WEBSITE_QR("website_qr");
+    WEBSITE_QR("open_web");
 
     private final String wireName;
 

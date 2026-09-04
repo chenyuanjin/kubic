@@ -70,7 +70,7 @@ public class TokenService {
      * @param deviceLabel 设备名,设备管理页(D26)显示它。允许为空 —— 认不出来就叫「未知设备」,
      *                    <b>不因为认不出设备就拒绝登录</b>
      */
-    public IssuedToken issue(String userId, TokenScope scope, String deviceLabel) {
+    public IssuedToken issue(long userId, TokenScope scope, String deviceLabel) {
         Instant now = clock.instant();
         String plaintext = scope.prefix() + randomBody();
         AccessToken stored = new AccessToken(
@@ -82,26 +82,51 @@ public class TokenService {
     }
 
     /**
-     * 明文 → 这条会话,顺带滑动续期。
+     * 明文 → 四叶结果,顺带滑动续期({@code M5-账号与登录通道} §4.3)。
      *
-     * <p>返回空的四种情况合并成一种对外表现(401),这是有意的:
-     * <b>「这个令牌不存在」和「这个令牌过期了」对攻击者的信息量不同,对用户则完全一样</b> ——
-     * 用户要做的事都是重新登录。区分只写进服务端日志。
+     * <p>🔴 <b>这是唯一做校验的地方,{@link #verify} 只是它的一个投影。</b>
+     * 两处各写一遍判断,「一致」就只剩注释在保证 —— 而那正是 {@code TOKEN_EXPIRED}
+     * 至今没有出生地的原因:上一版把四种失败在这一层就折叠掉了,
+     * 于是上层再想分档也无从分起。
+     *
+     * <p>⚠️ <b>这一层不查账号状态。</b> {@link TokenCheck.Revoked} 只带 {@code userId} 出去,
+     * 由 {@code app} 去查 —— 令牌服务只回答令牌的事({@code M5} §十一)。
      */
-    public Optional<AccessToken> verify(String plaintext) {
+    public TokenCheck check(String plaintext) {
         if (plaintext == null || plaintext.isBlank()) {
-            return Optional.empty();
+            return new TokenCheck.Invalid();
         }
         // 前缀只用来快速拒绝明显不对的串。真正的作用域来自库里那一行 —— 见 TokenScope.hintFromPrefix。
         if (TokenScope.hintFromPrefix(plaintext) == null) {
-            return Optional.empty();
+            return new TokenCheck.Invalid();
+        }
+        Optional<AccessToken> found = store.findByHash(sha256(plaintext));
+        if (found.isEmpty()) {
+            // 🔴 查不到就到此为止 —— 这条路上没有 userId,所以「这个账号注销了」说不出来。
+            // 泄露面由这个结构限死,不靠一条要记住的规矩(TokenCheck 的类注释)。
+            return new TokenCheck.Invalid();
+        }
+        AccessToken token = found.get();
+        // 🔴 吊销先判:一条既被吊销又已过期的令牌,该说的是「已吊销」那一档 ——
+        // 因为注销账号会 revokeAll,而那批令牌迟早也会过期。反过来判的话,
+        // 注销满 30 天之后 ACCOUNT_DEACTIVATED 会静默变回 TOKEN_EXPIRED。
+        if (token.isRevoked()) {
+            return new TokenCheck.Revoked(token.userId());
         }
         Instant now = clock.instant();
-        Optional<AccessToken> found = store.findByHash(sha256(plaintext));
-        if (found.isEmpty() || !found.get().isUsableAt(now)) {
-            return Optional.empty();
+        if (!now.isBefore(token.expiresAt())) {
+            return new TokenCheck.Expired();
         }
-        return Optional.of(slide(found.get(), now));
+        return new TokenCheck.Valid(slide(token, now));
+    }
+
+    /**
+     * 明文 → 这条会话,顺带滑动续期。<b>给不关心档位的调用方</b>。
+     *
+     * <p>四种失败在这里合并成一个空值 —— 需要分档的走 {@link #check}。
+     */
+    public Optional<AccessToken> verify(String plaintext) {
+        return check(plaintext) instanceof TokenCheck.Valid v ? Optional.of(v.token()) : Optional.empty();
     }
 
     /** 滑动续期。落盘被节流,见 {@link #SLIDE_PERSIST_THRESHOLD}。 */
@@ -140,13 +165,13 @@ public class TokenService {
      *
      * @throws IllegalArgumentException 该哈希不属于这个账号 —— <b>越权吊销别人的会话必须是显式失败</b>
      */
-    public boolean revokeByHash(String userId, String tokenHash) {
+    public boolean revokeByHash(long userId, String tokenHash) {
         Optional<AccessToken> found = store.findByHash(tokenHash);
         if (found.isEmpty()) {
             return false;
         }
         AccessToken t = found.get();
-        if (!t.userId().equals(userId)) {
+        if (t.userId() != userId) {
             throw new IllegalArgumentException("这条会话不属于当前账号");
         }
         if (t.isRevoked()) {
@@ -157,12 +182,12 @@ public class TokenService {
     }
 
     /** 注销账号 / 退出全部设备。 */
-    public int revokeAll(String userId) {
+    public int revokeAll(long userId) {
         return store.revokeAllOfUser(userId, clock.instant());
     }
 
     /** 设备管理页的数据源。含已吊销与已过期的,由上层决定显示哪些。 */
-    public List<AccessToken> sessionsOf(String userId) {
+    public List<AccessToken> sessionsOf(long userId) {
         return store.findByUser(userId);
     }
 

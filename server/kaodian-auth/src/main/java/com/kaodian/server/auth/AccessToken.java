@@ -19,7 +19,7 @@ import java.time.Instant;
  */
 public record AccessToken(
         String tokenHash,
-        String userId,
+        long userId,
         TokenScope scope,
         String deviceLabel,
         Instant issuedAt,
@@ -32,8 +32,8 @@ public record AccessToken(
         if (tokenHash == null || tokenHash.isBlank()) {
             throw new IllegalArgumentException("令牌必须有哈希");
         }
-        if (userId == null || userId.isBlank()) {
-            throw new IllegalArgumentException("令牌必须属于某个账号");
+        if (userId < AppUser.FIRST_USER_ID) {
+            throw new IllegalArgumentException("令牌必须属于某个账号,实得 userId:" + userId);
         }
         if (scope == null) {
             throw new IllegalArgumentException("令牌必须有作用域");

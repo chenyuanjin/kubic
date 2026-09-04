@@ -121,7 +121,7 @@ class ConcurrencyTest {
 
         // 在修好之前,这里会有 7 个线程拿到 IdentityTakenException(→ 线上就是 500)
         assertEquals(THREADS, results.size());
-        String id = results.get(0).user().id();
+        long id = results.get(0).user().id();
         for (var r : results) {
             assertEquals(id, r.user().id(), "🔴 同一个手机号不能登进两个不同的账号");
             assertNotNull(r.token().plaintext(), "每一个请求都必须真的登进来");
@@ -139,7 +139,7 @@ class ConcurrencyTest {
         List<AccountService.LoginResult> results = raceAll(
                 () -> service.loginByWeChat(wx, "设备", null));
 
-        String id = results.get(0).user().id();
+        long id = results.get(0).user().id();
         for (var r : results) {
             assertEquals(id, r.user().id());
         }
@@ -153,7 +153,7 @@ class ConcurrencyTest {
         List<AccountService.LoginResult> results = raceAll(
                 () -> service.loginByWeChatWithPhone(wx, PHONE, "小程序", null));
 
-        String id = results.get(0).user().id();
+        long id = results.get(0).user().id();
         for (var r : results) {
             assertEquals(id, r.user().id());
             assertNotNull(r.token().plaintext());
@@ -203,7 +203,7 @@ class ConcurrencyTest {
     @Test
     @DisplayName("并发签发不会互相盖掉:8 条会话都在,而且都能用")
     void concurrentIssueKeepsAllSessions() throws Exception {
-        String userId = service.loginByPhone(
+        long userId = service.loginByPhone(
                 new SmsCodeService.VerifyOutcome.Passed(PHONE, cipher.hmacOf(PHONE)),
                 "第一台", null).user().id();
 

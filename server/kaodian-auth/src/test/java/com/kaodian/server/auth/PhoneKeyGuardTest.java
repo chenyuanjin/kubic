@@ -48,7 +48,7 @@ class PhoneKeyGuardTest {
     }
 
     /** 用给定的两把密钥建一个手机号账号,返回 userId。 */
-    private String seedAccount(String hmac, String aes) {
+    private long seedAccount(String hmac, String aes) {
         PhoneCipher cipher = new PhoneCipher(hmac, aes);
         FileAccountStore accounts = store();
         new PhoneKeyGuard(accounts, cipher, null, false).check();       // 盖章
@@ -99,7 +99,7 @@ class PhoneKeyGuardTest {
     @Test
     @DisplayName("🔴 HMAC 丢了但 AES 还在 → 自动换钥,零账号丢失,而且用户照样登得进去")
     void hmacLostButAesIntactHealsItself() {
-        String userId = seedAccount(hmacKey, aesKey);
+        long userId = seedAccount(hmacKey, aesKey);
 
         // HMAC 换了一把(比如 auth-keys.properties 被部分覆盖后重新生成了 hmac)
         String newHmac = newKey();
@@ -126,7 +126,7 @@ class PhoneKeyGuardTest {
     @Test
     @DisplayName("自愈之后再登录不会建新账号 —— 这正是 R-59 要防的那件事")
     void noPhantomAccountAfterHealing() {
-        String userId = seedAccount(hmacKey, aesKey);
+        long userId = seedAccount(hmacKey, aesKey);
         FileSignupLedger ledger = new FileSignupLedger(dir.resolve("signups.json"));
         assertEquals(1, ledger.totalCount());
 
@@ -169,7 +169,7 @@ class PhoneKeyGuardTest {
     @Test
     @DisplayName("给了旧密钥 → 有计划轮换,零丢失")
     void plannedRotationWithPreviousKeys() {
-        String userId = seedAccount(hmacKey, aesKey);
+        long userId = seedAccount(hmacKey, aesKey);
 
         PhoneCipher after = new PhoneCipher(newKey(), newKey());
         PhoneCipher previous = after.previousOf(hmacKey, aesKey);
@@ -207,7 +207,7 @@ class PhoneKeyGuardTest {
     @Test
     @DisplayName("accept-key-loss 是「我确认这些账号找不回来」,不是「跳过检查」")
     void acceptKeyLossIsExplicit() {
-        String orphaned = seedAccount(hmacKey, aesKey);
+        long orphaned = seedAccount(hmacKey, aesKey);
         PhoneCipher lost = new PhoneCipher(newKey(), newKey());
         FileAccountStore accounts = store();
 
@@ -243,8 +243,8 @@ class PhoneKeyGuardTest {
         PhoneCipher cipher = new PhoneCipher(hmacKey, aesKey);
         FileAccountStore accounts = store();
         var secret = cipher.protect(PHONE);
-        accounts.create(AppUser.fresh("u_legacy", java.time.Instant.parse("2026-08-01T00:00:00Z")),
-                new UserIdentity("u_legacy", IdentityType.PHONE, secret.hmac(),
+        accounts.create(AppUser.fresh(10001L, java.time.Instant.parse("2026-08-01T00:00:00Z")),
+                new UserIdentity(10001L, IdentityType.PHONE, secret.hmac(),
                         java.time.Instant.parse("2026-08-01T00:00:00Z")),
                 secret);
         assertTrue(accounts.keyFingerprint().isEmpty());
@@ -260,7 +260,7 @@ class PhoneKeyGuardTest {
     @Test
     @DisplayName("🔴 换钥必须维持「identifier == secret.hmac()」这条不变式")
     void rekeyKeepsTheInvariant() {
-        String userId = seedAccount(hmacKey, aesKey);
+        long userId = seedAccount(hmacKey, aesKey);
         PhoneCipher after = new PhoneCipher(newKey(), aesKey);
         FileAccountStore accounts = store();
         new PhoneKeyGuard(accounts, after, null, false).check();

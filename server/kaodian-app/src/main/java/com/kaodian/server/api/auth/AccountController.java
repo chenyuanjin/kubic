@@ -4,39 +4,29 @@ import com.kaodian.server.api.support.ApiException;
 import com.kaodian.server.api.dto.auth.AccountDto;
 import com.kaodian.server.api.support.CurrentSession;
 import com.kaodian.server.api.dto.auth.DeactivateResponse;
-import com.kaodian.server.api.dto.auth.RevokeSessionRequest;
-import com.kaodian.server.api.dto.auth.SessionDto;
-import com.kaodian.server.api.dto.auth.AccountDto;
-import com.kaodian.server.api.dto.auth.DeactivateResponse;
-import com.kaodian.server.api.dto.auth.RevokeSessionRequest;
-import com.kaodian.server.api.dto.auth.SessionDto;
-import com.kaodian.server.auth.AccessToken;
 import com.kaodian.server.auth.AccountService;
 import com.kaodian.server.auth.AppUser;
 import com.kaodian.server.auth.TokenService;
 import com.kaodian.server.auth.UserIdentity;
-import jakarta.validation.Valid;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.Instant;
-import java.util.List;
 
 /**
- * 「我的账号」与设备管理 —— 界面 D11 / D26 / D27。
+ * 「我的账号」—— 界面 D11 / D27。
+ *
+ * <p>⚠️ <b>登录设备列表已经不在这里了</b>:{@code GET /account/sessions} 迁到
+ * {@code GET /api/v1/tokens}({@link TokenController}),契约 §7.4 的路径。
+ * 理由见 {@code M5-账号与登录通道} §9.7 裁定 1 —— 把设备列表留在 {@code /account} 下,
+ * 「只读令牌不能管理令牌」这条锁就要写两处路径。
  */
 @RestController
 @RequestMapping("/api/v1/account")
 public class AccountController {
-
-    private static final Logger log = LoggerFactory.getLogger(AccountController.class);
 
     private final AccountService accounts;
     private final TokenService tokens;
@@ -56,55 +46,13 @@ public class AccountController {
         int active = (int) tokens.sessionsOf(user.id()).stream()
                 .filter(t -> t.isUsableAt(now)).count();
         return new AccountDto(
-                user.id(), user.nickname(), user.createdAt(),
+                Long.toString(user.id()), user.createdAt(),
                 accounts.maskedPhoneOf(user.id()).orElse(null),
                 accounts.identitiesOf(user.id()).stream()
                         .map(UserIdentity::type)
                         .map(com.kaodian.server.auth.IdentityType::wireName)
                         .toList(),
                 active);
-    }
-
-    /**
-     * 登录设备列表(D26)。
-     *
-     * <p>D11 上那个「登录设备 3 台 [查看]」点进来就是这里 —— 在这一版之前它<b>点了没地方去</b>。
-     */
-    @GetMapping("/sessions")
-    public List<SessionDto> sessions(CurrentSession session) {
-        Instant now = Instant.now();
-        String currentHash = session.token().tokenHash();
-        return tokens.sessionsOf(session.userId()).stream()
-                // 已经吊销或过期的不显示:那一页要回答的是「现在有谁登着」,不是历史。
-                .filter(t -> t.isUsableAt(now))
-                .map(t -> SessionDto.from(t, currentHash))
-                .toList();
-    }
-
-    /**
-     * 退出某一台(D26)。
-     *
-     * <h2>🔴 客户端必须先自己拦一次「本机还有未上传的记录」</h2>
-     *
-     * 离线队列在设备本地。退出登录会连同本地缓存一起清掉 ——
-     * <b>「记录动作永不失败」这条线,不能被一次退出登录从背后捅穿</b>(docs/technical/后端系统设计与组件接入.md §1.9)。
-     * <p>
-     * 服务端看不见别人机器上的队列,所以这里只把客户端的确认写进日志:
-     * 真要复盘「用户的记录哪去了」,这一行是唯一的线索。
-     */
-    @PostMapping("/sessions/revoke")
-    public java.util.Map<String, Object> revoke(CurrentSession session,
-                                                @Valid @RequestBody RevokeSessionRequest req) {
-        session.requireWrite();
-        if (!req.confirmedPendingUploads()) {
-            log.info("退出设备时客户端未确认离线队列 userId={}", session.userId());
-        }
-        try {
-            return java.util.Map.of("revoked", tokens.revokeByHash(session.userId(), req.tokenHash()));
-        } catch (IllegalArgumentException e) {
-            // 越权吊销别人的会话是显式失败,不是静默无事发生。
-            throw new ApiException(HttpStatus.FORBIDDEN, "NOT_YOUR_SESSION", e.getMessage());
-        }
     }
 
     /**

@@ -15,14 +15,14 @@ import java.time.Instant;
  * @param mergedAt         合并时刻
  */
 public record AccountMergeLog(
-        String fromUserId,
-        String toUserId,
+        long fromUserId,
+        long toUserId,
         int movedRecordCount,
         Instant mergedAt
 ) {
 
     public AccountMergeLog {
-        if (fromUserId == null || toUserId == null || fromUserId.equals(toUserId)) {
+        if (fromUserId == toUserId) {
             throw new IllegalArgumentException("合并必须发生在两个不同的账号之间");
         }
         if (mergedAt == null) {

@@ -99,7 +99,7 @@ public class FileSignupLedger implements SignupLedger {
         List<Entry> out = new ArrayList<>();
         for (JsonNode n : arr) {
             out.add(new Entry(
-                    required(n, "userId"),
+                    AuthJsonFile.userId(n, "userId"),
                     Instant.parse(required(n, "at")),
                     IdentityType.ofWireName(required(n, "channel")),
                     n.path("referrer").asString(null)));
@@ -109,7 +109,7 @@ public class FileSignupLedger implements SignupLedger {
 
     private static ObjectNode toNode(Entry e) {
         ObjectNode o = AuthJsonFile.mapper().createObjectNode();
-        o.put("userId", e.userId());
+        o.put("userId", AuthJsonFile.userIdString(e.userId()));
         o.put("at", e.at().toString());
         o.put("channel", e.channel().wireName());
         if (e.referrer() != null && !e.referrer().isBlank()) {

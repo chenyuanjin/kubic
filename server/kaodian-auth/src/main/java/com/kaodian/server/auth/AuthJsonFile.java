@@ -67,6 +67,10 @@ final class AuthJsonFile {
             return parse.apply(MAPPER.readTree(in));
         } catch (IOException e) {
             throw new IllegalStateException("鉴权数据文件读取失败:" + file, e);
+        } catch (LegacyUserIdException e) {
+            // 🔴 原样往上抛,不包成「内容不合法」—— 它的消息里写着确切的出路,
+            // 而被包一层之后,启动日志第一眼看到的是一句和原因无关的话。
+            throw e;
         } catch (RuntimeException e) {
             throw new IllegalStateException(
                     "鉴权数据文件内容不合法:" + file
@@ -102,6 +106,59 @@ final class AuthJsonFile {
             } catch (IOException ignored) {
                 // 清理失败不该盖掉真正的错误
             }
+        }
+    }
+
+    /**
+     * 读一个账号 id —— <b>{@code B0-2} 的启动期守卫就在这一个方法里</b>({@code M5} §一)。
+     *
+     * <h2>为什么是守卫而不是迁移器</h2>
+     *
+     * {@code u_}+UUID → {@code long} 是一次不可逆的重编号:{@code u_3f2a…} 里没有任何信息
+     * 能算出它该变成 {@code 10001} 还是 {@code 10002},只能<b>按某个顺序重新发一遍号</b>。
+     * 而那要求同时改四个文件里的每一处引用(账号 / 身份 / 令牌 / 注册流水),
+     * 中途失败就是一份谁也登不进去的数据。
+     * <p>
+     * 🔴 <b>本产品此刻没有真实用户</b>({@code CLAUDE.md}:「零真实用户反馈」),
+     * 所以迁移窗口为零 —— 写一个只会被跑零次、而且没有真数据可验的迁移器,
+     * 比拒绝启动更危险。<b>拒绝启动是响亮的,静默迁错是不响亮的。</b>
+     *
+     * @throws LegacyUserIdException 读到 {@code u_} 开头的老 id
+     */
+    static long userId(JsonNode n, String field) {
+        String raw = n.path(field).asString("");
+        if (raw.isEmpty()) {
+            throw new IllegalStateException("记录缺少必填字段:" + field);
+        }
+        if (raw.startsWith("u_")) {
+            throw new LegacyUserIdException(field, raw);
+        }
+        try {
+            return Long.parseLong(raw);
+        } catch (NumberFormatException e) {
+            throw new IllegalStateException(
+                    "账号 id 必须是 int64 的十进制串(B0 §3.2),实得 " + field + "=" + raw, e);
+        }
+    }
+
+    /** 账号 id 一律以<b>字符串</b>写进 JSON —— int64 在 JS 里过不了 {@code Number} 那一关。 */
+    static String userIdString(long userId) {
+        return Long.toString(userId);
+    }
+
+    /** 读到了废止的 {@code u_}+UUID 形态的账号 id。<b>拒绝启动。</b> */
+    static final class LegacyUserIdException extends IllegalStateException {
+
+        LegacyUserIdException(String field, String raw) {
+            super("""
+                    拒绝启动:鉴权数据里还是废止的 u_ 形态账号 id(%s=%s)。
+                    B0 §3.2 已把全仓账号 id 统一为 long(int64,起始 %d),而这份数据是统一之前写的。
+                    🔴 没有迁移器,而且不会有 —— u_+UUID 里没有信息能算出它该变成哪个号,
+                       只能重新发一遍号,那要同时改四个文件里的每一处引用,中途失败即数据报废。
+                    出路二选一:
+                      ① 本机没有要保的账号 → 删掉 ~/.kaodian/auth-*.json 重新开始(这是当前唯一的真实情形);
+                      ② 有要保的账号      → 停在这里,不要启动,先把这批数据导出来再谈。
+                    """.formatted(field, raw, AppUser.FIRST_USER_ID));
         }
     }
 

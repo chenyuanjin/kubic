@@ -203,21 +203,21 @@ class NoStemFieldTest {
 
             // ———————————————————————— api.dto:账号 ————————————————————————
             entry("AccountDto#userId", Reason.SERVER_ISSUED_ID),
-            // ⚪ R-73 收口时唯一没收的一行。今天恒为 null:AppUser#create 传的就是 null,
-            //    全仓库没有任何接口能写它 —— 它装不下题干,靠的是「没有入口」,不是「有上限」。
-            //    没给它编一个数是有意的:上限由那个接口的形状定(昵称是个称呼还是一句签名,
-            //    20 和 60 是两个答案),现在写一个进来,只是让这张表短一行,而那个数没有任何输入验证过它。
-            //    ⚠️ 这一档真正的风险在这一行上:「没有写入口」不是这个测试守得住的性质 ——
-            //    加写入口的那次提交不会红。所以它留在这里,而不是被当成已经解决。
-            entry("AccountDto#nickname", Reason.KNOWN_GAP),
+            // ⚪ AccountDto#nickname 那一行【已经不在了】—— M5 §9.9 把它删掉了。
+            //    它曾是 R-73 收口时唯一没收的一格:恒为 null,靠「没有写入口」而不是「有上限」
+            //    装不下题干,而「没有写入口」正是这个测试守不住的那种性质。
+            //    删字段把它从 KNOWN_GAP 变成了「不存在」—— 这一档少一行不是白名单被放松,是面小了一格。
             entry("AccountDto#maskedPhone", Reason.BOUND_BY_FORMAT),
             entry("AccountDto#identities", Reason.SERVER_CONSTANT),
             entry("DeactivateResponse#exportHint", Reason.SERVER_CONSTANT),
-            entry("SessionDto#tokenHash", Reason.SERVER_ISSUED_ID),
+            // SessionDto / RevokeSessionRequest 已被 TokenDto / TokenPageResponse 取代(M5 §9.7)。
+            // confirmedPendingUploads 那个布尔连同请求体一起删了 —— 服务端看不见别人机器上的队列。
+            entry("TokenDto#tokenId", Reason.SERVER_ISSUED_ID),
             // 响应字段,@Size 挂上去不校验任何东西。上限写在写入口的三个登录请求体上
-            // (LoginFieldLimits.MAX_DEVICE_LABEL = 40),见 SessionDto 类注释。
-            entry("SessionDto#deviceLabel", Reason.BOUNDED_UPSTREAM),
-            entry("RevokeSessionRequest#tokenHash", Reason.SERVER_ISSUED_ID),
+            // (LoginFieldLimits.MAX_DEVICE_LABEL = 40),见 TokenDto 类注释。
+            entry("TokenDto#deviceLabel", Reason.BOUNDED_UPSTREAM),
+            entry("TokenDto#scope", Reason.SERVER_CONSTANT),
+            entry("TokenPageResponse#nextCursor", Reason.SERVER_ISSUED_ID),
 
             // ———————————————————————— api.dto:登录与绑定 ————————————————————————
             entry("BindPhoneRequest#phone", Reason.BOUND_BY_FORMAT),

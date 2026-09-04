@@ -4,6 +4,7 @@ import com.kaodian.server.api.auth.AccountController;
 import com.kaodian.server.api.support.ApiCorsConfig;
 import com.kaodian.server.api.support.ApiExceptionHandler;
 import com.kaodian.server.api.auth.AuthController;
+import com.kaodian.server.api.auth.TokenController;
 import com.kaodian.server.api.support.AuthWebConfig;
 import com.kaodian.server.api.support.ClientIp;
 import com.kaodian.server.api.support.CurrentSessionResolver;
@@ -49,6 +50,7 @@ import java.util.List;
 
 import static org.hamcrest.Matchers.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -59,7 +61,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * <p>这里断言的不是「能跑通」,是<b>四种失败给的是四句不同的话、
  * 而且每一句都带着准确的时点</b>。合并成一句「验证码错误」的代价见 docs/technical/后端系统设计与组件接入.md §1.8。
  */
-@WebMvcTest(controllers = {AuthController.class, AccountController.class})
+@WebMvcTest(controllers = {AuthController.class, AccountController.class, TokenController.class})
 @Import({AuthApiTest.TestBeans.class, ApiExceptionHandler.class, AuthWebConfig.class, ApiCorsConfig.class})
 @TestPropertySource(properties = {
         "kaodian.api.cors.allowed-origins=http://localhost:5173",
@@ -420,7 +422,8 @@ class AuthApiTest {
     @DisplayName("🔴 只读令牌换不出写能力")
     void readonlyTokenCannotWrite(@Autowired TokenService tokens) throws Exception {
         Session s = loginFull(freshPhone(7));
-        String ro = tokens.issue(s.userId(), TokenScope.READONLY, "MCP").plaintext();
+        // 线上是字符串,内部是 long —— parseLong 这一下同时也是「响应里那个值确实是 int64」的断言
+        String ro = tokens.issue(Long.parseLong(s.userId()), TokenScope.READONLY, "MCP").plaintext();
 
         // 读得到
         mvc.perform(get("/api/v1/account").header("Authorization", "Bearer " + ro))
@@ -447,12 +450,83 @@ class AuthApiTest {
     }
 
     @Test
-    @DisplayName("设备列表能标出当前这一台 —— 否则用户会把自己踢下线然后以为是 bug")
-    void sessionsMarkCurrent() throws Exception {
+    @DisplayName("M5-15 设备列表迁到 GET /tokens:标出当前这一台,不返 total/hasMore/revokedAt")
+    void tokenListMarksCurrentAndOmitsForbiddenFields() throws Exception {
         String token = login(freshPhone(9));
-        mvc.perform(get("/api/v1/account/sessions").header("Authorization", "Bearer " + token))
+        mvc.perform(get("/api/v1/tokens").header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[?(@.current == true)]", hasSize(1)));
+                .andExpect(jsonPath("$.items[?(@.current == true)]", hasSize(1)))
+                // 契约 §7.4 裁定 2:对外叫 tokenId,值仍是那个哈希 —— 名字不该泄露它怎么算出来的
+                .andExpect(jsonPath("$.items[0].tokenId").exists())
+                .andExpect(jsonPath("$.items[0].tokenHash").doesNotExist())
+                .andExpect(jsonPath("$.items[0].scope", is("full")))
+                // 🔴 只返此刻可用的行,所以 revokedAt 这个字段不该存在 ——
+                //    一个永远不出现的字段是在邀请端实现一段永远跑不到的分支(§9.7 裁定 3)
+                .andExpect(jsonPath("$.items[0].revokedAt").doesNotExist())
+                // 🔴 分页用游标,前端不猜总数(B0 §7.1 / U5.6 §三)
+                .andExpect(jsonPath("$.total").doesNotExist())
+                .andExpect(jsonPath("$.hasMore").doesNotExist())
+                // 只有一台设备 → 没有下一页 → 整个 key 不出现(接口契约 §一 空值规则)
+                .andExpect(jsonPath("$.nextCursor").doesNotExist());
+
+        // 旧路径确实没了 —— 只写新路径通过、不写旧路径消失,迁移就可能是「两个都在」
+        mvc.perform(get("/api/v1/account/sessions").header("Authorization", "Bearer " + token))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("🔴 M5-15 只读令牌不能管理令牌 —— GET 也不行,不然一条 ro_ 就能把全部 at_ 吊销掉")
+    void readonlyTokenCannotTouchTokenEndpoints(@Autowired TokenService tokens) throws Exception {
+        Session s = loginFull(freshPhone(41));
+        String ro = tokens.issue(Long.parseLong(s.userId()), TokenScope.READONLY, "MCP").plaintext();
+
+        // requireWrite 拦不住这一条 —— 它是 GET。所以必须有 requireTokenManagement
+        mvc.perform(get("/api/v1/tokens").header("Authorization", "Bearer " + ro))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code", is("READONLY_TOKEN")));
+
+        String mine = tokens.sessionsOf(Long.parseLong(s.userId())).get(0).tokenHash();
+        mvc.perform(post("/api/v1/tokens/" + mine + "/revoke").header("Authorization", "Bearer " + ro))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code", is("READONLY_TOKEN")));
+    }
+
+    @Test
+    @DisplayName("🔴 越权吊销别人的会话是显式失败(403 NOT_YOUR_SESSION),不是静默无事发生")
+    void cannotRevokeSomeoneElsesToken(@Autowired TokenService tokens) throws Exception {
+        Session mine = loginFull(freshPhone(42));
+        Session theirs = loginFull(freshPhone(43));
+        String theirHash = tokens.sessionsOf(Long.parseLong(theirs.userId())).get(0).tokenHash();
+
+        mvc.perform(post("/api/v1/tokens/" + theirHash + "/revoke")
+                        .header("Authorization", "Bearer " + mine.token()))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code", is("NOT_YOUR_SESSION")));
+
+        // 自己的那一条退得掉,而且天然幂等:第二次回 false 不报错
+        String myHash = tokens.sessionsOf(Long.parseLong(mine.userId())).get(0).tokenHash();
+        mvc.perform(post("/api/v1/tokens/" + myHash + "/revoke")
+                        .header("Authorization", "Bearer " + mine.token()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.revoked", is(true)));
+    }
+
+    @Test
+    @DisplayName("🔴 B0-2 账号 id 是 int64,以字符串传输 —— 值变形状不变")
+    void userIdIsInt64CarriedAsString() throws Exception {
+        Session s = loginFull(freshPhone(44));
+
+        assertFalse(s.userId().startsWith("u_"), "u_ 形态已废止(B0 §3.2)");
+        long parsed = Long.parseLong(s.userId());          // 是 int64
+        assertTrue(parsed >= 10001L, "发号器从 10001 起,实得 " + parsed);
+
+        // 🔴 而它在 JSON 里必须是字符串:进了 number,JS 那一侧过 2^53 就悄悄丢精度
+        mvc.perform(get("/api/v1/account").header("Authorization", "Bearer " + s.token()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.userId").value(instanceOf(String.class)))
+                .andExpect(jsonPath("$.userId", is(s.userId())))
+                // §9.9 裁定:nickname 删掉 —— 一个永远为 null 的字段,下一个人会去把它填上
+                .andExpect(jsonPath("$.nickname").doesNotExist());
     }
 
     @Test
@@ -461,7 +535,7 @@ class AuthApiTest {
         mvc.perform(post("/api/v1/auth/wechat/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"entry":"mini_program","code":"x"}"""))
+                                {"entry":"mini","code":"x"}"""))
                 .andExpect(status().isServiceUnavailable())
                 .andExpect(jsonPath("$.code", is("WECHAT_NOT_ENABLED")));
     }
@@ -628,7 +702,7 @@ class AuthApiTest {
         mvc.perform(post("/api/v1/auth/wechat/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"entry":"mini_program","code":"jsc_nophone"}"""))
+                                {"entry":"mini","code":"jsc_nophone"}"""))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.isNewAccount", is(true)))
                 .andExpect(jsonPath("$.needsPhoneBinding", is(true)))
@@ -675,7 +749,7 @@ class AuthApiTest {
         mvc.perform(post("/api/v1/auth/wechat/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"entry":"mini_program","code":"jsc_nostate"}"""))
+                                {"entry":"mini","code":"jsc_nostate"}"""))
                 .andExpect(status().isOk());
     }
 
@@ -700,7 +774,7 @@ class AuthApiTest {
         mvc.perform(post("/api/v1/auth/wechat/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"entry":"mini_program","code":"jsc_nounion"}"""))
+                                {"entry":"mini","code":"jsc_nounion"}"""))
                 // 503 而不是 502:不是微信出了问题,是【我们的配置】没做对
                 .andExpect(status().isServiceUnavailable())
                 .andExpect(jsonPath("$.code", is("WECHAT_UNIONID_MISSING")))
@@ -732,7 +806,7 @@ class AuthApiTest {
         mvc.perform(post("/api/v1/auth/wechat/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"entry":"mini_program","code":"jsc_degraded"}"""))
+                                {"entry":"mini","code":"jsc_degraded"}"""))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.isNewAccount", is(true)))
                 .andExpect(jsonPath("$.needsPhoneBinding", is(true)));

@@ -276,8 +276,11 @@ class ApiContractTest {
                 .andExpect(jsonPath("$.items").doesNotExist())
                 .andExpect(jsonPath("$.returned").doesNotExist())
                 // 8 条记录里,32 天前与 33 天前那两条落在 30 格窗口之外 ——
-                // 它们仍然计进 total,只是不属于任何一格
-                .andExpect(jsonPath("$.total").value(8))
+                // 它们仍然计进 totalRecords,只是不属于任何一格
+                // 🔴 字段名是 totalRecords 不是 total:分页的 total 是被禁的那一个,
+                //    改名让「api/dto 里不许出现 \btotal\b」那条判据零例外地可跑(M1 §8.7)
+                .andExpect(jsonPath("$.total").doesNotExist())
+                .andExpect(jsonPath("$.totalRecords").value(8))
                 .andExpect(jsonPath("$.counted").value(6))
                 // 最后一格是今天(升序:旧 → 新)。growth-rate 那条就记在今天
                 .andExpect(jsonPath("$.buckets[29].start").value(LocalDate.now(BEIJING).toString()))
@@ -690,9 +693,9 @@ class ApiContractTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"records":[
-                                  {"kind":"MANUAL","sourceName":"地铁上","nodeCode":"average-calc","clientToken":"o-1"},
-                                  {"kind":"DRILL","sourceName":"地铁上","nodeCode":"yoy-mom","practiced":5,"correct":4,"clientToken":"o-2"},
-                                  {"kind":"PASTE","sourceName":"地铁上","nodeCode":"multiple-calc","clientToken":"o-3"}
+                                  {"kind":"MANUAL","sourceName":"地铁上","nodeCode":"average-calc","clientToken":"o-1","occurredAt":"2026-01-01T00:00:01Z"},
+                                  {"kind":"DRILL","sourceName":"地铁上","nodeCode":"yoy-mom","practiced":5,"correct":4,"clientToken":"o-2","occurredAt":"2026-01-01T00:00:02Z"},
+                                  {"kind":"PASTE","sourceName":"地铁上","nodeCode":"multiple-calc","clientToken":"o-3","occurredAt":"2026-01-01T00:00:03Z"}
                                 ]}
                                 """))
                 .andExpect(status().isOk())
@@ -707,7 +710,7 @@ class ApiContractTest {
                 .andExpect(jsonPath("$.results[2].error").doesNotExist());
 
         assertEquals(11, store.count(ApiTestAuth.USER_ID));
-        mockMvc.perform(get("/api/v1/v1/coverage/summary")).andExpect(jsonPath("$.covered").value(11));
+        mockMvc.perform(get("/api/v1/coverage/summary")).andExpect(jsonPath("$.covered").value(11));
     }
 
     /**
@@ -724,9 +727,9 @@ class ApiContractTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"records":[
-                                  {"kind":"MANUAL","sourceName":"地铁上","nodeCode":"average-calc","clientToken":"o-1"},
-                                  {"kind":"MANUAL","sourceName":"地铁上","nodeCode":"我自己起的考点","clientToken":"o-2"},
-                                  {"kind":"MANUAL","sourceName":"地铁上","nodeCode":"yoy-mom","clientToken":"o-3"}
+                                  {"kind":"MANUAL","sourceName":"地铁上","nodeCode":"average-calc","clientToken":"o-1","occurredAt":"2026-01-01T00:00:04Z"},
+                                  {"kind":"MANUAL","sourceName":"地铁上","nodeCode":"我自己起的考点","clientToken":"o-2","occurredAt":"2026-01-01T00:00:05Z"},
+                                  {"kind":"MANUAL","sourceName":"地铁上","nodeCode":"yoy-mom","clientToken":"o-3","occurredAt":"2026-01-01T00:00:06Z"}
                                 ]}
                                 """))
                 .andExpect(status().isOk())
@@ -748,8 +751,8 @@ class ApiContractTest {
     void batchTreatsReplayAsDuplicateNotFailure() throws Exception {
         String batch = """
                 {"records":[
-                  {"kind":"MANUAL","sourceName":"地铁上","nodeCode":"average-calc","clientToken":"o-1"},
-                  {"kind":"MANUAL","sourceName":"地铁上","nodeCode":"yoy-mom","clientToken":"o-2"}
+                  {"kind":"MANUAL","sourceName":"地铁上","nodeCode":"average-calc","clientToken":"o-1","occurredAt":"2026-01-01T00:00:07Z"},
+                  {"kind":"MANUAL","sourceName":"地铁上","nodeCode":"yoy-mom","clientToken":"o-2","occurredAt":"2026-01-01T00:00:08Z"}
                 ]}
                 """;
         mockMvc.perform(post("/api/v1/records/batch")
@@ -776,8 +779,8 @@ class ApiContractTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"records":[
-                                  {"kind":"MANUAL","sourceName":"地铁上","nodeCode":"average-calc"},
-                                  {"kind":"MANUAL","sourceName":"地铁上","nodeCode":"yoy-mom","clientToken":"o-2"}
+                                  {"kind":"MANUAL","sourceName":"地铁上","nodeCode":"average-calc","occurredAt":"2026-01-01T00:00:09Z"},
+                                  {"kind":"MANUAL","sourceName":"地铁上","nodeCode":"yoy-mom","clientToken":"o-2","occurredAt":"2026-01-01T00:00:10Z"}
                                 ]}
                                 """))
                 .andExpect(status().isOk())
@@ -798,7 +801,8 @@ class ApiContractTest {
         StringBuilder items = new StringBuilder();
         for (int i = 0; i < 51; i++) {
             items.append(i == 0 ? "" : ",").append("""
-                    {"kind":"MANUAL","sourceName":"地铁上","nodeCode":"average-calc","clientToken":"o-%d"}
+                    {"kind":"MANUAL","sourceName":"地铁上","nodeCode":"average-calc",
+                     "clientToken":"o-%d","occurredAt":"2026-01-01T00:00:00Z"}
                     """.formatted(i));
         }
 
@@ -831,7 +835,7 @@ class ApiContractTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"records":[{"kind":"MANUAL","sourceName":"地铁上",
-                                             "nodeCode":"average-calc","clientToken":"o-1"}],
+                                             "nodeCode":"average-calc","clientToken":"o-1","occurredAt":"2026-01-01T00:00:11Z"}],
                                  "tags":["我自己想的考点"]}
                                 """))
                 .andExpect(status().isBadRequest())
@@ -843,9 +847,9 @@ class ApiContractTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"records":[
-                                  {"kind":"MANUAL","sourceName":"地铁上","nodeCode":"average-calc","clientToken":"o-1"},
+                                  {"kind":"MANUAL","sourceName":"地铁上","nodeCode":"average-calc","clientToken":"o-1","occurredAt":"2026-01-01T00:00:12Z"},
                                   {"kind":"MANUAL","sourceName":"地铁上","nodeCode":"yoy-mom","clientToken":"o-2",
-                                   "transcript":"2023 年全国粮食产量为..."}
+                                   "transcript":"2023 年全国粮食产量为...","occurredAt":"2026-01-01T00:00:13Z"}
                                 ]}
                                 """))
                 .andExpect(status().isBadRequest())
@@ -861,8 +865,8 @@ class ApiContractTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"records":[
-                                  {"kind":"DRILL","sourceName":"%s","nodeCode":"average-calc","clientToken":"o-1"},
-                                  {"kind":"MANUAL","sourceName":"地铁上","nodeCode":"yoy-mom","clientToken":"o-2"}
+                                  {"kind":"DRILL","sourceName":"%s","nodeCode":"average-calc","clientToken":"o-1","occurredAt":"2026-01-01T00:00:14Z"},
+                                  {"kind":"MANUAL","sourceName":"地铁上","nodeCode":"yoy-mom","clientToken":"o-2","occurredAt":"2026-01-01T00:00:15Z"}
                                 ]}
                                 """.formatted("题".repeat(200))))
                 .andExpect(status().isOk())
@@ -890,7 +894,7 @@ class ApiContractTest {
                 .andExpect(jsonPath("$.summary.percent").value(39));
 
         assertEquals(7, store.count(ApiTestAuth.USER_ID));
-        mockMvc.perform(get("/api/v1/v1/coverage/summary")).andExpect(jsonPath("$.covered").value(7));
+        mockMvc.perform(get("/api/v1/coverage/summary")).andExpect(jsonPath("$.covered").value(7));
     }
 
     @Test
@@ -930,13 +934,17 @@ class ApiContractTest {
     // ---------------------------------------------------------------- cursor 分页
 
     @Test
-    @DisplayName("GET /api/v1/records —— 倒序、带 total,与 /api/v1/timeline 是两个端点")
+    @DisplayName("🔴 GET /api/v1/records —— 只有 items 与可能不出现的 nextCursor,三个统计字段都没了")
     void recordsAreListedNewestFirst() throws Exception {
         mockMvc.perform(get("/api/v1/records"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.total").value(8))
-                .andExpect(jsonPath("$.returned").value(8))
-                .andExpect(jsonPath("$.hasMore").value(false))
+                // 🔴 契约 §1.4:不返回条数统计,也不返回「还有没有更多」的布尔 ——
+                //    一个 total 字段会立刻长出页码条,而页码条要求随机跳页,游标做不到。
+                //    「手上这批是不是全部」由 nextCursor 这个 key 出不出现回答(M1 §8.4)
+                .andExpect(jsonPath("$.total").doesNotExist())
+                .andExpect(jsonPath("$.returned").doesNotExist())
+                .andExpect(jsonPath("$.hasMore").doesNotExist())
+                .andExpect(jsonPath("$.items.length()").value(8))
                 .andExpect(jsonPath("$.nextCursor").doesNotExist())
                 .andExpect(jsonPath("$.items[0].nodeCode").value("growth-rate"))
                 // 🔴 与时间线同一条纪律:这里没有内容字段,一个都没有
@@ -945,7 +953,7 @@ class ApiContractTest {
 
         // §6.4 的聚合视图仍然在,而且【出的不是同一种东西】:那边是格子,这边是条目。
         // 只断言它还回 200 是不够的 —— 两个端点又做成同一件事的时候,它照样回 200
-        // (见 RecordPageResponse 的 javadoc)
+        // (分工见 RecordController#list 的 javadoc)
         mockMvc.perform(get("/api/v1/timeline"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.buckets").isArray())
@@ -968,8 +976,9 @@ class ApiContractTest {
 
             List<String> ids = JsonPath.read(body, "$.items[*].id");
             seen.addAll(ids);
-            if (!(boolean) JsonPath.read(body, "$.hasMore")) {
-                assertNull(JsonPath.read(body, "$.nextCursor"), "没有更多时不该再给游标");
+            // 🔴 「还有没有下一页」现在只由 nextCursor 这个 key 在不在回答 —— hasMore 已经删掉。
+            //    两者含义相同曾经是实现细节,现在它是唯一的那个答案。
+            if (!body.contains("nextCursor")) {
                 break;
             }
             cursor = JsonPath.read(body, "$.nextCursor");
@@ -1006,7 +1015,7 @@ class ApiContractTest {
             }
             String body = mockMvc.perform(request).andReturn().getResponse().getContentAsString();
             seen.addAll(JsonPath.read(body, "$.items[*].id"));
-            if (!(boolean) JsonPath.read(body, "$.hasMore")) {
+            if (!body.contains("nextCursor")) {
                 break;
             }
             cursor = JsonPath.read(body, "$.nextCursor");
@@ -1034,16 +1043,28 @@ class ApiContractTest {
                 .andExpect(jsonPath("$.code").value("INVALID_CURSOR"));
     }
 
+    /**
+     * 🔴 三处都改了(M1 §十一 冲突 2):上限 {@code 200 → 100}、默认 {@code 50 → 20}、
+     * 超界的码 {@code VALIDATION_FAILED → INVALID_LIMIT}。
+     *
+     * <p>码必须换,因为「这个数超界了」和「请求体不合法」在端上是两条不同的分支 ——
+     * 前者改一个查询参数就能重试,后者重试多少次都一样。
+     * 用 {@code @Min}/{@code @Max} 注解拿不到这个区分,所以注解一起摘掉了。
+     */
     @Test
-    @DisplayName("limit 越界被拒;默认 50")
+    @DisplayName("🔴 limit 是 1..100、默认 20,超界回 INVALID_LIMIT 而不是 VALIDATION_FAILED")
     void recordsLimitIsValidated() throws Exception {
-        mockMvc.perform(get("/api/v1/records").param("limit", "0"))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
-        mockMvc.perform(get("/api/v1/records").param("limit", "201"))
-                .andExpect(status().isBadRequest());
-        mockMvc.perform(get("/api/v1/records"))
+        for (String outOfRange : new String[]{"0", "-1", "101", "201"}) {
+            mockMvc.perform(get("/api/v1/records").param("limit", outOfRange))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.code").value("INVALID_LIMIT"));
+        }
+        mockMvc.perform(get("/api/v1/records").param("limit", "100"))
                 .andExpect(status().isOk());
+        // 不传 limit → 默认 20。种子只有 8 条,所以这里断的是「默认值没把它切掉」
+        mockMvc.perform(get("/api/v1/records"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items.length()").value(8));
     }
 
     // ---------------------------------------------------------------- 跨域
@@ -1170,7 +1191,7 @@ class ApiContractTest {
         for (String field : List.of("tags", "labels", "notes")) {
             String body = """
                     {"records":[{"kind":"MANUAL","sourceName":"地铁上",
-                                 "nodeCode":"growth-rate","clientToken":"o-1"}],
+                                 "nodeCode":"growth-rate","clientToken":"o-1","occurredAt":"2026-01-01T00:00:16Z"}],
                      "%s":["2023 年全国粮食产量为..."]}
                     """.formatted(field);
 
@@ -1401,6 +1422,13 @@ class ApiContractTest {
                 }
             }
             return moved;
+        }
+
+        @Override
+        public int deleteAllOf(long userId) {
+            int before = touches.size();
+            touches.removeIf(t -> t.userId() == userId);
+            return before - touches.size();
         }
     }
 

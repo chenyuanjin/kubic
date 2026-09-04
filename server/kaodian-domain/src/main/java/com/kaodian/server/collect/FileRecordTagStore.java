@@ -193,6 +193,28 @@ public class FileRecordTagStore implements RecordTagStore {
         }
     }
 
+    /** 契约见 {@link RecordTagStore#deleteAllOf} —— <b>一次写,不是 N 次。</b> */
+    @Override
+    public int deleteAllOf(long userId) {
+        Tenant.requireUserId(userId);
+        synchronized (lock) {
+            ensureLoaded();
+            List<RecordTag> next = new ArrayList<>(tags.size());
+            for (RecordTag t : tags) {
+                if (t.userId() != userId) {
+                    next.add(t);
+                }
+            }
+            int removed = tags.size() - next.size();
+            if (removed == 0) {
+                return 0;               // 什么都没变,不必写盘
+            }
+            writeAtomically(next);
+            tags = next;
+            return removed;
+        }
+    }
+
     @Override
     public int count(long userId) {
         Tenant.requireUserId(userId);

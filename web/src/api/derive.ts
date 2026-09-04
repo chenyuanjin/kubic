@@ -31,7 +31,7 @@ import type {
  * <p>
  * 但它有一个前提:拿到的记录必须是<b>全量</b>。那一页一旦被 limit 截断,求出来的和就偏小,
  * 而偏小的对/练会把「稳」显示成「弱」—— 那是产品最没资格说的一句话。
- * 所以 {@link buildDrillIndex} 用 `returned === total` 当闸门,不满足就整体给 null,
+ * 所以 {@link buildDrillIndex} 用「响应里有没有 `nextCursor`」当闸门,不满足就整体给 null,
  * 界面显示「—」并说明原因。<b>宁缺毋滥:算不准就不显示,不硬凑。</b>
  */
 
@@ -45,18 +45,25 @@ interface Drill {
 }
 
 /**
- * 闸门是 `returned === total`,<b>不是 `!page.hasMore`</b>。
+ * 闸门是<b>「响应里没有 `nextCursor`」</b>。
  *
- * 端点换成 `/api/v1/records` 之后这两个判据在第一页上恰好同真同假,但它们问的不是一件事:
- * `hasMore` 说的是「这个游标之后还有没有」,而这里要的是「手上这批是不是<b>全部</b>」。
- * 哪天这里带上 cursor 翻第二页,`hasMore` 会在最后一页变成 false,而那一页只有几条 ——
- * 求和照样是错的,闸门却放行了。两个字段名都在,选错的那个不会报错,只会悄悄算偏。
+ * <h2>🔴 上一版是 `returned === total`,那两个字段已经不存在了</h2>
+ *
+ * 后端把 `total` / `returned` / `hasMore` 一起删了(`接口契约` §1.4:一个 `total` 字段
+ * 会立刻长出页码条),而这个闸门问的从来不是「总共几条」,是<b>「手上这批是不是全部」</b>。
+ * 那个问题有一个不需要条数就能回答的形式:<b>服务端没有再给游标 ⇒ 后面没有了 ⇒ 手上是全部。</b>
+ * <p>
+ * 而且这一版比旧的<b>更结实</b>:旧闸门只在「只拉第一页」时成立 ——
+ * 哪天这里带上 cursor 累积翻页,`returned === total` 会在每一页都为假、永远给 null;
+ * 新闸门在最后一页自然为真。⚠ 累积翻页时要判的是<b>最后一次响应</b>有没有 `nextCursor`,
+ * 而不是每一页各判一次。
  *
  * @returns 记录全量时返回 `code → {practiced, correct}`;被截断时返回 `null`,
  *          调用方据此把三个字段全部置为「不知道」
  */
 function buildDrillIndex(page: RecordPageResponse): Map<string, Drill> | null {
-  if (page.returned !== page.total) return null
+  // 🔴 key 在不在,不是值等不等 null —— 服务端保证没有下一页时这个 key 整个不出现
+  if (page.nextCursor !== undefined) return null
 
   const byNode = new Map<string, Drill>()
   for (const item of page.items) {

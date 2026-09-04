@@ -1,43 +1,33 @@
 package com.kaodian.server.api.record;
 
 import com.kaodian.server.api.dto.common.ApiError;
-import com.kaodian.server.api.support.ApiException;
-import com.kaodian.server.api.support.CurrentSession;
-import com.kaodian.server.api.dto.record.BatchCreateRecordsRequest;
-import com.kaodian.server.api.dto.record.BatchCreateRecordsResponse;
-import com.kaodian.server.api.dto.record.CreateRecordRequest;
-import com.kaodian.server.api.dto.record.CreateRecordResponse;
+import com.kaodian.server.api.dto.common.Cursor;
 import com.kaodian.server.api.dto.common.NodeDetailDto;
-import com.kaodian.server.api.dto.record.RecordDeletedResponse;
-import com.kaodian.server.api.dto.record.RecordPageResponse;
+import com.kaodian.server.api.dto.common.Page;
 import com.kaodian.server.api.dto.common.SummaryDto;
 import com.kaodian.server.api.dto.common.TimelineItemDto;
-import com.kaodian.server.coverage.CoverageReader;
-import com.kaodian.server.api.dto.common.ApiError;
 import com.kaodian.server.api.dto.record.BatchCreateRecordsRequest;
 import com.kaodian.server.api.dto.record.BatchCreateRecordsResponse;
 import com.kaodian.server.api.dto.record.BatchCreateRecordsResponse.ItemResult;
 import com.kaodian.server.api.dto.record.CreateRecordRequest;
 import com.kaodian.server.api.dto.record.CreateRecordResponse;
-import com.kaodian.server.api.dto.common.NodeDetailDto;
 import com.kaodian.server.api.dto.record.RecordDeletedResponse;
-import com.kaodian.server.api.dto.record.RecordPageResponse;
-import com.kaodian.server.api.dto.common.SummaryDto;
-import com.kaodian.server.api.dto.common.TimelineItemDto;
+import com.kaodian.server.api.support.ApiException;
+import com.kaodian.server.api.support.CurrentSession;
 import com.kaodian.server.collect.CaptureService;
 import com.kaodian.server.collect.CaptureService.CaptureRequest;
 import com.kaodian.server.collect.CaptureService.CaptureResult;
+import com.kaodian.server.collect.RecordTag;
 import com.kaodian.server.collect.RecordTagStore;
 import com.kaodian.server.collect.Touch;
 import com.kaodian.server.collect.TouchStore;
+import com.kaodian.server.coverage.CoverageReader;
 import com.kaodian.server.coverage.CoverageService.NodeCoverage;
 import com.kaodian.server.syllabus.Syllabus;
 import com.kaodian.server.syllabus.SyllabusSource;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Valid;
 import jakarta.validation.Validator;
-import jakarta.validation.constraints.Max;
-import jakarta.validation.constraints.Min;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -51,9 +41,12 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /**
@@ -197,13 +190,28 @@ public class RecordController {
     }
 
     /**
+     * 🔴 补传条目 → 采集入参,与 {@link #toCaptureRequest(CreateRecordRequest)} 的唯一差别是<b>多带一个时刻</b>。
+     *
+     * <p>差别只有这一处,而且它在这里显式写出来 —— 走 {@code batch} 不许因为走了 {@code batch} 而改判:
+     * 带 {@code nodeCode} 的记录直接进覆盖层、不进打标管线,在线与补传<b>必须给出同一个结论</b>。
+     * 那条保证不是靠这个方法,是靠下面 {@link #storeOne} 调的仍然是同一个 {@code capture} ——
+     * 批量端点自己写一遍写入逻辑、顺手在末尾统一提交打标任务,那一版跑起来一切正常,
+     * 唯一的后果是「同样的操作,联网记的和断网记的落在两个状态」。
+     */
+    private static CaptureRequest toCaptureRequest(BatchCreateRecordsRequest.Item item) {
+        CreateRecordRequest f = item.fields();
+        return new CaptureRequest(f.kind(), f.sourceName(), f.nodeCode(),
+                f.practiced(), f.correct(), f.clientToken(), item.occurredAt());
+    }
+
+    /**
      * 批里的一条。<b>这个方法不抛异常</b> —— 它的每一条出路都是一个 {@link ItemResult}。
      *
      * <p>抛出去就等于整批中断,而中断点之后那些本来能落的记录会一条都不落,
      * 客户端还拿不到「已经落了前几条」这个信息,于是重发时全部重来一遍。
      * 幂等能兜住重来,但兜不住用户看见的那个「补传失败」。
      */
-    private ItemResult storeOne(long userId, int index, CreateRecordRequest item) {
+    private ItemResult storeOne(long userId, int index, BatchCreateRecordsRequest.Item item) {
         // 🔴 补传必须带去重键。理由见 BatchCreateRecordsRequest ——
         // 没有它的补传是一次注定重复的写入,而重复的触达会把覆盖度的分子算错。
         if (item.clientToken() == null || item.clientToken().isBlank()) {
@@ -211,8 +219,11 @@ public class RecordController {
                     "补传的每一条都必须带 clientToken —— 没有它就没法判重,重发一次就多一条记录。"));
         }
 
-        // 逐条校验,规则仍然是 CreateRecordRequest 上那几个注解(见 validator 字段的说明)。
-        Set<ConstraintViolation<CreateRecordRequest>> violations = validator.validate(item);
+        // 逐条校验。六个共用字段的规则仍然只在 CreateRecordRequest 上一处(见 Item#fields 的说明),
+        // occurredAt 的必填写在 Item 上 —— 两个对象各校一次,合成同一条条目级 VALIDATION_FAILED。
+        Set<ConstraintViolation<?>> violations = new LinkedHashSet<>();
+        violations.addAll(validator.validate(item));
+        violations.addAll(validator.validate(item.fields()));
         if (!violations.isEmpty()) {
             // 🔴 只拼「字段名 + 我们自己写的那句中文」,绝不把 getInvalidValue() 拼进去。
             // 一批 50 条,原样回声等于把 50 段用户输入一起写进响应体和访问日志 ——
@@ -226,6 +237,7 @@ public class RecordController {
                     error("VALIDATION_FAILED", "这一条不合法 —— " + detail));
         }
 
+        // 🔴 同一个 capture,不是第二份写入实现 —— M1-13「走 batch 不许改判」的落点。
         CaptureResult result = capture.capture(userId, toCaptureRequest(item));
         return switch (result) {
             case CaptureResult.Recorded recorded -> {
@@ -294,45 +306,59 @@ public class RecordController {
     /**
      * 时间线,cursor 分页(docs/technical/INDEX.md §6.2)。
      *
-     * <p>与 {@code GET /api/v1/timeline} 的分工写在 {@link RecordPageResponse} 的 javadoc 里 ——
-     * <b>那一条是 §6.4 的聚合视图,这一条是采集线的读侧</b>,两个都留着。
+     * <p>与 {@code GET /api/v1/timeline} 的分工:<b>那一条是 §6.4 的按天/周聚合视图,
+     * 这一条是采集线的读侧</b>,两个都留着。
      *
-     * @param cursor 上一页返回的 {@code nextCursor};第一页不传
-     * @param limit  每页几条。默认 50,上限 200。
-     *               <b>这两个数不再与 {@code /api/v1/timeline} 共享</b> —— 那边改成聚合视图之后已经没有
-     *               {@code limit} 了,它按 {@code buckets} 数格子。两处从此各定各的,别再当成一组数改。
+     * <h2>🔴 响应是 {@link Page},只有 {@code items} 与可能不出现的 {@code nextCursor}</h2>
+     *
+     * 上一版是 {@code RecordPageResponse},多三个字段:{@code total} / {@code returned} / {@code hasMore}。
+     * 契约 §1.4 明令不返回条数统计与「还有没有更多」的布尔,理由是<b>一个 {@code total} 字段会立刻长出页码条</b>,
+     * 而页码条要求随机跳页 —— 游标做不到。
+     * <p>
+     * 「手上这批是不是全部」不需要额外字段:<b>响应里没有 {@code nextCursor} 这个 key</b>。
+     * 前端的截断闸门已经在同一次改动里换成了这个判断({@code web/src/api/derive.ts}) ——
+     * <b>后端删字段与前端换闸门是同一次落地,拆成两个人做中间那一刻就是断的。</b>
+     *
+     * @param cursor   上一页返回的 {@code nextCursor};第一页不传
+     * @param limit    每页几条。<b>{@code 1..100},默认 20</b>,超界 {@code 400 INVALID_LIMIT} ——
+     *                 这三个数与校验都在 {@link Cursor#limit} 一处,不是每个 controller 各写一遍
+     * @param tagState 只看某一类标签状态的记录。<b>今天只认 {@code unclassified}</b>,见 {@link #isUnclassified}
      */
     @GetMapping
-    public RecordPageResponse list(
+    public Page<TimelineItemDto> list(
             CurrentSession session,
-            // 🔴 这里刻意【没有】@Size:长度由 RecordCursor.decode 一处判。
+            // 🔴 这里刻意【没有】@Size:长度由 Cursor.decode 一处判。
             // 挂上去的话,超长游标回 VALIDATION_FAILED、解不开的游标回 INVALID_CURSOR ——
             // 同一件事(这个游标不能用)两个错误码,前端就得写两条分支。
             @RequestParam(required = false)
             String cursor,
 
-            @RequestParam(defaultValue = "" + RecordPageResponse.DEFAULT_LIMIT)
-            @Min(value = 1, message = "至少要 1 条")
-            @Max(value = RecordPageResponse.MAX_LIMIT, message = "一次最多 200 条")
-            int limit) {
+            // 🔴 同理没有 @Min/@Max:注解那一版的超界错误码是 VALIDATION_FAILED,而契约 §1.4 要的是
+            // INVALID_LIMIT。「这个数超界了」和「请求体不合法」在端上是两条不同的分支。
+            @RequestParam(required = false)
+            Integer limit,
 
+            @RequestParam(required = false)
+            String tagState) {
+
+        int size = Cursor.limit(limit);
         RecordCursor.Position from = RecordCursor.decode(cursor);
 
         List<Touch> all = store.findAll(session.userId());
         // 🔴 排序是 (occurredAt, id) 两级倒序,不是只按时间。
-        // 同一毫秒里真的会有多条 —— 补传一次落 50 条,它们共用同一个服务端时刻。
-        // 只按时间排,那 50 条在翻页时要么一起被跳过要么一起被重复吐出来(见 RecordCursor)。
+        // 同一毫秒里真的会有多条 —— 补传一批的 occurredAt 可以撞在同一毫秒上。
+        // 只按时间排,那一批在翻页时要么一起被跳过要么一起被重复吐出来(见 RecordCursor)。
         Comparator<Touch> oldestFirst = Comparator.comparing(Touch::occurredAt).thenComparing(Touch::id);
         List<Touch> ordered = all.stream()
                 .sorted(oldestFirst.reversed())
+                .filter(unclassifiedOnly(tagState, session.userId()))
                 .filter(t -> from == null || from.isStrictlyAfter(t))
                 .toList();
 
-        // 多取一条只为回答「还有没有更旧的」。用 total 减一减是算不出来的:
-        // total 是全量条数,而游标之后还剩几条要么再扫一遍要么就是猜。
-        List<Touch> page = ordered.stream().limit(limit + 1L).toList();
-        boolean hasMore = page.size() > limit;
-        List<Touch> visible = hasMore ? page.subList(0, limit) : page;
+        // 多取一条只为回答「还有没有更旧的」—— 这个答案现在只用来决定 nextCursor 出不出现。
+        List<Touch> page = ordered.stream().limit(size + 1L).toList();
+        boolean hasMore = page.size() > size;
+        List<Touch> visible = hasMore ? page.subList(0, size) : page;
 
         // 树只问一次:同一页上的记录必须用同一棵树翻译考点名,否则中途一次改名会让上下两条对不上
         Syllabus syllabusNow = syllabus.current();
@@ -340,12 +366,43 @@ public class RecordController {
                 .map(t -> TimelineItemDto.from(t, syllabusNow))
                 .toList();
 
-        return new RecordPageResponse(
-                all.size(),
-                items.size(),
-                hasMore,
-                hasMore ? RecordCursor.encode(visible.get(visible.size() - 1)) : null,
-                items);
+        // null → @JsonInclude(NON_NULL) 让整个 key 不出现,这正是前端截断闸门读的那件事。
+        return new Page<>(items, hasMore ? RecordCursor.encode(visible.get(visible.size() - 1)) : null);
+    }
+
+    /** {@code ?tagState=} 今天唯一认的取值。 */
+    private static final String UNCLASSIFIED = "unclassified";
+
+    /**
+     * {@code ?tagState=unclassified} —— <b>在已有端点上加一个查询参数,不新建端点。</b>
+     *
+     * <h2>🔴 这里不重新定义「未分类」,也不自己数一遍</h2>
+     *
+     * 「未分类」的取值域归打标那一侧(四种成因见 {@code U2.3} §一,本文件不复述),
+     * 未分类<b>计数</b>是另一个端点、归覆盖度那一侧。这里只有一句话:<b>过滤</b>。
+     * <p>
+     * 判定复用 {@link RecordTag#effectiveTagsOf} 与 {@link RecordTag#countsInCoverage} ——
+     * 一条记录的有效标签全部不计覆盖度,它就是未分类的。
+     * 在这里自己写一段「什么算未分类」会造出第二个口径,而两个口径迟早对不上:
+     * 到那时界面上的「未分类 3 条」与筛出来的条数不一样,没人说得清哪个是对的。
+     *
+     * @param tagState 只认 {@code unclassified};其他非空取值 → {@code 400},回声由 unknownValue 截断
+     */
+    private Predicate<Touch> unclassifiedOnly(String tagState, long userId) {
+        if (tagState == null || tagState.isBlank()) {
+            return t -> true;
+        }
+        if (!UNCLASSIFIED.equals(tagState)) {
+            throw ApiException.unknownValue("VALIDATION_FAILED", "tagState", tagState);
+        }
+        // 一次读全量标签,不是每条记录查一次 —— 一页 100 条会变成 100 次文件扫描。
+        Map<String, List<RecordTag>> byRecord = tagStore.findAll(userId).stream()
+                .collect(Collectors.groupingBy(RecordTag::recordId));
+        return t -> isUnclassified(t, byRecord.get(t.id()));
+    }
+
+    private static boolean isUnclassified(Touch touch, List<RecordTag> stored) {
+        return RecordTag.effectiveTagsOf(touch, stored).stream().noneMatch(RecordTag::countsInCoverage);
     }
 
     // ---------------------------------------------------------------- 内部

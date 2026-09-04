@@ -415,12 +415,12 @@ class AuthApiTest {
         mvc.perform(post("/api/v1/auth/logout").header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.revoked", is(true)));
-        mvc.perform(post("/api/v1/v1/auth/logout").header("Authorization", "Bearer " + token))
+        mvc.perform(post("/api/v1/auth/logout").header("Authorization", "Bearer " + token))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code", is("UNAUTHORIZED")));
 
         // 不带令牌同样进不来 —— 这个端点不在白名单那七行里
-        mvc.perform(post("/api/v1/v1/auth/logout"))
+        mvc.perform(post("/api/v1/auth/logout"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code", is("UNAUTHORIZED")));
 
@@ -486,11 +486,11 @@ class AuthApiTest {
         String token = login(freshPhone(10));
         // 🔴 收进鉴权面(`接口契约` §三 下面那张表)。裁定是「不删这个端点,给它加一道门」——
         //    它是阶段 3 判据的唯一读口,删掉等于把那个数藏起来。
-        mvc.perform(get("/api/v1/v1/account/signup-count"))
+        mvc.perform(get("/api/v1/account/signup-count"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code", is("UNAUTHORIZED")));
 
-        mvc.perform(get("/api/v1/v1/account/signup-count").header("Authorization", "Bearer " + token))
+        mvc.perform(get("/api/v1/account/signup-count").header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.totalSignups", greaterThanOrEqualTo(1)))
                 .andExpect(jsonPath("$.note", containsString("人工判定")));

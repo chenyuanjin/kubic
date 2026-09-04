@@ -184,7 +184,7 @@ class SyllabusAdminApiTest {
         // 记录列表上那条老记录也跟着显示新名字 —— 它本来就是按 code 反查的。
         // 逐条的记录读 /api/v1/records(§6.2);/api/v1/timeline 现在只出按天/周的格子(§6.4)
         mockMvc.perform(get("/api/v1/records"))
-                .andExpect(jsonPath("$.total").value(8))
+                .andExpect(jsonPath("$.items.length()").value(8))
                 .andExpect(jsonPath("$.items[0].nodeCode").value("growth-rate"))
                 .andExpect(jsonPath("$.items[0].nodeName").value("增长率(我自己的说法)"));
     }
@@ -221,7 +221,7 @@ class SyllabusAdminApiTest {
                 .andExpect(jsonPath("$.total").value(18))
                 .andExpect(jsonPath("$.covered").value(8))
                 .andExpect(jsonPath("$.percent").value(44));
-        mockMvc.perform(get("/api/v1/records")).andExpect(jsonPath("$.total").value(8));
+        mockMvc.perform(get("/api/v1/records")).andExpect(jsonPath("$.items.length()").value(8));
     }
 
     @Test
@@ -244,7 +244,7 @@ class SyllabusAdminApiTest {
                 .andExpect(jsonPath("$.summary.percent").value(44));
 
         mockMvc.perform(get("/api/v1/records"))
-                .andExpect(jsonPath("$.total").value(8))                       // 🔴 一条都没丢
+                .andExpect(jsonPath("$.items.length()").value(8))                       // 🔴 一条都没丢
                 .andExpect(jsonPath("$.items[0].nodeCode").value("average-calc"))
                 .andExpect(jsonPath("$.items[0].practiced").value(12));
 
@@ -273,7 +273,7 @@ class SyllabusAdminApiTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("SAME_NODE"));
 
-        mockMvc.perform(get("/api/v1/records")).andExpect(jsonPath("$.total").value(8));
+        mockMvc.perform(get("/api/v1/records")).andExpect(jsonPath("$.items.length()").value(8));
     }
 
     /**
@@ -312,7 +312,7 @@ class SyllabusAdminApiTest {
 
         // 两次都被拒,记录一条没动
         mockMvc.perform(get("/api/v1/records"))
-                .andExpect(jsonPath("$.total").value(8))
+                .andExpect(jsonPath("$.items.length()").value(8))
                 .andExpect(jsonPath("$.items[0].nodeCode").value("growth-rate"));
     }
 
@@ -334,7 +334,7 @@ class SyllabusAdminApiTest {
 
         // 但历史还在,而且还有名字 —— 归档不是「这段历史不存在了」
         mockMvc.perform(get("/api/v1/records"))
-                .andExpect(jsonPath("$.total").value(8))
+                .andExpect(jsonPath("$.items.length()").value(8))
                 .andExpect(jsonPath("$.items[0].nodeCode").value("growth-rate"))
                 .andExpect(jsonPath("$.items[0].nodeName").value("增长率计算"));
 

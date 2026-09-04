@@ -25,6 +25,7 @@ import com.kaodian.server.recognize.AsrClient;
 import com.kaodian.server.recognize.RecognitionUnavailableException;
 import com.kaodian.server.syllabus.Syllabus;
 import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -114,7 +115,23 @@ public class RecognitionController {
      */
     private final AsrClient asr;
 
-    public RecognitionController(TaggingService tagging, CoverageReader reader, AsrClient asr) {
+    /**
+     * 单条录音的时长上限(秒)—— <b>配置值,不是字面量</b>({@code M1-记录采集与离线补传} §4.1)。
+     *
+     * <p>它原来是一个写死在方法名里的 {@code 60}。提成配置的理由不是「可配置更灵活」,是
+     * <b>上限会随 ASR 供应商变,而接口不该跟着变</b>:换一家供应商的代价应该是改一行配置
+     * 加一个 {@code AsrClient} 实现类,不是改一个方法名。
+     *
+     * <p>⚠ 调大它<b>不等于</b>能收更长的录音:字节上限 {@link #MAX_AUDIO_BYTES}、
+     * {@code spring.servlet.multipart.max-file-size} 与 {@code file-size-threshold} 三个数
+     * 是一组,见 {@code MultipartMemoryGuard}。只调这一个的后果是 60 秒以上的录音改为撞字节上限,
+     * 报的是 {@code AUDIO_TOO_LARGE} 而不是 {@code AUDIO_TOO_LONG}。
+     */
+    private final int maxAudioSeconds;
+
+    public RecognitionController(TaggingService tagging, CoverageReader reader, AsrClient asr,
+                                 @Value("${kaodian.audio.max-seconds:60}") int maxAudioSeconds) {
+        this.maxAudioSeconds = maxAudioSeconds;
         this.tagging = tagging;
         this.reader = reader;
         this.asr = asr;
@@ -239,7 +256,7 @@ public class RecognitionController {
         requireRecord(session.userId(), id);
 
         byte[] clip = requireAudioBytes(part);
-        requireAtMostSixtySeconds(clip);
+        requireAtMostMaxSeconds(clip);
 
         String spoken;
         try {
@@ -343,16 +360,13 @@ public class RecognitionController {
     /** 送进 ASR 的类型 —— 与图片同一条:<b>我们自己的常量</b>,不是客户端声明的。 */
     private static final String WAV_MIME = "audio/wav";
 
-    /** 单条时长上限 —— {@code 1.1.1.4} 的「建议 60s」。 */
-    private static final int MAX_AUDIO_SECONDS = 60;
-
     /**
      * 单条音频的字节上限。
      *
      * <h2>它<b>不是</b>时长上限的替代品,两条都要</h2>
      *
      * 字节上限拦得住「一段十分钟的录音」,拦不住「一段压缩得很狠的五分钟录音」——
-     * 所以真正管 60 秒的是 {@link #requireAtMostSixtySeconds},字节上限管的是另一件事:
+     * 所以真正管时长的是 {@link #requireAtMostMaxSeconds},字节上限管的是另一件事:
      * <b>在解析任何东西之前,先给内存划一条线</b>。
      *
      * <h2>这个数是怎么来的</h2>
@@ -377,14 +391,14 @@ public class RecognitionController {
     private static final int PCM_FORMAT_TAG = 1;
 
     /** 把 part 变成字节,顺便把「没传」和「太大」两件事说清楚。 */
-    private static byte[] requireAudioBytes(MultipartFile part) {
+    private byte[] requireAudioBytes(MultipartFile part) {
         if (part == null || part.isEmpty()) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "MISSING_AUDIO",
                     "请求里没有音频 —— multipart 的 part 名字是 audio。");
         }
         if (part.getSize() > MAX_AUDIO_BYTES) {
             throw new ApiException(HttpStatus.PAYLOAD_TOO_LARGE, "AUDIO_TOO_LARGE",
-                    "这段音频超过 6 MiB —— 单条上限 " + MAX_AUDIO_SECONDS + " 秒,请重录一段短的。");
+                    "这段音频超过 6 MiB —— 单条上限 " + maxAudioSeconds + " 秒,请重录一段短的。");
         }
         try {
             return part.getBytes();
@@ -396,17 +410,17 @@ public class RecognitionController {
     }
 
     /**
-     * 🔴 服务端自己算时长,超过 60 秒当场拒。
+     * 🔴 服务端自己算时长,超过上限当场拒。上限是配置值,见 {@link #maxAudioSeconds}。
      *
      * <p>拒绝的方式是 400 而不是一个「结局码」:超过 60 秒是<b>调用方发错了东西</b>,
      * 重发同样的内容还是错 —— 与「模型没认出来」完全不是一类。契约里「失败提示重录」
      * 指的是转写失败那一支,不是这一支;这一支该说的是「这段太长了,切短一点」。
      */
-    private static void requireAtMostSixtySeconds(byte[] clip) {
+    private void requireAtMostMaxSeconds(byte[] clip) {
         double seconds = wavSeconds(clip);
-        if (seconds > MAX_AUDIO_SECONDS) {
+        if (seconds > maxAudioSeconds) {
             throw new ApiException(HttpStatus.PAYLOAD_TOO_LARGE, "AUDIO_TOO_LONG",
-                    "单条录音最长 " + MAX_AUDIO_SECONDS + " 秒 —— 这一段是 "
+                    "单条录音最长 " + maxAudioSeconds + " 秒 —— 这一段是 "
                             + Math.round(seconds) + " 秒,请切短后重录。");
         }
     }

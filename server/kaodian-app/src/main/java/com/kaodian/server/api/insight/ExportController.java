@@ -95,7 +95,7 @@ public class ExportController {
      * 直接跳转不受影响,所以这一版没有去动 {@code ApiCorsConfig} ——
      * <b>那份配置是「一处声明」的,改它属于跨域策略的决定,不是导出功能顺手能带的</b>。
      */
-    @GetMapping("/api/v1/v1/export")
+    @GetMapping("/api/v1/export")
     public ResponseEntity<Object> export(CurrentSession session, @RequestParam String format) {
         ExportFormat fmt = ExportFormat.ofWireName(format);
 

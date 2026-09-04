@@ -151,7 +151,7 @@ export interface BlindSpotsResponse {
 }
 
 /* ========================================================================== */
-/* GET /api/v1/records                  → server: dto/RecordPageResponse.java     */
+/* GET /api/v1/records                  → server: dto/common/Page.java            */
 /* ========================================================================== */
 
 /**
@@ -188,20 +188,24 @@ export interface TimelineItemDto {
 }
 
 /**
- * `GET /api/v1/records` 的一页 —— server: dto/RecordPageResponse.java。
+ * `GET /api/v1/records` 的一页 —— server: dto/common/Page.java。
  *
- * `total` 是行为层记录<b>总数</b>(不是本页的),`returned` 是本页几条。
- * <b>两个数不等,就说明这一屏拿到的记录是残缺的</b> —— 见 derive.ts 里那个截断闸门。
+ * <h2>🔴 只有两个字段,而且第二个可以整个不出现</h2>
  *
- * <h2>`hasMore` / `nextCursor`:字段照抄,界面这一轮不翻页</h2>
+ * 上一版还有 `total` / `returned` / `hasMore` 三个字段,现在<b>后端连同它们一起删掉了</b>
+ * (`接口契约` §1.4:不返回条数统计,也不返回「还有没有更多」的布尔)。
+ * 理由是一个 `total` 字段会立刻长出页码条,而页码条要求随机跳页 —— 游标做不到。
  *
- * 一屏要的是<b>全量记录</b>(每个考点的做题数要对这批记录求和),不是一页一页往回翻;
- * 拿不全时正确的反应是显示「—」,不是在后台悄悄多请求几次拼起来(见 queries.ts 的同一条)。
- * 所以这两个字段今天没有调用方,<b>但照样写在这里</b> —— 这份文件对着的是服务端的响应体,
- * 不是界面今天用到的那个子集;按「用不到就不写」裁字段,下一个人得去翻 Java 才知道还有什么。
+ * <h2>🔴 `nextCursor` 是 optional,不是 `string | null`</h2>
+ *
+ * 没有下一页时<b>响应里根本没有这个 key</b>,不是 `null` 也不是空串
+ * (服务端 `Page` 上的 `@JsonInclude(NON_NULL)` 是这条的执行装置)。
+ * 写成 `string | null` 会让人写出 `if ('nextCursor' in page)` 然后永远为真。
  * <p>
- * 🔴 判「还有没有更旧的」用 `hasMore`,<b>不要用 `nextCursor !== null`</b>:
- * 两者含义相同是实现细节,而那个布尔是契约(server 侧那个 record 的 javadoc 明写了这条)。
+ * 而这个 key 在不在,正是 derive.ts 那个截断闸门现在读的东西:
+ * <b>「手上这批是不是全部」⇔ 没有 `nextCursor`</b> —— 它在只拉第一页时成立,
+ * 在累积翻页时同样成立(最后一页没有 `nextCursor` ⇒ 手上是全部),
+ * 而旧闸门 `returned === total` 只在前者成立。
  *
  * <h2>`/api/v1/timeline` 在这份文件里<b>没有类型</b>,是故意的</h2>
  *
@@ -211,14 +215,14 @@ export interface TimelineItemDto {
  * 而不是把它和这个分页形状揉成一个 —— 两种需求塞进一个类型,结果是一堆互相排斥的可选字段。
  */
 export interface RecordPageResponse {
-  total: number
-  returned: number
-  /** 还有没有更旧的。记录是倒序的,所以「下一页」指的是更早的那些。 */
-  hasMore: boolean
-  /** 下一页从哪儿接着翻;没有更多时为 null。服务端签发,客户端<b>不解也不拼</b>,原样回传。 */
-  nextCursor: string | null
   /** 本页的记录,<b>按发生时间倒序</b>,最近的在最前。 */
   items: TimelineItemDto[]
+  /**
+   * 下一页从哪儿接着翻。服务端签发,客户端<b>不解、不拼、不跨会话存</b>,原样回传。
+   *
+   * 🔴 没有下一页时这个 key <b>整个不出现</b>(所以是 `?`,不是 `| null`)。
+   */
+  nextCursor?: string
 }
 
 /* ========================================================================== */

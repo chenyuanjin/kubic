@@ -271,10 +271,12 @@ class CaptureServiceTest {
     }
 
     /**
-     * 第六个字段 {@code clientToken} 是去重键(docs/technical/INDEX.md §6.2「client_token 幂等」)。
+     * 第六个字段 {@code clientToken} 是去重键(docs/technical/INDEX.md §6.2「client_token 幂等」),
+     * 第七个 {@code occurredAt} 是补传条目自报的落本地时刻(M1 §3.6)。
      *
-     * <p>它能加进来,靠的是<b>装不下内容</b>而不是「约定它只放 id」:
-     * 上限 {@link Touch#MAX_CLIENT_TOKEN_LENGTH} = 64,而 64 装不下任何一道题的题干。
+     * <p>它们能加进来,靠的是<b>装不下内容</b>而不是「约定它只放 id」:
+     * {@code clientToken} 的上限 {@link Touch#MAX_CLIENT_TOKEN_LENGTH} = 64,64 装不下任何一道题的题干;
+     * {@code occurredAt} 是一个 {@link java.time.Instant},<b>类型本身就装不下文字</b>。
      * 下一个想加字段的人得拿出同样量级的答案。
      */
     @Test
@@ -282,7 +284,13 @@ class CaptureServiceTest {
     void captureRequestCarriesNoContent() {
         List<String> fields = Arrays.stream(CaptureRequest.class.getRecordComponents())
                 .map(RecordComponent::getName).toList();
-        assertEquals(List.of("kind", "sourceName", "nodeCode", "practiced", "correct", "clientToken"), fields);
+        assertEquals(
+                List.of("kind", "sourceName", "nodeCode", "practiced", "correct", "clientToken", "occurredAt"),
+                fields);
+        // 🔴 装得下文字的类型一个都不许有 —— 上面那张名单挡的是「加了什么」,这一条挡的是「加成了什么」。
+        Arrays.stream(CaptureRequest.class.getRecordComponents())
+                .forEach(c -> assertNotEquals(Object.class, c.getType(),
+                        "采集入参不许出现 Object 这种什么都装得下的类型:" + c.getName()));
     }
 
     /**

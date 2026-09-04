@@ -89,6 +89,13 @@ public final class InMemoryRecordTagStore implements RecordTagStore {
         return (int) tags.stream().filter(t -> t.userId() == userId).count();
     }
 
+    @Override
+    public int deleteAllOf(long userId) {
+        int before = tags.size();
+        tags.removeIf(t -> t.userId() == userId);
+        return before - tags.size();
+    }
+
     private RecordTag lookup(String tagId) {
         if (tagId == null || tagId.isBlank()) {
             return null;

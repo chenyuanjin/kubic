@@ -9,6 +9,7 @@ import jakarta.validation.constraints.Size;
 import org.springframework.stereotype.Service;
 
 import java.time.Clock;
+import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
@@ -42,6 +43,14 @@ import java.util.UUID;
  */
 @Service
 public class CaptureService {
+
+    /**
+     * 用 JDK 自带的 {@link System.Logger},不引 slf4j。
+     *
+     * <p>{@code kaodian-domain} 的依赖表是空的,而且那是<b>有意的</b>(见模块划分那张表)——
+     * 为了一条 WARN 给它加第一个第三方依赖,代价与收益不成比例。
+     */
+    private static final System.Logger LOG = System.getLogger(CaptureService.class.getName());
 
     private final TouchStore store;
     private final VisionTagger visionTagger;
@@ -84,6 +93,7 @@ public class CaptureService {
      * @param practiced   练了几道;可空
      * @param correct     <b>用户自己说</b>对了几道;可空
      * @param clientToken 去重键;可空。<b>只有离线队列补传那条路会给</b>,契约见 {@link TouchStore#append}
+     * @param occurredAt  记录<b>落本地那一刻</b>;可空。见下面那段 —— <b>只有补传那条路会给</b>
      */
     public record CaptureRequest(
             TouchKind kind,
@@ -93,17 +103,40 @@ public class CaptureService {
             Integer correct,
 
             @Size(max = Touch.MAX_CLIENT_TOKEN_LENGTH)
-            String clientToken
+            String clientToken,
+
+            /*
+             * 🔴 可空,而两条路各走各的(M1-记录采集与离线补传 §3.6):
+             *
+             *   POST /records        —— 不带,服务端 clock.instant() 打戳。
+             *                           在线时「落本地那一刻」与「服务端收到那一刻」相差毫秒级,
+             *                           服务端打戳既准确又不可伪造。
+             *   POST /records/batch  —— 每个条目必带。补传路径上两个时刻相差可以是两周,
+             *                           服务端打戳会把用户断网那几天记的东西【全部】落进补传当天的分组,
+             *                           而用户会用「昨天第三条」定位一条记录 —— 顺序一变他的结论是
+             *                           「数据变了」,不是「排序规则变了」。
+             *
+             * 这不是「客户端自报时间」的例外:那条规则挡的是【补记】(界面上没有时间选择器),
+             * 而这个值是端在落本地那一刻记下的,用户没有任何入口能改它。
+             * 防伪造靠钳制不靠信任 —— 见 mountAndAppend 里的上界钳制。
+             */
+            Instant occurredAt
     ) {
         /**
-         * 在线直接记 —— 没有去重键。
+         * 在线直接记 —— 没有去重键,也不自报时间。
          *
          * <p>与 {@link Touch#clientToken()} 那段同一个理由:在线记一笔的成败当场就知道,
          * 不需要去重键;强迫它编一个,只会让这个字段可以是任何东西。
          */
         public CaptureRequest(TouchKind kind, String sourceName, String nodeCode,
                               Integer practiced, Integer correct) {
-            this(kind, sourceName, nodeCode, practiced, correct, null);
+            this(kind, sourceName, nodeCode, practiced, correct, null, null);
+        }
+
+        /** 在线直接记,带去重键。 */
+        public CaptureRequest(TouchKind kind, String sourceName, String nodeCode,
+                              Integer practiced, Integer correct, String clientToken) {
+            this(kind, sourceName, nodeCode, practiced, correct, clientToken, null);
         }
 
         /** 只挂一个考点,不带做题数。 */
@@ -321,15 +354,9 @@ public class CaptureService {
                 nodeCode,
                 request.sourceName(),
                 request.kind(),
-                clock.instant().truncatedTo(ChronoUnit.MILLIS),
+                occurredAtOf(request),
                 drillOf(request),
                 request.clientToken());
-
-        // ⚪ 这里的时间戳是【服务端收到的时刻】,不是【用户离线记下的时刻】。
-        //    离线队列补传(docs/technical/INDEX.md §6.2 的 /records/batch)因此会把上午 9 点记的那一笔标成中午 12 点。
-        //    补不了:请求体里没有 occurredAt,而那是有意的 —— CreateRecordRequest 的注释写着
-        //    「让客户端自报会让『生疏』变成一个可以被随手改掉的状态,补录历史记录要做时单开端点」。
-        //    这两条约束在补传这条路上直接冲突,本轮不自行裁定,已在交付说明里报上去。
 
         Touch stored = store.append(touch);
 
@@ -345,6 +372,35 @@ public class CaptureService {
      * <p>没填 practiced 就是没有做题这回事(仅接触),不是 0 道。
      * 这里没有、也不会有任何判题、正确率预测或难度模型(决策记录 §2.2)。
      */
+    /**
+     * 这一笔算<b>什么时候</b>发生的 —— 服务端打戳 vs 端自报,以及自报时的上界钳制。
+     *
+     * <h2>🔴 钳制上界,不钳下界,而且不拒绝</h2>
+     *
+     * 设备时钟被改到未来是真实会发生的事(用户为了别的 app 手动调时间、时区数据过期)。
+     * 一条落在未来的记录在时间线上没有意义 —— 它会永远待在列表最上面,而且「多久前」是负数。
+     * <b>但它不该让这条记录失败</b>:记录本身是真的,错的只是那台设备的时钟。所以钳到 {@code now},
+     * 记一条 WARN 留痕,记录照落。
+     * <p>
+     * 🚧 <b>下界暂不设</b>:「多久以前的补传还该被接受」只能由本地队列长度上限推出来,而那个数还没有实测过。
+     * 在这里替它拍一个数,后果是用户离线超过那个数的那一批记录被静默拒收 —— 不在这里猜。
+     */
+    private Instant occurredAtOf(CaptureRequest request) {
+        Instant now = clock.instant().truncatedTo(ChronoUnit.MILLIS);
+        if (request.occurredAt() == null) {
+            return now;                                  // POST /records:服务端打戳
+        }
+        Instant claimed = request.occurredAt().truncatedTo(ChronoUnit.MILLIS);
+        if (claimed.isAfter(now)) {
+            // 🔴 只带 clientToken,不带 sourceName、不带 nodeCode —— 日志里不许出现用户送来的自由文本。
+            LOG.log(System.Logger.Level.WARNING,
+                    "补传的 occurredAt 落在未来,已钳到当前时刻:claimed=" + claimed + " now=" + now
+                            + " clientToken=" + request.clientToken());
+            return now;
+        }
+        return claimed;
+    }
+
     private static Touch.Drill drillOf(CaptureRequest request) {
         if (request.practiced() == null) {
             return null;

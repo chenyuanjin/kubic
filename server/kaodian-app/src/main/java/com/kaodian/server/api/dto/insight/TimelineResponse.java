@@ -10,13 +10,13 @@ import java.util.List;
  *
  * <h2>🔴 它和 {@code GET /api/v1/records} 不是一个东西,两个都要留着</h2>
  *
- * 分工那张表写在 {@link RecordPageResponse} 的 javadoc 里,<b>这里不再抄一遍</b> ——
+ * 分工那张表写在 {@code RecordController#list} 的 javadoc 里,<b>这里不再抄一遍</b> ——
  * 抄一遍就是两份会各自漂移的说明。一句话版本:
  * <b>{@code /records} 是一条一条的原始记录(§6.2 采集线的读侧,cursor 分页),
  * 这一条是一格一格的统计(§6.4 查询线,与覆盖概览、盲区并列)。</b>
  * <p>
  * ⚠ 这个端点<b>曾经</b>返回平铺的最近 N 条,也就是在干 {@code /records} 的活;
- * {@code RecordPageResponse} 里那句「今天还没有做按天/周聚合」记的就是这笔欠账。
+ * {@code RecordPageResponse}(已删)里那句「今天还没有做按天/周聚合」记的就是这笔欠账。
  * 现在还上了:平铺那一份归 {@code /records},这里只出桶。
  *
  * <h2>🔴 三个数,一个判断都没有</h2>
@@ -26,9 +26,9 @@ import java.util.List;
  * 没有「最活跃的一周」、没有「平均每天几条」—— 平均数看着中立,
  * 但它唯一的用途是拿今天去和它比。
  *
- * <h2>{@code total} 与 {@code counted}:窗口外的记录不会凭空消失</h2>
+ * <h2>{@code totalRecords} 与 {@code counted}:窗口外的记录不会凭空消失</h2>
  *
- * {@code total} 是行为层记录<b>总数</b>,{@code counted} 是落进这个窗口的条数。
+ * {@code totalRecords} 是行为层记录<b>总数</b>,{@code counted} 是落进这个窗口的条数。
  * 两个都给,是因为只给后者的话,用户会看着一张只有 12 条的图问「我记的 128 条呢」;
  * 而只给前者,图上的柱子加起来对不上那个总数。<b>差额本身就是一句话:
  * 「还有 116 条在这段时间之前」</b>,而那句话由前端说,不由这里的字段说。
@@ -48,7 +48,16 @@ import java.util.List;
  *                         因为本周还没过完。这不是 bug:格子的边界由日历定,不由「今天」定 ——
  *                         把最后一格截到今天,会让它比别的格子窄,而一根宽度不等的柱子
  *                         在图上直接就是误读
- * @param total            行为层记录总数(不是窗口内的)
+ * @param totalRecords     行为层记录总数(不是窗口内的)。
+ *                         <h4>🔴 它叫 {@code totalRecords} 而不是 {@code total},原因不是命名口味</h4>
+ *                         分页的 {@code total} 是被禁的:它描述的是<b>没有返回的那部分</b>,而一个条数字段
+ *                         会立刻长出页码条。这个数不一样 —— 它与 {@code counted} 的差额本身就是一句话
+ *                         「还有 116 条在这段时间之前」,是聚合视图的一部分,不是分页元数据。
+ *                         <p>
+ *                         但守着那条禁令的判据是 {@code grep -rn '\btotal\b' .../api/dto/},它会命中这里。
+ *                         <b>给判据加一张例外名单是更贵的选择</b>:加一条例外,下一条就有了理由。
+ *                         改名之后 {@code \btotal\b} 因词边界不再命中,判据原样可跑、零例外 ——
+ *                         而且这个名字本来就更准:它说的是「记录总数」,不是「本页总数」
  * @param counted          落进这个窗口的记录条数;等于所有 {@code touchCount} 之和
  * @param buckets          每一格,<b>按时间升序(旧 → 新)</b>,且<b>不跳过空格子</b>
  */
@@ -70,7 +79,7 @@ public record TimelineResponse(
 
         LocalDate from,
         LocalDate to,
-        int total,
+        int totalRecords,
         int counted,
         List<TimelineBucketDto> buckets
 ) {

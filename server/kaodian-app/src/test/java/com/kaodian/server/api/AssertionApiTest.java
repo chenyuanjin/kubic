@@ -532,6 +532,13 @@ class AssertionApiTest {
         public int reassign(String fromNodeCode, String toNodeCode) {
             throw new AssertionError("「我已掌握」不改挂记录");
         }
+
+        @Override
+        public int deleteAllOf(long userId) {
+            int before = touches.size();
+            touches.removeIf(t -> t.userId() == userId);
+            return before - touches.size();
+        }
     }
 
     @TestConfiguration

@@ -2,7 +2,6 @@ package com.kaodian.server.api;
 
 import com.kaodian.server.api.dto.common.Cursor;
 import com.kaodian.server.api.dto.common.Page;
-import com.kaodian.server.api.dto.record.RecordPageResponse;
 import com.kaodian.server.api.support.ApiException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -96,10 +95,6 @@ class PagingTest {
         }
     }
 
-    @Test
-    @DisplayName("游标长度上限全库只有一个数(M1 收敛掉 RecordPageResponse 时这条断言一起消失)")
-    void cursorLengthCeilingHasOnlyOneValue() {
-        assertEquals(RecordPageResponse.MAX_CURSOR_LENGTH, Cursor.MAX_LENGTH,
-                "两个上限迟早对不上,到那时真正生效的是小的那个,没人说得清是哪个");
-    }
+    // 「游标长度上限全库只有一个数」那条断言随 RecordPageResponse 一起消失了(KUBI-99):
+    // 它守的是【两个副本别对不上】,而现在只剩 Cursor.MAX_LENGTH 一处,没有第二个数可对。
 }

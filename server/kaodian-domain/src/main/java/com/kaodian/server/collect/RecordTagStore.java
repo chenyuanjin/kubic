@@ -93,4 +93,15 @@ public interface RecordTagStore {
 
     /** 这个用户存着的标签行数。 */
     int count(long userId);
+
+    /**
+     * 删光这个用户的全部标签行 —— 与 {@link TouchStore#deleteAllOf} 成对,
+     * 是 {@code M5} 注销与 {@code collect} 包的另一半交界面({@code M1-记录采集与离线补传} §7.3)。
+     *
+     * <p>理由与那一条逐字相同:循环调 {@link #deleteByRecord} 会把一次注销变成 N 次全量重写,
+     * 而注销是用户按下之后必须完成的动作。<b>什么时候调归 M5 编排,本接口只定签名与语义。</b>
+     *
+     * @return 删掉了几行;这个用户本来就没有标签时返回 0
+     */
+    int deleteAllOf(long userId);
 }

@@ -153,4 +153,27 @@ public interface TouchStore {
      * @return 搬走了几条;来源上本来就没有记录时返回 0
      */
     int reassign(String fromNodeCode, String toNodeCode);
+
+    /**
+     * 删光这个用户的全部记录 —— <b>{@code M5} 注销与 {@code collect} 包的唯一交界面</b>
+     * ({@code M1-记录采集与离线补传} §7.3)。
+     *
+     * <h2>🔴 存在的理由就是「不许写成一个循环」</h2>
+     *
+     * 注销最省事的实现是 {@code for (id : findAll(userId)) delete(userId, id)},而它的代价是不可见的:
+     * {@link #delete} 每次<b>全量重写整个文件并落盘</b>,记了三年的用户注销一次 = N 次全量重写。
+     * 换 JDBC 之后同构:N 次单行删除 + N 次索引维护。
+     * 而注销是<b>用户按下之后必须完成</b>的动作 —— 超时了没有第二次机会,而半途失败留下的是
+     * 一个「删了一半」的账号。这个方法把它收成<b>一次</b>写。
+     *
+     * <p>🔴 <b>M5 只碰这一个方法(以及 {@link RecordTagStore#deleteAllOf}),不碰 collect 包其余任何符号。</b>
+     * 这条有编译期保证:{@code kaodian-auth} 不依赖 {@code kaodian-domain},所以注销的编排只能落在 {@code app}。
+     * <b>什么时候调、调完账号怎么办、导出在删之前还是之后,全部归 M5 编排</b>,本接口只定签名与语义。
+     *
+     * <p>标签不在这里级联删:它们在另一个 store 里,由 M5 的编排各调一次
+     * —— 让 {@code TouchStore} 反过来认识 {@code RecordTagStore} 会在 collect 包内部造出一条新的依赖。
+     *
+     * @return 删掉了几条;这个用户本来就没有记录时返回 0(<b>不抛异常</b>:注销一个从没记过东西的账号是正常的)
+     */
+    int deleteAllOf(long userId);
 }

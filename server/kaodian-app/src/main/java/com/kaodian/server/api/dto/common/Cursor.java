@@ -46,19 +46,17 @@ public final class Cursor {
      * 一个「解不开的游标」的报错会带着它进服务端日志,于是「翻页」这条最无害的路径
      * 就成了往日志里写一整段题干的通道。超过这个长度的游标<b>连解都不解</b>,直接拒。
      *
-     * <p>⚠ {@code RecordPageResponse.MAX_CURSOR_LENGTH} 今天还留着同一个数(它自己的
-     * {@code @Size} 要一个编译期常量)。两处不许对不上 —— {@code PagingTest} 钉住了这一条;
-     * {@code M1}(KUBI-90)把那个类收敛成 {@link Page} 时,那份副本连同那条断言一起消失。
+     * <p>✅ 全库<b>只剩这一个</b>游标长度上限({@code KUBI-99}):
+     * {@code RecordPageResponse.MAX_CURSOR_LENGTH} 那份副本连同那个类一起删掉了。
      */
     public static final int MAX_LENGTH = 120;
 
     /**
      * {@code limit} 的默认值与上下界({@code 接口契约} §1.4:{@code 1..100},默认 {@code 20})。
      *
-     * <p>⚠ {@code RecordController} 今天是 {@code 1..200}、默认 {@code 50}、超界回
-     * {@code VALIDATION_FAILED},<b>三处都与本行不一致</b>。契约 §1.4 已裁定「本行赢,归 {@code M1} 执行」——
-     * 所以本类<b>只提供校验器,不去改那个端点</b>:改它要连同 {@code @Min}/{@code @Max} 一起摘掉,
-     * 那是 {@code M1}(KUBI-90)的一次改动,不是 {@code B0} 顺手做的。
+     * <p>✅ {@code GET /api/v1/records} 已改用这三个数与 {@link #limit}({@code KUBI-99})。
+     * 它上一版是 {@code 1..200}、默认 {@code 50}、超界回 {@code VALIDATION_FAILED},三处都与本行不一致;
+     * 那一版的 {@code @Min}/{@code @Max} 注解已连同摘掉 —— 留着注解就还有第二个错误码。
      */
     public static final int DEFAULT_LIMIT = 20;
     public static final int MAX_LIMIT = 100;

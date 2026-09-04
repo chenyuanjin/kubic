@@ -1,10 +1,14 @@
 package com.kaodian.server.api.dto.record;
 
 import com.kaodian.server.api.dto.common.UnknownFieldException;
+import com.kaodian.server.collect.Touch;
+import com.kaodian.server.collect.TouchKind;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
+import java.time.Instant;
 import java.util.List;
 
 /**
@@ -35,6 +39,10 @@ import java.util.List;
  * 这件事在这里是<b>结构上成立的</b>:{@link CreateRecordRequest} 里根本没有装图片的字段,
  * 所以不需要在这个类上再写一条「不许带图」的校验 —— 带不进来。
  *
+ * <h2>🔴 每一条还必须带 {@code occurredAt},而单条那条路上没有这个字段</h2>
+ *
+ * 见 {@link Item#occurredAt()}。两条路的时间戳来源不同,这是<b>有意的分叉</b>,不是这里多了一个字段。
+ *
  * @param records 这一批记录。<b>顺序即 {@link BatchCreateRecordsResponse.ItemResult#index()}</b>,
  *                客户端凭它把结果对回自己队列里的那一条
  */
@@ -43,8 +51,65 @@ public record BatchCreateRecordsRequest(
         @NotEmpty(message = "补传批次不能是空的")
         @Size(max = BatchCreateRecordsRequest.MAX_BATCH_SIZE,
                 message = "单批最多 50 条 —— 超了请分批")
-        List<CreateRecordRequest> records
+        List<Item> records
 ) {
+
+    /**
+     * 补传批次里的一条 = <b>{@link CreateRecordRequest} 的六个字段 + 必填的 {@code occurredAt}</b>。
+     *
+     * <h2>🔴 六个字段的校验规则一条都没有抄到这里来</h2>
+     *
+     * 它们仍然只写在 {@link CreateRecordRequest} 上一处 —— 这个 record 的六个分量是<b>裸的</b>,
+     * 校验由 {@link #fields()} 转出来的那个对象承担。
+     * 把 {@code @NotBlank}/{@code @Size}/{@code @Max} 在这里再敲一遍是最自然的写法,
+     * 而它的代价是<b>两份规则</b>:哪天来源名上限从 60 改成 80,改一处、漏一处,
+     * 于是同一条记录走单条能过、走补传过不了,而没有任何一条断言会红。
+     *
+     * @param occurredAt 🔴 <b>必填</b> —— 端在<b>落本地那一刻</b>记下的时间。
+     *                   服务端在这条路上不打戳:补传时「落本地」与「服务端收到」相差可以是两周,
+     *                   服务端打戳会把用户断网那几天记的东西全部落进补传当天的分组。
+     *                   <p>
+     *                   这<b>不是</b>「客户端自报时间」的例外 —— 那条规则挡的是【补记】
+     *                   (界面上没有时间选择器),而这个值用户没有任何入口能改。
+     *                   防伪造靠钳制不靠信任:落在未来的会被钳到当前时刻(见 {@code CaptureService})
+     */
+    public record Item(
+
+            TouchKind kind,
+
+            // 🔴 下面三个 @Size 是【长度声明】,不是第二份校验规则:
+            //    max 全部引用 CreateRecordRequest / Touch 上的同一个常量,编译期只有一个数。
+            //    它们必须在这里出现,是因为 NoStemFieldTest 逼着 api.dto 包里每个 String 字段
+            //    说出自己的上限 —— 少一个,那条断言就退化成「凡是响应体一律放行」。
+            //    真正的规则(@NotBlank / @Min / @Max / 两个 @AssertTrue)仍然只在
+            //    CreateRecordRequest 上一处,由 fields() 转出来的那个对象承担。
+            @Size(max = CreateRecordRequest.MAX_SOURCE_NAME_LENGTH)
+            String sourceName,
+
+            @Size(max = MAX_NODE_CODE_LENGTH)
+            String nodeCode,
+
+            Integer practiced,
+            Integer correct,
+
+            @Size(max = Touch.MAX_CLIENT_TOKEN_LENGTH)
+            String clientToken,
+
+            @NotNull(message = "补传的每一条都必须带 occurredAt —— 它是这条记录排序的唯一依据")
+            Instant occurredAt
+    ) {
+
+        /** 六个共用字段 —— 校验与转换都走它,规则只在 {@link CreateRecordRequest} 上一处。 */
+        public CreateRecordRequest fields() {
+            return new CreateRecordRequest(kind, sourceName, nodeCode, practiced, correct, clientToken);
+        }
+
+        /** 🔴 与外层、与 {@link CreateRecordRequest#rejectUnknownField} 同一道锁,三层缺一层等于整条线松。 */
+        @JsonAnySetter
+        void rejectUnknownField(String name, Object value) {
+            throw new UnknownFieldException(name);
+        }
+    }
 
     /**
      * 单批上限,docs/technical/INDEX.md §6.2 定死的 50。
@@ -56,6 +121,16 @@ public record BatchCreateRecordsRequest(
      * 拒绝是吵闹的,吵闹在这里是优点。
      */
     public static final int MAX_BATCH_SIZE = 50;
+
+    /**
+     * 考点 code 的长度上限。
+     *
+     * <p>⚠ {@link CreateRecordRequest} 上那个 {@code @Size(max = 64)} 今天还是个字面量,
+     * 所以这里没有常量可引 —— 提上来一个,让两处至少是<b>同一个符号</b>。
+     * 收敛到一处的正确落点是 {@code CreateRecordRequest},那是它的主场;
+     * 本轮不去改它是因为改的是别人的字段声明,不是本模块的活。
+     */
+    static final int MAX_NODE_CODE_LENGTH = 64;
 
     /**
      * 🔴 与 {@link CreateRecordRequest#rejectUnknownField} 同一道锁,而且必须在这一层也有。

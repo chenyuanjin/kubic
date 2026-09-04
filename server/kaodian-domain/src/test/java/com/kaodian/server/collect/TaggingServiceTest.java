@@ -462,5 +462,10 @@ class TaggingServiceTest {
         public int reassign(String fromNodeCode, String toNodeCode) {
             throw new UnsupportedOperationException("打标不改挂记录");
         }
+
+        @Override
+        public int deleteAllOf(long userId) {
+            throw new UnsupportedOperationException("打标不注销账号");
+        }
     }
 }

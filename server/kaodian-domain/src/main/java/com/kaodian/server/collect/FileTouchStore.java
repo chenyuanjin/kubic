@@ -279,6 +279,34 @@ public class FileTouchStore implements TouchStore {
         }
     }
 
+    /**
+     * 契约见 {@link TouchStore#deleteAllOf} —— <b>一次写,不是 N 次。</b>
+     *
+     * <p>一次扫描筛出「不是这个人的」,一次 {@code writeAtomically}。
+     * 与 {@link #delete} 的差别不在语义而在<b>写盘次数</b>,而那正是这个方法存在的全部理由。
+     */
+    @Override
+    public int deleteAllOf(long userId) {
+        Tenant.requireUserId(userId);
+        synchronized (lock) {
+            ensureLoaded();
+            List<Touch> next = new ArrayList<>(touches.size());
+            for (Touch t : touches) {
+                if (t.userId() != userId) {
+                    next.add(t);
+                }
+            }
+            int removed = touches.size() - next.size();
+            if (removed == 0) {
+                return 0;                       // 什么都没变,不必写盘
+            }
+            // 先落盘再改内存,与 append 同一条纪律
+            writeAtomically(next);
+            touches = next;
+            return removed;
+        }
+    }
+
     // —— 载入与播种 ——
 
     /**

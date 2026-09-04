@@ -254,11 +254,14 @@ function buildRecordPage(now: number): RecordPageResponse {
     }
   }).sort((a, b) => Date.parse(b.occurredAt) - Date.parse(a.occurredAt)) // 最近的在最上面
 
-  // returned === total:这份示例数据永远是全量,不会触发 derive.ts 的截断闸门。
-  // 也因此 hasMore 恒为 false、nextCursor 恒为 null —— 8 条记录一页装得下,没有第二页。
-  // 这两个字段照样给出来:mock 扮演的是服务端,少一个字段就等于替 live 分支
-  // 少排练了一种可能出现的响应(比如「拿到的是残缺的一页」该怎么显示)。
-  return { total: items.length, returned: items.length, hasMore: false, nextCursor: null, items }
+  // 🔴 不给 nextCursor 这个 key —— 这份示例数据永远是全量,不会触发 derive.ts 的截断闸门。
+  // 8 条记录一页装得下,没有第二页。
+  //
+  // 写成 `nextCursor: null` 是这里最容易犯的错:那样 mock 扮演的就不是服务端了 ——
+  // 服务端上 @JsonInclude(NON_NULL) 保证没有下一页时【这个 key 整个不出现】,
+  // 而闸门判的正是 `!== undefined`。给一个 null 会让 live 分支被截断时的行为
+  // 在 mock 分支上永远排练不到,却看不出任何差别。
+  return { items }
 }
 
 function buildGroups(recordPage: RecordPageResponse, now: number): GroupDto[] {

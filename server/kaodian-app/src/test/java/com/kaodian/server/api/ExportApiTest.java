@@ -529,6 +529,13 @@ class ExportApiTest {
         public int reassign(String fromNodeCode, String toNodeCode) {
             throw new AssertionError("导出路径上出现了改挂 —— 只读端点不该改动任何东西");
         }
+
+        @Override
+        public int deleteAllOf(long userId) {
+            int before = touches.size();
+            touches.removeIf(t -> t.userId() == userId);
+            return before - touches.size();
+        }
     }
 
     /**

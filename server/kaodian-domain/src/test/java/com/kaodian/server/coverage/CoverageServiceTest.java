@@ -10,10 +10,13 @@ import com.kaodian.server.syllabus.SyllabusLoader;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -204,14 +207,34 @@ class CoverageServiceTest {
                 () -> new Touch.Drill(3, 5), "对的题数不能多于练的题数");
     }
 
+    /**
+     * 🔴 这条断言的方向是反的,而反的正是它的价值(M1 §2.5)。
+     *
+     * <p>上一版断言的是 {@code VOICE.consumesAiQuota() == true} —— 它守的是那个字段的取值,
+     * 而那个字段本身说的话就是错的:「哪一次调用是外部模型调用」由<b>调用点</b>决定,不由记录类型决定。
+     * 一条用户自己挑了考点的 {@code PHOTO} 记录一次模型都没调,一条点了 {@code tags/suggest} 的
+     * {@code MANUAL} 记录调了一次。
+     * <p>
+     * 留着它的代价不是「多一个没人用的字段」,是下一个实现额度的人在 {@code CaptureService} 里
+     * 看到 {@code request.kind().consumesAiQuota()} 触手可及 —— <b>扣额度就会被写进记录写入路径</b>,
+     * 而「额度用尽 ≠ 记不了」当场失守。所以这里守的是<b>那个字段不许回来</b>。
+     */
     @Test
-    @DisplayName("手动记录不消耗 AI 额度 —— 额度用尽 ≠ 记不了")
-    void manualKindsNeverConsumeQuota() {
-        assertTrue(TouchKind.VOICE.consumesAiQuota());
-        assertTrue(TouchKind.PHOTO.consumesAiQuota());
-        assertFalse(TouchKind.PASTE.consumesAiQuota());
-        assertFalse(TouchKind.DRILL.consumesAiQuota());
-        assertFalse(TouchKind.MANUAL.consumesAiQuota());
+    @DisplayName("🔴 TouchKind 不许带额度语义 —— 额度归调用点,不归记录类型(M1 §2.5)")
+    void touchKindCarriesNoQuotaSemantics() {
+        List<String> quotaMembers = new ArrayList<>();
+        for (Method m : TouchKind.class.getDeclaredMethods()) {
+            if (m.getName().toLowerCase(Locale.ROOT).contains("quota")) {
+                quotaMembers.add("方法 " + m.getName());
+            }
+        }
+        for (Field f : TouchKind.class.getDeclaredFields()) {
+            if (f.getName().toLowerCase(Locale.ROOT).contains("quota")) {
+                quotaMembers.add("字段 " + f.getName());
+            }
+        }
+        assertTrue(quotaMembers.isEmpty(),
+                "TouchKind 上不许出现额度语义的成员 —— 它会把扣额度引进记录写入路径:" + quotaMembers);
     }
 
     private NodeCoverage find(List<GroupCoverage> groups, String code) {

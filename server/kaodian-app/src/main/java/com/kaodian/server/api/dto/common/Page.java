@@ -27,9 +27,10 @@ import java.util.List;
  * <p>
  * 「手上这批是不是全部」这个问题不需要额外字段就能回答:<b>响应里没有 {@code nextCursor} 这个 key</b>。
  *
- * <p>⚠ {@code GET /api/records} 今天还在用 {@code RecordPageResponse}(它多出三个字段),
- * 收敛成本类型归 {@code M1}(KUBI-90)执行,且<b>必须与前端换闸门同一次落地</b>(§7.2)。
- * 本类只落形状,不动那个端点。
+ * <p>✅ {@code GET /api/v1/records} 已经收敛到本类({@code KUBI-99}):{@code RecordPageResponse}
+ * 连同它多出的 {@code total} / {@code returned} / {@code hasMore} 一起删掉了,
+ * 前端的截断闸门在<b>同一次改动</b>里换成了「响应里有没有 {@code nextCursor} 这个 key」——
+ * 拆成两次落地,中间那一刻 {@code buildDrillIndex} 就是断的。
  *
  * @param items      本页的条目,顺序由端点自己定(记录时间线是倒序)
  * @param nextCursor 下一页从哪儿接着翻;<b>没有下一页时传 {@code null},这个 key 就不会出现</b>

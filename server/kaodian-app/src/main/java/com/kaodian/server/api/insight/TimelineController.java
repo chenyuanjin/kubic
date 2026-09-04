@@ -123,7 +123,7 @@ public class TimelineController {
         List<Touch> all = store.findAll(session.userId());
 
         // 先把窗口内的记录按格分好。窗口外的一条都不进这个 map ——
-        // 它们仍然计进 total,只是不属于任何一格(见 TimelineResponse 的 total/counted 那段)。
+        // 它们仍然计进 totalRecords,只是不属于任何一格(见 TimelineResponse 的 totalRecords/counted 那段)。
         Map<LocalDate, List<Touch>> byBucket = new HashMap<>();
         for (Touch t : all) {
             LocalDate start = unit.bucketOf(LocalDate.ofInstant(t.occurredAt(), zone));

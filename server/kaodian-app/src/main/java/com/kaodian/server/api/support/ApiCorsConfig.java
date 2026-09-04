@@ -23,13 +23,13 @@ import java.util.List;
  * docs/technical/INDEX.md §6.5 的四道锁是有意冗余的,同一条思路:<b>一道锁失效不该导致整条线失守</b>。
  * 新增一种方法必须显式加,而「必须显式加」正是要的效果。
  *
- * <h2>🔴 {@code DELETE} 逐条路径开,永远不开给 {@code /api/**}</h2>
+ * <h2>🔴 {@code DELETE} 逐条路径开,永远不开给 {@code /api/v1/**}</h2>
  *
- * 契约里需要 {@code DELETE} 的只有三条:{@code DELETE /api/account}(注销账号,§6.1)、
- * {@code DELETE /api/records/{id}}(删记录,§6.2)和 {@code DELETE /api/assertions}
+ * 契约里需要 {@code DELETE} 的只有三条:{@code DELETE /api/v1/account}(注销账号,§6.1)、
+ * {@code DELETE /api/v1/records/{id}}(删记录,§6.2)和 {@code DELETE /api/v1/assertions}
  * (取消「我已掌握」,§6.4)。
  * 图省事的做法是往全局白名单里加一个 {@code DELETE} —— 那会<b>连带给
- * {@code /api/syllabus/**} 开了删除口子</b>,而骨架层的删除守则是
+ * {@code /api/v1/syllabus/**} 开了删除口子</b>,而骨架层的删除守则是
  * 「有记录就不许删,只能归档」。<b>那条守则保护的正是行为层的记录</b>,
  * 不能被一行图省事的跨域配置从旁边绕开。
  * <p>
@@ -55,17 +55,17 @@ public class ApiCorsConfig implements WebMvcConfigurer {
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         // 🔴 更窄的先注册 —— Spring 取第一条匹配的规则,顺序反了这些就永远轮不到。
-        registry.addMapping("/api/account")                 // 注销账号(docs/technical/INDEX.md §6.1)
+        registry.addMapping("/api/v1/account")                 // 注销账号(docs/technical/INDEX.md §6.1)
                 .allowedOrigins(allowedOrigins.toArray(String[]::new))
                 .allowedMethods("GET", "POST", "DELETE")
                 .allowedHeaders("Content-Type", "Authorization")
                 .allowCredentials(false)
                 .maxAge(3600);
 
-        // 删一条记录(docs/technical/INDEX.md §6.2)。范围刻意写成 /api/records/* 而不是 /api/records/** ——
-        // 单层通配只覆盖 {id} 这一层,将来 /api/records/{id}/audio、/image、/tags/** 那些
+        // 删一条记录(docs/technical/INDEX.md §6.2)。范围刻意写成 /api/v1/records/* 而不是 /api/v1/records/** ——
+        // 单层通配只覆盖 {id} 这一层,将来 /api/v1/records/{id}/audio、/image、/tags/** 那些
         // 子路径要开什么方法,得各自过一遍这里,而不是被这一行提前放行。
-        registry.addMapping("/api/records/*")
+        registry.addMapping("/api/v1/records/*")
                 .allowedOrigins(allowedOrigins.toArray(String[]::new))
                 .allowedMethods("GET", "POST", "DELETE")
                 .allowedHeaders("Content-Type", "Authorization")
@@ -73,17 +73,17 @@ public class ApiCorsConfig implements WebMvcConfigurer {
                 .maxAge(3600);
 
         // 取消「我已掌握」(docs/technical/INDEX.md §6.4 的 DELETE /assertions)。
-        // 🔴 写成 /api/assertions 这一条路径,不是 /api/assertions/** ——
+        // 🔴 写成 /api/v1/assertions 这一条路径,不是 /api/v1/assertions/** ——
         //    契约里这两个端点都没有路径变量(body 只接受 nodeCode),
         //    多一层通配就是提前给一批还不存在的子路径放行。
-        registry.addMapping("/api/assertions")
+        registry.addMapping("/api/v1/assertions")
                 .allowedOrigins(allowedOrigins.toArray(String[]::new))
                 .allowedMethods("POST", "DELETE")
                 .allowedHeaders("Content-Type", "Authorization")
                 .allowCredentials(false)
                 .maxAge(3600);
 
-        registry.addMapping("/api/**")
+        registry.addMapping("/api/v1/**")
                 .allowedOrigins(allowedOrigins.toArray(String[]::new))
                 .allowedMethods("GET", "POST")
                 .allowedHeaders("Content-Type", "Authorization")

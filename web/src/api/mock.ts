@@ -74,7 +74,7 @@ const KIND_LABEL: Record<TouchKind, string> = {
 const STATE_WEIGHT: Record<NodeState, number> = {
   EMPTY: 1.0, // 空白 —— 差集的正主
   TOUCHED_ONLY: 0.9, // 听过看过,一道没练
-  WEAK: 0.8, // 练过,但用户自填正确率低
+  WEAK: 0.8, // 练过,但用户自填的对/练偏低
   RUSTY: 0.7, // 练过,但超过 30 天没碰
   STABLE: 0.0, // 近期练过且用户说还行 —— 不需要补
 }
@@ -85,7 +85,7 @@ const STATE_ORDER: NodeState[] = ['EMPTY', 'TOUCHED_ONLY', 'RUSTY', 'WEAK', 'STA
 /** 超过这个天数没碰 → 生疏。纯时间判断,与答得怎么样无关。 */
 const RUSTY_AFTER_DAYS = 30
 
-/** 用户自填正确率低于此值 → 弱。这是一条显示分组的阈值,不是评分。 */
+/** 用户自填的对/练低于此值 → 弱。这是一条显示分组的阈值,不是评分。 */
 const WEAK_BELOW = 0.6
 
 /* ========================================================================== */
@@ -180,11 +180,11 @@ interface SeedTouch {
 }
 
 const SEED_TOUCHES: SeedTouch[] = [
-  // 稳:近期练过,用户自填正确率 ≥ 60%
+  // 稳:近期练过,用户自填的对/练 ≥ 60%
   { node: 'growth-rate', source: '粉笔 · 资料分析系统班 L12', kind: 'DRILL', days: 0, hour: 9, practiced: 12, correct: 10 },
   { node: 'share-calc', source: '华图 · 资料速算网课', kind: 'DRILL', days: 1, hour: 21, practiced: 9, correct: 8 },
   { node: 'feature-number', source: '自己刷题 · 2023 国考真题', kind: 'DRILL', days: 3, hour: 20, practiced: 7, correct: 6 },
-  // 弱:近期练过,但用户自填正确率 < 60%
+  // 弱:近期练过,但用户自填的对/练 < 60%
   { node: 'growth-amount', source: '自己刷题 · 2023 国考真题', kind: 'DRILL', days: 2, hour: 21, practiced: 8, correct: 4 },
   { node: 'truncate-divide', source: 'B站 · 资料分析技巧', kind: 'DRILL', days: 4, hour: 19, practiced: 6, correct: 2 },
   // 生疏:练过,但超过 30 天没碰
@@ -224,9 +224,9 @@ function deriveState(items: TimelineItemDto[], now: number): NodeState {
 /* ========================================================================== */
 
 /**
- * `GET /api/records` 的第一页。
+ * `GET /api/v1/records` 的第一页。
  *
- * <b>不是 `/api/timeline`</b>:那个端点出的是按天/周分桶的聚合视图,一条 `items` 都没有,
+ * <b>不是 `/api/v1/timeline`</b>:那个端点出的是按天/周分桶的聚合视图,一条 `items` 都没有,
  * 而这一屏(最近记录、来源名、每个考点的做题数)要的全是逐条记录。
  */
 function buildRecordPage(now: number): RecordPageResponse {

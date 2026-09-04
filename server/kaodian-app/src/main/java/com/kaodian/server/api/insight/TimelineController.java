@@ -97,12 +97,12 @@ public class TimelineController {
      * @param buckets     往回给几格(含当前这一格)。默认 30,上限 366 ——
      *                    两种粒度共用一个上限,理由见 {@code TimelineResponse.MAX_BUCKETS}
      */
-    @GetMapping("/api/timeline")
+    @GetMapping("/api/v1/timeline")
     public TimelineResponse timeline(
             // 🔴 这里刻意【没有】把参数直接声明成枚举。Spring 的枚举转换大小写敏感,
             // 而且失败时走的是兜底那支 —— 用户得到的是一句「请求无法处理:400」,
             // 既不说认哪几个值,也不说是哪个参数错了。ofWireName 自己认、自己报,
-            // 与 /api/export 的 format 是同一条路(见 ExportFormat)。
+            // 与 /api/v1/export 的 format 是同一条路(见 ExportFormat)。
             @RequestParam(defaultValue = TimelineResponse.DEFAULT_GRANULARITY)
             String granularity,
 

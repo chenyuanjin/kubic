@@ -128,9 +128,9 @@ class ApiContractTest {
     // ---------------------------------------------------------------- 查询
 
     @Test
-    @DisplayName("GET /api/coverage/summary —— total=18 covered=8 percent=44,与设计稿逐字一致")
+    @DisplayName("GET /api/v1/coverage/summary —— total=18 covered=8 percent=44,与设计稿逐字一致")
     void summaryMatchesDesignContract() throws Exception {
-        mockMvc.perform(get("/api/coverage/summary"))
+        mockMvc.perform(get("/api/v1/coverage/summary"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.total").value(18))
                 .andExpect(jsonPath("$.covered").value(8))
@@ -142,7 +142,7 @@ class ApiContractTest {
     @Test
     @DisplayName("五态分布带枚举名 + 中文 label,顺序固定 —— 前端不硬编码中文")
     void stateDistributionCarriesBothNameAndLabel() throws Exception {
-        mockMvc.perform(get("/api/coverage/summary"))
+        mockMvc.perform(get("/api/v1/coverage/summary"))
                 .andExpect(jsonPath("$.distribution.length()").value(5))
                 .andExpect(jsonPath("$.distribution[0].state").value("EMPTY"))
                 .andExpect(jsonPath("$.distribution[0].label").value("空白"))
@@ -158,9 +158,9 @@ class ApiContractTest {
     }
 
     @Test
-    @DisplayName("GET /api/syllabus/tree —— 整棵树一次返回,顶上的 44% 与概览同源")
+    @DisplayName("GET /api/v1/syllabus/tree —— 整棵树一次返回,顶上的 44% 与概览同源")
     void treeReturnsWholeModuleInOneShot() throws Exception {
-        mockMvc.perform(get("/api/syllabus/tree"))
+        mockMvc.perform(get("/api/v1/syllabus/tree"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.subject.display").value("山东省考 · 行测 · 资料分析"))
                 .andExpect(jsonPath("$.summary.percent").value(44))
@@ -179,9 +179,9 @@ class ApiContractTest {
     }
 
     @Test
-    @DisplayName("GET /api/syllabus/nodes/{code} —— 四统计 + 我的触达,🔴 没有讲解字段")
+    @DisplayName("GET /api/v1/syllabus/nodes/{code} —— 四统计 + 我的触达,🔴 没有讲解字段")
     void nodeDetailHasNoTeachingFields() throws Exception {
-        mockMvc.perform(get("/api/syllabus/nodes/growth-amount"))
+        mockMvc.perform(get("/api/v1/syllabus/nodes/growth-amount"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name").value("增长量计算"))
                 .andExpect(jsonPath("$.groupName").value("增长类"))
@@ -204,7 +204,7 @@ class ApiContractTest {
     @Test
     @DisplayName("没练过的考点 accuracy 是 null —— 界面显示「—」,不是 0%")
     void untouchedNodeHasNullAccuracy() throws Exception {
-        mockMvc.perform(get("/api/syllabus/nodes/average-calc"))
+        mockMvc.perform(get("/api/v1/syllabus/nodes/average-calc"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.state").value("EMPTY"))
                 .andExpect(jsonPath("$.accuracy").value(Matchers.nullValue()))
@@ -215,16 +215,16 @@ class ApiContractTest {
     @Test
     @DisplayName("查一个树里没有的考点 → 404,不做模糊匹配、不返回最接近的")
     void unknownNodeIsNotGuessed() throws Exception {
-        mockMvc.perform(get("/api/syllabus/nodes/增长率那个"))
+        mockMvc.perform(get("/api/v1/syllabus/nodes/增长率那个"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("NODE_NOT_FOUND"))
                 .andExpect(jsonPath("$.traceId").isNotEmpty());
     }
 
     @Test
-    @DisplayName("GET /api/coverage/blindspots —— Top 5 的名次、分数与设计稿一致(北极星落点)")
+    @DisplayName("GET /api/v1/coverage/blindspots —— Top 5 的名次、分数与设计稿一致(北极星落点)")
     void blindSpotsMatchDesignContract() throws Exception {
-        mockMvc.perform(get("/api/coverage/blindspots").param("top", "5"))
+        mockMvc.perform(get("/api/v1/coverage/blindspots").param("top", "5"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.requestedTop").value(5))
                 .andExpect(jsonPath("$.returned").value(5))
@@ -243,12 +243,12 @@ class ApiContractTest {
     @Test
     @DisplayName("blindspots 的 top 越界被拒;默认 20")
     void blindSpotsTopIsValidated() throws Exception {
-        mockMvc.perform(get("/api/coverage/blindspots").param("top", "0"))
+        mockMvc.perform(get("/api/v1/coverage/blindspots").param("top", "0"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
-        mockMvc.perform(get("/api/coverage/blindspots").param("top", "101"))
+        mockMvc.perform(get("/api/v1/coverage/blindspots").param("top", "101"))
                 .andExpect(status().isBadRequest());
-        mockMvc.perform(get("/api/coverage/blindspots"))
+        mockMvc.perform(get("/api/v1/coverage/blindspots"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.requestedTop").value(20));
     }
@@ -258,19 +258,19 @@ class ApiContractTest {
     /**
      * 契约 §6.4 那一行是「时间线聚合 · 按天/周聚合触达」。
      *
-     * <p>这一条钉的是<b>它不再是平铺的最近 N 条</b> —— 那是 {@code GET /api/records} 的活
+     * <p>这一条钉的是<b>它不再是平铺的最近 N 条</b> —— 那是 {@code GET /api/v1/records} 的活
      * (§6.2),两个端点做同一件事的时候,没做的那件事没有任何测试会提起。
      */
     @Test
-    @DisplayName("GET /api/timeline —— 出的是格子不是条目,默认按天 30 格")
+    @DisplayName("GET /api/v1/timeline —— 出的是格子不是条目,默认按天 30 格")
     void timelineAggregatesIntoBucketsInsteadOfListingRecords() throws Exception {
-        mockMvc.perform(get("/api/timeline"))
+        mockMvc.perform(get("/api/v1/timeline"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.granularity").value("DAY"))
                 .andExpect(jsonPath("$.granularityLabel").value("按天"))
                 .andExpect(jsonPath("$.zone").value("Asia/Shanghai"))
                 .andExpect(jsonPath("$.buckets.length()").value(30))
-                // 🔴 一条 items 都没有:这个端点不再是 /api/records 的第二份实现
+                // 🔴 一条 items 都没有:这个端点不再是 /api/v1/records 的第二份实现
                 .andExpect(jsonPath("$.items").doesNotExist())
                 .andExpect(jsonPath("$.returned").doesNotExist())
                 // 8 条记录里,32 天前与 33 天前那两条落在 30 格窗口之外 ——
@@ -307,7 +307,7 @@ class ApiContractTest {
     @Test
     @DisplayName("🔴 R-05:每一格只有三个数,没有趋势、没有正确率、没有一个字的评价")
     void timelineBucketsCarryStatisticsOnlyNeverAJudgement() throws Exception {
-        String body = mockMvc.perform(get("/api/timeline"))
+        String body = mockMvc.perform(get("/api/v1/timeline"))
                 .andExpect(status().isOk())
                 // 判断类字段:一个都不许有
                 .andExpect(jsonPath("$.buckets[29].trend").doesNotExist())
@@ -356,7 +356,7 @@ class ApiContractTest {
 
         store.reset(List.of(at("t-midnight", "growth-rate", "地铁上", justAfterMidnight)));
 
-        mockMvc.perform(get("/api/timeline").param("buckets", "2"))
+        mockMvc.perform(get("/api/v1/timeline").param("buckets", "2"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.buckets.length()").value(2))
                 .andExpect(jsonPath("$.buckets[1].start").value(today.toString()))
@@ -383,7 +383,7 @@ class ApiContractTest {
                 at("t-sun", "average-calc", "中公 · 资料分析专项",
                         thisMonday.minusDays(1).atStartOfDay(BEIJING).plusHours(23))));
 
-        mockMvc.perform(get("/api/timeline").param("granularity", "week").param("buckets", "4"))
+        mockMvc.perform(get("/api/v1/timeline").param("granularity", "week").param("buckets", "4"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.granularity").value("WEEK"))
                 .andExpect(jsonPath("$.granularityLabel").value("按周"))
@@ -410,7 +410,7 @@ class ApiContractTest {
                 at("t-b", "growth-rate", "粉笔 · 资料分析系统班 L12", todayNoon.plusMinutes(10)),
                 at("t-c", "average-calc", "粉笔 · 资料分析系统班 L12", todayNoon.plusMinutes(20))));
 
-        mockMvc.perform(get("/api/timeline").param("buckets", "1"))
+        mockMvc.perform(get("/api/v1/timeline").param("buckets", "1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.buckets[0].touchCount").value(3))
                 .andExpect(jsonPath("$.buckets[0].nodeCount").value(2));
@@ -435,7 +435,7 @@ class ApiContractTest {
         seed.add(at("t-bz", "average-calc", "B站 · 资料分析技巧", todayNoon.plusHours(2)));
         store.reset(seed);
 
-        mockMvc.perform(get("/api/timeline").param("buckets", "1"))
+        mockMvc.perform(get("/api/v1/timeline").param("buckets", "1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.buckets[0].sources.length()").value(3))
                 .andExpect(jsonPath("$.buckets[0].sources[0].sourceName")
@@ -449,23 +449,23 @@ class ApiContractTest {
     @Test
     @DisplayName("🔴 不认识的 granularity → 400,而且报错里不回显整段原文")
     void unknownGranularityIsRejectedWithoutEchoingIt() throws Exception {
-        mockMvc.perform(get("/api/timeline").param("granularity", "month"))
+        mockMvc.perform(get("/api/v1/timeline").param("granularity", "month"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("UNKNOWN_GRANULARITY"));
 
         String pastedStem = "2023 年全国粮食总产量为 13908 亿斤,比上年增加 177 亿斤".repeat(40);
-        String body = mockMvc.perform(get("/api/timeline").param("granularity", pastedStem))
+        String body = mockMvc.perform(get("/api/v1/timeline").param("granularity", pastedStem))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("UNKNOWN_GRANULARITY"))
                 .andReturn().getResponse().getContentAsString();
         assertTrue(body.length() < pastedStem.length(),
                 "granularity 是查询参数,没有 @Size 管得着它 —— 回声必须自己截断");
 
-        // 大小写不敏感:一次大小写打错变成 400 没有任何好处(与 /api/export 的 format 同一条)
-        mockMvc.perform(get("/api/timeline").param("granularity", "Day"))
+        // 大小写不敏感:一次大小写打错变成 400 没有任何好处(与 /api/v1/export 的 format 同一条)
+        mockMvc.perform(get("/api/v1/timeline").param("granularity", "Day"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.granularity").value("DAY"));
-        mockMvc.perform(get("/api/timeline").param("granularity", "WEEK"))
+        mockMvc.perform(get("/api/v1/timeline").param("granularity", "WEEK"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.granularity").value("WEEK"));
     }
@@ -473,12 +473,12 @@ class ApiContractTest {
     @Test
     @DisplayName("buckets 越界被拒;默认 30")
     void timelineBucketsIsValidated() throws Exception {
-        mockMvc.perform(get("/api/timeline").param("buckets", "0"))
+        mockMvc.perform(get("/api/v1/timeline").param("buckets", "0"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
-        mockMvc.perform(get("/api/timeline").param("buckets", "367"))
+        mockMvc.perform(get("/api/v1/timeline").param("buckets", "367"))
                 .andExpect(status().isBadRequest());
-        mockMvc.perform(get("/api/timeline"))
+        mockMvc.perform(get("/api/v1/timeline"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.buckets.length()").value(30));
     }
@@ -486,9 +486,9 @@ class ApiContractTest {
     // ---------------------------------------------------------------- 采集
 
     @Test
-    @DisplayName("POST /api/records —— 记一笔之后,那个考点的状态立刻跟着变")
+    @DisplayName("POST /api/v1/records —— 记一笔之后,那个考点的状态立刻跟着变")
     void createRecordMovesTheNode() throws Exception {
-        mockMvc.perform(post("/api/records")
+        mockMvc.perform(post("/api/v1/records")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"kind":"DRILL","sourceName":"自己刷题 · 2024 省考真题",
@@ -502,16 +502,16 @@ class ApiContractTest {
                 .andExpect(jsonPath("$.node.practiced").value(10));
 
         // 覆盖度从 8/18 变成 9/18
-        mockMvc.perform(get("/api/coverage/summary"))
+        mockMvc.perform(get("/api/v1/coverage/summary"))
                 .andExpect(jsonPath("$.covered").value(9))
                 .andExpect(jsonPath("$.percent").value(50));
     }
 
     @Test
-    @DisplayName("🔴 R-07:POST /api/records 传自由文本标签被拒绝 —— 接口上没有这条通道")
+    @DisplayName("🔴 R-07:POST /api/v1/records 传自由文本标签被拒绝 —— 接口上没有这条通道")
     void freeTextTagsAreRejected() throws Exception {
         for (String field : List.of("tag", "name", "label", "nodeName", "keywords")) {
-            mockMvc.perform(post("/api/records")
+            mockMvc.perform(post("/api/v1/records")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("""
                                     {"kind":"MANUAL","sourceName":"粉笔 · 资料分析系统班 L12",
@@ -526,7 +526,7 @@ class ApiContractTest {
     @Test
     @DisplayName("🔴 R-07:nodeCode 不在骨架树里 → 400,不猜最接近的考点(宁缺毋滥)")
     void unknownNodeCodeIsRejectedNotFuzzyMatched() throws Exception {
-        mockMvc.perform(post("/api/records")
+        mockMvc.perform(post("/api/v1/records")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"kind":"MANUAL","sourceName":"粉笔 · 资料分析系统班 L12",
@@ -535,14 +535,14 @@ class ApiContractTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("NODE_NOT_IN_SYLLABUS"));
 
-        mockMvc.perform(get("/api/coverage/summary")).andExpect(jsonPath("$.covered").value(8));
+        mockMvc.perform(get("/api/v1/coverage/summary")).andExpect(jsonPath("$.covered").value(8));
     }
 
     @Test
     @DisplayName("🔴 内容字段进不来:body 里带 content/transcript/imageUrl 一律 400")
     void contentFieldsCannotBeSmuggledIn() throws Exception {
         for (String field : List.of("content", "text", "question", "transcript", "imageUrl", "note")) {
-            mockMvc.perform(post("/api/records")
+            mockMvc.perform(post("/api/v1/records")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("""
                                     {"kind":"PHOTO","sourceName":"粉笔 · 资料分析系统班 L12",
@@ -556,7 +556,7 @@ class ApiContractTest {
     @Test
     @DisplayName("正确率是用户填的两个数,但对多于练要拒绝;两个数必须同进同出")
     void drillNumbersAreValidated() throws Exception {
-        mockMvc.perform(post("/api/records")
+        mockMvc.perform(post("/api/v1/records")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"kind":"DRILL","sourceName":"自己刷题","nodeCode":"growth-rate",
@@ -566,7 +566,7 @@ class ApiContractTest {
                 .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
 
         // 只给一个 —— 不替用户把另一个填成 0
-        mockMvc.perform(post("/api/records")
+        mockMvc.perform(post("/api/v1/records")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"kind":"DRILL","sourceName":"自己刷题","nodeCode":"growth-rate","practiced":3}
@@ -578,7 +578,7 @@ class ApiContractTest {
     @Test
     @DisplayName("来源名有长度上限 —— 挡住把题干塞进「来源名」这条绕路")
     void sourceNameIsLengthCapped() throws Exception {
-        mockMvc.perform(post("/api/records")
+        mockMvc.perform(post("/api/v1/records")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"kind":"MANUAL","sourceName":"%s","nodeCode":"growth-rate"}
@@ -591,7 +591,7 @@ class ApiContractTest {
     @Test
     @DisplayName("必填项缺失 → 400,且错误体里只有 code/message/traceId,没有堆栈")
     void errorBodyHasNoStackTrace() throws Exception {
-        mockMvc.perform(post("/api/records")
+        mockMvc.perform(post("/api/v1/records")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"sourceName":"自己刷题","nodeCode":"growth-rate"}
@@ -614,13 +614,13 @@ class ApiContractTest {
                  "nodeCode":"average-calc","clientToken":"offline-2026-08-27-001"}
                 """;
 
-        String firstId = mockMvc.perform(post("/api/records")
+        String firstId = mockMvc.perform(post("/api/v1/records")
                         .contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
         assertEquals(9, store.count(), "第一次:种子 8 条 + 这条");
 
-        mockMvc.perform(post("/api/records")
+        mockMvc.perform(post("/api/v1/records")
                         .contentType(MediaType.APPLICATION_JSON).content(body))
                 // 🔴 200 不是 201:服务端什么都没新建,回 Created 是在说谎
                 .andExpect(status().isOk())
@@ -637,7 +637,7 @@ class ApiContractTest {
     @DisplayName("幂等只对同一个键成立:两个不同的 clientToken 是两条记录")
     void differentClientTokensAreDifferentRecords() throws Exception {
         for (String token : List.of("q-1", "q-2")) {
-            mockMvc.perform(post("/api/records")
+            mockMvc.perform(post("/api/v1/records")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("""
                                     {"kind":"MANUAL","sourceName":"自己刷题","nodeCode":"average-calc",
@@ -654,9 +654,9 @@ class ApiContractTest {
         String body = """
                 {"kind":"MANUAL","sourceName":"自己刷题","nodeCode":"average-calc"}
                 """;
-        mockMvc.perform(post("/api/records").contentType(MediaType.APPLICATION_JSON).content(body))
+        mockMvc.perform(post("/api/v1/records").contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isCreated());
-        mockMvc.perform(post("/api/records").contentType(MediaType.APPLICATION_JSON).content(body))
+        mockMvc.perform(post("/api/v1/records").contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isCreated());
 
         // 判重的失败方向只能是「多一条」:多一条用户看得见、删得掉;
@@ -667,7 +667,7 @@ class ApiContractTest {
     @Test
     @DisplayName("clientToken 有长度上限 —— 超了 400,挡住把题干塞进去重键这条绕路")
     void clientTokenIsLengthCapped() throws Exception {
-        mockMvc.perform(post("/api/records")
+        mockMvc.perform(post("/api/v1/records")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"kind":"MANUAL","sourceName":"自己刷题","nodeCode":"growth-rate",
@@ -682,9 +682,9 @@ class ApiContractTest {
     // ---------------------------------------------------------------- 批量补传
 
     @Test
-    @DisplayName("POST /api/records/batch —— 三条落库,覆盖度跟着动")
+    @DisplayName("POST /api/v1/records/batch —— 三条落库,覆盖度跟着动")
     void batchStoresEveryItem() throws Exception {
-        mockMvc.perform(post("/api/records/batch")
+        mockMvc.perform(post("/api/v1/records/batch")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"records":[
@@ -705,7 +705,7 @@ class ApiContractTest {
                 .andExpect(jsonPath("$.results[2].error").doesNotExist());
 
         assertEquals(11, store.count());
-        mockMvc.perform(get("/api/coverage/summary")).andExpect(jsonPath("$.covered").value(11));
+        mockMvc.perform(get("/api/v1/coverage/summary")).andExpect(jsonPath("$.covered").value(11));
     }
 
     /**
@@ -718,7 +718,7 @@ class ApiContractTest {
     @Test
     @DisplayName("🔴 部分成功:一条挂在树外的考点上,其余照落,不整批回滚")
     void batchIsPartiallySuccessful() throws Exception {
-        mockMvc.perform(post("/api/records/batch")
+        mockMvc.perform(post("/api/v1/records/batch")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"records":[
@@ -750,12 +750,12 @@ class ApiContractTest {
                   {"kind":"MANUAL","sourceName":"地铁上","nodeCode":"yoy-mom","clientToken":"o-2"}
                 ]}
                 """;
-        mockMvc.perform(post("/api/records/batch")
+        mockMvc.perform(post("/api/v1/records/batch")
                         .contentType(MediaType.APPLICATION_JSON).content(batch))
                 .andExpect(jsonPath("$.stored").value(2));
 
         // 断线重连,整批再发一次 —— 这正是离线队列的常态
-        mockMvc.perform(post("/api/records/batch")
+        mockMvc.perform(post("/api/v1/records/batch")
                         .contentType(MediaType.APPLICATION_JSON).content(batch))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.stored").value(0))
@@ -770,7 +770,7 @@ class ApiContractTest {
     @Test
     @DisplayName("🔴 补传缺 clientToken → 那一条被拒,其余照落 —— 没有它的补传是注定重复的写入")
     void batchItemWithoutClientTokenIsRejected() throws Exception {
-        mockMvc.perform(post("/api/records/batch")
+        mockMvc.perform(post("/api/v1/records/batch")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"records":[
@@ -800,7 +800,7 @@ class ApiContractTest {
                     """.formatted(i));
         }
 
-        mockMvc.perform(post("/api/records/batch")
+        mockMvc.perform(post("/api/v1/records/batch")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"records\":[" + items + "]}"))
                 .andExpect(status().isBadRequest())
@@ -814,7 +814,7 @@ class ApiContractTest {
     @Test
     @DisplayName("空批被拒 —— 空的补传只可能是客户端的 bug")
     void emptyBatchIsRejected() throws Exception {
-        mockMvc.perform(post("/api/records/batch")
+        mockMvc.perform(post("/api/v1/records/batch")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"records\":[]}"))
                 .andExpect(status().isBadRequest())
@@ -825,7 +825,7 @@ class ApiContractTest {
     @DisplayName("🔴 R-07 在批量端点上同样成立:外层壳和内层条目都不接受未定义字段")
     void batchRejectsUnknownFieldsAtBothLevels() throws Exception {
         // 外层:如果这里宽容,{"records":[...], "tags":[...]} 会被安静忽略,调用方以为标签生效了
-        mockMvc.perform(post("/api/records/batch")
+        mockMvc.perform(post("/api/v1/records/batch")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"records":[{"kind":"MANUAL","sourceName":"地铁上",
@@ -837,7 +837,7 @@ class ApiContractTest {
                 .andExpect(jsonPath("$.message").value(Matchers.containsString("tags")));
 
         // 内层:解析层的失败必然是整批的 —— 它不是「有一条数据不干净」,是调用方在试探红线
-        mockMvc.perform(post("/api/records/batch")
+        mockMvc.perform(post("/api/v1/records/batch")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"records":[
@@ -855,7 +855,7 @@ class ApiContractTest {
     @Test
     @DisplayName("批里某一条的字段不合法 → 只拒那一条,而且报错里没有用户送来的值")
     void batchItemValidationFailsAloneAndEchoesNothing() throws Exception {
-        mockMvc.perform(post("/api/records/batch")
+        mockMvc.perform(post("/api/v1/records/batch")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"records":[
@@ -877,10 +877,10 @@ class ApiContractTest {
     // ---------------------------------------------------------------- 删记录
 
     @Test
-    @DisplayName("DELETE /api/records/{id} —— 记录没了,那个考点的状态跟着退回去")
+    @DisplayName("DELETE /api/v1/records/{id} —— 记录没了,那个考点的状态跟着退回去")
     void deleteRecordMovesTheNodeBack() throws Exception {
         // share-change 只有一条记录(仅接触),删掉它那个考点就该回到空白
-        mockMvc.perform(delete("/api/records/{id}", "t-share-change"))
+        mockMvc.perform(delete("/api/v1/records/{id}", "t-share-change"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value("t-share-change"))
                 .andExpect(jsonPath("$.node.state").value("EMPTY"))
@@ -888,7 +888,7 @@ class ApiContractTest {
                 .andExpect(jsonPath("$.summary.percent").value(39));
 
         assertEquals(7, store.count());
-        mockMvc.perform(get("/api/coverage/summary")).andExpect(jsonPath("$.covered").value(7));
+        mockMvc.perform(get("/api/v1/coverage/summary")).andExpect(jsonPath("$.covered").value(7));
     }
 
     @Test
@@ -902,7 +902,7 @@ class ApiContractTest {
         tagStore.put(new RecordTag("tag-y", "t-growth-rate", "average-calc",
                 RecordTag.MANUAL_CONFIDENCE, TagOrigin.MANUAL, Instant.now(), false));
 
-        mockMvc.perform(delete("/api/records/{id}", "t-share-change"))
+        mockMvc.perform(delete("/api/v1/records/{id}", "t-share-change"))
                 .andExpect(status().isOk());
 
         assertEquals(List.of("tag-y"), tagStore.findAll().stream().map(RecordTag::id).toList(),
@@ -914,7 +914,7 @@ class ApiContractTest {
     void deletingAMissingRecordIs404AndEchoesNothing() throws Exception {
         String pastedStem = "2023 年全国粮食总产量为 13908 亿斤,比上年增加 177 亿斤".repeat(40);
 
-        String body = mockMvc.perform(delete("/api/records/{id}", pastedStem))
+        String body = mockMvc.perform(delete("/api/v1/records/{id}", pastedStem))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("RECORD_NOT_FOUND"))
                 .andExpect(jsonPath("$.traceId").isNotEmpty())
@@ -928,9 +928,9 @@ class ApiContractTest {
     // ---------------------------------------------------------------- cursor 分页
 
     @Test
-    @DisplayName("GET /api/records —— 倒序、带 total,与 /api/timeline 是两个端点")
+    @DisplayName("GET /api/v1/records —— 倒序、带 total,与 /api/v1/timeline 是两个端点")
     void recordsAreListedNewestFirst() throws Exception {
-        mockMvc.perform(get("/api/records"))
+        mockMvc.perform(get("/api/v1/records"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.total").value(8))
                 .andExpect(jsonPath("$.returned").value(8))
@@ -944,7 +944,7 @@ class ApiContractTest {
         // §6.4 的聚合视图仍然在,而且【出的不是同一种东西】:那边是格子,这边是条目。
         // 只断言它还回 200 是不够的 —— 两个端点又做成同一件事的时候,它照样回 200
         // (见 RecordPageResponse 的 javadoc)
-        mockMvc.perform(get("/api/timeline"))
+        mockMvc.perform(get("/api/v1/timeline"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.buckets").isArray())
                 .andExpect(jsonPath("$.items").doesNotExist());
@@ -956,7 +956,7 @@ class ApiContractTest {
         List<String> seen = new ArrayList<>();
         String cursor = null;
         for (int page = 0; page < 10; page++) {                 // 上限只为防死循环
-            var request = get("/api/records").param("limit", "3");
+            var request = get("/api/v1/records").param("limit", "3");
             if (cursor != null) {
                 request = request.param("cursor", cursor);
             }
@@ -998,7 +998,7 @@ class ApiContractTest {
         List<String> seen = new ArrayList<>();
         String cursor = null;
         for (int page = 0; page < 10; page++) {
-            var request = get("/api/records").param("limit", "2");
+            var request = get("/api/v1/records").param("limit", "2");
             if (cursor != null) {
                 request = request.param("cursor", cursor);
             }
@@ -1019,7 +1019,7 @@ class ApiContractTest {
     void badCursorIsRejectedWithoutEchoingIt() throws Exception {
         String pastedStem = "2023 年全国粮食总产量为 13908 亿斤,比上年增加 177 亿斤".repeat(40);
 
-        String body = mockMvc.perform(get("/api/records").param("cursor", pastedStem))
+        String body = mockMvc.perform(get("/api/v1/records").param("cursor", pastedStem))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_CURSOR"))
                 .andReturn().getResponse().getContentAsString();
@@ -1027,7 +1027,7 @@ class ApiContractTest {
                 "游标是查询参数,没有 @Size 管得着它 —— 回声必须自己截断");
 
         // 长度够短但根本不是游标的,同样是 INVALID_CURSOR,不是 500
-        mockMvc.perform(get("/api/records").param("cursor", "不是游标"))
+        mockMvc.perform(get("/api/v1/records").param("cursor", "不是游标"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_CURSOR"));
     }
@@ -1035,12 +1035,12 @@ class ApiContractTest {
     @Test
     @DisplayName("limit 越界被拒;默认 50")
     void recordsLimitIsValidated() throws Exception {
-        mockMvc.perform(get("/api/records").param("limit", "0"))
+        mockMvc.perform(get("/api/v1/records").param("limit", "0"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
-        mockMvc.perform(get("/api/records").param("limit", "201"))
+        mockMvc.perform(get("/api/v1/records").param("limit", "201"))
                 .andExpect(status().isBadRequest());
-        mockMvc.perform(get("/api/records"))
+        mockMvc.perform(get("/api/v1/records"))
                 .andExpect(status().isOk());
     }
 
@@ -1049,7 +1049,7 @@ class ApiContractTest {
     @Test
     @DisplayName("CORS:放行 Vite dev server;全局方法白名单里没有 DELETE")
     void corsAllowsViteDevServerOnly() throws Exception {
-        mockMvc.perform(options("/api/coverage/summary")
+        mockMvc.perform(options("/api/v1/coverage/summary")
                         .header("Origin", "http://localhost:5173")
                         .header("Access-Control-Request-Method", "GET"))
                 .andExpect(status().isOk())
@@ -1058,30 +1058,30 @@ class ApiContractTest {
                 .andExpect(header().string("Access-Control-Allow-Methods",
                         Matchers.not(Matchers.containsString("DELETE"))));
 
-        mockMvc.perform(options("/api/coverage/summary")
+        mockMvc.perform(options("/api/v1/coverage/summary")
                         .header("Origin", "https://evil.example.com")
                         .header("Access-Control-Request-Method", "GET"))
                 .andExpect(status().isForbidden());
     }
 
     /**
-     * 🔴 {@code DELETE} 是逐条路径开的,不是往 {@code /api/**} 里加一个方法。
+     * 🔴 {@code DELETE} 是逐条路径开的,不是往 {@code /api/v1/**} 里加一个方法。
      *
-     * <p>加在全局上会<b>连带给 {@code /api/syllabus/**} 开删除口子</b>,
+     * <p>加在全局上会<b>连带给 {@code /api/v1/syllabus/**} 开删除口子</b>,
      * 而骨架层的删除守则(有记录就不许删,只能归档)保护的正是行为层的记录 ——
      * 它不能被一行图省事的跨域配置从旁边绕开。这个测试守的就是这条边界。
      */
     @Test
-    @DisplayName("🔴 CORS:DELETE 只开给 /api/records/*,骨架层那边照旧不开")
+    @DisplayName("🔴 CORS:DELETE 只开给 /api/v1/records/*,骨架层那边照旧不开")
     void corsOpensDeleteOnlyWhereTheContractAsksForIt() throws Exception {
-        mockMvc.perform(options("/api/records/t-share-change")
+        mockMvc.perform(options("/api/v1/records/t-share-change")
                         .header("Origin", "http://localhost:5173")
                         .header("Access-Control-Request-Method", "DELETE"))
                 .andExpect(status().isOk())
                 .andExpect(header().string("Access-Control-Allow-Methods",
                         Matchers.containsString("DELETE")));
 
-        mockMvc.perform(options("/api/syllabus/nodes/growth-rate")
+        mockMvc.perform(options("/api/v1/syllabus/nodes/growth-rate")
                         .header("Origin", "http://localhost:5173")
                         .header("Access-Control-Request-Method", "DELETE"))
                 .andExpect(status().isForbidden());
@@ -1194,14 +1194,14 @@ class ApiContractTest {
     void rejectionMessagesDoNotEchoUnboundedUserInput() throws Exception {
         String pastedStem = "2023 年全国粮食总产量为 13908 亿斤,比上年增加 177 亿斤".repeat(40);
 
-        String nodeMessage = mockMvc.perform(get("/api/syllabus/nodes/{code}", pastedStem))
+        String nodeMessage = mockMvc.perform(get("/api/v1/syllabus/nodes/{code}", pastedStem))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("NODE_NOT_FOUND"))
                 .andReturn().getResponse().getContentAsString();
         assertTrue(nodeMessage.length() < pastedStem.length(),
                 "整段原文被原样回声了 —— 它同时会进服务端日志");
 
-        String subjectMessage = mockMvc.perform(get("/api/syllabus/tree").param("subject", pastedStem))
+        String subjectMessage = mockMvc.perform(get("/api/v1/syllabus/tree").param("subject", pastedStem))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("SUBJECT_NOT_LOADED"))
                 .andReturn().getResponse().getContentAsString();
@@ -1434,7 +1434,7 @@ class ApiContractTest {
         }
 
         /**
-         * POST /api/records 这条路压根不调用模型(用户已经从树里挑好了考点),
+         * POST /api/v1/records 这条路压根不调用模型(用户已经从树里挑好了考点),
          * 所以这里给一个「一调用就炸」的实现:<b>它一旦被调用,测试就会红</b> ——
          * 这本身就是一条断言,钉住 docs/product/商业化与额度设计.md §二「手动记录永不消耗 AI 额度」。
          */

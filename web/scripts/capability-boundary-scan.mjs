@@ -1,15 +1,29 @@
 #!/usr/bin/env node
 /**
- * 能力边界文案扫描 —— docs/execution/INDEX.md §四 R-05:产品永不判断「对不对」。
+ * 能力边界文案扫描 —— `R-05`:产品永不判断「对不对」。
  *
- * <h2>这条扫描要防的到底是什么</h2>
+ * <h2>这条扫描的依据,以及它 2026-09-04 被改过一次</h2>
  *
- * docs/execution/INDEX.md 给 UI 审核留的原话是判据本身:
- * <b>「用户自己填的练习条数不算判定,产品替他判断对错才算。」</b>
+ * 依据两条,<b>都能在被引的文件里逐字找到</b>:
  *
- * 所以「正确率」「rank」这类词在这个仓库里是<b>合法</b>的 ——
- * 正确率是用户自己敲进来的两个整数相除,rank 是盲区榜的名次(服务端 blindScore 排序),
- * 都不是产品在评价用户答得对不对。一个朴素的关键词黑名单会把它们全判成红,
+ * <ul>
+ * <li>docs/execution/INDEX.md:591 的红线表:
+ *     <b>「`R-05` | 产品判断「对不对」 | 全局 | 只做「有没有、几次、多久前」」</b></li>
+ * <li>design/README.md:45 的平铺禁令:
+ *     <b>「以及能力边界:界面上不得出现正确率、得分、排名、题目讲解、学习建议、复习提醒、打卡、徽章。」</b></li>
+ * </ul>
+ *
+ * 🔴 <b>这段注释以前写的不是这两条。</b>它把「正确率/rank 在本仓合法」这条豁免的依据
+ * 写成「docs/execution/INDEX.md 给 UI 审核留的原话」,并逐字引了一句
+ * 「用户自己填的练习条数不算判定,产品替他判断对错才算」——
+ * <b>那句话不在 docs/execution/INDEX.md 里,也不在 docs/ 任何一处</b>,
+ * 全仓只有本文件自己有它(实测见 `B0` §11.3)。一条「依据在别处」的豁免
+ * 等于没有依据的豁免,所以它整条作废,`正确率` 随之从灰名单升到硬名单
+ * (2026-09-04 chenyj 拍板,`B0` §11.4;落地 KUBI-107)。
+ *
+ * <p>`rank` / `accuracy` / `得分` 这些词<b>没有</b>跟着升 —— 那次拍板的范围只到
+ * `正确率` 一个词。rank 是盲区榜的名次(服务端 blindScore 排序),
+ * 它排的是骨架上的缺口不是人。一个朴素的关键词黑名单会把它们全判成红,
  * 而一条天天误报的断言两天内就会被关掉,等于从来没有过。
  *
  * 于是分两级:
@@ -117,6 +131,15 @@ const HARD = [
   '自动判题',
   '判卷',
   '阅卷',
+  // 用户自己填的两个整数相除得到的那个比值。
+  // 🔴 2026-09-04 chenyj 拍板「算」(`B0` §11.4):design/README.md:45 的平铺禁令赢,
+  // 「这个数是用户自己填的」不构成豁免理由 —— 界面上不得出现,就是不得出现。
+  // 它满足硬名单的入选条件:KUBI-107 改完之后,web/src 全树一次都不出现,
+  // 包括本仓库那些否定式的边界声明注释里(那几处改说「练了几道 / 对了几道」,
+  // 两个原始数照留,被删掉的只有它们相除得到的比值)。
+  // 旁证:docs/technical/INDEX.md:414 撤回 practice_log 时写的就是
+  // 「『正确率』这个字段在整个文档集里从未被定义过」。
+  '正确率',
   // 效果承诺 / 押题。都要求产品知道题目对不对,外加一个它没有的因果结论。
   '提分',
   '涨分',
@@ -137,7 +160,7 @@ const HARD = [
  * 用户自己填的、服务端按频次×状态排的序 —— 合法;产品对内容作出的评价 —— 越界。
  */
 const SOFT = [
-  '正确率',
+  // 🔴 `正确率` 不在这里了 —— 2026-09-04 升硬名单,见上面 HARD 里那段。
   'accuracy',
   '得分',
   '分数',
@@ -278,7 +301,7 @@ const stale = [...allow.values()].filter((it) => !used.has(`${it.file}\u0000${it
 
 if (hardHits.length === 0 && softHits.length === 0 && stale.length === 0) {
   process.stdout.write(
-    '\n能力边界扫描通过 —— docs/execution/INDEX.md §四 R-05「产品永不判断对不对」\n' +
+    '\n能力边界扫描通过 —— R-05「产品永不判断对不对」(docs/execution/INDEX.md:591 + design/README.md:45)\n' +
       `  扫描 ${files.length} 个文件 / ${lines} 行(web/src)\n` +
       `  硬名单 ${HARD.length} 词,灰名单 ${SOFT.length} 词,豁免表 ${allow.size} 项(全部命中)\n\n`,
   )
@@ -286,8 +309,8 @@ if (hardHits.length === 0 && softHits.length === 0 && stale.length === 0) {
 }
 
 const out = []
-out.push('\n能力边界扫描未通过 —— docs/execution/INDEX.md §四 R-05「产品永不判断对不对」')
-out.push('判据:用户自己填的数不算判定,产品替他判断对错才算。\n')
+out.push('\n能力边界扫描未通过 —— R-05「产品永不判断对不对」(docs/execution/INDEX.md:591 + design/README.md:45)')
+out.push('判据:design/README.md:45「界面上不得出现正确率、得分、排名…」+ docs/execution/INDEX.md:591 红线表 R-05。\n')
 
 if (hardHits.length) {
   out.push(`【硬名单】${hardHits.length} 处 —— 这些词在一个不判对错、不做教研的产品里没有合法用法。`)

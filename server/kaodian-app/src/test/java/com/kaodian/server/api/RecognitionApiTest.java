@@ -152,7 +152,7 @@ class RecognitionApiTest {
     void imageHitLandsAnAutoTag() throws Exception {
         tagger.script(candidates -> RecognitionResult.of(candidates.get(0).code(), 0.91));
 
-        mockMvc.perform(post("/api/records/t-1/image")
+        mockMvc.perform(post("/api/v1/records/t-1/image")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(bodyWith(jpeg("one"))))
                 .andExpect(status().isOk())
@@ -176,7 +176,7 @@ class RecognitionApiTest {
     void imageRefusesMultipart() throws Exception {
         // docs/technical/INDEX.md §6.2 原文:「🔴 JSON body,base64 内联,【不是 multipart 落盘】」。
         // multipart 的默认行为是把 part 写成临时文件 —— 这个端点连收都不收。
-        mockMvc.perform(multipart("/api/records/t-1/image")
+        mockMvc.perform(multipart("/api/v1/records/t-1/image")
                         .file(new MockMultipartFile("image", "a.jpg", "image/jpeg", jpeg("x"))))
                 .andExpect(status().isUnsupportedMediaType());
 
@@ -190,7 +190,7 @@ class RecognitionApiTest {
         for (int i = 0; i < seven.length; i++) {
             seven[i] = jpeg("p" + i);
         }
-        mockMvc.perform(post("/api/records/t-1/image")
+        mockMvc.perform(post("/api/v1/records/t-1/image")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(bodyWith(seven)))
                 .andExpect(status().isBadRequest())
@@ -204,7 +204,7 @@ class RecognitionApiTest {
     @DisplayName("🔴 R-07:请求体里塞一个标签名 → 400,不是被静默忽略")
     void imageRejectsAnyExtraField() throws Exception {
         String body = "{\"photos\":[\"" + base64(jpeg("x")) + "\"],\"tag\":\"我自己起的考点\"}";
-        mockMvc.perform(post("/api/records/t-1/image")
+        mockMvc.perform(post("/api/v1/records/t-1/image")
                         .contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("UNKNOWN_FIELD"));
@@ -216,7 +216,7 @@ class RecognitionApiTest {
     @Test
     @DisplayName("认不出格式的字节 → 400,而且是在调模型【之前】拒的")
     void imageRejectsUnknownFormatBeforeSpendingAnything() throws Exception {
-        mockMvc.perform(post("/api/records/t-1/image")
+        mockMvc.perform(post("/api/v1/records/t-1/image")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(bodyWith(jpeg("ok"), "这不是一张图".getBytes(StandardCharsets.UTF_8))))
                 .andExpect(status().isBadRequest())
@@ -250,7 +250,7 @@ class RecognitionApiTest {
     void burstStopsAtTheFirstHit() throws Exception {
         tagger.script(candidates -> RecognitionResult.of(candidates.get(0).code(), 0.88));
 
-        mockMvc.perform(post("/api/records/t-1/image")
+        mockMvc.perform(post("/api/v1/records/t-1/image")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(bodyWith(jpeg("a"), jpeg("b"), jpeg("c"))))
                 .andExpect(status().isOk())
@@ -265,7 +265,7 @@ class RecognitionApiTest {
     void burstKeepsTryingOnNoMatch() throws Exception {
         tagger.script(candidates -> RecognitionResult.noMatch(0.42));
 
-        mockMvc.perform(post("/api/records/t-1/image")
+        mockMvc.perform(post("/api/v1/records/t-1/image")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(bodyWith(jpeg("a"), jpeg("b"), jpeg("c"))))
                 .andExpect(status().isOk())
@@ -280,7 +280,7 @@ class RecognitionApiTest {
     @Test
     @DisplayName("召回为空 → 一次模型都不调,而且不会因为图多而调六次")
     void noRecallMeansNoModelCall() throws Exception {
-        mockMvc.perform(post("/api/records/t-2/image")     // t-2 的来源名召回不出候选
+        mockMvc.perform(post("/api/v1/records/t-2/image")     // t-2 的来源名召回不出候选
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(bodyWith(jpeg("a"), jpeg("b"))))
                 .andExpect(status().isOk())
@@ -299,7 +299,7 @@ class RecognitionApiTest {
             throw new RecognitionUnavailableException("测试:厂商挂了");
         });
 
-        mockMvc.perform(post("/api/records/t-1/image")
+        mockMvc.perform(post("/api/v1/records/t-1/image")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(bodyWith(jpeg("a"), jpeg("b"), jpeg("c"))))
                 // 回 503 会让前端把它当成一次失败去重试,而它没有失败(docs/technical/后端系统设计与组件接入.md §1.5)
@@ -319,7 +319,7 @@ class RecognitionApiTest {
     @Test
     @DisplayName("记录不存在 → 404,而且消息里不回显那个 id")
     void missingRecordIsFourOhFour() throws Exception {
-        mockMvc.perform(post("/api/records/t-does-not-exist/image")
+        mockMvc.perform(post("/api/v1/records/t-does-not-exist/image")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(bodyWith(jpeg("a"))))
                 .andExpect(status().isNotFound())
@@ -340,7 +340,7 @@ class RecognitionApiTest {
         String marker = "KAODIAN-PIXEL-MARKER";
         byte[] photo = jpeg(marker);
 
-        mockMvc.perform(post("/api/records/t-1/image")
+        mockMvc.perform(post("/api/v1/records/t-1/image")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(bodyWith(photo)))
                 .andExpect(status().isOk());
@@ -355,7 +355,7 @@ class RecognitionApiTest {
         String marker = "KAODIAN-REJECTED-MARKER";
         byte[] notAnImage = ("XXXX" + marker).getBytes(StandardCharsets.UTF_8);
 
-        mockMvc.perform(post("/api/records/t-1/image")
+        mockMvc.perform(post("/api/v1/records/t-1/image")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(bodyWith(notAnImage)))
                 .andExpect(status().isBadRequest());
@@ -370,7 +370,7 @@ class RecognitionApiTest {
         String marker = "KAODIAN-AUDIO-MARKER";
         byte[] clip = wav(3, marker);
 
-        mockMvc.perform(multipart("/api/records/t-1/audio")
+        mockMvc.perform(multipart("/api/v1/records/t-1/audio")
                         .file(new MockMultipartFile("audio", "clip.wav", "audio/wav", clip)))
                 .andExpect(status().isOk());
 
@@ -386,7 +386,7 @@ class RecognitionApiTest {
             throw new RecognitionUnavailableException("测试:ASR 未接入");
         });
 
-        mockMvc.perform(multipart("/api/records/t-1/audio")
+        mockMvc.perform(multipart("/api/v1/records/t-1/audio")
                         .file(new MockMultipartFile("audio", "clip.wav", "audio/wav", wav(10, "hi"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.outcome").value("UNAVAILABLE"))
@@ -400,7 +400,7 @@ class RecognitionApiTest {
     @Test
     @DisplayName("🔴 61 秒的录音 → 413,而且 ASR 一次都没被调到(校验在花钱之前)")
     void audioLongerThanSixtySecondsIsRejectedServerSide() throws Exception {
-        mockMvc.perform(multipart("/api/records/t-1/audio")
+        mockMvc.perform(multipart("/api/v1/records/t-1/audio")
                         .file(new MockMultipartFile("audio", "clip.wav", "audio/wav", wav(61, "x"))))
                 .andExpect(status().isPayloadTooLarge())
                 .andExpect(jsonPath("$.code").value("AUDIO_TOO_LONG"));
@@ -414,7 +414,7 @@ class RecognitionApiTest {
     void audioJustUnderTheLimitPassesThrough() throws Exception {
         asr.script(clip -> "这段话不该出现在任何地方");
 
-        mockMvc.perform(multipart("/api/records/t-1/audio")
+        mockMvc.perform(multipart("/api/v1/records/t-1/audio")
                         .file(new MockMultipartFile("audio", "clip.wav", "audio/wav", wav(59, "x"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.outcome").value("NO_TEXT_TAGGER"));
@@ -429,7 +429,7 @@ class RecognitionApiTest {
         String spoken = "刚才那道题问的是增长率";
         asr.script(clip -> spoken);
 
-        String body = mockMvc.perform(multipart("/api/records/t-1/audio")
+        String body = mockMvc.perform(multipart("/api/v1/records/t-1/audio")
                         .file(new MockMultipartFile("audio", "clip.wav", "audio/wav", wav(5, "x"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.outcome").value("NO_TEXT_TAGGER"))
@@ -449,7 +449,7 @@ class RecognitionApiTest {
     void emptyTranscriptAsksForARetake() throws Exception {
         asr.script(clip -> "   ");
 
-        mockMvc.perform(multipart("/api/records/t-1/audio")
+        mockMvc.perform(multipart("/api/v1/records/t-1/audio")
                         .file(new MockMultipartFile("audio", "clip.wav", "audio/wav", wav(5, "x"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.outcome").value("NOTHING_HEARD"))
@@ -461,7 +461,7 @@ class RecognitionApiTest {
     void nonWavIsRejectedRatherThanSkippingTheDurationCheck() throws Exception {
         // 「算不出时长就不校验时长」是这段代码里最容易写出来的一句降级,
         // 而它正好把这条服务端校验变成一句空话 —— 送一段容器认不出的字节就绕过去了。
-        mockMvc.perform(multipart("/api/records/t-1/audio")
+        mockMvc.perform(multipart("/api/v1/records/t-1/audio")
                         .file(new MockMultipartFile("audio", "clip.m4a", "audio/mp4", jpeg("not audio"))))
                 .andExpect(status().isUnsupportedMediaType())
                 .andExpect(jsonPath("$.code").value("UNSUPPORTED_AUDIO_FORMAT"));
@@ -473,14 +473,14 @@ class RecognitionApiTest {
     @DisplayName("🔴 声明的 Content-Type 一概不作数 —— 判据是 WAV 头本身")
     void declaredContentTypeIsNotTrusted() throws Exception {
         // 客户端说这是 wav,字节说这是 jpeg。这个端点的全部要点就是不信前者。
-        mockMvc.perform(multipart("/api/records/t-1/audio")
+        mockMvc.perform(multipart("/api/v1/records/t-1/audio")
                         .file(new MockMultipartFile("audio", "lie.wav", "audio/wav", jpeg("lie"))))
                 .andExpect(status().isUnsupportedMediaType())
                 .andExpect(jsonPath("$.code").value("UNSUPPORTED_AUDIO_FORMAT"));
 
         // 反过来:字节是 wav,声明成 octet-stream —— 照样收
         asr.script(clip -> "ok");
-        mockMvc.perform(multipart("/api/records/t-1/audio")
+        mockMvc.perform(multipart("/api/v1/records/t-1/audio")
                         .file(new MockMultipartFile("audio", "clip.bin",
                                 "application/octet-stream", wav(2, "x"))))
                 .andExpect(status().isOk());
@@ -493,7 +493,7 @@ class RecognitionApiTest {
         // 把 byteRate 改小十倍:这样一段 10 秒的录音会「算成」100 秒 ——
         // 反过来也一样,改大就能让一段 10 分钟的录音假装成 60 秒。
         writeU32(clip, 28, 3_200);
-        mockMvc.perform(multipart("/api/records/t-1/audio")
+        mockMvc.perform(multipart("/api/v1/records/t-1/audio")
                         .file(new MockMultipartFile("audio", "clip.wav", "audio/wav", clip)))
                 .andExpect(status().isUnsupportedMediaType())
                 .andExpect(jsonPath("$.code").value("UNSUPPORTED_AUDIO_FORMAT"));
@@ -504,7 +504,7 @@ class RecognitionApiTest {
     @Test
     @DisplayName("没带 audio 这个 part → 400,而不是一个没有错误码的通用拒绝")
     void missingPartIsANamedError() throws Exception {
-        mockMvc.perform(multipart("/api/records/t-1/audio"))
+        mockMvc.perform(multipart("/api/v1/records/t-1/audio"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("MISSING_AUDIO"));
     }

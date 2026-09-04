@@ -53,7 +53,7 @@ public class SyllabusEditException extends RuntimeException {
          *
          * <p>与 {@link #NODE_NOT_FOUND} 分开,是因为下一步差得很远:
          * 「树里没这个 code」要用户刷新或换一个,而这个要用户<b>先把目标取消归档</b>。
-         * 合成 404 更糟的是它当场自相矛盾 —— {@code GET /api/syllabus/archived}
+         * 合成 404 更糟的是它当场自相矛盾 —— {@code GET /api/v1/syllabus/archived}
          * 刚刚把这个考点连名字带记录条数列出来过,下一句却说「骨架树里没有这个考点」。
          */
         NODE_ARCHIVED,
@@ -205,7 +205,7 @@ public class SyllabusEditException extends RuntimeException {
                         + "已经归档了,所以你在树上看不见它 —— 这也正是这条报错最容易让人困惑的地方。"
                         + "归档的考点照样算占名字:否则给它取消归档就会静默造出一个重名。"
                         + "两条出路:给那个归档考点改个名(rename),或者先给它取消归档(unarchive)再决定怎么处理。"
-                        + "归档清单在 GET /api/syllabus/archived。"
+                        + "归档清单在 GET /api/v1/syllabus/archived。"
                         + NAME_COMPARISON_NOTE);
     }
 

@@ -26,11 +26,11 @@ export function StatusBar({ data, hint }: { data: Dashboard; hint?: string }) {
       {offline && <span className="hidden lg:inline">窗口重新聚焦会自动再试一次真接口</span>}
 
       {/* 做题数由时间线里同一批原始记录求和(树接口不返回它)。记录被截断时求出来的和偏小,
-          偏小的正确率会把「稳」显示成「弱」—— 所以那两列直接显示「—」,并在这里说明为什么。 */}
+          偏小的对/练会把「稳」显示成「弱」—— 所以那一列直接显示「—」,并在这里说明为什么。 */}
       {!data.drillsKnown && (
         <span className="inline-flex items-center gap-[5px] text-red">
           <StateDot state="RUSTY" />
-          记录超出单次上限,练·对与正确率显示为「—」
+          记录超出单次上限,练·对显示为「—」
         </span>
       )}
 

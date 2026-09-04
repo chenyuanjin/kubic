@@ -1,10 +1,20 @@
 /**
  * 极薄的 fetch 封装。
  *
- * 只写相对路径 `/api/*`:dev 由 vite proxy 转到 :8080,生产由 Caddy 反代到同机 jar
+ * 只写相对路径 `/api/v1/*`:dev 由 vite proxy 转到 :8080,生产由 Caddy 反代到同机 jar
  * (docs/technical/INDEX.md §2.2「一台机器上的两个进程,不是两个服务」)。所以这里没有 baseURL 配置,
  * 也没有环境变量 —— 少一个能配错的地方。
  */
+
+/**
+ * 前缀在<b>整个 web 侧只写这一次</b>(`B0` §16.2,KUBI-107)。
+ *
+ * <p>迁 `/api` → `/api/v1` 那次实测:server 侧 11 个 `@RequestMapping` 各写一遍前缀,
+ * 前端要是也十个文件各写各的,下一次改前缀就是同一个坑第二次。所以
+ * <b>凡是发往后端的路径都从这里拼</b> —— 包括不走 {@link request} 那条路的
+ * `api/agent.ts`(它有自己的理由绕开这里的 2 秒超时,但前缀不该跟着分家)。
+ */
+export const API_BASE = '/api/v1'
 
 /**
  * 后端不可达 / 超时 / 非 2xx,都归到这一类,带一句能直接显示给用户的中文原因。
@@ -68,7 +78,7 @@ function describe(err: unknown): string {
   if (err instanceof DOMException && (err.name === 'TimeoutError' || err.name === 'AbortError')) {
     return `请求超时(> ${TIMEOUT_MS} ms)`
   }
-  if (err instanceof TypeError) return '连不上 /api —— 后端 :8080 没起来?'
+  if (err instanceof TypeError) return `连不上 ${API_BASE} —— 后端 :8080 没起来?`
   return err instanceof Error ? err.message : String(err)
 }
 
@@ -97,7 +107,7 @@ function authHeader(): Record<string, string> {
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   let res: Response
   try {
-    res = await fetch(`/api${path}`, {
+    res = await fetch(`${API_BASE}${path}`, {
       ...init,
       headers: { Accept: 'application/json', ...authHeader(), ...init?.headers },
       signal: AbortSignal.timeout(TIMEOUT_MS),
@@ -112,7 +122,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     // dev 下 vite proxy 会把「后端没起来」翻译成 502/504,直接显示成裸状态码会被读成
     // 「服务端有 bug」。这里翻回它真正的意思。
     if (res.status === 502 || res.status === 503 || res.status === 504) {
-      throw new ApiUnavailableError(`连不上 /api —— 后端 :8080 没起来?(HTTP ${res.status})`, {
+      throw new ApiUnavailableError(`连不上 ${API_BASE} —— 后端 :8080 没起来?(HTTP ${res.status})`, {
         status: res.status,
       })
     }

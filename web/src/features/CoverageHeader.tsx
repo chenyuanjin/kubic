@@ -68,7 +68,7 @@ export function CoverageHeader({ summary, subject }: { summary: SummaryDto; subj
           {summary.total} 个考点 · {subject.display}
         </div>
         <div className="mt-1.5 font-mono text-[10.5px] text-t3">
-          列:状态 / 练·对 / 正确率 / 近五年 / 最近一次
+          列:状态 / 练·对 / 近五年 / 最近一次
         </div>
         <div className="mt-1 font-mono text-[10.5px] text-t3">实心是碰过的,空心虚线是还没碰过的</div>
       </div>

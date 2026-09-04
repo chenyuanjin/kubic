@@ -116,7 +116,7 @@ class TagApiTest {
                 "{\"tag\":\"资料分析·增长率\"}",
                 "{\"candidates\":[\"growth-rate\"]}",
                 "{\"nodeCode\":\"growth-rate\"}"}) {
-            mockMvc.perform(post("/api/records/t-1/tags/suggest")
+            mockMvc.perform(post("/api/v1/records/t-1/tags/suggest")
                             .contentType(MediaType.APPLICATION_JSON).content(body))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.code").value("UNKNOWN_FIELD"));
@@ -136,7 +136,7 @@ class TagApiTest {
     @Test
     @DisplayName("召回为空 → 200 + NOT_RECALLED,而不是 4xx:记录早就落地了,补标失败什么都没损坏")
     void suggestWithoutRecallIsStillTwoHundred() throws Exception {
-        mockMvc.perform(post("/api/records/t-1/tags/suggest"))
+        mockMvc.perform(post("/api/v1/records/t-1/tags/suggest"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.outcome").value("NOT_RECALLED"))
                 .andExpect(jsonPath("$.candidateCount").value(0))
@@ -150,7 +150,7 @@ class TagApiTest {
     void suggestWithoutMaterialSaysSo() throws Exception {
         // 这是今天这个端点的常态,而它诚实地说明原因:原图与转写都不留存(决策记录 §2.3 / 决策记录 §2.2),
         // 服务端手里没有可再看一遍的东西。伪装成「模型没认出来」会让人去查模型,而模型没被调用过。
-        mockMvc.perform(post("/api/records/t-2/tags/suggest").contentType(MediaType.APPLICATION_JSON)
+        mockMvc.perform(post("/api/v1/records/t-2/tags/suggest").contentType(MediaType.APPLICATION_JSON)
                         .content("{}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.outcome").value("NO_MATERIAL"))
@@ -161,7 +161,7 @@ class TagApiTest {
     @Test
     @DisplayName("suggest 的响应里带着这条记录当前的全部标签 —— 包括那条没有落库的主标签")
     void suggestReturnsTheCurrentTagList() throws Exception {
-        mockMvc.perform(post("/api/records/t-1/tags/suggest"))
+        mockMvc.perform(post("/api/v1/records/t-1/tags/suggest"))
                 .andExpect(jsonPath("$.tags.length()").value(1))
                 .andExpect(jsonPath("$.tags[0].id").value("primary-t-1"))
                 .andExpect(jsonPath("$.tags[0].primary").value(true))
@@ -180,7 +180,7 @@ class TagApiTest {
                 "{\"name\":\"我自己起的考点\"}",
                 "{\"nodeCode\":\"growth-rate\",\"name\":\"增长率速算\"}",
                 "{\"nodeCode\":\"growth-rate\",\"label\":\"【某机构】增长率的三种秒杀技巧\"}"}) {
-            mockMvc.perform(post("/api/records/t-1/tags")
+            mockMvc.perform(post("/api/v1/records/t-1/tags")
                             .contentType(MediaType.APPLICATION_JSON).content(body))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.code").value("UNKNOWN_FIELD"));
@@ -236,13 +236,13 @@ class TagApiTest {
     @Test
     @DisplayName("🔴 树外的 code → 400 NODE_NOT_IN_SYLLABUS,不模糊匹配、不新建节点")
     void mountRejectsCodesOutsideTheTree() throws Exception {
-        mockMvc.perform(post("/api/records/t-1/tags")
+        mockMvc.perform(post("/api/v1/records/t-1/tags")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"nodeCode\":\"资料分析·增长率\"}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("NODE_NOT_IN_SYLLABUS"));
 
-        mockMvc.perform(post("/api/records/t-1/tags")
+        mockMvc.perform(post("/api/v1/records/t-1/tags")
                         .contentType(MediaType.APPLICATION_JSON).content("{\"nodeCode\":\"\"}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
@@ -253,7 +253,7 @@ class TagApiTest {
     @Test
     @DisplayName("挂载成功 → 201 + origin=manual + 覆盖度 +1;同一个考点再挂一次 → 200,不新建")
     void mountingIsIdempotentAndMovesCoverage() throws Exception {
-        String created = mockMvc.perform(post("/api/records/t-1/tags")
+        String created = mockMvc.perform(post("/api/v1/records/t-1/tags")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"nodeCode\":\"average-calc\"}"))
                 .andExpect(status().isCreated())
@@ -266,7 +266,7 @@ class TagApiTest {
         String tagId = JsonPath.read(created, "$.tags[1].id");
         assertFalse(tagId.startsWith("primary-"), "加挂的标签不该占用主标签那个 id");
 
-        mockMvc.perform(post("/api/records/t-1/tags")
+        mockMvc.perform(post("/api/v1/records/t-1/tags")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"nodeCode\":\"average-calc\"}"))
                 .andExpect(status().isOk())     // 200,不是 201 —— 服务端什么都没新建
@@ -283,7 +283,7 @@ class TagApiTest {
         // 而 origin 不可变这条恰恰只有在 auto 上才验得出来。
         tags.put(new RecordTag("tag-auto", "t-1", "average-calc", 0.91, TagOrigin.AUTO, null, false));
 
-        mockMvc.perform(post("/api/records/t-1/tags/tag-auto/confirm"))
+        mockMvc.perform(post("/api/v1/records/t-1/tags/tag-auto/confirm"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.tags[1].id").value("tag-auto"))
                 .andExpect(jsonPath("$.tags[1].origin").value("auto"))
@@ -299,7 +299,7 @@ class TagApiTest {
     void confirmDoesNotChangeCoverage() throws Exception {
         tags.put(new RecordTag("tag-auto", "t-1", "average-calc", 0.91, TagOrigin.AUTO, null, false));
 
-        mockMvc.perform(post("/api/records/t-1/tags/tag-auto/confirm"))
+        mockMvc.perform(post("/api/v1/records/t-1/tags/tag-auto/confirm"))
                 .andExpect(jsonPath("$.summary.covered").value(3))
                 .andExpect(jsonPath("$.tags[1].countsInCoverage").value(true));
     }
@@ -307,7 +307,7 @@ class TagApiTest {
     @Test
     @DisplayName("确认主标签也走得通 —— 它本来不占行,确认之后才需要一行来记住这个状态")
     void confirmingThePrimaryTagWorks() throws Exception {
-        mockMvc.perform(post("/api/records/t-1/tags/primary-t-1/confirm"))
+        mockMvc.perform(post("/api/v1/records/t-1/tags/primary-t-1/confirm"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.tags[0].primary").value(true))
                 .andExpect(jsonPath("$.tags[0].origin").value("manual"));
@@ -318,7 +318,7 @@ class TagApiTest {
     @Test
     @DisplayName("🔴 丢弃 → 标签还在列表上(可见),但覆盖度掉下去(不计覆盖度)—— P1-7 的两半")
     void discardKeepsTheTagVisibleAndLowersCoverage() throws Exception {
-        mockMvc.perform(post("/api/records/t-1/tags/primary-t-1/discard"))
+        mockMvc.perform(post("/api/v1/records/t-1/tags/primary-t-1/discard"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.tags.length()").value(1))                 // 可见
                 .andExpect(jsonPath("$.tags[0].discarded").value(true))
@@ -332,7 +332,7 @@ class TagApiTest {
     @Test
     @DisplayName("丢弃标签不等于删记录 —— 记录一条都没少")
     void discardingATagDoesNotDeleteTheRecord() throws Exception {
-        mockMvc.perform(post("/api/records/t-1/tags/primary-t-1/discard"))
+        mockMvc.perform(post("/api/v1/records/t-1/tags/primary-t-1/discard"))
                 .andExpect(status().isOk());
 
         // 错的只是它挂在哪儿,不该把「我那天学过东西」一起抹掉。
@@ -348,7 +348,7 @@ class TagApiTest {
         // 那个 id 是客户端自己刚发过来的,回显给它一个字的信息都不增加。
         String stem = "某年某省考资料分析材料第一段" + "占位".repeat(200);
 
-        String body = mockMvc.perform(post("/api/records/" + stem + "/tags/suggest"))
+        String body = mockMvc.perform(post("/api/v1/records/" + stem + "/tags/suggest"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("RECORD_NOT_FOUND"))
                 .andReturn().getResponse().getContentAsString();
@@ -361,8 +361,8 @@ class TagApiTest {
     void aTagFromAnotherRecordIsFourOhFour() throws Exception {
         // 合并成一个 404 的话,前端分不清该刷新时间线还是该刷新这条记录的标签列表。
         for (String path : new String[]{
-                "/api/records/t-1/tags/primary-t-2/confirm",     // 是别人的主标签
-                "/api/records/t-1/tags/tag-不存在/discard"}) {
+                "/api/v1/records/t-1/tags/primary-t-2/confirm",     // 是别人的主标签
+                "/api/v1/records/t-1/tags/tag-不存在/discard"}) {
             mockMvc.perform(post(path))
                     .andExpect(status().isNotFound())
                     .andExpect(jsonPath("$.code").value("TAG_NOT_FOUND"));

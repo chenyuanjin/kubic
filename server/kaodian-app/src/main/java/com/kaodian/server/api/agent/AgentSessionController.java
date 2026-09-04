@@ -36,7 +36,7 @@ import java.util.List;
  * <b>这是设计,不是缺陷</b> —— 要让它「更好用」的唯一办法是把图存下来,而那条线第一天就定死了。
  */
 @RestController
-@RequestMapping("/api/agent/sessions")
+@RequestMapping("/api/v1/agent/sessions")
 public class AgentSessionController {
 
     /** 与 {@code AgentController} 同一个占位 userId —— agent 这一层还没接鉴权。 */

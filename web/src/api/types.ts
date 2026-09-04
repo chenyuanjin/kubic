@@ -1,5 +1,5 @@
 /**
- * 后端 `/api/*` 的响应形状 —— 手写,<b>逐字段对着 `server/src/main/java/com/kaodian/server/api/dto/`
+ * 后端 `/api/v1/*` 的响应形状 —— 手写,<b>逐字段对着 `server/src/main/java/com/kaodian/server/api/v1/dto/`
  * 里的 record 抄,不是照着「大概长这样」写</b>。
  *
  * 之所以手写而不是先等 OpenAPI:后端接口层与这份前端是两条并行的线,谁都不等谁。
@@ -34,7 +34,7 @@ export const TOUCH_KINDS = ['VOICE', 'PHOTO', 'PASTE', 'DRILL', 'MANUAL'] as con
 export type TouchKind = (typeof TOUCH_KINDS)[number]
 
 /* ========================================================================== */
-/* GET /api/syllabus/tree            → server: dto/TreeResponse.java           */
+/* GET /api/v1/syllabus/tree            → server: dto/TreeResponse.java           */
 /* ========================================================================== */
 
 /** server: dto/SubjectDto.java */
@@ -53,9 +53,9 @@ export interface SubjectDto {
  * 树上的一个考点 —— server: dto/NodeDto.java。
  *
  * 🔴 <b>字段就这七个。</b>没有 practiced / correct / accuracy / sources ——
- * 那四个只在 `GET /api/syllabus/nodes/{code}`(NodeDetailDto)里有。
+ * 那四个只在 `GET /api/v1/syllabus/nodes/{code}`(NodeDetailDto)里有。
  * 早先这里多写了几个后端并不返回的字段,结果 `correct / practiced` 变成
- * `undefined / undefined` = NaN,18 行的正确率列全部渲染成「NaN%」。
+ * `undefined / undefined` = NaN,当时那一列 18 行全部渲染成「NaN%」。
  * 所以宁可让这个接口看起来「少」,也不给不存在的数据留字段。
  */
 export interface TreeNodeDto {
@@ -122,7 +122,7 @@ export interface TreeResponse {
 }
 
 /* ========================================================================== */
-/* GET /api/coverage/blindspots      → server: dto/BlindSpotsResponse.java     */
+/* GET /api/v1/coverage/blindspots      → server: dto/BlindSpotsResponse.java     */
 /* ========================================================================== */
 
 /**
@@ -151,14 +151,14 @@ export interface BlindSpotsResponse {
 }
 
 /* ========================================================================== */
-/* GET /api/records                  → server: dto/RecordPageResponse.java     */
+/* GET /api/v1/records                  → server: dto/RecordPageResponse.java     */
 /* ========================================================================== */
 
 /**
  * 一条原始记录 —— server: dto/TimelineItemDto.java。
  *
- * ⚠ <b>名字里的 Timeline 已经不指 `/api/timeline` 了。</b>它现在只出现在采集线的响应里
- * (`GET /api/records`、`POST /api/records` 及其批量版);`/api/timeline` 改成按天/周的聚合视图之后
+ * ⚠ <b>名字里的 Timeline 已经不指 `/api/v1/timeline` 了。</b>它现在只出现在采集线的响应里
+ * (`GET /api/v1/records`、`POST /api/v1/records` 及其批量版);`/api/v1/timeline` 改成按天/周的聚合视图之后
  * 一条 items 都不出。server 侧<b>刻意没有跟着改名</b>(理由写在那个 record 的 javadoc 里:
  * 一次纯改名的提交混进别的改动里,得到的是一份没人看得清的 diff),所以这边也不改 ——
  * <b>两边同时改才叫改名</b>,单边改只是又多一处得对照着看的差异。
@@ -188,7 +188,7 @@ export interface TimelineItemDto {
 }
 
 /**
- * `GET /api/records` 的一页 —— server: dto/RecordPageResponse.java。
+ * `GET /api/v1/records` 的一页 —— server: dto/RecordPageResponse.java。
  *
  * `total` 是行为层记录<b>总数</b>(不是本页的),`returned` 是本页几条。
  * <b>两个数不等,就说明这一屏拿到的记录是残缺的</b> —— 见 derive.ts 里那个截断闸门。
@@ -203,7 +203,7 @@ export interface TimelineItemDto {
  * 🔴 判「还有没有更旧的」用 `hasMore`,<b>不要用 `nextCursor !== null`</b>:
  * 两者含义相同是实现细节,而那个布尔是契约(server 侧那个 record 的 javadoc 明写了这条)。
  *
- * <h2>`/api/timeline` 在这份文件里<b>没有类型</b>,是故意的</h2>
+ * <h2>`/api/v1/timeline` 在这份文件里<b>没有类型</b>,是故意的</h2>
  *
  * 那个端点现在返回按天/周分桶的聚合视图(docs/technical/INDEX.md §6.4,`{granularity, zone, from, to, buckets}`),
  * <b>里面一条 items 都没有</b>。界面今天没有按天/周的图,把它抄下来等于凭空加一个功能。
@@ -222,7 +222,7 @@ export interface RecordPageResponse {
 }
 
 /* ========================================================================== */
-/* POST /api/records                 → server: dto/CreateRecordRequest.java    */
+/* POST /api/v1/records                 → server: dto/CreateRecordRequest.java    */
 /* ========================================================================== */
 
 /**
@@ -273,7 +273,7 @@ export interface CreateRecordRequest {
  * 只有逐个新增。一个能一次提交整棵子树的端点,现实中的第一个用途一定是把某家机构的
  * 目录页整块拷进来 —— 而 R-07 / docs/decisions/实施路径.md §1.2 要求考点自行归纳、不沿用机构既有体系与措辞。
  * <b>逐个新增很慢,慢正是要的效果。</b>
- * 导出是有的(`GET /api/syllabus/export`),它的反向操作是把文件放回 `~/.kaodian/syllabus.json`,
+ * 导出是有的(`GET /api/v1/syllabus/export`),它的反向操作是把文件放回 `~/.kaodian/syllabus.json`,
  * 不是一个接受任意树形 JSON 的接口。
  *
  * <h2>🔴 只有题型和考点两种对象</h2>
@@ -368,7 +368,7 @@ export interface SyllabusNodeDto {
   recordCount: number
 }
 
-/** server: dto/ArchivedNodesResponse.java —— `GET /api/syllabus/archived`。 */
+/** server: dto/ArchivedNodesResponse.java —— `GET /api/v1/syllabus/archived`。 */
 export interface ArchivedNodesResponse {
   count: number
   items: SyllabusNodeDto[]
@@ -436,7 +436,13 @@ export interface NodeDetailDto {
   touchCount: number
   practiced: number
   correct: number
-  /** 用户自填正确率;没练过是 null,界面显示「—」<b>不是 0%</b>。 */
+  /**
+   * 用户自填的对/练 —— server: NodeDetailDto.accuracy,没练过是 null 而不是 0
+   * (0 会被读成「答全错了」)。
+   *
+   * <p>🔴 KUBI-107 起<b>界面不再显示这个比值</b>(`B0` §11.4)。字段留着是因为它是
+   * 服务端契约的一部分,这份文件逐字段对着后端 DTO 写 —— 删了就不再是同一份契约。
+   */
   accuracy: number | null
   latestAt: string | null
   /** 来源名的集合。只有名字,没有该来源的任何内容。 */
@@ -475,7 +481,7 @@ export interface TagDto {
 }
 
 /**
- * `POST /api/records/{id}/image` 与 `POST /api/records/{id}/tags/suggest` 的<b>同一个</b>答复
+ * `POST /api/v1/records/{id}/image` 与 `POST /api/v1/records/{id}/tags/suggest` 的<b>同一个</b>答复
  * —— server: dto/SuggestTagResponse.java。
  *
  * <h2>🔴 六种结局全是 HTTP 200,包括「模型挂了」</h2>

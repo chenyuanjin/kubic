@@ -390,7 +390,8 @@ record TagVerdict(Long nodeId, BigDecimal confidence, boolean noMatch) {}
 | `app_user` | 账号 | `id` / `nickname` / `status` / `created_at` / `deleted_at` | 主表不放任何登录凭证 |
 | `user_identity` | 账号 | `user_id` / `type`(`phone`/`wx_open`/`wx_union`)/ `identifier` / `bound_at` | **唯一索引 `(type, identifier)`。** 双通道统一到一个账号靠这张表,合并时只改归属,不动主表 |
 | `user_phone_secret` | 账号 | `user_id` / `phone_hash`(HMAC,唯一)/ `phone_enc`(AES) | 手机号不明文落库。哈希用于查,密文用于发短信 |
-| `user_token` | 账号 | `token_hash` / `user_id` / `scope`(`full`/`readonly`)/ `expires_at` / `revoked_at` / `device_label` | 存 SHA-256 不存原值。`scope=readonly` 是 MCP 的全部实现基础(§六) |
+| `auth_token` | 账号 | `token_hash`(**PK**)/ `user_id` / `scope`(`full`/`readonly`)/ `device_label` / `last_used_at` / `expires_at` / `revoked_at` | 存 SHA-256 不存原值。`scope=readonly` 是 MCP 的全部实现基础(§六)。🔴 **对外发的 `token_id` 是不透明字符串,不是 `token_hash`、也不是 `int64` 序号**(`接口契约` §1.1 第三行) |
+| ⚠️ 令牌表 · 2026-09-04 更正 | — | **表名 `user_token` → `auth_token`**(codex 审核轮) | 后端视图(`backend/INDEX.md` §二)一直叫 `auth_token`,与拥有它的模块 `kaodian-auth` 同名;两个名字并存了一整轮没人发现,因为**两张 ER 图谁都没声明自己是真源**。本节即真源,改名以本节为准 |
 | `account_merge_log` | 账号 | `from_user_id` / `to_user_id` / `moved_record_count` / `merged_at` | 合并不可逆,必须留痕(`R-33`) |
 | `syllabus_node` | 骨架 | `id` / `parent_id` / `level`(1模块 2题型 3考点)/ `name` / `subject` / `sort` / `version` | **`level` 有 CHECK 约束 ≤ 3。** 决策记录 §2.5 不做第四层,写进约束不靠自觉 |
 | `syllabus_stat` | 骨架 | `node_id` / `recent5y_count` / `province_codes` / `last_seen_year` / `avg_per_paper` | 决策记录 §2.5 的四个纯统计字段。离线加工区产出,线上只读(`数据线 · 骨架原料的获取与隔离` 三区隔离)。⚠️ **本行是目标表设计,不是现状**:2026-09-03 实测全仓无建表 DDL,四统计只有 `recent5y_count` 有值。**这不改变契约** —— 契约先定、数据跟上(`接口契约:签名与错误码全集` §12.9.3)。🔴 但数据侧有一条必须先解决:`基础数据 · 抓取范围与渠道` §2.5 指出**按省份计数的统计单位从第一天起就是错的**(正确单位是 `(年份, 考试, 卷种)` 三元组)——在它改对之前填 `province_codes`,填进去的是一个口径错误的数字 |
@@ -419,12 +420,25 @@ record TagVerdict(Long nodeId, BigDecimal confidence, boolean noMatch) {}
 > 以及两条把它们隔开的裂缝(行为层无 `userId`、agent 与账号的 `userId` 类型不一致)。
 > **两张图不一样是正常的**:一张是目标,一张是现状。按惯例这里只加指针,上面这张图不动。
 
+🔴 **2026-09-04 裁定(codex 审核轮):本节(`§五 数据模型`)是目标态 ER 的唯一真源。**
+
+`backend/INDEX.md` §二 那张图是**后端领域对象视图**,不是第二份真源 —— 它给的是 record 字段名与 Java 类型,
+本节给的是**表名、列名、SQL 类型、PK / FK / 唯一索引、必填与生命周期字段**。两处冲突一律以本节为准,并且**必须回写本节**。
+
+**为什么必须点破这一条:** 两份「目标态 ER」并存了一整轮,谁都没声明自己是真源,结果是同一张令牌表在两处叫两个名字
+(`user_token` / `auth_token`)、`record_event.client_token` 在两处一个单列唯一一个组合唯一 —— **单列唯一会让两个用户撞键。**
+不是有人写错了,是**没有一处规定过错了该以谁为准**。
+
+⛔ **本节今天还缺 8 张后端视图里有的表,须补齐(挂 `KUBI-89-ER对齐`,差集即工单):**
+`agent_run` · `agent_session` · `auth_token`(已补) · `blindspot_event` · `export_job` · `idempotency_record` · `tag_attempt` · `user_assertion`。
+反向不成立:`syllabus_stat`(离线加工区产出)与 `node_coverage`(派生表)**后端不拥有**,不进那张视图,这也正是它当不了真源的原因。
+
 
 ```mermaid
 erDiagram
     app_user ||--o{ user_identity : "手机号/微信各一行"
     app_user ||--|| user_phone_secret : "哈希+密文"
-    app_user ||--o{ user_token : "多设备并存"
+    app_user ||--o{ auth_token : "多设备并存"
     app_user ||--o{ account_merge_log : "合并留痕"
     app_user ||--o{ record_event : "行为层"
     app_user ||--o{ user_assertion : "我已掌握"
@@ -450,10 +464,13 @@ erDiagram
         varchar type "phone/wx_open/wx_union"
         varchar identifier UK
     }
-    user_token {
-        char token_hash PK "SHA-256"
+    auth_token {
+        char token_hash PK "SHA-256 · 对外发的是不透明 token_id 不是 hash"
         bigint user_id FK
         varchar scope "full / readonly"
+        varchar device_label "服务端从 User-Agent 归一化 不可改"
+        datetime last_used_at "从没用过时整个 key 不出现"
+        datetime expires_at "at_ 30 天滑动 / ro_ 90 天不滑动"
         datetime revoked_at
     }
     syllabus_node {
@@ -477,7 +494,7 @@ erDiagram
         varchar source_name "只记名称"
         varchar capture_type
         varchar extracted_text "上限200 装不下题干"
-        varchar client_token UK
+        varchar client_token "UK(user_id, client_token) 组合唯一 · 不是单列"
     }
     record_tag {
         bigint record_id FK
@@ -574,7 +591,7 @@ erDiagram
         int amount_fen "整数分"
         varchar channel "wx_jsapi / wx_virtual_ios / apple_iap"
         varchar transaction_id UK "回调幂等"
-        tinyint state "PENDING/CONFIRMING/PAID/CLOSED/REFUNDED
+        tinyint state "PENDING/CONFIRMING/PAID/CLOSED/REFUNDED"
     }
     quota_period {
         bigint user_id FK
@@ -679,7 +696,7 @@ erDiagram
 
 | 锁 | 内容 |
 |---|---|
-| 1 · 令牌 | 只读令牌前缀 `ro_`,`user_token.scope='readonly'`。**只读写进凭证本身**(`1.4.2.1`) |
+| 1 · 令牌 | 只读令牌前缀 `ro_`,`auth_token.scope='readonly'`。**只读写进凭证本身**(`1.4.2.1`) |
 | 2 · 过滤器 | **网关过滤器里:`scope=readonly` 的请求命中任何非 GET 方法 → 直接 403。** 这是一行判断,不是一套权限模型 |
 | 3 · 工具白名单 | MCP server 只注册 5 个 tool,各自映射到一个 GET:`syllabus.tree` / `node.detail` / `coverage.blindspots` / `timeline` / `export`。**不存在 `record.create`、`tag.confirm` 这样的 tool——不是禁用,是不注册** |
 | 4 · 路径前缀黑名单 | **`scope=readonly` 命中 `/billing/**` 或 `/quota/**` → 403,不论方法。** 见 §6.7,这条是锁 2 挡不住的 |

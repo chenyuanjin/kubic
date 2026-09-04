@@ -4,7 +4,9 @@
 > **它不产生任何新结论。** 七份文档里的判据、`接口契约：签名与错误码全集` 的字段与错误码，本文一个字都不改；
 > §四 记的是「哪两份撞了、判给谁、为什么」，判词的原文已经落在被判的那一处。
 >
-> **基线：`origin/v1` @ `81a2c23`**，七份于 2026-09-03 按依赖序合入。
+> **基线：`origin/v1` @ `ad58fca`**（2026-09-04 刷新）。七份于 2026-09-03 按依赖序合入，其后经 KUBI-89 审核轮修订。
+> ⚠️ **代码侧取证基线仍是 `81a2c23`，行号照旧有效** —— `git diff --stat 81a2c23..ad58fca -- server/ web/src/` 实测 **0 字节**，
+> 本目录自那以后一行代码都没动过。**换 SHA 不等于换行号，得先证明代码没动；证不出来就不能只把头注改掉。**
 >
 > **状态：活跃。** `technical/backend/` 下增删任一份、或 §二 / §三 两张图与 `server/` 实际分叉时，本文与
 > [`文档规范与目录`](../../文档规范与目录.md) §二 必须**同一次改动内**更新；不更新即视为该文档不存在（§六 同一条规则）。
@@ -75,6 +77,37 @@ B0（读完再往下）
 > **形态说明**：`B0-1` 已裁定**交付 store 接口，不交付 DDL**。下面每个「实体」对应一个 record 类型 + 一个 store 接口，
 > 「唯一索引」对应 store 接口承诺的组合唯一。换 JDBC 那天**形状不变**（`后端系统设计与组件接入` §8.6）。
 
+---
+
+🔴 **2026-09-04 裁定（codex 审核轮）：本图是「后端领域对象视图」，不是目标态 ER 的第二份真源。**
+
+**唯一真源是 [`技术架构与接口契约`](../INDEX.md) §五 数据模型**（库表面：`snake_case` 列名 + SQL 类型 + DDL 语义）。
+本图是它在后端的**对象投影**（`camelCase` 字段 + Java 类型 + store 接口），供开发照着写 record 与 store。
+
+| 谁说了算 | 内容 |
+|---|---|
+| **真源（`技术架构与接口契约` §五）** | 表名、列名、SQL 类型、PK / FK / **唯一索引**、必填与生命周期字段 |
+| **本视图** | Java 类型、record 字段名、store 接口方法签名 |
+| **两处冲突时** | 🔴 **一律以真源为准**，并且**必须回写真源**（一个只在投影里存在的字段等于没有） |
+
+**为什么不反过来：** 真源里有本视图没有的表（`syllabus_stat` / `node_coverage` —— 离线加工与派生面，后端不拥有它们），
+**本视图不是它的超集**，当不了真源。而本视图独有的实体必须补进真源，见下表。
+
+**⛔ 实体差集（2026-09-04 实测，两图各跑一次 `grep -oE '^    [a-z_]+ \{'`）：**
+
+| 只在本视图有（**8 个，须补进真源**） | `agent_run` · `agent_session` · `auth_token` · `blindspot_event` · `export_job` · `idempotency_record` · `tag_attempt` · `user_assertion` |
+|---|---|
+| **只在真源有（2 个，后端不拥有，本视图不补）** | `syllabus_stat`（离线加工区产出，线上只读）· `node_coverage`（派生表，可随时从行为层重算） |
+| **两边都有（9 个，语义须逐字对齐）** | `app_user` · `ai_call_log` · `payment_order` · `quota_period` · `record_event` · `record_tag` · `syllabus_node` · `user_identity` · `user_subscription` |
+
+🔴 **本轮已收口三处「同一件事两个答案」，其余字段级对齐挂 `KUBI-89-ER对齐` 单独一轮做（差集清单就是它的工单）：**
+
+| # | 冲突 | 裁定 | 依据 |
+|---|---|---|---|
+| 1 | 令牌表叫 `auth_token` 还是 `user_token` | **`auth_token`** —— 与拥有它的模块 `kaodian-auth` 同名 | 真源已改名并留更正行 |
+| 2 | `record_event.client_token` 单列唯一 还是 `(user_id, client_token)` 组合唯一 | **组合唯一** | `M1` §3.2 逐字：「唯一性是 `(userId, clientToken)`，不是 `clientToken` 全局唯一」——单列唯一会让两个用户撞键 |
+| 3 | 令牌标识对外发 `long` 还是不透明串 | **不透明字符串** | `接口契约` §1.1 第三行 + `M5` §十三 增量 4：`int64` 等于给令牌加一个可枚举的序号 |
+
 ```mermaid
 erDiagram
     app_user ||--o{ user_identity      : "一人多条身份 · 锚点是 app_user.id"
@@ -110,7 +143,7 @@ erDiagram
         string identifier "UK(type, identifier)"
     }
     auth_token {
-        string  tokenHash  PK "对外发的是 long tokenId 不是 hash"
+        string  tokenHash  PK "对外发的是不透明 tokenId 不是 hash 也不是 long"
         long    userId     FK
         string  scope         "full / readonly"
         string  deviceLabel   "服务端从 User-Agent 归一化 · 不可改"
@@ -245,7 +278,7 @@ erDiagram
 | 5 | 落盘是 **JSON 文件**（`auth-accounts.json` / `touches.json` …），「唯一索引」是 `Map` 的键 | 形状不变，**store 接口承诺组合唯一**；换 JDBC 那天一条 JSON 写变成一个事务 | `B0-1` |
 | 6 | `tag_attempt` / `blindspot_event` / `quota_period` / `export_job` / `idempotency_record` **五个实体都不存在** | 五个都在，store 接口签名在对应模块文档 | `M2` §10.2 · `M3` §5.7 · `M7` §2.2 · `M4` §5.6 · `B0` §7.3 |
 | 7 | `RecordPageResponse` 有 `total` / `returned` / `hasMore` | 收敛成 `{items, nextCursor?}`；前端截断闸门换成「`nextCursor` 这个 key 不出现」 | `接口契约` §1.4（🔴 前后端**同一次落地**） |
-| 8 | `SessionDto` 对外发 `tokenHash` | 对外只发 `long tokenId` | `M4` §十三 增量 9，执行归 `M5` |
+| 8 | `SessionDto` 对外发 `tokenHash` | 对外只发**不透明字符串** `tokenId`（不是 `long`，见 `接口契约` §1.1 第三行） | `M4` §十三 增量 9，执行归 `M5` |
 | 9 | `user_subscription` 有 `status` 列、`ai_call_log` 单列 `idempotency_key` 唯一 | 前者删；后者改三列 `(user_id, endpoint, idempotency_key)` | `M7` §十三 增量 5 / 增量 2 |
 
 🔴 **第 5 行最容易被误读：交付的是 store 接口，`find . -name '*.sql' | wc -l` 今天是 `0`，落地之后还是 `0`。**

@@ -292,10 +292,13 @@ button.calc__row{width:100%;min-height:44px}
    1024–1199 退法:左栏收窄 = 视口宽 − 720px,下限 304px(38 格),右栏不缩。
    右栏 = 内容区 1200 − 左栏,≥1024 恒为 720px(左栏收窄多少内容区跟着收窄多少,两头相抵);
    640 只管 <1024 的单列档。三个数:左栏 480 / 右栏 720 / 内容区 1200。
-   ⚪ 内容区 1200 由 .h5--wide 封顶(blind.html 实测 1200/480/720);.pad-frame 是固定 1366 的评审画框、
-   未封 1200,五张 iPad 横屏稿实测右栏 886 —— 以 720 为准,五张稿的封顶待定。 ══ */
+   内容区 1200 由封顶给出:宽 Web 走 .h5--wide > *,评审画框走 .pad-frame > *(见下),两处同一形状。 ══ */
 .pad-frame{position:relative;width:1366px;height:1024px;margin:0 auto;background:var(--ground);
            display:flex;flex-direction:column;overflow:hidden;--rule:32px}
+/* 框内一律封到内容区 1200:.cols 与框外 chrome(.head/.scope/.dock)同封,否则头比内容宽。
+   形状照 h5.css 的 .h5--wide > *,不新造机制。两处不封:.sb 真机状态栏跟屏宽走;
+   .hi 是绝对定位的居中横条,自带宽度。 ── */
+.pad-frame > *:not(.sb):not(.hi){width:100%;max-width:1200px;margin-left:auto;margin-right:auto}
 .pad-screen{position:relative;width:834px;height:1194px;margin:0 auto;background:var(--ground);
             display:flex;flex-direction:column;overflow:hidden;--rule:32px}
 .cols{flex:1 1 auto;display:flex;min-height:0}

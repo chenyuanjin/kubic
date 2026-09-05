@@ -100,6 +100,11 @@
      屏底动作区会被压到折叠线以下(`design/h5/h5.css` 第 21 行同一条)。 */
   .kb-screen {
     --rule: 24px;
+    /* 左栏宽提成变量(稿:`design/v10/v10.css:299` 的 `--col-l`)。
+       🔴 它不是「480 的又一处副本」,它就是那个 480 的唯一住所 —— 下面两处
+       (左栏宽、屏底动作区左偏移)都从这里派生。手算出来的第三个数
+       (504 = 480 + 24)在 --rule 改成 32 之后会打偏 8px,v10.css:296-298 记的就是这件事。 */
+    --col-l: 480px;
     display: flex;
     flex-direction: column;
     height: 100dvh;
@@ -112,7 +117,12 @@
        那一行写的正是「你现在看的数是真的还是离线示例」。
        收在这里,里面所有屏一次都不用管这件事,也就不会有人漏掉一处。 */
     padding-top: env(safe-area-inset-top, 0px);
-    padding-bottom: env(safe-area-inset-bottom, 0px);
+    /* 🔴 软键盘那一段也在这里收。iPad 实测(iPad Pro 13″ / iOS 26.5,2026-09-05):
+       `dvh` 跟地址栏走、【不跟键盘走】,于是键盘弹起时 .kb-screen 仍是整屏高,
+       屏底动作区连同「已连接 /api」那一行整块被键盘盖住 —— 而 body 是 overflow:hidden 的,
+       浏览器「把聚焦的输入框滚进视野」那条兜底也用不上。
+       --kb-keyboard 由 AppShell 从 visualViewport 写进来,没有 JS 时它是 0,退回原样。 */
+    padding-bottom: max(env(safe-area-inset-bottom, 0px), var(--kb-keyboard, 0px));
   }
 
   /* 屏的主体。滚动发生在这里,不发生在 body 上 ——
@@ -122,6 +132,13 @@
     min-height: 0;
     overflow-y: auto;
     overflow-x: hidden;
+  }
+
+  /* 屏底动作区里的那一行。左右内边距在这里给,不在 tsx 里挂 `px-[var(--rule)]` ——
+     ≥1024 时左内边距要派生自 --col-l,而工具类在 utilities 层、永远盖过 components 层。
+     写成工具类的话,上面那条对齐规矩会被静默盖掉,页面上还看不出是被谁盖的。 */
+  .kb-dock-row {
+    padding-inline: var(--rule);
   }
 
   /* 720–1023(iPad 竖屏 / 窄桌面):只放宽文字与行高,不引入侧栏。 */
@@ -144,15 +161,32 @@
     .kb-cap {
       max-width: 1200px;
     }
-    /* 左栏 = clamp(304, 视口宽 − 720, 480)。右栏不缩,恒为 720 ——
-       左栏收窄多少、内容区跟着收窄多少,两头相抵。 */
+    /* 左栏【实际】宽。--col-l 是上限不是实际值:1024–1199 这一档它退到 304。
+       🔴 屏底偏移必须跟着这个退法走,不能拿 --col-l 直接算 ——
+       真机实测(iPad Air 13″ 竖屏 1024pt,2026-09-05):按 --col-l 算出的偏移是 512,
+       而右栏那时从 304 起,两条线又错开 176px。所以退法只表达一次,两处现读。
+       clamp 的饱和点正好落在内容区封顶那一刻:vw≥1200 时它恒为 480,与封顶后的
+       左栏同值,于是这一个表达式同时管住两档,不需要第二条媒体查询。 */
+    .kb-screen {
+      --col-l-used: clamp(304px, calc(100vw - 720px), var(--col-l));
+    }
+    /* 右栏不缩,恒为 720 —— 左栏收窄多少、内容区跟着收窄多少,两头相抵。 */
     .kb-col-l {
-      flex: 0 0 clamp(304px, calc(100vw - 720px), 480px);
+      flex: 0 0 var(--col-l-used);
       border-right: 1px solid var(--color-hair);
     }
     .kb-col-r {
       flex: 1 1 auto;
       min-width: 0;
+    }
+    /* 🔴 屏底动作区的左缘 = 右栏内容左缘,同一条竖线。
+       稿:`design/v10/v10.css:314` 的 `.pad-frame > .dock{padding-left:calc(var(--col-l) + var(--rule))}`。
+       KUBI-79 在 1366 宽下拍过这条线:`.col-r` 590–1310,两颗按钮都是 622–1278。
+       没有这一行时实测(iPad Pro 13″ 横屏 1376pt,2026-09-05):动作区内容左缘落在 120pt,
+       而右栏内容左缘是 600pt —— 差的正好是一个左栏宽。
+       用 --col-l-used 不用 --col-l,理由见上面那段。 */
+    .kb-dock-row {
+      padding-left: calc(var(--col-l-used) + var(--rule));
     }
   }
 
@@ -178,6 +212,62 @@
     border-top: 1px solid var(--color-hair);
     /* 🔴 这里【不】再加一次 `env(safe-area-inset-bottom)` —— `.kb-screen` 已经收过了。
        两处各加一次会在屏底多出一整条空白,而那条空白看起来像是没画完。 */
+  }
+
+  /* fixed 浮层的根。
+     🔴 `.kb-screen` 那条「安全区在最外层收一次」对 `position:fixed` 的后代【不成立】——
+     fixed 相对视口定位,整个跳出了 .kb-screen 的 padding 盒。iPad 实测(iPad Pro 13″ /
+     iOS 26.5,2026-09-05):命令面板与记一笔面板的 `top-2` 会钻进状态栏;键盘一弹,
+     面板脚的「记下」被顶到屏外 —— 而 CaptureSheet 上面那段注释写的正是它必须够得着。
+     绝对定位的子元素是相对【父级的 padding 盒】定位的,所以收在这一层,里面的
+     top / left / 100% 全部自动让开安全区与键盘,子元素一个都不用改。 */
+  .kb-overlay {
+    padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px)
+      max(env(safe-area-inset-bottom, 0px), var(--kb-keyboard, 0px)) env(safe-area-inset-left, 0px);
+    /* 🔴 面板必须是【流内】的 flex 项,不能是 absolute。
+       真机实测(iPad Pro 13″ / iOS 26.5,2026-09-05,`public/__pad-probe2.html`):
+       absolute 子元素的包含块是父级的【padding 盒】,而 padding 只缩 content 盒 ——
+       于是浮层下内边距确实变成了 372,面板的 `max-height:100%` 却纹丝不动,
+       底边仍停在 812pt,键盘顶边 528pt,越过 284pt。改成流内之后 100% 取的是
+       content 盒,padding 才真的管得住它。
+       压暗底那一层【仍然】是 absolute inset-0 —— 正因为它不受 padding 影响,
+       它才能一直铺满整屏,包括安全区那两条。这两种定位在这里各司其职。 */
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+  }
+
+  /* 浮层面板的高度上限。`100%` 取的是 .kb-overlay 的 padding 盒 ——
+     也就是「已经减掉安全区与键盘之后」的那一块,所以这里不再出现 dvh。 */
+  .kb-sheet {
+    position: relative; /* 压在压暗底之上 —— 它是 absolute,流内元素默认排在它下面 */
+    margin-top: 8px;
+    max-height: calc(100% - 16px);
+  }
+
+  /* 命令面板的宽。
+     🔴 这个 720 与右栏那个 720 <b>不是同一个数</b>,只是同值:它是浮层宽,不随 U6.1 变。
+     它原先写在 `CommandPalette.tsx` 里,而那是「几何数只在 index.css 一处」够不着的地方 ——
+     `design-baseline-scan.mjs` 只扫 `design/`,组件里的字面量它一个也看不见。
+     搬到这里不是为了合并两个数,是为了让它进到能被人一眼数清的那一处。 */
+  .kb-palette {
+    position: relative;
+    margin-top: 8px;
+    width: calc(100vw - 16px);
+    max-height: calc(100% - 16px);
+    overflow: hidden;
+  }
+
+  @media (min-width: 640px) {
+    .kb-sheet {
+      margin-top: 64px;
+      max-height: calc(100% - 96px);
+    }
+    .kb-palette {
+      margin-top: 92px;
+      width: min(720px, calc(100vw - 32px));
+      max-height: calc(100% - 108px);
+    }
   }
 
   /* 占位块(.ph):重算态与首屏未到位时用它,压平的灰块,不转圈。

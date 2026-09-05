@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { Outlet, useLocation, useNavigate } from 'react-router'
 import { readToken, writeToken } from '../api/auth'
 import { useDashboard } from '../api/queries'
+import { keyboardInset } from '../lib/keyboardInset'
 import { CommandPalette } from '../features/CommandPalette'
 import { StatusBar } from '../features/StatusBar'
 import { routeTo } from '../routes/routes'
@@ -79,6 +80,34 @@ export function AppShell() {
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [token, paletteSearch, navigate])
+
+  /**
+   * 软键盘吃掉多少高度 → 一个 CSS 变量。
+   *
+   * 🔴 这个 effect 里<b>一条判断都没有</b>:算法整个在 `lib/keyboardInset.ts`,
+   * 那一层不碰浏览器 API,所以能在 node 里被断言(`tests/keyboardInset.test.ts`)。
+   * 这里只做两件事:订阅、写变量。
+   * <p>
+   * 放在门的 `return` <b>之前</b>是有意的 —— 门自己就有两个输入框,
+   * 而它不在 `.kb-screen` 里,是全产品第一个会被键盘顶到的地方。
+   */
+  useEffect(() => {
+    const vv = window.visualViewport
+    if (!vv) return
+    const sync = () => {
+      document.documentElement.style.setProperty(
+        '--kb-keyboard',
+        `${String(keyboardInset(window.innerHeight, vv))}px`,
+      )
+    }
+    sync()
+    vv.addEventListener('resize', sync)
+    vv.addEventListener('scroll', sync)
+    return () => {
+      vv.removeEventListener('resize', sync)
+      vv.removeEventListener('scroll', sync)
+    }
+  }, [])
 
   // 🔴 门:地址不变,原地渲染。登录完成后仍然停在同一个 location。
   if (token === null) {

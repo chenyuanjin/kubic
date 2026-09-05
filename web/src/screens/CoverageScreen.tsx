@@ -124,10 +124,20 @@ export function CoverageScreen() {
 
         {/* 右栏 = 考点详情。没选中时它在窄屏上整栏不渲染,在宽屏上是一句提示。 */}
         <ColR>
-          <div className={selected === null ? 'hidden min-h-0 flex-col wide:flex' : 'flex min-h-0 flex-col'}>
+          <div
+            className={
+              selected === null
+                ? 'hidden min-h-0 flex-1 flex-col wide:flex'
+                : 'flex min-h-0 flex-1 flex-col'
+            }
+          >
             {selected === null ? (
-              <div className="px-[var(--rule)] py-10 text-[12px] text-t3">
-                左边挑一个考点,这里显示它的记录。
+              /* 稿 `design/m3/08-ipad-blind-b.html:80-85`:右栏空态是【居中两行】,
+                 不是左上角一句。第二句在稿上不是补充说明,它是这一栏此刻的用法 ——
+                 少了它,空的右栏读起来像是没加载完。 */
+              <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-1 px-[var(--rule)] text-center">
+                <span className="text-[13px] text-t2">从左边挑一个考点</span>
+                <span className="text-[12px] text-t3">点开哪个,它的详情就在这里。</span>
               </div>
             ) : (
               <NodeDetail node={selected} onBack={() => void navigate(routeTo('coverage'))} onRetry={() => void refetch()} />

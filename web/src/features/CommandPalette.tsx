@@ -44,7 +44,7 @@ export function CommandPalette({
   const nodes = useMemo(() => orderedByBlindRank(data.groups), [data.groups])
 
   return (
-    <div className="fixed inset-0 z-50">
+    <div className="kb-overlay fixed inset-0 z-50">
       {/* 浮层底:压暗,不加模糊也不加阴影 */}
       <button
         type="button"
@@ -55,7 +55,7 @@ export function CommandPalette({
 
       <div
         // 手机上 92px 的顶边距等于白扔掉四行 —— 面板本来就该离命令条近一点
-        className="absolute top-2 left-1/2 w-[calc(100vw-16px)] -translate-x-1/2 overflow-hidden rounded-sm border border-hair2 bg-bg sm:top-[92px] sm:w-[min(720px,calc(100vw-32px))]"
+        className="kb-palette rounded-sm border border-hair2 bg-bg"
         onKeyDown={(e) => {
           if (e.key === 'Escape') {
             e.stopPropagation()

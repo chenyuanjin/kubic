@@ -150,7 +150,7 @@ export function LoginGate({ onDone }: { onDone: (r: LoginResponse) => void }) {
   const phoneOk = /^1[3-9]\d{9}$/.test(phone.replace(/\s/g, ''))
 
   return (
-    <div className="flex h-dvh w-full items-center justify-center bg-bg px-6">
+    <div className="kb-overlay flex h-dvh w-full items-center justify-center bg-bg px-6">
       <div className="w-full max-w-[420px]">
         <header className="mb-8">
           <div className="flex items-baseline gap-3">

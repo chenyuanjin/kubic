@@ -160,7 +160,7 @@ export function CaptureSheet({
   }
 
   return (
-    <div className="fixed inset-0 z-50">
+    <div className="kb-overlay fixed inset-0 z-50">
       <button
         type="button"
         aria-label="关闭记一笔"
@@ -170,10 +170,13 @@ export function CaptureSheet({
 
       {/* 面板本身不滚动:头(记到哪个考点)和脚(记下/取消)钉住,只有中间四个入口滚。
           「记下」永远在同一个位置 —— 记录这个动作要在两秒内完成,不能先去找按钮。
-          用 dvh 不用 vh:手机浏览器的地址栏会伸缩,vh 取的是最大高度,
-          于是「记下」那一排正好被地址栏盖住 —— 而它是这一屏唯一必须够得着的东西。 */}
+          🔴 高度上限交给 `.kb-sheet`,这里不再写 dvh:dvh 跟地址栏走,【不跟软键盘走】。
+          iPad 实测(iPad Pro 13″ / iOS 26.5,2026-09-05):点进「粘一段文字」,
+          键盘弹起后 dvh 一点不缩,「记下」那一排被顶到屏外 —— 上面这句承诺当场不成立。
+          `.kb-overlay` 已经把安全区与键盘那两段从父级的 padding 盒里减掉了,
+          所以这里的 `100%` 本来就是「够得着的那一块」。 */}
       <div
-        className="absolute top-2 left-1/2 flex max-h-[calc(100dvh-16px)] w-[calc(100vw-16px)] -translate-x-1/2 flex-col overflow-hidden rounded-sm border border-hair2 bg-bg sm:top-[64px] sm:max-h-[calc(100dvh-96px)] sm:w-[min(680px,calc(100vw-32px))]"
+        className="kb-sheet flex w-[calc(100vw-16px)] flex-col overflow-hidden rounded-sm border border-hair2 bg-bg sm:w-[min(680px,calc(100vw-32px))]"
         onKeyDown={(e) => {
           if (e.key === 'Escape') {
             e.stopPropagation()

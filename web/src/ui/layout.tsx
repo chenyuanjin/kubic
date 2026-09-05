@@ -94,11 +94,17 @@ export function ScreenHead({
   )
 }
 
-/** 屏底动作区。sticky + 安全区,理由在 `index.css` 的 `.kb-dock` 上面。 */
+/**
+ * 屏底动作区。sticky + 安全区,理由在 `index.css` 的 `.kb-dock` 上面。
+ *
+ * 🔴 `kb-dock-row` 里藏着一条对齐规矩:≥1024 时这一行的左缘 = 右栏内容左缘,同一条竖线
+ * (稿 `design/v10/v10.css:314`)。规矩写在 CSS 里而不是这里,因为它派生自 `--col-l` ——
+ * 这个文件仍然一个几何数字都没有。
+ */
 export function Dock({ children }: { children: ReactNode }) {
   return (
     <nav className="kb-dock shrink-0">
-      <Cap className="flex items-stretch px-[var(--rule)]">{children}</Cap>
+      <Cap className="kb-dock-row flex items-stretch">{children}</Cap>
     </nav>
   )
 }

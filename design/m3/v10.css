@@ -24,7 +24,8 @@ button:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:2px so
 
 /* ── 内容流 ─────────────────────────────────────── */
 .flow{flex:1 1 auto;display:flex;flex-direction:column;min-height:0}
-.flow>*{flex:0 0 auto}   /* 流内块不伸缩;要占满剩余高度的容器(.tree 等)在下方自己声明 flex */
+.flow>*{flex:0 0 auto;width:100%}   /* 流内块不伸缩、占满列宽(margin:0 auto 的窄块会被关掉 stretch,统一显式给宽,
+                                     所有端同一条规则);要占满剩余高度的容器(.tree 等)在下方自己声明 flex */
 .pad{padding-left:var(--rule);padding-right:var(--rule)}
 
 /* ── 台账头：印刷品的卡头，不是导航栏 ── */

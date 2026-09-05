@@ -77,7 +77,10 @@
         <button class="calc__row calc-tap"><span class="calc__label calc__label--2">已经记了</span>
           <span class="calc__op">−</span><span class="calc__num">186</span></button>
       </div>
-      <button class="panel calc__sum calc-tap">
+      <!-- 🔴 这一屏 0 块蓝面：蓝面的恒定含义是「你还没碰过的那部分」（tokens.css 卷首），
+           额度剩余不是盲区。竖式的运算线照画（1.5px 墨线），但颜色不给 ——
+           把蓝面借去当「剩余量」用，它的含义就从一句变成两句，一屏最多 1 块也就守不住了。 -->
+      <button class="calc__sum calc-tap" style="border-top:var(--rule-ink) solid var(--ink)">
         <span class="calc__label">还能记</span><span class="calc__num hero">14</span></button>
       <div class="foot" style="padding-top:10px">
         <p>9 月 30 日重置。不自动扣费。</p>
@@ -88,7 +91,7 @@
         <button class="btn-pri" aria-disabled="true">购买（网页版未开通）</button>
       </div>
     </div>
-    <p class="cap"><b>③ 受限态 · <code>S-BILL × Web</code> 支付通道 🚧 待定。</b>
+    <p class="cap"><b>③ 受限态 · <code>S-BILL × Web</code> 支付通道待定。</b>
       <code>U6.2 §2.2</code> 这一格标的是 ⚠️ 待定，不是「完整」——
       所以本稿<b>不画购买流程</b>，也不拿「敬请期待」把空白填上：
       按钮画成不可按并把原因写在它上面，是登记，不是设计一条不存在的路。

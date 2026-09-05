@@ -41,6 +41,10 @@
    左栏装的是骨架树/榜这类【内容】，换一个科目整栏换掉。 */
 @media (min-width:1024px){
   .h5{--rule:40px}
+  /* 单列屏在宽屏下不把一行文字拉到 1280 宽：内容列封顶 1120（M6 的内容区宽），
+     居中。⚠️ flex 列里 margin:0 auto 会关掉 stretch，所以必须显式 width:100% ——
+     少这一行，栅格会缩成内容宽（首版就是这么错的，缩略图挤成 100px）。 */
+  .h5--wide > *{width:100%;max-width:1120px;margin-left:auto;margin-right:auto}
   .two{display:grid;grid-template-columns:minmax(260px,300px) minmax(480px,1fr);
        max-width:1120px;margin:0 auto;width:100%;flex:1 1 auto;min-height:0}
   .two__l{border-right:var(--hair-w) solid var(--hair);min-width:0;

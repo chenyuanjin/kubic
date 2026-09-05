@@ -252,14 +252,14 @@ export function CaptureSheet({
               value={pasted}
               onChange={(e) => setPasted(e.target.value)}
               rows={3}
-              placeholder="粘一段。课件上的一段话、一道题、你自己敲的两行都行。"
+              placeholder="粘一段。课件上的一段话、你自己敲的两行都行。"
               className="w-full resize-none rounded-sm border border-hair bg-bg3 px-[11px] py-[9px] text-[12.5px] leading-[1.75] placeholder:text-t3"
             />
             {/* 常驻,不是弹窗提示 */}
             <div className="mt-2">
               <Note>
                 这段文字<b className="font-normal text-t2">不会被存下来</b>
-                ,它只用来帮你挑考点。
+                ,它只把这一条的形式记成「粘的」。
                 <br />
                 落进记录的只有:考点 + 来源名 + 时间 + 形式。
               </Note>

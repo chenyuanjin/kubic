@@ -73,8 +73,8 @@
     <div class="foot" style="margin-top:8px"><p>到底了</p></div>
   </div>
 
-  <!-- 右栏：采集区（内容 ≤640px,M6）。录音中：波形纵排在按钮下，组件不换形 -->
-  <div class="col-r" style="max-width:640px">
+  <!-- 右栏：采集区。宽度由 内容区 1200 − 左栏 480 派生（M6 ≥1024），不写死 -->
+  <div class="col-r">
     <div class="head"><span>记一条 · 说</span><span>21:47</span></div>
     <div class="seg">
       <button type="button">写</button>
@@ -105,8 +105,8 @@
   </div>
 </div>
 
-<!-- 屏底动作区：横屏双列时仍住屏底，不挪进左栏 -->
-<div class="dock" style="padding-left:504px;padding-right:270px">
+<!-- 屏底动作区：横屏双列时仍住屏底，不挪进左栏；与 .cols 同封 1200，偏移不写死 -->
+<div class="dock">
   <button class="btn-pri">记下</button>
 </div>
 <div class="hi"></div>

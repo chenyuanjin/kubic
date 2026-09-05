@@ -6,7 +6,7 @@
 
 use std::path::PathBuf;
 
-use super::Platform;
+use super::{Platform, WindowSize};
 
 pub struct Ios {
     /// 由 Tauri 给出的 app 沙箱容器目录。
@@ -42,6 +42,17 @@ impl Platform for Ios {
         // iOS 上没有 lsof,也没有「另一个进程占着这个端口」这种局面 ——
         // 每个 app 在自己的沙箱里。查不出来就说查不出来,不编一个。
         None
+    }
+
+    fn window_size(&self) -> Option<WindowSize> {
+        // 手机上视图铺满屏幕,尺寸由系统给。`None` 不是「还没定」,是这里没有这个决定。
+        None
+    }
+
+    fn install_menu(&self, _app: &tauri::AppHandle) -> tauri::Result<()> {
+        // 移动端没有菜单栏。空实现不是「还没写」,是这个系统上确实没有这个东西 ——
+        // ⌘C / ⌘V 在这里由系统的文本选择浮层提供,不经过任何我们要装的东西。
+        Ok(())
     }
 
     fn report_fatal(&self, title: &str, body: &str) {

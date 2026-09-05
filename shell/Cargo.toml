@@ -18,6 +18,16 @@ description = "考点盲区桌面壳 —— 内嵌 web/dist,回环静态直出 +
 # 这三条由 build.sh 步骤 ① 的依赖黑名单在【构建期】拦,不靠 code review。
 # 黑名单同时扫 Cargo.toml 与 Cargo.lock —— 只扫前者的话,一个传递依赖就能绕过去。
 
+# 🔴 移动端要的是一个【库】,不是一个可执行文件(KUBI-115)。
+#   · Android 的 MainActivity 走 System.loadLibrary 加载 cdylib;
+#   · iOS 把 staticlib 链进 Xcode 工程;
+#   · macOS 仍然是 main.rs 那个二进制,它只剩一行:调 lib 的 run()。
+# 三端因此共用同一份装配代码。拆成 lib + 一行 main 不是为了分层,
+# 是因为移动端的入口【不由我们调用】—— 系统加载库,再从库里找入口。
+[lib]
+name = "kaodian_shell_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
 [build-dependencies]
 tauri-build = { version = "2", features = ["config-json5"] }
 

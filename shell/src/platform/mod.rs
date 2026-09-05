@@ -9,6 +9,17 @@
 
 use std::path::PathBuf;
 
+/// 桌面窗口的初始尺寸。
+///
+/// 🔴 它是 [`Platform::window_size`] 的返回值,而那个方法在移动端返回 `None` ——
+/// 手机上视图铺满屏幕,尺寸由系统给,应用这一侧【没有这个决定】。
+pub struct WindowSize {
+    pub width: f64,
+    pub height: f64,
+    pub min_width: f64,
+    pub min_height: f64,
+}
+
 #[cfg(target_os = "macos")]
 mod macos;
 
@@ -38,6 +49,8 @@ compile_error!(
 /// | [`Platform::data_root`] | 配置文件要存端口(R-109),而存哪儿是平台决定 | `main.rs` 拿到的是 `dyn Platform`,取不到某个具体平台的私有方法 |
 /// | [`Platform::describe_port_holder`] | R-109「点名占用进程」 | 查占用者要调 `lsof`,而 `lsof` 在 Android 上不存在 |
 /// | [`Platform::report_fatal`] | R-109「拒绝启动」要**响亮** | 双击打开的 .app 没有 stderr。只往 stderr 写 = 静默失败,恰好是这条纪律要挡的那件事 |
+/// | [`Platform::install_menu`] | ⌘C / ⌘V 在 WebView 里靠菜单项上挂的系统快捷键(KUBI-64) | `tauri::menu` 这个模块在移动端**根本不存在**,写在装配处就要开 `#[cfg]`(KUBI-115) |
+/// | [`Platform::window_size`] | 桌面要一个初始窗口大小(KUBI-64) | 手机上**没有「窗口尺寸」这回事**,而按桌面尺寸建窗会让 webview 拿到一块比屏幕大的画布(KUBI-115) |
 ///
 /// 🔴 后两个不是产品能力,是【失败路径的能力】。加方法之前先问它是不是也属于这一类。
 pub trait Platform: Send + Sync {
@@ -71,6 +84,28 @@ pub trait Platform: Send + Sync {
     ///
     /// 只在【拒绝启动】那条路径上被调用一次,不在任何循环里。
     fn describe_port_holder(&self, port: u16) -> Option<String>;
+
+    /// 建窗时用的初始尺寸。移动端返回 `None`。
+    ///
+    /// 🔴 `None` 不是「用默认值」,是**这个平台上没有这个决定**:
+    /// 手机的视图铺满屏幕,大小由系统按屏幕给。
+    ///
+    /// 实测(KUBI-115):在 iPhone 上按桌面尺寸(1280×840)建窗,webview 会拿到
+    /// 一块比屏幕大的画布,屏幕上只落得下它的一角 —— 现象是**整屏黑**,
+    /// 而进程活着、回环服务也正常返回 200,所以它不会以任何一种「报错」的形式出现。
+    fn window_size(&self) -> Option<WindowSize>;
+
+    /// 装上菜单栏。移动端是空实现 —— 那里没有菜单栏这个东西。
+    ///
+    /// 🔴 它在这个 trait 里,而不是在 `lib.rs` 里加一个 `#[cfg(desktop)]`。
+    /// `tauri::menu` 整个模块在 iOS / Android 上不存在,所以这【确实是一处平台差异】,
+    /// 而平台差异的位置只有一个(§4.3)。在装配处开 cfg 能骗过 `build.sh` 的 grep
+    /// (它找的是 `cfg(target_os`),但那只是绕过了检查,没有绕过检查想保住的东西:
+    /// `lib.rs` 会重新知道自己在哪个系统上,这个 trait 存在的理由就被抵消了。
+    ///
+    /// 签名里写死 `tauri::AppHandle`(默认 `Wry` 运行时)而不是泛型 `R: Runtime`:
+    /// `dyn Platform` 装不下泛型方法,而壳只有一个运行时。
+    fn install_menu(&self, app: &tauri::AppHandle) -> tauri::Result<()>;
 
     /// 把一条致命错误说到用户眼前,然后调用方退出。
     ///

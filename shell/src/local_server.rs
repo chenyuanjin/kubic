@@ -180,9 +180,40 @@ impl Server {
         // 🔴 系统信任库,仅此一处(§3.4 规则 8)。
         // 这里【没有】接受自定义 CA 的入口,也【没有】跳过校验的开关 ——
         // 不是提供了再劝人别用,是根本不提供。
-        let tls = hyper_rustls::HttpsConnectorBuilder::new()
-            .with_native_roots()
-            .map_err(|e| format!("读不到系统信任库:{e}"))?
+        //
+        // 🔴 2026-09-05(KUBI-115):**只在上游真的是 https 时才去读它。**
+        //
+        // 原先是无条件读。而 iOS / Android 上根本没有一个「能按文件读出来的信任库」——
+        // Android 的信任锚在 Java 的 `X509TrustManager` 后面,不在文件系统上,
+        // 于是 `rustls-native-certs` 返回空集、这里 `?` 抛错、`setup` 里 panic。
+        // 现象是两个移动端**开机即崩**,而崩的理由与它当时要做的事完全无关:
+        // 默认上游是 `http://127.0.0.1:8080`(`config.rs`),移动端形态更是 `upstream: null`
+        // (§4.2:「不接后端不是偷懒,是不多做」)—— 两种情况下这条 TLS 路径一次都走不到。
+        //
+        // 🔴 规则一个字没松:上游是 https 时,信任库仍然必须读得出来,读不出来仍然拒绝启动。
+        // 变的只是**什么时候去读** —— 从「无条件」变成「用得上的时候」。
+        // 这也是 §4.3 那条隔离能成立的原因:修的是「壳在三端都不该做的事」,
+        // 不是给移动端开一个 `#[cfg]` 分支。
+        //
+        // ⚠️ 换来的已知天花板,写在这里而不是留给下一个人去撞:
+        // **移动端现在接不了 https 上游。** 到那天要引 `rustls-platform-verifier`
+        // (它走 JNI 去问 Android 自己的信任管理器),而**不是**往依赖里塞一份 `webpki-roots` ——
+        // 内置一份 CA 名单等于壳自带一套与系统不同的信任判断,那和「走系统信任库」是两件事。
+        let upstream_is_https = upstream.as_ref().is_some_and(|u| u.scheme == "https");
+        let tls_config = if upstream_is_https {
+            hyper_rustls::HttpsConnectorBuilder::new()
+                .with_native_roots()
+                .map_err(|e| format!("读不到系统信任库:{e}"))?
+        } else {
+            // 空信任锚:任何 https 连接都验不过(fail-closed,不是 fail-open)。
+            // 上游不是 https 时这条路一次都走不到,让它存在只是为了 `client` 的类型不必分叉。
+            hyper_rustls::HttpsConnectorBuilder::new().with_tls_config(
+                rustls::ClientConfig::builder()
+                    .with_root_certificates(rustls::RootCertStore::empty())
+                    .with_no_client_auth(),
+            )
+        };
+        let tls = tls_config
             .https_or_http()
             .enable_http1()
             .wrap_connector(http);

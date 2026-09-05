@@ -33,8 +33,8 @@ are the point, and why there is no `kaodian-common` ([`后端系统设计与组�
 | `kaodian-app` | `api.*` + startup + config — the only executable jar | all |
 
 `shell/` is a **Tauri 2 desktop shell, macOS only**: embeds `web/dist`, serves it over loopback, proxies `/api`.
-**Zero changes to `web/` and `server/` is its constraint** — `build.sh` step ③ enforces it with `git status`. ⚠️ No
-`[lib]` target, so **iOS / Android do not build** (`文档规范与目录` §2.6 E4). Detail → [`技术架构与接口契约`](docs/technical/INDEX.md) contracts · [`壳技术方案：Tauri 2 包现有 Web 工程`](docs/technical/壳技术方案-Tauri2包现有Web工程.md) shell · [`多端选型与端矩阵`](docs/technical/多端选型与端矩阵.md) client matrix
+**Zero changes to `web/` and `server/` is its constraint** — `build.sh` step ③ enforces it with `git status`. ✅ Since
+`KUBI-115` it has a `[lib]` target and **iOS / Android build and run** (simulator/emulator; `gen/` is still generated, not committed — `cargo tauri ios|android init` first). Detail → [`技术架构与接口契约`](docs/technical/INDEX.md) contracts · [`壳技术方案：Tauri 2 包现有 Web 工程`](docs/technical/壳技术方案-Tauri2包现有Web工程.md) shell · [`多端选型与端矩阵`](docs/technical/多端选型与端矩阵.md) client matrix
 
 ## Commands
 

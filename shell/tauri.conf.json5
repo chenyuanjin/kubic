@@ -8,7 +8,24 @@
 //   (Tauri 2 原生支持 json5,靠 tauri / tauri-build 的 config-json5 feature。)
 {
   $schema: 'https://schema.tauri.app/config/2',
-  productName: '考点盲区',
+  // 🔴 ASCII,而用户看到的名字仍然是「考点盲区」(KUBI-115)。
+  //
+  // productName 决定的是【可执行文件名与 .app 目录名】,不是界面上的任何一个字:
+  // 窗口标题与菜单栏走 src/strings.rs 的常量,iOS 主屏走 Info.ios.plist 的 CFBundleDisplayName。
+  //
+  // 为什么非改不可 —— 这是一次实测,不是一次偏好:
+  //   可执行文件名里带非 ASCII 时,iOS 上 CoreFoundation 在
+  //   `_CFBundleCopyFrameworkURLForExecutablePath` 里过度释放,进程当场 SIGTRAP。
+  //   触发点不在我们的代码里:wry 要报一句 webview 版本号,去问
+  //   `NSBundle bundleWithIdentifier:@"com.apple.WebKit"`,CF 为此遍历所有已加载镜像,
+  //   走到我们这个非 ASCII 路径上就崩(tauri-runtime-wry 2.11.4 src/lib.rs:2942)。
+  //   同一份代码、同一个模拟器,只把可执行文件名换成 ASCII 就正常起来 —— 判据只有这一条差异。
+  //
+  // 为什么不能只在 iOS 上换:tauri-cli 用 productName 去 DerivedData 里【按名字找】产物
+  //(src/mobile/ios/build.rs:487),名字对不上就收不走包。所以它必须是同一个值。
+  //
+  // 何时可以改回去:上游修掉那次过度释放之后。
+  productName: 'Kaodian',
   version: '0.1.0',
 
   // 🔴 `local.kaodian.*` 不是一次域名声明。

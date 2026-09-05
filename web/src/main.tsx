@@ -9,7 +9,7 @@ import { AppShell } from './screens/AppShell'
 import { CaptureScreen } from './screens/CaptureScreen'
 import { CoverageScreen } from './screens/CoverageScreen'
 import { ExportScreen } from './screens/ExportScreen'
-import { RecordDetailScreen, RecordsScreen } from './screens/RecordsScreen'
+import { RecordsScreen } from './screens/RecordsScreen'
 import { AgentScreen, ArchiveScreen, SettingsScreen } from './screens/SettingsScreen'
 import { SyllabusScreen } from './screens/SyllabusScreen'
 
@@ -67,7 +67,8 @@ const router = createBrowserRouter([
       { path: `${ROUTE_PATH.capture}/*`, element: <CaptureScreen /> },
       { path: ROUTE_PATH.capture, element: <CaptureScreen /> },
       { path: ROUTE_PATH.records, element: <RecordsScreen /> },
-      { path: ROUTE_PATH['records.detail'], element: <RecordDetailScreen /> },
+      // 与 coverage 同型:列表与详情是同一个组件,≥1024 两栏并存,<1024 详情顶掉列表。
+      { path: ROUTE_PATH['records.detail'], element: <RecordsScreen /> },
       { path: ROUTE_PATH.archive, element: <ArchiveScreen /> },
       { path: ROUTE_PATH.agent, element: <AgentScreen /> },
       { path: ROUTE_PATH.export, element: <ExportScreen /> },

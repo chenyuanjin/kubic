@@ -142,11 +142,6 @@
       "reason": "读 node.rank(服务端给)排序,并调用 orderedByBlindRank;注释明写不在前端复算一遍排序分。"
     },
     {
-      "file": "src/features/CoverageHeader.tsx",
-      "match": "分数",
-      "reason": "在否定式里:「大字是覆盖率,不是分数」。覆盖率的分子是有记录的考点数,只回答「有没有」。"
-    },
-    {
       "file": "src/features/SyllabusEditor.tsx",
       "match": "对错",
       "reason": "「不判断对错」——这一屏的能力边界声明:能改的只有名称、所属题型、顺序、近五年频次。"

@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useRef } from 'react'
 import type { ReactNode } from 'react'
 import type { GroupView, NodeView } from '../api/types'
-import { drillText, pad2, relativeDay } from '../lib/format'
-import { stateIsAlarming } from '../lib/nodeState'
+import { isTouched, pad2, relativeDay } from '../lib/format'
 import { GroupHeader, Row, StateDot } from '../ui/primitives'
 
 /**
@@ -20,8 +19,8 @@ import { GroupHeader, Row, StateDot } from '../ui/primitives'
  *
  * <h2>窄屏:一行折成两行,<b>不是砍列</b></h2>
  *
- * 手机上放不下七列,但能砍的只有排版,不是信息。状态点、名称、近五年频次三样必须在 ——
- * 状态点是五态本身,名称是这一行是什么,频次是「这个盲区值不值得补」的全部依据。
+ * 手机上放不下七列,但能砍的只有排版,不是信息。标记、名称、近五年频次三样必须在 ——
+ * 标记是碰没碰过本身,名称是这一行是什么,频次是「这个盲区值不值得补」的全部依据。
  * 早先频次那一列写的是 `hidden md:block`,于是手机上「近五年 9 次」直接消失,
  * 「先补这几个」的排序理由在小屏上就没了下半句。
  * <p>
@@ -103,8 +102,7 @@ function NodeRow({
   onSelect: () => void
   onOpen: () => void
 }) {
-  const empty = node.state === 'EMPTY'
-  const drilled = node.practiced !== null && node.practiced > 0
+  const empty = !isTouched(node)
   return (
     <div data-code={node.code}>
       {/* 高度交给 className:窄屏两行 46px,md 起一行 29px。
@@ -118,7 +116,7 @@ function NodeRow({
         title={`${node.name} · ${node.code}`}
       >
         <span className="order-1 flex shrink-0 items-center">
-          <StateDot state={node.state} />
+          <StateDot touched={isTouched(node)} />
         </span>
         <span className="order-2 w-[18px] shrink-0 text-right font-mono text-[10.5px] text-t3 tabular-nums">
           {pad2(index)}
@@ -133,26 +131,18 @@ function NodeRow({
         {/* 零高度的断点占位:窄屏在这里换行,md 起整个消失,于是同一段 DOM 变回一行。 */}
         <i aria-hidden className="order-5 h-0 basis-full md:hidden" />
 
-        <span
-          className={`order-6 w-[46px] shrink-0 text-[11.5px] md:order-4 ${
-            stateIsAlarming(node.state) ? 'text-red' : 'text-t3'
-          }`}
-        >
-          {/* 中文名由服务端给,前端不硬编码 */}
-          {node.stateLabel}
-        </span>
-        {/* 练·对 —— 这两个数是用户自己填的,不是产品判的。
-            null 表示「不知道」(记录不全),显示成「—」而不是 0 —— 见 derive.ts 的截断闸门 */}
-        <Cell
-          width={96}
-          dim={!drilled}
-          small={!drilled && node.touchCount > 0}
-          className="order-7 ml-auto md:order-5 md:ml-0"
-        >
-          {drillText(node)}
+        {/* 🔴 2026-09-06(`KUBI-111`)这里少了两列,理由是同一条 ——
+            ① 五档中文名那一列(node.stateLabel:空白/仅接触/生疏/弱/稳)。「弱」的定义是
+               「练过但用户自填的对/练偏低」,把它印在每一行上就是逐行给用户下判断。
+            ② 「练·对」那一列(drillText 的「12/10」)。它不含任何禁用词,但把「做了多少」
+               和「对了多少」并排放上屏,读出来就是答得对不对 —— 与退役稿那行「练 8 对 4」
+               加一个百分比同源,只少一次除法。
+            🔴 上一版这里还留着一条说明,说「被删掉的只有那个比值,两个原始数留着」——
+            那条说明本身就是这次要纠的口径:留着的两个数就是比值。
+            替上来的是「碰过几次」:同一个位置,只回答「几次」。 */}
+        <Cell width={62} dim={node.touchCount === 0} className="order-6 ml-auto md:order-4 md:ml-0">
+          {node.touchCount === 0 ? '没碰过' : `碰过${node.touchCount}次`}
         </Cell>
-        {/* 🔴 这里原本还有一列:correct/practiced 的百分比。KUBI-107 按 `B0` §11.4 删掉 ——
-            两个原始数留在左边那一列(drillText),被删掉的只有它们相除得到的那个比值。 */}
         <Cell width={66} dim className="order-9 md:order-8">
           {relativeDay(node.latestAt)}
         </Cell>
@@ -166,20 +156,18 @@ function Cell({
   children,
   width,
   dim = false,
-  small = false,
   className = '',
 }: {
   children: ReactNode
   width: number
   dim?: boolean
-  small?: boolean
   className?: string
 }) {
   return (
     <span
       style={{ width: `${width}px` }}
-      className={`shrink-0 text-right whitespace-nowrap tabular-nums ${
-        small ? 'font-sans text-[11px] text-t2' : `font-mono text-[11.5px] ${dim ? 'text-t3' : ''}`
+      className={`shrink-0 text-right whitespace-nowrap font-mono text-[11.5px] tabular-nums ${
+        dim ? 'text-t3' : ''
       } ${className}`}
     >
       {children}

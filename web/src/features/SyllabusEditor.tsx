@@ -3,6 +3,7 @@ import type { ReactNode } from 'react'
 import { ApiUnavailableError, describeError } from '../api/client'
 import { useArchivedNodes, useSyllabusEdit } from '../api/queries'
 import type { Dashboard, EditRejection, GroupView, NodeView, SyllabusNodeDto } from '../api/types'
+import { isTouched } from '../lib/format'
 import { buildNameIndex, findNameClash, invisibleChars, nameKey, revealName } from '../lib/names'
 import type { NameIndex, NameOwner } from '../lib/names'
 import { Button, GroupHeader, InlineEdit, Kbd, MicroButton, Note, StateDot } from '../ui/primitives'
@@ -430,7 +431,7 @@ function NodeEditRow({ ctx, node, group, index }: { ctx: Ctx; node: NodeView; gr
     <div data-code={node.code}>
       <div className="flex flex-wrap items-center gap-x-[9px] gap-y-[3px] border-b border-hair px-3 py-1 hover:bg-bg2 md:h-[34px] md:flex-nowrap md:py-0">
         <span className="order-1 flex shrink-0 items-center">
-          <StateDot state={node.state} />
+          <StateDot touched={isTouched(node)} />
         </span>
 
         <span className="order-2 min-w-0 flex-1">

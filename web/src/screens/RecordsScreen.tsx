@@ -262,8 +262,11 @@ function RecordDetail({
         <Fact k="来源" v={item.sourceName} />
         <Fact k="题型" v={item.groupName ?? '—'} />
         <Fact k="形式" v={item.kindLabel} />
+        {/* 🔴 2026-09-06(`KUBI-111`):「对了」那一格摘掉。两个数并排读出来就是答得对不对 ——
+            与退役稿那行「练 8 对 4」加一个百分比同源,只少一次除法。
+            「练了」留着:它只回答「几道」,是一个次数。
+            两个数照旧收(`CaptureSheet` 的两格没动),`correct` 也仍在契约里。 */}
         <Fact k="练了" v={item.practiced === null ? '—' : `${item.practiced} 道`} />
-        <Fact k="对了" v={item.correct === null ? '—' : `${item.correct} 道`} />
       </dl>
 
       {item.nodeName === null ? (

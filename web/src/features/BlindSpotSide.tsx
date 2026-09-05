@@ -1,14 +1,17 @@
 import { useMemo } from 'react'
 import type { NodeView, TimelineItemDto } from '../api/types'
-import { blindReason, pad2, relativeDay } from '../lib/format'
+import { myFact, pad2, relativeDay } from '../lib/format'
 import { Button, GroupHeader, Kbd, Note, Row } from '../ui/primitives'
 
 /**
  * 「先补这几个」+ 来源列表 + 那句能力边界。
  *
- * 「先补这几个」的排序分 = 近五年频次 × 状态权重。两个因子都在能力边界内:
- * 频次是真题统计事实,状态由「有没有 / 几次 / 多久前」推出。
- * <b>没有一处需要知道某道题的答案。</b>
+ * 排序由服务端给(`rank`),排序理由界面上只说得出<b>骨架那一半</b>:近五年出现次数。
+ * 频次是真题统计事实。<b>没有一处需要知道某道题的答案。</b>
+ * <p>
+ * 🔴 这里原本写的是「排序分 = 近五年频次 × 状态权重」,并且把这个公式当表头、
+ * 把那个数本身当行尾一列上了屏。两样都删于 2026-09-06(`KUBI-111`):
+ * 公式里的「状态权重」落到界面上就是「频次 × 生疏度」,而生疏度是五档状态里的一档。
  *
  * <h2>窄屏:从右侧副栏变成主屏下面的一段,<b>不是折叠掉</b></h2>
  *
@@ -52,7 +55,11 @@ export function BlindSpotSide({
       {/* xl 起只有榜单和来源列表滚动,底下那两句能力边界钉住不许被滚出屏幕;
           窄屏整段跟着主屏一起滚 —— 那时候它本来就在一屏之外,钉住反而会吃掉半个屏。 */}
       <div className="xl:min-h-0 xl:flex-1 xl:overflow-y-auto">
-        <GroupHeader title="先补这几个" right="频次 × 生疏度" />
+        {/* 🔴 2026-09-06(`KUBI-111`):右边那行从「频次 × 生疏度」换成排序口径本身。
+            旧的那行把排序分公式写在了表头上,而公式里的「生疏度」是五档状态里的一档 ——
+            界面上等于宣布产品在给用户的状态打分。现役稿的口径行(`design/m3/01-blind.html:44`)
+            逐字是「按近 5 年出现次数排」:纯骨架事实,不含任何用户状态因子。 */}
+        <GroupHeader title="先补这几个" right="按近五年出现次数排" />
         {/* 🔴 名次与排序分都是服务端算的(rank / blindScore)。前端不留第二份权重表 ——
             「先补这几个」如果每个客户端都能自己重排,它就不再是一个回答。
             服务端返回的是有序前缀,所以切前 5 == 请求 top=5。 */}
@@ -73,11 +80,21 @@ export function BlindSpotSide({
           >
             {pad2(node.rank ?? 0)}
           </span>
+          {/* 稿的一行是上下两行:上行骨架事实(真题的),下行我的事实(你的)。
+              分开是硬性的 —— `design/m3/01-blind.html:47-54`。 */}
           <span className="min-w-0 flex-1">
-            <span className="block truncate">{node.name}</span>
-            <span className="mt-0.5 block truncate font-mono text-[11px] text-t3">{blindReason(node)}</span>
+            <span className="block truncate">
+              {node.name}
+              <span className="ml-2.5 font-mono text-[11px] text-t3 tabular-nums">
+                近五年 {node.recent5yCount} 次
+              </span>
+            </span>
+            <span className="mt-0.5 block truncate text-[11.5px] text-t2">{myFact(node)}</span>
           </span>
-          <span className="shrink-0 font-mono text-t2 tabular-nums">{(node.blindScore ?? 0).toFixed(1)}</span>
+          {/* 🔴 2026-09-06(`KUBI-111`):行尾那个 `6.4` 删掉。它是服务端的排序分
+              (blindScore)直接上屏 —— 一个连续数值摆在每个考点后面,读出来就是给这个
+              考点评了级。排序理由已经在表头写明(按近五年出现次数),不需要把那个数
+              本身摆给用户看;稿上也没有这一列。`blindScore` 字段是契约,前端不删,只是不显示。 */}
         </button>
         ))}
 

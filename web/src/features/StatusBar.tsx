@@ -50,8 +50,13 @@ export function StatusBar({ data, hint }: { data: Dashboard; hint?: string }) {
       {hint && <span className="hidden lg:inline">{hint}</span>}
 
       <span className="ml-auto flex items-center gap-[15px]">
+        {/* 🔴 2026-09-06(`KUBI-111`):末尾那个百分比摘掉,只留两个计数。
+            稿 `design/m3/04-tree.html:5` 明写「没有百分比、没有进度条(进度条会把覆盖度
+            读成学习进度)」—— 那一屏的概览这一轮已经换成竖式减法,而屏底这一条是全仓
+            最后一处百分比,留着它等于把刚摘掉的那个读法又摆回眼皮底下。
+            `summary.percent` 是契约字段,前端不删,只是不显示。 */}
         <span className="tabular-nums">
-          {data.summary.total} 考点 · {data.summary.covered} 有记录 · {data.summary.percent}%
+          {data.summary.total} 考点 · {data.summary.covered} 有记录
         </span>
         <Kbd>⌘K 命令条</Kbd>
       </span>

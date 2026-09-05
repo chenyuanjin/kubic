@@ -72,8 +72,28 @@ ssh $REMOTE 'sudo apt-get update -qq && sudo apt-get install -y openjdk-21-jre-h
 scp server/kaodian-app/target/kaodian-app-0.0.1-SNAPSHOT.jar $REMOTE:~/kaodian/deploy/kaodian-app.jar
 ssh $REMOTE 'cd ~/kaodian/deploy && ./app.sh start'
 
-# ⑦ 整条链路跑一遍:拍照 → 出文字 → 挂考点 → 覆盖度变了
+# ⑦ 发前端。🔴 少了这一步 site/ 就是空的,/ 一直 404 —— 四个端连界面都打不开
+#    它自己会验「HTTP 上取回来的 index.html 引的就是刚构建的那个哈希」,不是只看 rsync 成功
+REMOTE=$REMOTE BASE=http://127.0.0.1:8090 ./deploy/publish-web.sh
+
+# ⑧ 整条链路跑一遍:拍照 → 出文字 → 挂考点 → 覆盖度变了
 ssh $REMOTE 'cd ~/kaodian/deploy && ./smoke.sh'
+```
+
+🔴 **`deploy/site/` 按 R-08 不进仓库,进仓库的是上面第 ⑦ 步那条命令。**
+产物不该进仓库这条判断是对的;但在 `publish-web.sh` 之前,「构建 → 同步 site/」这一步
+**哪儿都没有** —— Caddyfile 与 compose 里那两句「把 web/dist 拷进来即可」都是注释,
+README 里只有 `mkdir -p …/site` 建了个空目录。于是照着这份文档敲一遍,`/` 还是 404。
+
+比复现不出来更要紧的是另一头:仓库往前走,而 `/` 继续发上一次手动同步的那版旧包 ——
+构建绿、边界扫描绿、集成 SHA 也对,四个端拿到的却是旧界面,而**没有任何一条断言在看
+「部署出去的那份」和「仓库里那份」是不是同一个**。摘红线项的那一轮撞上这个,
+红线在仓库里摘干净了、在端上还挂着。所以第 ⑦ 步的判据是哈希相等,不是 rsync 退出码。
+
+随时可以只问不发:
+
+```bash
+BASE=http://127.0.0.1:8090 ./deploy/publish-web.sh --check   # 线上那份 == 仓库这份?不同则非零退出
 ```
 
 `./app.sh {start|stop|status|logs}` 管后端进程。它只杀自己 pid 文件里那个 PID ——

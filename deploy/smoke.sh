@@ -23,6 +23,29 @@ AUTH=(-u "$USER:$PASS")
 j() { python3 -c "import sys,json;d=json.load(sys.stdin);print($1)"; }
 say() { printf '\n\033[1m%s\033[0m\n' "$*"; }
 
+say "0a. 界面真的发出去了:/ 与它引的那个 js 都在"
+# 🔴 这一条钉的是「四个端连界面都打不开」那种坏法。
+# site/ 是空目录时 / 回 404,而 /api 一切正常 —— 于是链路自检全绿、端上白屏,
+# 两件事之间没有任何一条断言把它们连起来(KUBI-111 实测踩过)。
+#
+# ⚠️ 它拦得住【空目录】和【只同步了一半】,拦不住【整份都是旧包】——
+#    那需要拿仓库里的构建产物比一次哈希,而这个脚本跑在服务器上,身边没有 web/。
+#    那一条在 deploy/publish-web.sh --check 里,发布时就地验。
+#    这里把线上引的哈希打出来,是为了让「旧包」至少在每次自检里【看得见】。
+code=$(curl -s -o /tmp/smoke-index.$$ -w '%{http_code}' "$BASE/")
+echo "   GET / → $code"
+[[ "$code" == "200" ]] || {
+	echo "   ❌ 期望 200。site/ 是空的?跑 ./deploy/publish-web.sh 把前端发上去" >&2
+	rm -f /tmp/smoke-index.$$; exit 1
+}
+LIVE_JS=$(grep -oE '/assets/[A-Za-z0-9._-]+\.js' /tmp/smoke-index.$$ | head -1)
+rm -f /tmp/smoke-index.$$
+[[ -n "$LIVE_JS" ]] || { echo "   ❌ / 回了 200 但不是构建产物(没有 /assets/*.js)" >&2; exit 1; }
+code=$(curl -s -o /dev/null -w '%{http_code}' "$BASE$LIVE_JS")
+echo "   GET $LIVE_JS → $code"
+[[ "$code" == "200" ]] || { echo "   ❌ index.html 在但它引的 js 不在 —— 同步只完成了一半" >&2; exit 1; }
+echo "   ✅ 线上这一份是 $LIVE_JS(是不是【最新】那一份,由 publish-web.sh --check 判)"
+
 say "0. 这道门是真的:不带口令打【写】端点"
 code=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$API/syllabus/nodes/x/archive")
 echo "   POST /syllabus/nodes/x/archive 无凭证 → $code"

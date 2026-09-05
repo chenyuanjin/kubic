@@ -144,6 +144,18 @@ test('三个数各读各的字段,前端不自己相减', () => {
   )
 })
 
+test('全仓不再有百分比上屏 —— 覆盖度不是学习进度', () => {
+  // 稿 design/m3/04-tree.html:5 逐字:「没有百分比、没有进度条(进度条会把覆盖度读成
+  // 学习进度)」。摘干净之后全仓只剩 summary.percent 这个契约字段,没有任何渲染点 ——
+  // 屏底状态条那一处(StatusBar.tsx:54)是最后一个,2026-09-06 摘掉。
+  // 🔴 钉的是「渲染」不是「字段」:percent 留在 api/types.ts,前端不删契约。
+  const src = read('features/StatusBar.tsx', 'features/CoverageHeader.tsx', 'features/NodeList.tsx')
+  assert.ok(
+    !/\{[^}\n]*\bpercent\b[^}\n]*\}/.test(src),
+    '百分比不上屏。摘掉了覆盖度那一屏的 44% 大字,却把同一个数留在屏底,等于没摘。',
+  )
+})
+
 test('运算线是结果行的上缘,不是一条单独画的横线', () => {
   const src = read('features/CoverageHeader.tsx')
   // 稿:.panel 的 border-top 就是运算线(design/v10/v10.css:62-63)。

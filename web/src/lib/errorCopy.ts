@@ -114,7 +114,7 @@ const TABLE: Record<string, FailureCopy> = {
   UNSUPPORTED_IMAGE_FORMAT: {
     kind: 'retryable',
     title: '这个图片格式读不了',
-    body: '换一张再来。🔴 图还在你这台设备上,一张都没少。',
+    body: '换一张再来。图还在你这台设备上,一张都没少。',
     fallback: null,
   },
   IMAGE_TOO_MANY: {
@@ -132,7 +132,7 @@ const TABLE: Record<string, FailureCopy> = {
   NO_MATCH_AND_NO_USER_NODE: {
     kind: 'terminal',
     title: '没有匹配上任何考点',
-    body: '🔴 宁缺毋错:匹配不上就丢弃,不硬塞一个。这条记录会留在未分类里等你自己挂。',
+    body: '宁缺毋错:匹配不上就丢弃,不硬塞一个。这条记录会留在未分类里等你自己挂。',
     fallback: '自己挑考点',
   },
 
@@ -152,7 +152,7 @@ const TABLE: Record<string, FailureCopy> = {
   AI_TEXT_TOO_LONG: {
     kind: 'terminal',
     title: '这段文字太长了',
-    body: '🔴 服务端不会替你静默截断 —— 截断之后发出去的就不是你写的那段。自己删短一点再发。',
+    body: '服务端不会替你静默截断 —— 截断之后发出去的就不是你写的那段。自己删短一点再发。',
     fallback: null,
   },
 

@@ -77,7 +77,7 @@ export function RecordsScreen() {
             unclassifiedOnly ? (
               <EmptyState
                 title="没有未分类的记录"
-                body="每一条都挂上考点了。🔴 挂不上的会留在这儿等你自己挑 —— 匹配不上就丢弃,不硬塞一个。"
+                body="每一条都挂上考点了。挂不上的会留在这儿等你自己挑 —— 匹配不上就丢弃,不硬塞一个。"
                 action={{ label: '看全部记录', onClick: () => void navigate('/records') }}
               />
             ) : (

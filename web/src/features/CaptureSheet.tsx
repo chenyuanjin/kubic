@@ -384,7 +384,7 @@ export function CaptureSheet({
                 {imageNote}
                 <br />
                 这一笔<b className="font-normal text-t2">已经落地</b>,认不出考点也不会把整条记录丢掉。
-                原图还在本机缓存里,到期转入留存区(不会删),也可以现在就删。
+                原图还在本机缓存里,到期转进留存区(不会删),也可以现在就删。
               </Note>
             ) : problem ? (
               <Note warn>{problem}</Note>

@@ -59,8 +59,12 @@ const MODES = [
  * </ol>
  * <p>
  * ⚪ 左栏<b>只在 ≥1024 出现</b>(`hidden wide:flex`):`07-ipad.html` 是横屏稿,
- * 窄屏那张稿(`design/m1/07.html`)上没有这一栏。让它在 iPhone 上跟着堆下来,
- * 等于给窄屏加了一段稿上没有的内容。
+ * 而 M1 的窄屏稿(`design/m1/01-write.html`~`06-timeline.html`)上<b>没有</b>这一栏。
+ * 让它在 iPhone 上跟着堆下来,等于给窄屏加了一段稿上没有的内容。
+ * <p>
+ * 🔴 更正:上一轮这里引的是 `design/m1/07.html`,<b>那个文件不存在</b>(`ls design/m1/` 只有
+ * `01-write` `02-photo` `03-voice` `04-quiz` `05-quota` `06-timeline` `07-ipad`)。
+ * 判断本身仍然成立,但当时的依据是空的 —— `git show <不存在的路径> | grep -c` 也会回 0。
  */
 export function CaptureScreen() {
   const { data, isPending, refetch } = useDashboard()
@@ -160,7 +164,7 @@ export function CaptureScreen() {
             ))}
           </div>
 
-          {mode?.seg === 'photo' ? <PhotoConsent agreed={agreed} onChange={setAgreed} /> : null}
+          {mode?.seg === 'photo' ? <PhotoConsent onAgree={() => setAgreed(true)} /> : null}
 
           {data.source === 'mock' ? (
             // 后端不可达 = 记不下去。🔴 这里不假装已经存下了:
@@ -193,7 +197,11 @@ export function CaptureScreen() {
  * `U6.1 §6.5` 要求这三处在桌面壳 / 移动 App / Web 三处齐全,不因端而弱化 ——
  * Web 独有的是<b>多</b>一块「浏览器可能清理」的告知,不是<b>少</b>一处承诺。
  */
-function PhotoConsent({ agreed, onChange }: { agreed: boolean; onChange: (v: boolean) => void }) {
+function PhotoConsent({ onAgree }: { onAgree: () => void }) {
+  /* 🔴 勾选只解锁按钮,不等于同意 —— 同意发生在按下「拍一张」那一刻。
+     改这一处之前,闸长在 checkbox 上而按钮没有 onClick:勾上的同一帧浮层就挂上来把它盖住,
+     那颗全屏唯一的主按钮从来没有被按到过。注释写的是按钮是闸,代码做的是勾选是闸。 */
+  const [checked, setChecked] = useState(false)
   return (
     <section className="border-b border-hair px-[var(--rule)] py-4">
       <p className="mb-3 font-mono text-[10px] tracking-[0.1em] text-t3 uppercase">收图之前</p>
@@ -218,8 +226,8 @@ function PhotoConsent({ agreed, onChange }: { agreed: boolean; onChange: (v: boo
       <label className="mt-4 flex items-start gap-2.5 text-[12px] leading-6 text-tx">
         <input
           type="checkbox"
-          checked={agreed}
-          onChange={(e) => onChange(e.target.checked)}
+          checked={checked}
+          onChange={(e) => setChecked(e.target.checked)}
           className="mt-[5px] size-[14px] shrink-0 accent-[var(--color-acid)]"
         />
         <span>上面四条我看过了</span>
@@ -228,10 +236,10 @@ function PhotoConsent({ agreed, onChange }: { agreed: boolean; onChange: (v: boo
       <div className="mt-3">
         {/* 🔴 未勾选时它不可按。灰掉不是装饰 —— 系统相机一按就把图交给页面了,
             这个按钮是那之前唯一的一道闸。 */}
-        <Button variant="primary" disabled={!agreed}>
+        <Button variant="primary" disabled={!checked} onClick={onAgree}>
           拍一张
         </Button>
-        {!agreed ? (
+        {!checked ? (
           <p className="mt-2 font-mono text-[11px] text-t3">先看完上面四条,这颗按钮才会亮。</p>
         ) : null}
       </div>

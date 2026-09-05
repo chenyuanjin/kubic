@@ -125,6 +125,25 @@
     padding-bottom: max(env(safe-area-inset-bottom, 0px), var(--kb-keyboard, 0px));
   }
 
+  /* 登录门的那一列。门不在 .kb-screen 里(它替掉整个应用),所以 --rule 在这儿单独立一次。
+     🔴 不复用 .kb-cap:那条在 ≥1024 涨到 1200,而门在任何宽度上都只是一列表单 ——
+     ≥1024 没有门的专稿,沿用 720 档的 640(稿:`design/m5/07-ipad-gate.html` 的
+     `.pad-screen{--rule:32px}` + `design/v10/v10.css:316` 的 `.col{max-width:640px}`)。 */
+  .kb-gate {
+    --rule: 24px;
+  }
+  /* 🔴 边线吃在【列自己】身上,不在外层 .kb-gate 上:`.kb-overlay` 用的是 `padding` 简写
+     (安全区四边),它在本文件里声明得比这条晚、同层同权重,会把外层的 padding-inline 整条盖掉。
+     盒模型是 border-box,所以盒宽仍是稿上那个 640(834 档实测左 97 / 宽 640,与
+     `design/m5/07-ipad-gate.html` 的 .col 逐像素同值),边线落在盒内 —— 稿也是这么分的:
+     .col 自身 padding 为 0,--rule 由盒内元素吃。 */
+  .kb-gate-col {
+    width: 100%;
+    max-width: 420px;
+    margin-inline: auto;
+    padding-inline: var(--rule);
+  }
+
   /* 屏的主体。滚动发生在这里,不发生在 body 上 ——
      body 那一层是 overflow:hidden 的(见 @layer base)。 */
   .kb-body {
@@ -153,6 +172,13 @@
       width: 100%;
       max-width: 640px;
       margin-inline: auto;
+    }
+    /* 门跟着同一档放宽 —— 边线 24→32,列宽 420→640。稿依据见 .kb-gate 处。 */
+    .kb-gate {
+      --rule: 32px;
+    }
+    .kb-gate-col {
+      max-width: 640px;
     }
   }
 

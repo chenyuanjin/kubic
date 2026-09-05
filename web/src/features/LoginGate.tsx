@@ -150,8 +150,8 @@ export function LoginGate({ onDone }: { onDone: (r: LoginResponse) => void }) {
   const phoneOk = /^1[3-9]\d{9}$/.test(phone.replace(/\s/g, ''))
 
   return (
-    <div className="kb-overlay flex h-dvh w-full items-center justify-center bg-bg px-6">
-      <div className="w-full max-w-[420px]">
+    <div className="kb-overlay kb-gate flex h-dvh w-full items-center justify-center bg-bg">
+      <div className="kb-gate-col">
         <header className="mb-8">
           <div className="flex items-baseline gap-3">
             <span className="font-mono text-[13px] text-acid">考点盲区</span>
@@ -170,11 +170,18 @@ export function LoginGate({ onDone }: { onDone: (r: LoginResponse) => void }) {
               if (phoneOk && !busy) void send()
             }}
           >
-            <label className="mb-2 block text-[11px] tracking-wide text-t3">手机号</label>
+            {/* 逐字对稿 `design/m5/01-gate.html:34-35`:label 是「手机」,placeholder 才是「手机号」。
+                aria-label 不能省 —— 稿上写着,而且这一屏只有两个可输入元素,读屏靠它区分。 */}
+            <label htmlFor="kb-gate-tel" className="mb-2 block text-[11px] tracking-wide text-t3">
+              手机
+            </label>
             <input
               autoFocus
+              id="kb-gate-tel"
               inputMode="numeric"
-              placeholder="138 0013 8000"
+              autoComplete="tel"
+              aria-label="手机号"
+              placeholder="手机号"
               value={phone}
               onChange={(e) => setPhone(e.target.value.replace(/[^\d\s]/g, '').slice(0, 13))}
               className="w-full rounded-sm border border-hair bg-bg2 px-4 py-3 font-mono text-[15px] tracking-[0.08em] text-tx outline-none focus:border-acid"
@@ -240,7 +247,8 @@ export function LoginGate({ onDone }: { onDone: (r: LoginResponse) => void }) {
                   onClick={() => void send()}
                   className="font-mono text-[12px] text-acid disabled:text-t3"
                 >
-                  {cooldown > 0 ? `${cooldown} s 后可重发` : '重发一条'}
+                  {/* 逐字对稿 `design/m5/02-gate-sent.html:58`:「52 秒后可以重发」。 */}
+                  {cooldown > 0 ? `${cooldown} 秒后可以重发` : '重发一条'}
                 </button>
               )}
               {busy ? (

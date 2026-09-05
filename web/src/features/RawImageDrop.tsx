@@ -13,7 +13,7 @@ import { Button, GlyphIcon, GroupHeader, Note, Tag } from '../ui/primitives'
  * <table border="1">
  *   <tr><th>审核项</th><th>在这一屏的哪里</th></tr>
  *   <tr><td>① 同意点</td><td>{@link ConsentGate} —— <b>第一次</b>导图时挡在前面,
- *       明写「存在这台设备上、N 小时后转入留存区」。不点「知道了」就一张图都不收</td></tr>
+ *       明写「存在这台设备上、N 小时后转进留存区」。不点「知道了」就一张图都不收</td></tr>
  *   <tr><td>② 原图删除倒计时</td><td>缓存列表每行右侧的「还有 5 小时 42 分」,每秒走一格</td></tr>
  *   <tr><td>③ 立即删除入口</td><td>每行一个「删」,列表头一个「全部删除」</td></tr>
  * </table>
@@ -278,7 +278,7 @@ export function RawImageDrop({
           ) : (
             <Note warn>
               原图只存在<b className="font-normal text-t2">这台设备</b>上,{hours} 小时后
-              <b className="font-normal text-t2">转入留存区</b>;存进去那一刻就写好了到期时刻,不是到期才算。
+              <b className="font-normal text-t2">转进留存区</b>;存进去那一刻就写好了到期时刻,不是到期才算。
               <br />
               送去识别的是这次请求里的一份内联副本,服务端
               <b className="font-normal text-red">不落盘、不上云、不共享、不生成外链</b>。
@@ -332,7 +332,7 @@ function ConsentGate({
       <ul className="mt-2 space-y-1 text-[12px] leading-[1.75] text-t2">
         <li>
           · 存在<b className="font-medium text-tx">这台设备</b>的浏览器里,
-          <b className="font-medium text-tx">{hours} 小时后转入留存区</b>。存进去那一刻就写好了到期时刻。
+          <b className="font-medium text-tx">{hours} 小时后转进留存区</b>。存进去那一刻就写好了到期时刻。
         </li>
         <li>· 送去识别时,图作为这次请求的一部分内联发出,服务端不落盘、不进对象存储、不上云端。</li>
         <li>· 不做分享、不生成任何外链。除了本产品的服务端,这些图不会去第三方。</li>

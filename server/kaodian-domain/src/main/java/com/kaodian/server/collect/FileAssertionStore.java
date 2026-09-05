@@ -2,6 +2,7 @@ package com.kaodian.server.collect;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
@@ -38,6 +39,9 @@ import java.util.List;
  * 唯一要额外守住的是<b>已经存在时不刷新 {@code assertedAt}</b>(契约见 {@link AssertionStore#put})。
  */
 @Component
+// KUBI-112:同类型的两个 store 只能起一个,否则上下文里两个 AssertionStore bean 直接冲突。
+// 不写这个键时走 file —— 默认值的理由见 application.properties 那一节。
+@ConditionalOnProperty(name = "kaodian.data.store", havingValue = "file", matchIfMissing = true)
 public class FileAssertionStore implements AssertionStore {
 
     private static final String FILE_NAME = "assertions.json";

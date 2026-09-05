@@ -88,7 +88,7 @@ class NoStemFieldTest {
      * 资料分析一道题的材料就上千字。这个数字的作用不是精确,是<b>把「放个名字」和「放段内容」
      * 分在两边</b>。
      */
-    private static final int MAX_FREE_TEXT_LENGTH = 200;
+    static final int MAX_FREE_TEXT_LENGTH = 200;
 
     /**
      * 只看主产物({@code target/classes})里的类。
@@ -120,7 +120,7 @@ class NoStemFieldTest {
      * <p>
      * 匹配的是小写化之后的<b>子串</b>,所以 {@code rawText / RAW_TEXT / questionStem} 一起覆盖。
      */
-    private static final List<String> BANNED_WORDS = List.of(
+    static final List<String> BANNED_WORDS = List.of(
             "stem", "content", "body", "text", "question", "answer",
             "analysis", "explanation", "transcript", "transcription",
             "image", "img", "raw", "ocr", "audio", "screenshot",
@@ -129,7 +129,7 @@ class NoStemFieldTest {
     /**
      * 中文字段名是合法的 Java 标识符,所以这一列必须存在 —— 否则把字段叫 {@code 题干} 就绕过去了。
      */
-    private static final List<String> BANNED_CJK = List.of(
+    static final List<String> BANNED_CJK = List.of(
             "题干", "原文", "解析", "内容", "正文", "转写", "录音", "截图",
             "答案", "讲义", "真题", "试题");
 

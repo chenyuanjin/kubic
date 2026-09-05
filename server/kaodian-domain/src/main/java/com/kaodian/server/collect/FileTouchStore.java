@@ -2,8 +2,8 @@ package com.kaodian.server.collect;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
-import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.node.ArrayNode;
 import tools.jackson.databind.node.ObjectNode;
@@ -17,9 +17,6 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.time.Clock;
-import java.time.DateTimeException;
-import java.time.Duration;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -39,7 +36,7 @@ import java.util.List;
  * <h2>🔴 读写都是逐字段列举的,不用自动序列化</h2>
  *
  * 写:文件里能出现哪些键,由 {@link #toNode} 显式列出。
- * 读:文件里出现别的键一律被忽略,进不了内存 —— {@link #toTouch} 只认那几个。
+ * 读:文件里出现别的键一律被忽略,进不了内存 —— {@link TouchSeed#toTouch} 只认那几个。
  * <p>
  * 于是即便有人手工往 {@code touches.json} 里塞了一段题干,它也<b>到不了任何地方</b>:
  * 既不会被读进来,更不会因为 {@link Touch} 将来多了个字段就悄悄流回文件。
@@ -56,10 +53,10 @@ import java.util.List;
  * 而那时 {@link com.kaodian.server.coverage.CoverageService} 一行都不用改(见 {@link TouchStore})。
  */
 @Component
+// KUBI-112:同类型的两个 store 只能起一个,否则上下文里两个 TouchStore bean 直接冲突。
+// 不写这个键时走 file —— 默认值的理由见 application.properties 那一节。
+@ConditionalOnProperty(name = "kaodian.data.store", havingValue = "file", matchIfMissing = true)
 public class FileTouchStore implements TouchStore {
-
-    /** 行为层种子。第一次跑起来就能看见 44%,而不是一个空白页。 */
-    private static final String SEED_RESOURCE = "/seed/touches-demo.json";
 
     private static final String FILE_NAME = "touches.json";
     private static final String TMP_SUFFIX = ".tmp";
@@ -264,117 +261,20 @@ public class FileTouchStore implements TouchStore {
             return;
         }
         // 第一次跑:播种。先落盘再进内存,让「文件是唯一事实来源」从第一秒就成立。
-        List<Touch> seeded = readSeed(clock.instant());
+        // 🔴 种子解析在 TouchSeed,不在这里 —— KUBI-112 之后 JdbcTouchStore 要播同一份,
+        //    而两份各自解析的种子对不上时,表现是「换个存储后端覆盖率就换个数」,不是编译错误。
+        List<Touch> seeded = TouchSeed.load(clock);
         writeAtomically(seeded);
         touches = seeded;
     }
 
     private List<Touch> read() {
         try (InputStream in = Files.newInputStream(file)) {
-            return parse(MAPPER.readTree(in), null);
+            // seedAt 传 null:落盘文件里只会有绝对 occurredAt,相对天数只在种子里出现。
+            return TouchSeed.parse(MAPPER.readTree(in), null);
         } catch (IOException e) {
             throw new IllegalStateException("行为层数据文件读取失败:" + file, e);
         }
-    }
-
-    /**
-     * 从 classpath 播种。
-     *
-     * @param seedAt 播种时刻。种子里的 {@code daysAgo} 以它为第 0 天 ——
-     *               <b>种子不写死日期,否则放几天后「生疏」的判定就漂了</b>
-     *               ({@link com.kaodian.server.coverage.NodeState#RUSTY_AFTER} 是 30 天)。
-     *               落盘之后存的是绝对时间戳,此后记录会随真实时间自然变旧;
-     *               这不是缺陷,「多久前」本来就是产品的三个维度之一。
-     */
-    private List<Touch> readSeed(Instant seedAt) {
-        try (InputStream in = FileTouchStore.class.getResourceAsStream(SEED_RESOURCE)) {
-            if (in == null) {
-                throw new IllegalStateException("找不到行为层种子文件:" + SEED_RESOURCE);
-            }
-            return parse(MAPPER.readTree(in), seedAt);
-        } catch (IOException e) {
-            throw new IllegalStateException("行为层种子文件读取失败:" + SEED_RESOURCE, e);
-        }
-    }
-
-    /**
-     * 解析一份行为层 JSON。
-     *
-     * <h2>认不出来就吵着失败,绝不当成 0 条</h2>
-     *
-     * {@code path("touches")} 在缺键、根节点是数组、键名写错时都只是安静地给回一个 MissingNode,
-     * 于是「解析成功、0 条记录」——而下一次 {@link #append} 是<b>全量重写</b>,
-     * 那 0 条会原样盖掉磁盘上真实存在的记录。{@code 坏文件 → 空数据 → 覆盖} 这条链走完,
-     * 用户丢的是这个产品的全部资产,而且全程没有一行报错。
-     * <p>
-     * 所以这里要求 {@code touches} <b>必须是一个数组</b>:宁可启动不了,也不要静默清空。
-     */
-    private static List<Touch> parse(JsonNode root, Instant seedAt) {
-        JsonNode array = root.path("touches");
-        if (!array.isArray()) {
-            throw new IllegalStateException(
-                    "行为层数据里没有 touches 数组 —— 宁可在这里失败,也不能当成 0 条记录,"
-                            + "否则下一次追加会把磁盘上真实存在的记录整个盖掉");
-        }
-
-        List<Touch> result = new ArrayList<>();
-        for (JsonNode n : array) {
-            try {
-                result.add(toTouch(n, seedAt));
-            } catch (IllegalArgumentException | DateTimeException e) {
-                // 领域构造器(Touch / Drill / TouchKind.valueOf)的校验消息是写给【接口调用方】看的,
-                // 接口层据此回 400「你的请求不合法」并原样回显。可这里的输入不是请求,是磁盘上的
-                // 一份坏文件 —— 那是服务端的事,得 5xx 吵出来,而不是让前端收到一句
-                // 「No enum constant com.kaodian.server.collect.TouchKind.X」。
-                throw new IllegalStateException(
-                        "行为层数据里有一条记录不合法:" + n.path("id").asString("?"), e);
-            }
-        }
-        result.sort(Comparator.comparing(Touch::occurredAt));   // 契约:按发生时间升序
-        return result;
-    }
-
-    /**
-     * 一个 JSON 对象 → 一条记录。<b>只认这几个键,别的一概不看。</b>
-     *
-     * @param seedAt 非 null 时允许用相对天数 {@code daysAgo};落地文件里只会有绝对 {@code occurredAt}
-     */
-    private static Touch toTouch(JsonNode n, Instant seedAt) {
-        Instant at;
-        if (n.has("occurredAt")) {
-            at = Instant.parse(required(n, "occurredAt"));
-        } else if (seedAt != null && n.has("daysAgo")) {
-            at = seedAt.minus(Duration.ofDays(n.path("daysAgo").asInt(0)));
-        } else {
-            throw new IllegalStateException("记录缺少时间:" + n.path("id").asString("?")
-                    + " —— 「多久前」全靠它");
-        }
-
-        // 没有 practiced 就是没做题(仅接触)。不是 0 道,是这条记录里根本没有做题这回事。
-        Touch.Drill drill = n.has("practiced")
-                ? new Touch.Drill(n.path("practiced").asInt(0), n.path("correct").asInt(0))
-                : null;
-
-        // 没有 clientToken 就是没有 —— 空串会被 Touch 的构造器归一成 null,
-        // 好过让一堆「都没填」的老记录在 append 里互相判重。
-        String clientToken = n.path("clientToken").asString("");
-
-        return new Touch(
-                required(n, "id"),
-                required(n, "nodeCode"),
-                n.path("sourceName").asString(""),
-                TouchKind.valueOf(required(n, "kind")),
-                at,
-                drill,
-                clientToken);
-    }
-
-    private static String required(JsonNode n, String field) {
-        String v = n.path(field).asString("");
-        if (v.isEmpty()) {
-            throw new IllegalStateException("行为层记录缺少必填字段:" + field);
-        }
-        return v;
     }
 
     // —— 写入 ——

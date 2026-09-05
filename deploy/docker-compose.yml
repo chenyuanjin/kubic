@@ -1,0 +1,126 @@
+# 考点测试环境 —— MySQL + Redis + Caddy
+#
+# 跑在 62.234.164.41 上,而那台机器同时跑着 Multica 平台本身。
+# 🔴 内存共 3.7G,实测可用约 1.8G,里面已经躺着 10 个容器。
+#    下面每个服务的 mem_limit 不是保守估计,是「超了就被 OOM killer 挑走」的硬上限 ——
+#    没有上限时 MySQL 会按机器总内存去算它的缓冲区,然后把平台一起拖死。
+#
+# 🔴 数据库端口只发布到 127.0.0.1。对外只有 Caddy 的 8090 一个口子,
+#    多发布一个 3306 等于把「反代 + 认证」这条路白走了。
+#
+# 后端 jar【不在这个 compose 里】:它跑在宿主机上、绑 127.0.0.1:8081。
+# 放进容器就得让 server.address 变成 0.0.0.0,而那一行的注释解释了为什么它是 127.0.0.1。
+# 容器里的 0.0.0.0 靠 docker 网络隔离也说得过去,但那是一层要人去验证的间接保证;
+# 宿主机回环是内核给的,不用验。见 deploy/README.md §3。
+
+name: kaodian-test
+
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: kaodian-mysql
+    restart: unless-stopped
+    mem_limit: 420m
+    memswap_limit: 420m
+    ports:
+      - "127.0.0.1:3307:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?set it in deploy/.env}
+      MYSQL_DATABASE: kaodian
+      MYSQL_USER: kaodian
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?set it in deploy/.env}
+    command:
+      # performance_schema 常驻要 ~200M,而这台机器一共只剩 1.8G。
+      # 它买到的是「事后能查为什么慢」,而这是个还没有第一个真实用户的测试环境。
+      - --performance-schema=OFF
+      # 默认 128M 起。64M 装得下这六张表的全部索引 —— 行为层几百条量级。
+      - --innodb-buffer-pool-size=64M
+      - --innodb-log-buffer-size=8M
+      - --innodb-redo-log-capacity=32M
+      # 池子上限 8(见 application.properties),留 30 给「多开一个实例调试」。
+      - --max-connections=30
+      - --table-open-cache=64
+      - --table-definition-cache=128
+      - --tmp-table-size=8M
+      - --max-heap-table-size=8M
+      # X Protocol 白占一个端口和一份内存,没人用。
+      - --mysqlx=OFF
+      - --skip-name-resolve
+      - --host-cache-size=0
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_0900_ai_ci
+    volumes:
+      - mysql-data:/var/lib/mysql
+      # 只读挂进来,建表要人手动跑(见 README §2)。
+      # 🔴 不用 /docker-entrypoint-initdb.d 自动执行:那样只有空库第一次启动会跑,
+      #    以后追加的 ALTER 永远不会被执行,而文件看上去像是"已经生效了"。
+      # 路径就是仓库里的那条,不复制第二份 —— 两份 DDL 会各自漂,而漂开时没有任何提示。
+      - ../server/db/schema.sql:/schema.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+
+  redis:
+    image: redis:7-alpine
+    container_name: kaodian-redis
+    restart: unless-stopped
+    mem_limit: 96m
+    memswap_limit: 96m
+    ports:
+      - "127.0.0.1:6380:6379"
+    command:
+      - redis-server
+      - --requirepass
+      - ${REDIS_PASSWORD:?set it in deploy/.env}
+      - --maxmemory
+      - 48mb
+      # 🔴 noeviction,不是 allkeys-lru。这里躺的是短信频控计数器 ——
+      #    被淘汰掉一个 key 等于给那个号码/IP 免费重发一遍当日额度,而短信是真花钱的。
+      #    宁可写失败(看得见)也不要静默淘汰(看不见)。48M 对几百个计数器是三个数量级的余量。
+      - --maxmemory-policy
+      - noeviction
+      # 落盘留着:重启归零 = 白送额度,那正是把这三样从文件挪进来的理由。
+      - --save
+      - "900 1"
+      - --appendonly
+      - "no"
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "--no-auth-warning", "ping"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: kaodian-caddy
+    restart: unless-stopped
+    mem_limit: 64m
+    # 🔴 host 网络。两个理由:① 要反代宿主机回环上的 127.0.0.1:8081;
+    #    ② 这台机器上已经有一个系统 caddy(/etc/caddy/Caddyfile 是 Multica 平台的),
+    #       用容器起自己这一份,配置互不相干,不用去动别人的文件。
+    network_mode: host
+    # 🔴 Caddyfile 里的 {$KAODIAN_TEST_USER} 读的是【容器自己的】环境变量。
+    # compose 的 .env 只用来展开这个 yml 里的 ${...},【不会】注入进容器 ——
+    # 少了这一行,那两个占位符解析成空串,basic_auth 拿到一张空名单,
+    # 于是带不带口令一律 401。它是 fail-closed 的,所以不会漏放行,
+    # 但表现是「口令永远不对」,而看 .env 一切正常。实测踩过一次。
+    env_file:
+      - .env
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+      # web 构建产物的挂载点。今天是空的 —— 三端界面是并行的另一条 stage 1,
+      # 它落地后把 web/dist 拷进来即可,反代那一半不用动。
+      - ./site:/srv/kaodian-web:ro
+    depends_on:
+      - mysql
+      - redis
+
+volumes:
+  mysql-data:
+  caddy-data:
+  caddy-config:

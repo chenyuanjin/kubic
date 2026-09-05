@@ -2,6 +2,7 @@ package com.kaodian.server.auth;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.node.ArrayNode;
@@ -31,6 +32,8 @@ import java.util.Map;
  * 于是绕过「10 条/日」的方法是等一次发版。这条链路的另一端连着真实账单。
  */
 @Component
+// 默认实现:kaodian.auth.sms.store 没配或配成 file 时装这一个,配成 redis 时换 RedisSmsRateLimiter。
+@ConditionalOnProperty(name = "kaodian.auth.sms.store", havingValue = "file", matchIfMissing = true)
 public class FileSmsRateLimiter implements SmsRateLimiter {
 
     private static final String FILE_NAME = "auth-sms-quota.json";

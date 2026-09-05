@@ -2,6 +2,7 @@ package com.kaodian.server.collect;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
@@ -41,6 +42,9 @@ import java.util.List;
  * 是因为服务层将来会有第二个调用者(补标、批量确认),而红线不能靠每个调用者自觉。
  */
 @Component
+// KUBI-112:同类型的两个 store 只能起一个,否则上下文里两个 RecordTagStore bean 直接冲突。
+// 不写这个键时走 file —— 默认值的理由见 application.properties 那一节。
+@ConditionalOnProperty(name = "kaodian.data.store", havingValue = "file", matchIfMissing = true)
 public class FileRecordTagStore implements RecordTagStore {
 
     private static final String FILE_NAME = "record-tags.json";

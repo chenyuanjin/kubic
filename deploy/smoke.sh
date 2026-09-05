@@ -29,6 +29,35 @@ echo "   POST /syllabus/nodes/x/archive 无凭证 → $code"
 [[ "$code" == "401" ]] || { echo "   ❌ 期望 401。反代的门没关上,后面的都不用看了" >&2; exit 1; }
 echo "   ✅ 401 —— archive/delete/rename/order 这批无认证的写端点没有裸在公网上"
 
+say "0b. 发票口也是真的:错口令领不到门票"
+# 🔴 这三行是 KUBI-111 补的,补的原因是它们红过一次真的。
+# /__gate 刚落地时三条指令平铺在 handle 里,而 Caddy 按【固定表】排序执行,
+# redir 排在 basic_auth 前面 —— 重定向先跑完就终结了整条链,basic_auth 根本没轮到:
+# 无凭证、错口令一律 302 + Set-Cookie,任何人打一次就拿到七天的全量通行证。
+# 「用票口 401」当时全是绿的,所以只测用票口发现不了 —— 必须单独测发票口。
+code=$(curl -s -o /dev/null -w '%{http_code}' -u wrong:wrong "$BASE/__gate")
+echo "   GET /__gate 错口令 → $code"
+[[ "$code" == "401" ]] || { echo "   ❌ 期望 401。发票口敞着,门票等于白送(见 Caddyfile 里 route 那段)" >&2; exit 1; }
+code=$(curl -s -o /dev/null -w '%{http_code}' "${AUTH[@]}" "$BASE/__gate")
+[[ "$code" == "302" ]] || { echo "   ❌ 对口令期望 302,实得 $code —— 领不到票,浏览器就进不来" >&2; exit 1; }
+echo "   ✅ 错口令 401 / 对口令 302 发票"
+
+say "0c. 门票与应用令牌不抢同一个头"
+# 🔴 这一条red过:反代用 basic_auth 时,前端登录后带的 Authorization: Bearer 会把
+# 浏览器缓存的 Basic 凭证顶掉,于是【登录之后】每个请求 401,界面静默退回离线示例数据。
+# 四个端一起坏,而且登录前看着正常 —— 所以判据必须是「同时带门票和 Bearer」。
+GATE=$(curl -s -o /dev/null -D - "${AUTH[@]}" "$BASE/__gate" \
+	| sed -n 's/.*kaodian_gate=\([^;]*\).*/\1/p' | tr -d '\r')
+[[ -n "$GATE" ]] || { echo "   ❌ 没从 /__gate 拿到 kaodian_gate cookie" >&2; exit 1; }
+code=$(curl -s -o /dev/null -w '%{http_code}' \
+	-H "Cookie: kaodian_gate=$GATE" -H 'Authorization: Bearer 随便一个假令牌' \
+	"$API/coverage/summary")
+echo "   门票 cookie + Bearer 同时带 → $code"
+[[ "$code" == "200" ]] || { echo "   ❌ 期望 200。门票又跑回 Authorization 上了,登录后必掉线" >&2; exit 1; }
+code=$(curl -s -o /dev/null -w '%{http_code}' -H 'Cookie: kaodian_gate=胡写的' "$API/coverage/summary")
+[[ "$code" == "401" ]] || { echo "   ❌ 假门票期望 401,实得 $code —— 校验的是「有没有 cookie」不是「对不对」" >&2; exit 1; }
+echo "   ✅ 真票+Bearer 200 / 假票 401"
+
 say "1. 起点覆盖度"
 S0=$(curl -fsS "${AUTH[@]}" "$API/coverage/summary")
 T0=$(echo "$S0" | j "d['total']"); C0=$(echo "$S0" | j "d['covered']"); P0=$(echo "$S0" | j "d['percent']")

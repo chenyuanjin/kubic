@@ -23,13 +23,59 @@
 		}
 	}
 
+	# 🔴 门票:拿 basic_auth 换一张 cookie,换完之后 Authorization 这个头让给应用。
+	#
+	# 为什么非有这一步不可 —— 这是一次实测,不是一次偏好:
+	#   浏览器把 Basic 凭证和应用的登录令牌塞进【同一个】请求头 Authorization,两者互斥。
+	#   前端登录之后每个请求都带 `Authorization: Bearer <token>`(web/src/api/client.ts:97),
+	#   它把浏览器缓存的 Basic 凭证整个顶掉,于是 Caddy 对【登录之后】的每一个请求回 401,
+	#   界面静默退回「离线示例数据」。实测同一个端点:
+	#       -u kaodian:<口令>            → 200
+	#       -H 'Authorization: Bearer …' → 401(Server: Caddy,WWW-Authenticate: Basic)
+	#   所以「反代上放 basic_auth」+「后端用 Bearer」这个组合在浏览器里【不可能同时成立】。
+	#   它与端无关:iPad / iPhone / Android / Web 四个端一起坏,而且坏法是登录前看着正常、
+	#   登录后才掉线,最容易被读成「某个端有问题」。
+	#
+	# 🔴 凭证一个字没改,门也没摘 —— 变的只是门票落在哪个头上:
+	#   · 领票:GET /__gate,仍旧由同一份 KAODIAN_TEST_USER / KAODIAN_TEST_PASS_HASH 挡着。
+	#   · 用票:cookie kaodian_gate,与 Authorization 不冲突。
+	#   · 没票的请求照旧撞 basic_auth(见下面 @authenticated)—— 所以 `curl -u` 那条路
+	#     一个字都不用改,deploy/smoke.sh 照跑。
+	handle /__gate* {
+		# 🔴 `route` 不是多余的一层缩进 —— 少了它这道门是【敞开】的。
+		# Caddyfile 里指令的执行顺序由 Caddy 的固定表决定,不是书写顺序,而那张表里
+		# `redir` 排在 `basic_auth` 【前面】。所以直接平铺这三行时,重定向先跑完并终结
+		# 整条链,basic_auth 根本没轮到:无凭证、错口令一律 302 + Set-Cookie,
+		# 任何人打一次 /__gate 就拿到一张七天的全量通行证。
+		# 实测(修之前):`-u wrong:wrong` → 302 发票;修之后 → 401。
+		# `route` 的作用就是「按写的顺序来」。两条独立的端侧实测道同时抓到了这个洞。
+		route {
+			basic_auth {
+				{$KAODIAN_TEST_USER} {$KAODIAN_TEST_PASS_HASH}
+			}
+			# HttpOnly:门票不需要被页面读到,fetch 的默认 credentials: 'same-origin' 会自己带上。
+			header Set-Cookie "kaodian_gate={$KAODIAN_TEST_GATE}; Path=/; Max-Age=604800; SameSite=Lax; HttpOnly"
+			# 🔴 目标写全,不能只写 `/`。
+			# redir 的第一个参数若以 `/` 开头,Caddy 把它当【匹配器】而不是目标 ——
+			# `redir / 302` 会被读成「只对路径 / 的请求重定向到名为 302 的地址」,
+			# 而这里的路径是 /__gate,于是一条也不匹配:领票成功却停在一张白页上,不报错。
+			redir {http.request.scheme}://{http.request.hostport}/ 302
+		}
+	}
+
 	@api path /api/*
 	handle @api {
 		# 🔴 预检请求必须绕开 basic_auth。
 		# 浏览器规范:OPTIONS 预检【不携带】任何凭证,所以带 basic_auth 的预检必然 401,
 		# 浏览器随即把真正那个请求也掐掉 —— 表现是「跨域失败」,而根因在鉴权。
 		# 预检本身不读不写,放它过去交给 Spring 的 ApiCorsConfig 回。
-		@authenticated not method OPTIONS
+		#
+		# 第二条同理:已经拿着门票的请求也绕开 basic_auth,否则就回到上面那个死结。
+		# 两条都是 `not`,在同一个命名匹配器里是【与】—— 只有「不是预检、且没有门票」才要口令。
+		@authenticated {
+			not method OPTIONS
+			not header Cookie *kaodian_gate={$KAODIAN_TEST_GATE}*
+		}
 		basic_auth @authenticated {
 			{$KAODIAN_TEST_USER} {$KAODIAN_TEST_PASS_HASH}
 		}
@@ -42,7 +88,9 @@
 		reverse_proxy 127.0.0.1:8081
 	}
 
-	# 静态直出。三端界面落地前这里是空目录,访问 / 得到 404 —— 不影响 /api 联调。
+	# 静态直出。空目录时访问 / 得到 404 —— 不影响 /api 联调。
+	# 三端界面就落在这里:web 侧 `npm run build` 之后把 web/dist 同步进 ./site 即可,
+	# 页面与 /api 因此同源 —— 这也是浏览器侧不需要任何跨域配置的原因。
 	handle {
 		root * /srv/kaodian-web
 		try_files {path} /index.html

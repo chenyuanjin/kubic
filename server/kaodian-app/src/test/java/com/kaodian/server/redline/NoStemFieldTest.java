@@ -88,7 +88,7 @@ class NoStemFieldTest {
      * 资料分析一道题的材料就上千字。这个数字的作用不是精确,是<b>把「放个名字」和「放段内容」
      * 分在两边</b>。
      */
-    private static final int MAX_FREE_TEXT_LENGTH = 200;
+    static final int MAX_FREE_TEXT_LENGTH = 200;
 
     /**
      * 只看主产物({@code target/classes})里的类。
@@ -108,8 +108,26 @@ class NoStemFieldTest {
      *
      * <p>反过来定义更稳:被扫的包本来就限定在我们自己的三个包内,
      * 唯一需要挡在外面的只有测试产物。这样再拆几个模块也不用回来改。
+     *
+     * <p><b>2026-09-05(KUBI-112)补第二个标记:测试产物有两种形状,原先只认了一种。</b>
+     * kaodian-app 对 kaodian-domain 有一条 {@code <type>test-jar</type>} 的依赖
+     * (见 kaodian-app/pom.xml「domain 的两个内存版存储替身」那段),于是同一批桩类
+     * 在两条命令下的 CodeSource <b>不是同一个路径</b>:
+     * <ul>
+     *   <li>{@code mvn test} —— test-jar 还没打,解析到目录
+     *       {@code kaodian-domain/target/test-classes},命中原标记,正确排除;</li>
+     *   <li>{@code mvn package} —— test-jar 已经打出来了,解析到
+     *       {@code kaodian-domain/target/kaodian-domain-*-tests.jar},<b>不含</b>
+     *       {@code /target/test-classes} 这个子串,于是整批测试桩类被当成线上库的形状扫进来,
+     *       报出 {@code CaptureServiceTest.FakeTagger#answer} 这类<b>假阳性</b>。</li>
+     * </ul>
+     * 表现是「{@code test} 绿、{@code package} 红」,而两条命令跑的是同一份代码。
+     * 这是 v1 上就有的既有缺陷(基线 {@code origin/v1} @ {@code 411b97a} 同样复现),
+     * 不是这一轮引入的 —— 但它挡着本议题「构建必须绿」那道自检,所以在这里一并修掉。
+     * 判据仍然是<b>产物</b>而不是类名后缀,只是产物的两种打包形状都要认。
      */
-    private static final String TEST_ARTIFACT_MARKER = "/target/test-classes";
+    private static final List<String> TEST_ARTIFACT_MARKERS =
+            List.of("/target/test-classes", "-tests.jar");
 
     /**
      * 🔴 命中即失败,没有白名单。
@@ -120,7 +138,7 @@ class NoStemFieldTest {
      * <p>
      * 匹配的是小写化之后的<b>子串</b>,所以 {@code rawText / RAW_TEXT / questionStem} 一起覆盖。
      */
-    private static final List<String> BANNED_WORDS = List.of(
+    static final List<String> BANNED_WORDS = List.of(
             "stem", "content", "body", "text", "question", "answer",
             "analysis", "explanation", "transcript", "transcription",
             "image", "img", "raw", "ocr", "audio", "screenshot",
@@ -129,7 +147,7 @@ class NoStemFieldTest {
     /**
      * 中文字段名是合法的 Java 标识符,所以这一列必须存在 —— 否则把字段叫 {@code 题干} 就绕过去了。
      */
-    private static final List<String> BANNED_CJK = List.of(
+    static final List<String> BANNED_CJK = List.of(
             "题干", "原文", "解析", "内容", "正文", "转写", "录音", "截图",
             "答案", "讲义", "真题", "试题");
 
@@ -536,7 +554,8 @@ class NoStemFieldTest {
         if (source == null) {
             return false;
         }
-        return !source.getLocation().toString().contains(TEST_ARTIFACT_MARKER);
+        String location = source.getLocation().toString();
+        return TEST_ARTIFACT_MARKERS.stream().noneMatch(location::contains);
     }
 
     private static List<Member> membersOf(Class<?> c) {

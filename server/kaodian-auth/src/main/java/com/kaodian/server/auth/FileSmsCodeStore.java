@@ -2,6 +2,7 @@ package com.kaodian.server.auth;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.node.ArrayNode;
@@ -31,6 +32,8 @@ import java.util.Optional;
  * <b>少了它,「请用最新收到的那一条」这句话就说不出来。</b>
  */
 @Component
+// 默认实现:kaodian.auth.sms.store 没配或配成 file 时装这一个,配成 redis 时换 RedisSmsCodeStore。
+@ConditionalOnProperty(name = "kaodian.auth.sms.store", havingValue = "file", matchIfMissing = true)
 public class FileSmsCodeStore implements SmsCodeStore {
 
     private static final String FILE_NAME = "auth-sms.json";

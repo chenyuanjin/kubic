@@ -26,5 +26,16 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-json</artifactId>
 		</dependency>
+		<!--
+			KUBI-112 新增。只为短信这一侧:验证码 / 号码锁 / 频控计数器。
+			这三样是全仓唯一「重启归零就等于送出额度」的状态 —— 文件实现里它们靠
+			synchronized 保证正确,而 synchronized 的前提是「整个进程一份」,
+			R-70 写着这个前提消失时是无声的。Redis 把闸挪到进程外面,顺带拿到原生 TTL。
+			🔴 账号、令牌、手机号密文【不进 Redis】:它们不是可以过期的东西。
+		-->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-data-redis</artifactId>
+		</dependency>
 	</dependencies>
 </project>

@@ -1,0 +1,51 @@
+# 考点测试环境的反代。
+#
+# 🔴 这个文件是「对外可访问」的全部实现。application.properties 里 server.address=127.0.0.1
+#    一个字没改 —— 后端仍然只绑回环,外面进不来;唯一的入口是下面这个 :8090。
+#
+# 为什么不能直接把 server.address 改成 0.0.0.0:
+#    /api/v1/syllabus/* 的 archive / delete / rename / order 是可写的,而且【没有身份认证】
+#    (SyllabusAdminController 里 13 个写端点,一个 CurrentSession 参数都没有)。
+#    裸暴露 = 任何人 curl 一下就能悄悄归档掉用户的考点,而覆盖度是这个产品唯一那个数。
+#    CORS 挡不住:Spring 只在请求带着不匹配的 Origin 时才回 403,而 curl 根本不发 Origin。
+#
+# ⚠️ 所以这里的 basic_auth 挡住的是「谁能连上这套测试环境」,
+#    【不是】「哪个用户能改哪条数据」。后者是端点级鉴权,那是 B0-4 的活,本轮没做。
+#    在这个环境里,凡是拿到这一份口令的人对全部数据都是管理员。它是联调环境不是生产。
+
+:8090 {
+	encode zstd gzip
+
+	log {
+		output file /data/kaodian-access.log {
+			roll_size 10MiB
+			roll_keep 3
+		}
+	}
+
+	@api path /api/*
+	handle @api {
+		# 🔴 预检请求必须绕开 basic_auth。
+		# 浏览器规范:OPTIONS 预检【不携带】任何凭证,所以带 basic_auth 的预检必然 401,
+		# 浏览器随即把真正那个请求也掐掉 —— 表现是「跨域失败」,而根因在鉴权。
+		# 预检本身不读不写,放它过去交给 Spring 的 ApiCorsConfig 回。
+		@authenticated not method OPTIONS
+		basic_auth @authenticated {
+			{$KAODIAN_TEST_USER} {$KAODIAN_TEST_PASS_HASH}
+		}
+
+		# reverse_proxy 默认就会追加 X-Forwarded-For。
+		# 这一条与后端的 kaodian.auth.trust-forwarded-for=true 是一对:
+		# 少了反代而信任这个头 = 任何人伪造一下,「单 IP 20/日」那道闸永远不触发;
+		# 有了反代却不信任它 = getRemoteAddr() 恒为 127.0.0.1,ClientIp 把回环当成「取不到」,
+		# 同一道闸同样永远不触发。两边必须一起开。
+		reverse_proxy 127.0.0.1:8081
+	}
+
+	# 静态直出。三端界面落地前这里是空目录,访问 / 得到 404 —— 不影响 /api 联调。
+	handle {
+		root * /srv/kaodian-web
+		try_files {path} /index.html
+		file_server
+	}
+}

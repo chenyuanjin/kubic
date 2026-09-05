@@ -44,3 +44,12 @@ dist/**/*.apk
 dist/**/*.aab
 dist/**/*.dmg
 dist/**/*.ipa
+
+# KUBI-112 测试环境:口令、构建产物、运行时状态都不进仓库(R-08)
+deploy/.env
+deploy/*.jar
+deploy/app.pid
+deploy/app.log
+deploy/site/
+# 🔴 上面那条 .env.* 会把模板也挡掉,而模板【必须】进仓库:它是「要填哪些口令」的唯一清单。
+!deploy/.env.example

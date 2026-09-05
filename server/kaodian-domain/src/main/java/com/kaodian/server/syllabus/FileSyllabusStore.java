@@ -2,6 +2,7 @@ package com.kaodian.server.syllabus;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.node.ArrayNode;
@@ -51,6 +52,9 @@ import java.util.function.UnaryOperator;
  * 与行为层同样的理由:直接在原文件上截断重写,写到一半断电就是一个半截 JSON,
  * 整棵树一起没。骨架是用户一个考点一个考点敲出来的,它和记录一样是资产。
  */
+// KUBI-112:默认档。matchIfMissing = true 让「没配过这个键」和「配成 file」是同一件事 ——
+// 换默认值等于让每个 clone 下来的人先装一个 MySQL 才能跑测试。另一档是 JdbcSyllabusStore。
+@ConditionalOnProperty(name = "kaodian.data.store", havingValue = "file", matchIfMissing = true)
 @Component
 public class FileSyllabusStore implements SyllabusStore {
 

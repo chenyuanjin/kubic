@@ -66,10 +66,6 @@ export function CoverageHeader({ summary, subject }: { summary: SummaryDto; subj
           <span className="tabular-nums">{summary.whollyEmptyGroups}</span> 组整块空白
         </p>
       )}
-
-      <p className="mt-1.5 font-mono text-[10.5px] text-t3">
-        {subject.display} · 实心是碰过的,空心虚线是还没碰过的
-      </p>
     </div>
   )
 }

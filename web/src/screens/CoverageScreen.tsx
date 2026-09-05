@@ -111,6 +111,7 @@ export function CoverageScreen() {
                     />
                     <NodeList
                       groups={data.groups}
+                      subject={data.subject}
                       selectedCode={selected?.code ?? null}
                       onSelect={pick}
                       onOpen={(n) => pick(n.code)}

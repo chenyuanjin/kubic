@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef } from 'react'
 import type { ReactNode } from 'react'
-import type { GroupView, NodeView } from '../api/types'
+import type { GroupView, NodeView, SubjectDto } from '../api/types'
 import { isTouched, pad2, relativeDay } from '../lib/format'
 import { GroupHeader, Row, StateDot } from '../ui/primitives'
 
@@ -27,14 +27,23 @@ import { GroupHeader, Row, StateDot } from '../ui/primitives'
  * 折行靠的是 flex-wrap + 一个零高度的 `basis-full` 断点占位:它在 md 以上 `display:none`,
  * 于是同一段 DOM 在宽屏是一行、窄屏是两行。<b>没有第二套组件,也没有 JS 断点判断</b> ——
  * 后者会在 SSR / 首帧闪一次错误的布局。列在两种排布下的先后由 `order-*` 调,不由 DOM 顺序调。
+ *
+ * <h2>2026-09-06:图例那一行搬进来了(`KUBI-111`)</h2>
+ *
+ * 它原先是 `CoverageHeader` 的最后一行,而它说的点在这里 —— 中间还隔着盲区榜,
+ * 于是屏上读起来像是在描述竖式减法那一块里并不存在的点。<b>一个字没改,只换了位置</b>。
+ * 放在这个组件里而不是屏那一层,是因为说明和被说明的东西分开过一次就会再分开一次:
+ * 挪到 `CoverageScreen` 里只是这一次排对了,`subject` 这个 prop 才是那条绑定。
  */
 export function NodeList({
   groups,
+  subject,
   selectedCode,
   onSelect,
   onOpen,
 }: {
   groups: GroupView[]
+  subject: SubjectDto
   selectedCode: string | null
   onSelect: (code: string) => void
   onOpen: (node: NodeView) => void
@@ -62,6 +71,10 @@ export function NodeList({
        见那个文件里同一天的那段注释。留着它们会在 480px 的左栏里再套一个小滚动区,
        而「页面里套一个只有 200px 高的小滚动区」正是手机上最难用的那种东西。 */
     <div ref={scroller} className="min-w-0 shrink-0">
+      {/* 图例:它描述的就是下面每一行开头那颗点,所以它只能在这里,不能在别的块底下。 */}
+      <p className="px-3 pt-1.5 pb-2 font-mono text-[10.5px] text-t3">
+        {subject.display} · 实心是碰过的,空心虚线是还没碰过的
+      </p>
       {groups.map((group) => (
         <div key={group.code}>
           <GroupHeader

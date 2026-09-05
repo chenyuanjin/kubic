@@ -3,10 +3,6 @@
   body{zoom:2}
   /* 三条「不做」各带一个立方线框作记号。内容区 0 块蓝面 ——
      首屏的强调色只在标志顶面与字标光标（品牌位）。 */
-  .no{display:flex;gap:var(--gap-slot);padding:24px var(--rule);align-items:flex-start}
-  .no + .no{border-top:var(--hair-w) solid var(--hair-soft)}
-  .no p{font-size:var(--t-body);line-height:var(--lh-body);color:var(--ink)}
-  .face{width:15px;height:18px;display:block;margin-top:4px}
 </style></head><body><div class="phone">
 
 <div class="sb"><span>21:47</span><span class="sb__r">
@@ -21,7 +17,7 @@
         <path d="M56 27.9 32 41.8 32 65.8 56 51.9Z" fill="var(--ink-2)"/>
         <path d="M32 2 56 15.9 32 29.8 8 15.9Z" fill="var(--accent)"/>
       </svg>
-      <span class="logo__type" style="font-size:23px">kubic<i class="cur"></i></span>
+      <span class="logo__type" style="font-size:var(--t-title)">kubic<i class="cur"></i></span>
     </div>
   </div>
 

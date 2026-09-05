@@ -7,14 +7,7 @@
      删除确认浮层必须说清两件事：盲区数字会跟着变、原图不受影响。
      危险按钮与主按钮永不同屏底 —— 这一屏没有主按钮。
      这一屏内容区 0 块蓝面。 */
-  .group{padding:14px var(--rule) 2px}
-  .group span{font-size:var(--t-micro);line-height:var(--lh-micro);color:var(--ink-2);
-              letter-spacing:.3px;font-variant-numeric:tabular-nums}
   .links{display:flex;gap:14px;flex-wrap:wrap}
-  .scrim{position:absolute;inset:0;background:rgba(23,23,26,.35)}
-  .sheet{position:absolute;left:0;right:0;bottom:0;background:var(--raised);
-         border-top:var(--hair-w) solid var(--hair);
-         padding:24px var(--rule) calc(24px + env(safe-area-inset-bottom,0px))}
 </style></head><body><div class="phone">
 
 <div class="sb"><span>21:47</span><span class="sb__r">
@@ -79,8 +72,8 @@
 
 <!-- 删除确认：不可逆动作走浮层。两件事说在按钮之前 -->
 <div class="scrim"></div>
-<div class="sheet">
-  <p class="display" style="font-size:22px;line-height:30px">删掉昨天 22:10 这一条?</p>
+<div class="sheet-m">
+  <p class="display display--title">删掉昨天 22:10 这一条?</p>
   <p class="sub" style="margin-top:8px">盲区数字会跟着变。你的原图不受影响，仍只在这台设备上。</p>
   <button class="btn-danger" style="margin-top:20px">删除这条记录</button>
   <p style="text-align:center;margin-top:10px"><button type="button" class="link">先不删</button></p>

@@ -8,7 +8,7 @@
   .opt{display:flex;align-items:center;gap:12px;width:100%;min-height:48px;
        padding:0 var(--rule);font-size:var(--t-body);color:var(--ink)}
   .opt+.opt{border-top:var(--hair-w) solid var(--hair-soft)}
-  .opt .rd{flex:0 0 auto;font-size:13px;color:var(--ink-2)}
+  .opt .rd{flex:0 0 auto;font-size:var(--t-idx);color:var(--ink-2)}
   .opt[aria-checked="true"] .rd{color:var(--ink)}
 </style></head><body><div class="phone">
 
@@ -19,7 +19,7 @@
 <div class="flow">
   <!-- ① 标题与说明：原文照 问一下 §2.5，只说为什么问，不承诺清单会更准 -->
   <div style="padding:28px var(--rule) 18px">
-    <p class="display" style="font-size:26px;line-height:34px">你要考的是哪一场？</p>
+    <p class="display display--title">你要考的是哪一场？</p>
     <p class="sub" style="margin-top:8px">填了它，问一下的时候会知道你考的是哪一场。不填也能用。</p>
   </div>
 

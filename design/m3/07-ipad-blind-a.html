@@ -4,31 +4,18 @@
      判据：换一个科目，左栏整栏内容换掉（见 08 那张：申论）。
      左栏不列举别的屏、不放全局入口、不常驻。
      蓝面仍全宽出血到左栏两缘，无外框无圆角，上缘 1.5px 墨线。一屏只有这 1 块。
-     右栏 = 选中考点的详情（S-NODE 住右栏）。 */
-  .ipad{position:relative;width:1366px;height:1024px;background:var(--ground);
-        display:flex;flex-direction:column;overflow:hidden;margin:0 auto}
-  .cols{flex:1 1 auto;display:flex;min-height:0}
-  .col-l{flex:0 0 480px;display:flex;flex-direction:column;min-height:0;overflow:hidden;
-         border-right:var(--hair-w) solid var(--hair)}
-  .col-r{flex:1 1 auto;display:flex;flex-direction:column;min-height:0;overflow:hidden}
-  .calc{padding-top:0}
-  .calc__row{padding:3px 0}
-  .foot p{padding:2px 0}
-  button.calc__row{width:100%;min-height:44px}
-  .t-row{display:flex;align-items:baseline;gap:8px;width:100%;min-height:44px;
-         padding:8px var(--rule);font-variant-numeric:tabular-nums}
-  .t-row .tw{font-family:var(--font-display);font-size:12px;color:var(--ink-2);flex:0 0 14px}
-  .t-row .nm{font-size:var(--t-body);color:var(--ink)}
-  .t-row .cnt{margin-left:auto;font-size:var(--t-sub);color:var(--ink-2)}
+     右栏 = 选中考点的详情（S-NODE 住右栏）。
+     画框/双列/树行走底座 .pad-frame / .cols / .col-l / .col-r / .t-row；
+     竖式贴顶密排走底座 .calc--flush。 */
   .t-l2{padding-left:44px}
   .leaf{display:flex;gap:8px;width:100%;min-height:48px;align-items:flex-start;
         padding:8px var(--rule) 8px 64px}
   .leaf .lm{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:1px}
-  .leaf .mk{flex:0 0 auto;font-size:11px;color:var(--ink);margin-top:2px}
+  .leaf .mk{flex:0 0 auto;font-size:var(--t-micro);color:var(--ink);margin-top:2px}
   .leaf--on{box-shadow:inset 2px 0 0 var(--ink)}
   .fact{display:flex;justify-content:space-between;align-items:baseline;
         padding:14px var(--rule);border-bottom:var(--hair-w) solid var(--hair-soft)}
-</style></head><body><div class="ipad">
+</style></head><body><div class="pad-frame">
 
 <div class="sb"><span>21:47</span><span class="sb__r">
   <span class="sb__s"><i></i><i></i><i></i><i></i></span><span class="sb__b"></span>
@@ -39,7 +26,7 @@
   <div class="col-l">
     <div class="head"><span>‹ 盲区 · 行政法 ⌄</span></div>
 
-    <div class="calc" aria-label="行政法一共 120 个考点，你碰过 43 个，没碰过 77 个" style="padding-top:6px">
+    <div class="calc calc--flush" aria-label="行政法一共 120 个考点，你碰过 43 个，没碰过 77 个" style="padding-top:6px">
       <p class="calc__row">
         <span class="calc__label calc__label--2">一共</span>
         <span class="calc__num">120</span>

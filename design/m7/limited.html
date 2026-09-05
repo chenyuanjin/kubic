@@ -4,9 +4,6 @@
   /* 受限态嵌块：挂在已存在的记录卡片下方，不替代它、不回滚它。
      组件内唯一的按钮控件是免费兜底（住屏底 dock）；付费入口只是一条文本链。 */
   .limit{padding:16px var(--rule) 8px;border-top:var(--hair-w) solid var(--hair-soft)}
-  .limit strong{display:block;font-family:var(--font-display);font-size:22px;line-height:28px;font-weight:400}
-  .limit .sub{display:block;margin-top:6px}
-  .back{margin:-14px 0;padding:14px 10px 14px 0;font-size:var(--t-micro);color:var(--ink-2)}
 </style></head><body><div class="phone">
 
 <div class="sb"><span>21:47</span><span class="sb__r">
@@ -31,9 +28,9 @@
   </article>
 
   <div class="limit">
-    <strong>这个月的 AI 次数用完了(还剩 0 次)</strong>
-    <span class="sub">记录已经存下,原图没有离开这台手机</span>
-    <span class="sub">从骨架树里自己挑一个挂上,挂了就计覆盖度;不挂先留在待补</span>
+    <strong class="display display--title">这个月的 AI 次数用完了(还剩 0 次)</strong>
+    <span class="sub" style="display:block;margin-top:6px">记录已经存下,原图没有离开这台手机</span>
+    <span class="sub" style="display:block;margin-top:6px">从骨架树里自己挑一个挂上,挂了就计覆盖度;不挂先留在待补</span>
     <div style="margin-top:8px"><button class="link">看看档位</button></div>
   </div>
 </div>

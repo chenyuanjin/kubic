@@ -7,12 +7,7 @@
      三个按钮全部次按钮、纵向排（C-BTN:并排 ≤2,三个改纵向）,末位是不需要权限的那条路。
      主按钮仍是屏底「记下」,内容为空故禁用 —— 不因卡片在场而额外禁用。
      内容区 0 块蓝面：权限讲的是原图,不是盲区。
-     自造组件 2/3：模式段控 seg、纵向按钮栈 vstack。 */
-  .seg{display:flex;border-top:var(--hair-w) solid var(--hair);border-bottom:var(--hair-w) solid var(--hair)}
-  .seg button{flex:1;height:48px;display:flex;align-items:center;justify-content:center;
-              font-size:var(--t-btn);color:var(--ink-2)}
-  .seg button + button{border-left:var(--hair-w) solid var(--hair)}
-  .seg button[aria-current="true"]{color:var(--ink);box-shadow:inset 0 calc(-1 * var(--rule-ink)) 0 var(--ink)}
+     段控 seg 已上抬底座;纵向按钮栈 vstack 为本模块自有。 */
   .vstack{border-top:var(--hair-w) solid var(--hair)}
   .vstack button{display:flex;width:100%;min-height:52px;align-items:center;justify-content:center;
                  font-size:var(--t-btn);color:var(--ink);border-bottom:var(--hair-w) solid var(--hair)}
@@ -33,7 +28,7 @@
 
   <div class="band">
     <div class="pad" style="padding-top:24px;padding-bottom:8px">
-      <h2 class="display" style="font-size:24px;line-height:32px">拍一张就行。</h2>
+      <h2 class="display display--title">拍一张就行。</h2>
       <p class="body" style="margin-top:12px">要用相机拍下讲义或者屏幕。</p>
       <p class="body" style="margin-top:8px">你拍的原图只存在这台设备上,不上传、不同步、不备份到任何服务器。</p>
       <p class="sub" style="margin-top:8px;padding-bottom:16px">7 天后转为本机留存,不再用于识别,随时可以手动删。</p>

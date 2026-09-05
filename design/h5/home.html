@@ -9,14 +9,8 @@
      ① 删掉 .sb 状态条与 .hi 指示条 —— 那是设备的，H5 上那块地方是浏览器地址栏
      ② .dock 从固定块变 sticky —— iOS Safari 地址栏收放时 fixed 会跳
      ③ 台账头里没有返回 —— P-NAV = 浏览器返回键（U6.1 §6.1 ※2）
-     版面、字阶、色、间距、行结构与底座逐条相同：H5 是基准，不是第五套视觉。 */
-  .today{padding:20px var(--rule) 22px}
-  .today .display .u{text-decoration:underline;text-decoration-thickness:1px;
-                     text-underline-offset:7px;text-decoration-color:var(--underline)}
-  .miss{padding:16px var(--rule) 18px}
-  .miss .body b{font-family:var(--font-display);font-size:22px;font-weight:400;
-                font-variant-numeric:tabular-nums lining-nums}
-  .miss .link{text-decoration-color:rgba(23,23,26,.55)}
+     版面、字阶、色、间距、行结构与底座逐条相同：H5 是基准，不是第五套视觉。
+     .today / .miss 家族由底座提供，这里不再定义。 */
 </style></head><body><div class="h5 frame">
 
 <div class="flow">
@@ -29,7 +23,7 @@
         <path d="M56 27.9 32 41.8 32 65.8 56 51.9Z" fill="var(--ink-2)"/>
         <path d="M32 2 56 15.9 32 29.8 8 15.9Z" fill="var(--accent)"/>
       </svg>
-      <span class="logo__type" style="font-size:12px;color:var(--ink-2)">kubic<i class="cur"></i></span>
+      <span class="logo__type" style="font-size:var(--t-micro);color:var(--ink-2)">kubic<i class="cur"></i></span>
     </span>
     <span>今天 · 9月4日</span>
   </div>

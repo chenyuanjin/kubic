@@ -3,15 +3,8 @@
   body{zoom:2}
   /* 第 2 步 · 明确告知（只说一次）：主按钮是「先导出一份」，次按钮才是「直接注销」。
      这一层不用危险色 —— 红只出现在第 4 步打字确认的那一个按钮上。
-     界面按「立即删除」写，不显示任何「找回」入口（删除时点待律师稿，L-3）。 */
-  .dim{position:absolute;inset:0;background:color-mix(in srgb, var(--ink) 35%, transparent)}
-  .sheet-m{position:absolute;left:0;right:0;bottom:0;background:var(--raised);
-    border-top:var(--rule-ink) solid var(--ink);
-    padding:20px var(--rule) calc(28px + env(safe-area-inset-bottom,0px))}
-  .sheet-m .row{display:flex;gap:var(--gap-slot);padding:14px 0;align-items:flex-start}
-  .sheet-m .row + .row{border-top:var(--hair-w) solid var(--hair-soft)}
-  .sheet-m .idx2{flex:0 0 var(--slot);font-family:var(--font-display);
-    font-size:var(--t-idx);line-height:var(--lh-body);color:var(--ink-2)}
+     界面按「立即删除」写，不显示任何「找回」入口（删除时点待律师稿，L-3）。
+     遮罩 scrim 与底部浮层容器 sheet-m 已上抬底座。 */
 </style></head><body><div class="phone">
 
 <div class="sb"><span>21:47</span><span class="sb__r">
@@ -25,7 +18,7 @@
     <span>账号</span>
   </div>
   <div class="band" style="padding:20px var(--rule) 18px">
-    <h1 class="display" style="font-size:26px;line-height:34px">已绑定微信</h1>
+    <h1 class="display display--title">已绑定微信</h1>
     <p class="sub" style="margin-top:6px">手机号还没绑</p>
   </div>
   <p class="eyebrow pad" style="margin-top:18px;margin-bottom:2px">设备 · 2 台</p>
@@ -34,7 +27,7 @@
   </div>
 </div>
 
-<div class="dim"></div>
+<div class="scrim"></div>
 
 <div class="sheet-m">
   <div style="display:flex;justify-content:space-between;align-items:baseline">
@@ -42,17 +35,17 @@
     <button class="link" style="min-height:auto;padding:0;font-size:var(--t-sub)">× 关闭</button>
   </div>
 
-  <h2 class="display" style="font-size:22px;line-height:30px;margin-top:10px">注销会删掉这些</h2>
+  <h2 class="display display--title" style="margin-top:10px">注销会删掉这些</h2>
 
   <div style="margin-top:4px">
-    <div class="row">
-      <span class="idx2">01</span>
+    <div class="sheet-m__row">
+      <span class="idx">01</span>
       <span class="line__main">
         <span class="body">云端的全部记录</span>
       </span>
     </div>
-    <div class="row">
-      <span class="idx2">02</span>
+    <div class="sheet-m__row">
+      <span class="idx">02</span>
       <span class="line__main">
         <span class="body">这台设备上的原图与本地缓存</span>
         <span class="sub">删掉就是删掉，找不回来</span>

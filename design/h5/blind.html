@@ -10,17 +10,8 @@
        · 它装的是骨架树，换一个科目整栏换掉；
        · 它一条也不列举别的屏（没有「首页 / 记录 / 设置」这种条目）；
        · 它没有选中态高亮条，只有一条发丝线分栏。
-     把它涂成任何颜色都还是骨架树；把菜单涂成任何颜色也还是菜单。 */
-  .calc{padding-top:0}
-  .calc__row{padding:4px 0}
-  .foot p{padding:3px 0}
-  .line{padding-top:12px;padding-bottom:12px}
-  button.calc__row{width:100%;min-height:44px}
-  .tree{padding:8px 0 24px;overflow:auto}
-  .tree button{display:block;width:100%;min-height:44px;padding:8px var(--rule);
-               font-size:var(--t-sub);line-height:var(--lh-sub);color:var(--ink)}
-  .tree .d1{padding-left:calc(var(--rule) + 16px);color:var(--ink-2)}
-  .tree .d2{padding-left:calc(var(--rule) + 32px);color:var(--ink-2)}
+     把它涂成任何颜色都还是骨架树；把菜单涂成任何颜色也还是菜单。
+     竖式/台账行走底座紧凑档（.calc--flush / .line--tight）；树行文本样式在 h5.css。 */
 </style></head><body><div class="h5">
 
 <div class="head">
@@ -34,7 +25,7 @@
   <!-- 左栏 = 骨架树（内容）。换科目 → 整栏换掉。 -->
   <div class="two__l">
     <p class="eyebrow pad" style="margin:16px 0 4px">行政法 · 骨架自然序</p>
-    <nav class="tree" aria-label="行政法骨架树">
+    <nav class="tree" aria-label="行政法骨架树" style="padding:8px 0 24px">
       <button>第一章 行政法基础</button>
       <button class="d1">行政主体</button>
       <button class="d1">行政行为</button>
@@ -51,7 +42,7 @@
 
   <!-- 右栏 = 与单列档【同一份内容、同一个信息顺序】。宽度变了，优先级没变。 -->
   <div class="two__r">
-    <div class="calc" aria-label="行政法一共 120 个考点，你碰过 43 个，没碰过 77 个">
+    <div class="calc calc--flush" aria-label="行政法一共 120 个考点，你碰过 43 个，没碰过 77 个">
       <p class="calc__row">
         <span class="calc__label calc__label--2">一共</span>
         <span class="calc__num">120</span>
@@ -76,28 +67,28 @@
 
     <div class="control"><span>当前：全部</span><button>按近 5 年出现次数排 ⌄</button></div>
 
-    <button class="line">
+    <button class="line line--tight">
       <span class="idx">01</span>
       <span class="line__main">
         <span class="body">行政处罚<span class="line__meta">近 5 年 18 次</span></span>
         <span class="sub" style="color:var(--ink)">你没碰过</span>
       </span>
     </button>
-    <button class="line">
+    <button class="line line--tight">
       <span class="idx">02</span>
       <span class="line__main">
         <span class="body">听证程序<span class="line__meta">近 5 年 12 次</span></span>
         <span class="sub" style="color:var(--ink)">你没碰过</span>
       </span>
     </button>
-    <button class="line">
+    <button class="line line--tight">
       <span class="idx">03</span>
       <span class="line__main">
         <span class="body">行政许可<span class="line__meta">近 5 年 10 次</span></span>
         <span class="sub">你碰过 3 次，最近一次 6 天前</span>
       </span>
     </button>
-    <button class="line">
+    <button class="line line--tight">
       <span class="idx">04</span>
       <span class="line__main">
         <span class="body">行政复议<span class="line__meta">近 5 年 9 次</span></span>

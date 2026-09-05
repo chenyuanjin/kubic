@@ -4,31 +4,29 @@
      顶面 = 长春花蓝：可以拿起来的那一块笔记；字标光标停在还没打出来的那一格。
      两处说的是同一句话：这一处是空的。 */
   body{background:var(--ground)}
-  .sheet{width:1440px;min-height:900px;margin:0 auto;padding:72px 96px}
-  .kicker{font-size:13px;letter-spacing:.14em;color:var(--ink-2)}
-  h1{font-family:var(--font-display);font-size:44px;line-height:56px;font-weight:400;margin-top:10px}
-  .row{display:flex;gap:64px;margin-top:56px;align-items:stretch}
+  .kicker{font-size:var(--t-idx);letter-spacing:.14em;color:var(--ink-2)}
+  h1{font-family:var(--font-display);font-size:var(--t-hero);line-height:var(--lh-hero);font-weight:400;margin-top:10px}
   .cell{flex:1;border-top:1.5px solid var(--ink);padding-top:20px}
-  .cell h2{font-size:14px;font-weight:500;color:var(--ink-2);margin-bottom:28px}
+  .cell h2{font-size:var(--t-sub);font-weight:500;color:var(--ink-2);margin-bottom:28px}
   .stage{height:280px;display:flex;align-items:center;justify-content:center;
          background:var(--raised);border:.5px solid var(--hair)}
   .stage--accent{background:var(--accent);border:0;border-top:1.5px solid var(--ink)}
-  .note{margin-top:16px;font-size:14px;line-height:22px;color:var(--ink-2)}
+  .note{margin-top:16px;font-size:var(--t-sub);line-height:var(--lh-sub);color:var(--ink-2)}
   .pal{display:flex;margin-top:56px;border:.5px solid var(--hair)}
-  .pal div{flex:1;height:150px;padding:14px 16px;font-size:12px;
+  .pal div{flex:1;height:150px;padding:14px 16px;font-size:var(--t-micro);
            font-variant-numeric:tabular-nums;color:var(--ink-2);
            display:flex;flex-direction:column;justify-content:flex-end;gap:2px}
   .pal b{font-weight:500;color:var(--ink)}
   .meaning{margin-top:56px;border-top:1.5px solid var(--ink);padding-top:20px;
            display:flex;gap:64px}
-  .meaning p{flex:1;font-size:15px;line-height:24px;color:var(--ink)}
+  .meaning p{flex:1;font-size:var(--t-sub);line-height:var(--lh-sub);color:var(--ink)}
   .meaning p b{font-weight:600}
-</style></head><body><div class="sheet">
+</style></head><body><div class="sheet" style="width:1440px;min-height:900px;margin:0 auto;padding:72px 96px">
 
   <p class="kicker">KUBIC · 标志与唯一强调色 · v10</p>
   <h1>一块可以拿起来的笔记，和一格还没打出来的字</h1>
 
-  <div class="row">
+  <div class="row" style="gap:64px;margin-top:56px">
     <div class="cell">
       <h2>记号 · 分离立方（用户 09-03 认过的方向）</h2>
       <div class="stage">

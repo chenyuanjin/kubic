@@ -3,11 +3,8 @@
   body{zoom:2}
   /* RECALCULATING：一个旧数字都不许出现。数字位 = 占位块（不转圈、不删除线、不调透明度）。
      归档计数与未分类行照常（不参与这次重算）；榜的骨架统计照常、行仍可点；
-     排序与筛选禁用并就地给理由。断言注脚重算中隐藏。 */
-  .calc{padding-top:0}
-  .calc__row{padding:4px 0}
-  .foot p{padding:3px 0}
-  .line{padding-top:12px;padding-bottom:12px}
+     排序与筛选禁用并就地给理由。断言注脚重算中隐藏。
+     竖式贴顶密排与台账行紧凑档走底座 .calc--flush / .line--tight。 */
 </style></head><body><div class="phone">
 
 <div class="sb"><span>21:47</span><span class="sb__r">
@@ -23,7 +20,7 @@
   <div class="head"><span>‹ 盲区 · 行政法 ⌄</span></div>
 
   <!-- 区 2 · 摘要：数字位全部换占位块，屏幕上找不到旧值 -->
-  <div class="calc" aria-label="覆盖度正在重新算，三个数暂时不显示">
+  <div class="calc calc--flush" aria-label="覆盖度正在重新算，三个数暂时不显示">
     <p class="calc__row">
       <span class="calc__label calc__label--2">一共</span>
       <span class="calc__num"><span class="ph" style="width:58px"></span></span>
@@ -50,28 +47,28 @@
   <div class="control"><span>排序和筛选先停一下：这几个数正在重新算</span></div>
 
   <!-- 区 3 · 榜：骨架统计照常，「我的事实」占位，整行仍可点 -->
-  <button class="line" aria-label="行政处罚，近 5 年出现 18 次，你的触达正在重新算，点开看考点详情">
+  <button class="line line--tight" aria-label="行政处罚，近 5 年出现 18 次，你的触达正在重新算，点开看考点详情">
     <span class="idx">01</span>
     <span class="line__main">
       <span class="body">行政处罚<span class="line__meta">近 5 年 18 次</span></span>
       <span class="sub"><span class="ph" style="width:88px"></span></span>
     </span>
   </button>
-  <button class="line" aria-label="听证程序，近 5 年出现 12 次，你的触达正在重新算，点开看考点详情">
+  <button class="line line--tight" aria-label="听证程序，近 5 年出现 12 次，你的触达正在重新算，点开看考点详情">
     <span class="idx">02</span>
     <span class="line__main">
       <span class="body">听证程序<span class="line__meta">近 5 年 12 次</span></span>
       <span class="sub"><span class="ph" style="width:88px"></span></span>
     </span>
   </button>
-  <button class="line" aria-label="行政许可，近 5 年出现 10 次，你的触达正在重新算，点开看考点详情">
+  <button class="line line--tight" aria-label="行政许可，近 5 年出现 10 次，你的触达正在重新算，点开看考点详情">
     <span class="idx">03</span>
     <span class="line__main">
       <span class="body">行政许可<span class="line__meta">近 5 年 10 次</span></span>
       <span class="sub"><span class="ph" style="width:64px"></span></span>
     </span>
   </button>
-  <button class="line" aria-label="行政复议，近 5 年出现 9 次，你的触达正在重新算，点开看考点详情">
+  <button class="line line--tight" aria-label="行政复议，近 5 年出现 9 次，你的触达正在重新算，点开看考点详情">
     <span class="idx">04</span>
     <span class="line__main">
       <span class="body">行政复议<span class="line__meta">近 5 年 9 次</span></span>

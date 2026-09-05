@@ -3,27 +3,14 @@
   /* 与 07 同一布局，换了科目（行政法 → 申论）：左栏整栏内容换掉 ——
      数字、树、归档区全是申论的，这就是「左栏是内容不是菜单」的判据。
      同时这张画的是 iPad 档的零记录空态：申论一条记录都没有，盲区是满的。
-     右栏为空：「从左边挑一个考点」，不自动选中第一个。 */
-  .ipad{position:relative;width:1366px;height:1024px;background:var(--ground);
-        display:flex;flex-direction:column;overflow:hidden;margin:0 auto}
-  .cols{flex:1 1 auto;display:flex;min-height:0}
-  .col-l{flex:0 0 480px;display:flex;flex-direction:column;min-height:0;overflow:hidden;
-         border-right:var(--hair-w) solid var(--hair)}
-  .col-r{flex:1 1 auto;display:flex;flex-direction:column;min-height:0;overflow:hidden}
-  .calc{padding-top:0}
-  .calc__row{padding:3px 0}
-  .foot p{padding:2px 0}
-  button.calc__row{width:100%;min-height:44px}
-  .t-row{display:flex;align-items:baseline;gap:8px;width:100%;min-height:44px;
-         padding:8px var(--rule);font-variant-numeric:tabular-nums}
-  .t-row .tw{font-family:var(--font-display);font-size:12px;color:var(--ink-2);flex:0 0 14px}
-  .t-row .nm{font-size:var(--t-body);color:var(--ink)}
-  .t-row .cnt{margin-left:auto;font-size:var(--t-sub);color:var(--ink-2)}
+     右栏为空：「从左边挑一个考点」，不自动选中第一个。
+     画框/双列/树行走底座 .pad-frame / .cols / .col-l / .col-r / .t-row；
+     竖式贴顶密排走底座 .calc--flush。 */
   .leaf{display:flex;gap:8px;width:100%;min-height:48px;align-items:flex-start;
         padding:8px var(--rule) 8px 64px}
   .leaf .lm{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:1px}
-  .leaf .mk{flex:0 0 auto;font-size:11px;color:var(--ink);margin-top:2px}
-</style></head><body><div class="ipad">
+  .leaf .mk{flex:0 0 auto;font-size:var(--t-micro);color:var(--ink);margin-top:2px}
+</style></head><body><div class="pad-frame">
 
 <div class="sb"><span>21:47</span><span class="sb__r">
   <span class="sb__s"><i></i><i></i><i></i><i></i></span><span class="sb__b"></span>
@@ -34,7 +21,7 @@
   <div class="col-l">
     <div class="head"><span>‹ 盲区 · 申论 ⌄</span></div>
 
-    <div class="calc" aria-label="申论一共 96 个考点，你碰过 0 个，没碰过 96 个" style="padding-top:6px">
+    <div class="calc calc--flush" aria-label="申论一共 96 个考点，你碰过 0 个，没碰过 96 个" style="padding-top:6px">
       <p class="calc__row">
         <span class="calc__label calc__label--2">一共</span>
         <span class="calc__num">96</span>
@@ -56,7 +43,7 @@
 
     <!-- 零记录空态：第一句话就说清是哪一种空。盲区是满的，这不是出错 -->
     <div style="padding:14px var(--rule) 6px">
-      <p class="display" style="font-size:20px;line-height:28px">你还没在申论下记过东西</p>
+      <p class="display display--title">你还没在申论下记过东西</p>
       <p class="sub" style="margin-top:4px">所以现在整张表都是没碰过。</p>
     </div>
     <div class="split"><button style="height:48px" aria-label="记一条">记一条</button><button style="height:48px" aria-label="先看看有哪些考点">先看看有哪些考点</button></div>
@@ -92,7 +79,7 @@
     <div class="head"><span>　</span></div>
     <div style="flex:1 1 auto;display:flex;align-items:center;justify-content:center">
       <div style="text-align:center">
-        <p class="display" style="font-size:22px;line-height:30px">从左边挑一个考点</p>
+        <p class="display display--title">从左边挑一个考点</p>
         <p class="sub" style="margin-top:8px">点开哪个，它的详情就在这里</p>
       </div>
     </div>

@@ -31,12 +31,17 @@
  *
  * <h2>三处刻意的边界,写下来是为了下次有人想改时先推翻它</h2>
  *
- * <b>① 只看模块 `<style>` 里的类定义,不看外部 `.css`。</b>
- * 判据原文就是「模块 inline `<style>` 里定义的类名」。唯一的外部差分层
- * `design/h5/h5.css` 是 2026-09-05 审核认过的形态差分(五处,每处指得回 `M6` 一行),
- * 它写的是 `.h5 .dock{...}` 这类<b>带作用域的</b>覆写,不是 `.line{...}` 那种裸重定义,
- * 两者不同类。<b>但这留了个洞</b>:把覆写搬进一个新的模块 `.css` 就能绕过 R-1/R-2。
- * 洞由 R-4 堵 —— 模块目录里出现第三个 `.css` 即失败,新增差分层必须先过人这一关。
+ * <b>① 差分层 `.css` 照模块一样扫,免检挂在<u>选择器形状</u>上,不挂在文件名上。</b>
+ * 上一版按文件名整份放行(`ALLOWED_EXTRA_CSS`),2026-09-05 产品经理实测把它打穿了:
+ * 往 `design/h5/h5.css` 末尾追加 `.line{padding:9px}` `.dock{height:99px}` 两行<b>裸覆写</b>,
+ * 三个数一个没动。同一种覆写写进模块 `<style>` 判红、写进 `h5.css` 免检 ——
+ * 那么判据就不是「它是不是形态差分」,是「它写在哪个文件里」,下一轮还会被同样绕开一次。
+ * 现在:除底座 `design/v10/` 自己那两份 `.css`(它们是底座的<b>定义</b>,不是对底座的覆写)之外,
+ * 每一个 `.css` 都整份读进 R-1/R-2;<b>免检条件是「选择器带 `.h5` 作用域根」</b>
+ * (`.h5 .dock` / `.h5--wide > .line`),裁定原话:「没有作用域根的裸重定义照样红」。
+ * 这把尺子对所有文件同一个刻度 —— 模块 `<style>` 里写 `.h5 .dock{...}` 一样免检,
+ * 因为它一样是 H5 形态差分;`h5.css` 里的非底座类(`.sheet` `.tip` `.webnote` `.two*`)
+ * 一样进 R-2 的跨模块计数。`ALLOWED_EXTRA_CSS` 退回 R-4,只管「能不能新开一个差分层」。
  *
  * <b>② `design/v10/` 自己也当一个模块扫。</b>八份稿的字号是照底座 demo 页抄的,
  * 只扫模块等于让八份稿去追一个底座自己都没遵守的字阶。
@@ -110,6 +115,19 @@ function lineIndex(text) {
   }
 }
 
+/**
+ * 「带 `.h5` 作用域根」—— 免检的唯一判据(2026-09-05 产品裁定第 2 条)。
+ *
+ * 作用域根是选择器<b>最左</b>那一个 compound:`.h5 .dock` `.h5--wide > .line` 算;
+ * `.line{…}` 这种裸重定义不算 —— 裁定原话;`.flow > .line` 也不算,随手挂一个祖先
+ * 不等于有作用域根,否则「模块不许覆写底座」写成 `.body .line{…}` 就绕过去了。
+ * 选择器组要<b>每一支</b>都带根:`.h5 .dock,.line` 里的 `.line` 照样是裸的。
+ * `\b` 让 `.h5--wide` 算根、`.h5x` 不算。
+ */
+const FORM_ROOT = /^\.h5\b/
+const scopedToForm = (sel) =>
+  sel.split(',').every((part) => FORM_ROOT.test(part.trim().replace(PSEUDO_ARGS, '')))
+
 const CLASS_TOKEN = /\.(-?[_a-zA-Z][\w-]*)/g
 /** `:not(.x)` / `:is(.a,.b)` 里的类名是条件不是对象,先抹掉再取类名。 */
 const PSEUDO_ARGS = /:[a-zA-Z-]+\([^)]*\)/g
@@ -154,6 +172,15 @@ function classDefs(css, lineAt, offset0 = 0) {
     buf += ch
   }
   return out
+}
+
+/**
+ * 一个文件里的类定义。html 只认 `<style>` 段(`style="..."` 属性定义不了类);
+ * 差分层 `.css` 整份读 —— 它本身就是一整段样式,没有 `<style>` 可找。
+ */
+function fileClassDefs(text, isCss, lineAt) {
+  if (isCss) return classDefs(text, lineAt)
+  return styleBlocks(text).flatMap((blk) => classDefs(blk.css, lineAt, blk.offset))
 }
 
 /** 模块 html 里的每一段 `<style>`。`style="..."` 属性不参与类定义,它定义不了类。 */
@@ -223,11 +250,27 @@ if (process.argv.includes('--selftest')) {
   assert.deepEqual(fonts('<i style="font-size:11.5px">'), ['11.5px'], '行内 style 一样算')
   assert.deepEqual(fonts('<!-- font-size:22px 是错的 -->'), [], 'HTML 注释里的不算')
 
+  // —— 差分层:免检挂在选择器形状上,不挂在文件名上(2026-09-05 产品裁定第 2 条)——
+  assert.equal(scopedToForm('.h5 .dock'), true, '带 .h5 作用域根 = 形态差分,免检')
+  assert.equal(scopedToForm('.h5--wide > .line'), true, '根的修饰态也是根')
+  assert.equal(scopedToForm('.line'), false, '裸重定义没有作用域根 —— 写进 h5.css 也照样红')
+  assert.equal(scopedToForm('.flow > .line'), false, '随手挂一个祖先不算作用域根')
+  assert.equal(scopedToForm('.h5 .dock,.line'), false, '选择器组:有一支是裸的就不算')
+  assert.equal(scopedToForm('.h5x .dock'), false, '.h5x 不是 .h5')
+
+  const defsIn = (t, isCss) => {
+    const m = maskComments(t)
+    return fileClassDefs(m, isCss, lineIndex(m)).map((d) => d.cls)
+  }
+  assert.deepEqual(defsIn('.sheet{background:red}', true), ['sheet'], '差分层 .css 整份读 —— .sheet 的第四处就在这里')
+  assert.deepEqual(defsIn('.sheet{background:red}', false), [], 'html 只认 <style> 段')
+  assert.deepEqual(defsIn('<style>.sheet{background:red}</style>', false), ['sheet'], 'html 的 <style> 段照读')
+
   const blk = styleBlocks('<head><style>\n.q{color:red}\n</style></head>')
   assert.equal(blk.length, 1)
   assert.deepEqual(classDefs(blk[0].css, lineIndex('<head><style>\n.q{color:red}\n</style></head>'), blk[0].offset)[0].line, 2)
 
-  process.stdout.write('\n底座复用纪律扫描 · 自检通过(12 条:选择器解析 8 · 字号 3 · style 块 1)\n\n')
+  process.stdout.write('\n底座复用纪律扫描 · 自检通过(21 条:选择器解析 8 · 字号 3 · 差分层免检 9 · style 块 1)\n\n')
   process.exit(0)
 }
 
@@ -309,28 +352,31 @@ const fontHits = []
 for (const full of files) {
   const mod = moduleOf(full)
   const relPath = rel(full)
-  const isCopy = mod !== BASE_DIR && full.endsWith('.css') && BASE_COPIES.has(basename(full))
+  const isCss = full.endsWith('.css')
+  const isCopy = mod !== BASE_DIR && isCss && BASE_COPIES.has(basename(full))
   // 副本的内容已经由 R-4 保证等于底座,再扫一遍只会把底座自己的 2 处字面量报九遍。
   if (isCopy) continue
 
   const text = maskComments(readFileSync(full, 'utf8'))
   const lineAt = lineIndex(text)
 
-  if (full.endsWith('.html')) {
-    for (const blk of styleBlocks(text)) {
-      for (const d of classDefs(blk.css, lineAt, blk.offset)) {
-        if (BASE.has(d.cls)) {
-          const key = `${relPath} ${d.cls}`
-          if (!overrideSeen.has(key) && !passed(relPath, 'override', d.cls)) {
-            overrideSeen.add(key)
-            overrides.push({ rel: relPath, line: d.line, cls: d.cls, sel: d.sel })
-          }
-          continue
+  // 底座 design/v10/ 自己的两份 .css 不进 R-1/R-2:它们是底座的定义,不是对底座的覆写。
+  // 除它们之外的每一个 .css 都是差分层,照模块一样读 —— 免检由选择器形状判,不由文件名判。
+  if (!isCss || mod !== BASE_DIR) {
+    for (const d of fileClassDefs(text, isCss, lineAt)) {
+      if (BASE.has(d.cls)) {
+        // M6 认过的形态差分:带 .h5 作用域根的覆写只作用在 H5 这一形态上,不动底座本身。
+        if (scopedToForm(d.sel)) continue
+        const key = `${relPath} ${d.cls}`
+        if (!overrideSeen.has(key) && !passed(relPath, 'override', d.cls)) {
+          overrideSeen.add(key)
+          overrides.push({ rel: relPath, line: d.line, cls: d.cls, sel: d.sel })
         }
-        if (!defs.has(d.cls)) defs.set(d.cls, new Map())
-        const byMod = defs.get(d.cls)
-        if (!byMod.has(mod)) byMod.set(mod, { rel: relPath, line: d.line })
+        continue
       }
+      if (!defs.has(d.cls)) defs.set(d.cls, new Map())
+      const byMod = defs.get(d.cls)
+      if (!byMod.has(mod)) byMod.set(mod, { rel: relPath, line: d.line })
     }
   }
 
@@ -400,7 +446,9 @@ if (overrides.length) {
   out.push('  怎么修(裁定原话:「模块一律不得覆写底座类」):')
   out.push('   1) 底座缺这一档 → 往 design/v10/v10.css 加一档<b>有名字的</b>(例如台账行的紧凑档),')
   out.push('      高度落 --base:8px 的格,八份稿改成引用它;')
-  out.push('   2) 只是这一屏的位置微调 → 那它不该顶着底座类的名字,换一个自己的类名。')
+  out.push('   2) 只是这一屏的位置微调 → 那它不该顶着底座类的名字,换一个自己的类名;')
+  out.push('   3) 确实是 H5 这一形态才有的差分(M6 认过的那五处)→ 写成带 .h5 作用域根的选择器')
+  out.push('      (.h5 .dock{…} / .h5--wide > .line{…}),它只作用在这一形态上,免检 —— 免检认形状,不认文件名。')
 }
 
 if (duplicates.length) {

@@ -25,13 +25,13 @@ export function CoverageHeader({ summary, subject }: { summary: SummaryDto; subj
   }))
 
   return (
-    <div className="flex shrink-0 flex-wrap items-center gap-x-[26px] gap-y-2 border-b border-hair px-4 py-2.5 sm:gap-y-3 sm:py-3 lg:h-20 lg:flex-nowrap lg:py-0">
+    <div className="flex shrink-0 flex-wrap items-center gap-x-[26px] gap-y-2 border-b border-hair px-4 py-2.5 sm:gap-y-3 sm:py-3">
       <div className="shrink-0">
         <Label>覆盖</Label>
         <BigNumber value={summary.percent} suffix="%" />
       </div>
 
-      <div className="min-w-[220px] flex-1 lg:max-w-[520px]">
+      <div className="min-w-[180px] flex-1">
         <div className="flex items-baseline gap-3.5 text-[12px]">
           <span>
             <span className="font-mono tabular-nums">{summary.covered}</span> 个有记录

@@ -30,17 +30,34 @@
 //! 3. 🔴 **壳读不到 `expiresAt`** —— 元信息对它是一块不透明 JSON,
 //!    所以「该不该转归档」在壳里写不出来,判据仍然只有 `rawImageCache.ts` 一份。
 //!
-//! <h2>🔴 没有 SPA fallback</h2>
+//! <h2>🔴 SPA fallback:有,但只对「长得像路由」的路径开(`KUBI-113`)</h2>
 //!
-//! 「找不到就返回 index.html」是静态服务器最常见的默认行为,
-//! 而它恰好是 `web/src/api/client.ts` 点名的那个故障:
-//! 「有 body 但不是 JSON —— 最常见的成因是 /api 压根没被反代出去,
-//! 静态服务器把 index.html 当兜底返回了」。前端能识别这个故障,前提是壳不制造它。
-//! <p>
-//! ⚠️ 它现在还多守一件事:`rawImageFs.ts` 的形态探测打的是 `/__local/rawimages/health`,
-//! 而它**只认 200 + JSON + `store == "fs"` 三条同时成立**。
-//! 一个开了 SPA fallback 的部署会对那个路径回 200 + index.html,
-//! 于是浏览器形态被误判成壳形态 —— 探测那一侧已经挡住了,这一侧不制造它。
+//! **上一版这里写的是「没有 SPA fallback」。** 那条结论在前端不引路由的时候是对的;
+//! `多端选型与端矩阵` §4.6 推翻了那个前提 —— 全端页面 URL 化之后,`/coverage`、
+//! `/records/42` 这些地址**必须**能被直接打开(壳的 `kaodian://` 深链就落在这儿),
+//! 而它们在 `dist/` 里没有对应文件。§3.1 第 2 条把这笔账算得很清楚:
+//! 「代价(三处 SPA fallback)照付」,壳是那三处里的一处。
+//!
+//! **但那条旧结论要挡的故障一个字都没变**,所以 fallback 的形状被收窄到只剩它:
+//!
+//! | 请求 | 结果 | 为什么 |
+//! |---|---|---|
+//! | `/api/*` | 反代,壳自己不管 | 压根到不了这个函数 —— `handle` 先分流 |
+//! | `/__local/*` | 本机原图存储 | 同上 |
+//! | `/assets/index-abc.js`(不存在) | **404** | 段里带 `.`,是个文件名 |
+//! | `/coverage`、`/records/42` | **200 + index.html** | 段里没有 `.`,是个路由 |
+//!
+//! 判据就是**最后一段里有没有 `.`**。它挡住的两个故障与旧结论要挡的完全是同两个:
+//!
+//! - `web/src/api/client.ts` 点名的那个:「有 body 但不是 JSON —— 最常见的成因是
+//!   /api 压根没被反代出去,静态服务器把 index.html 当兜底返回了」。
+//!   `/api/*` 从来不进这个函数,所以这条与 fallback 无关,今天仍然成立。
+//! - `rawImageFs.ts` 的形态探测打的是 `/__local/rawimages/health`,它**只认
+//!   200 + JSON + `store == "fs"` 三条同时成立**。那条路径同样不进这个函数。
+//!
+//! 🔴 **一个丢失的 js/css 仍然必须是 404。**那才是这条收窄真正买到的东西:
+//! 换版之后 index.html 指着一个不存在的哈希名时,浏览器要拿到 404,
+//! 而不是拿到一份 index.html 再报一句 `Unexpected token '<'`。
 //!
 //! 零 `#[cfg]` —— 这是判据(docs/technical/壳技术方案-Tauri2包现有Web工程.md §4.1),这个文件里出现一个 `#[cfg(target_os)]`,隔离就已经破了。
 
@@ -180,12 +197,31 @@ impl Server {
         // 🔴 系统信任库,仅此一处(§3.4 规则 8)。
         // 这里【没有】接受自定义 CA 的入口,也【没有】跳过校验的开关 ——
         // 不是提供了再劝人别用,是根本不提供。
-        let tls = hyper_rustls::HttpsConnectorBuilder::new()
-            .with_native_roots()
-            .map_err(|e| format!("读不到系统信任库:{e}"))?
-            .https_or_http()
-            .enable_http1()
-            .wrap_connector(http);
+        //
+        // 🔴 2026-09-05(`KUBI-113`):加了一条【只有上游真是 https 才要求它】。
+        //
+        // 起因是 Android 上壳起不来,logcat 里那句是
+        // `读不到系统信任库:no native root CA certificates found`——
+        // Android 与 iOS 的根证书不在文件系统上(它们在系统 keystore / 共享缓存里),
+        // 而 `rustls-native-certs` 找的是 `/etc/ssl/certs` 那一类路径。
+        // 于是【上游是明文回环】的移动端脚手架,栽在了一条它根本用不到的 TLS 依赖上。
+        //
+        // 收窄之后语义更准而不是更松:
+        //   · 上游是 https  → 一个字没变,读不到信任库就拒绝启动,响亮地失败;
+        //   · 上游是 http / 没有上游 → 这条连接上没有证书要校验,空信任库照样不会
+        //     放过任何一次 https 握手(空的根集合谁都不信),所以【没有】任何一条
+        //     以前会被校验的连接现在不被校验了。
+        //
+        // 换句话说:这不是一个「跳过校验的开关」。它仍然没有那种开关。
+        let https_upstream = upstream.as_ref().is_some_and(|u| u.scheme == "https");
+        let roots = match hyper_rustls::HttpsConnectorBuilder::new().with_native_roots() {
+            Ok(b) => b,
+            Err(e) if https_upstream => return Err(format!("读不到系统信任库:{e}")),
+            Err(_) => {
+                hyper_rustls::HttpsConnectorBuilder::new().with_tls_config(no_roots_config()?)
+            }
+        };
+        let tls = roots.https_or_http().enable_http1().wrap_connector(http);
 
         Ok(Self {
             upstream,
@@ -599,23 +635,37 @@ fn serve_static(req: &Request<Incoming>, path: &str) -> Response<Body> {
         return plain(StatusCode::NOT_FOUND, strings::NOT_FOUND);
     }
 
-    let Some(file) = DIST.get_file(rel) else {
-        // 🔴 这里【不】返回 index.html。理由见本文件顶部。
+    let Some(file) = (match DIST.get_file(rel) {
+        Some(f) => Some(f),
+        // 🔴 收窄过的 SPA fallback。判据只有一条:最后一段里有没有 `.`。
+        // 形状与理由见本文件顶部那张表 —— 丢失的 js/css 仍然必须是 404。
+        None if looks_like_route(rel) => DIST.get_file("index.html"),
+        None => None,
+    }) else {
         return plain(StatusCode::NOT_FOUND, strings::NOT_FOUND);
+    };
+
+    // 🔴 内容类型与缓存策略按【真的发出去的那个文件】算,不按请求路径算。
+    // fallback 时 rel 是 `/coverage`,而发出去的是 index.html ——
+    // 按 rel 算会给一份 HTML 打上 `application/octet-stream`,浏览器直接下载它。
+    let served = if file.path().to_string_lossy() == "index.html" {
+        "index.html"
+    } else {
+        rel
     };
 
     let body = Bytes::from_static(file.contents());
     let len = body.len();
     let mut builder = Response::builder()
         .status(StatusCode::OK)
-        .header(hyper::header::CONTENT_TYPE, content_type(rel))
+        .header(hyper::header::CONTENT_TYPE, content_type(served))
         .header(hyper::header::CONTENT_LENGTH, len);
 
     // dist/assets/* 的文件名里带内容哈希,内容变了文件名就变了,可以永久缓存;
     // index.html 引着那些文件名,它必须每次都重新读,否则换版之后页面还指着旧的哈希名。
     builder = builder.header(
         hyper::header::CACHE_CONTROL,
-        if rel.starts_with("assets/") {
+        if served.starts_with("assets/") {
             "public, max-age=31536000, immutable"
         } else {
             "no-store"
@@ -628,6 +678,38 @@ fn serve_static(req: &Request<Incoming>, path: &str) -> Response<Body> {
         full(body)
     };
     builder.body(body).expect("静态响应是常量形状,构造不会失败")
+}
+
+/// 一个空信任库的 TLS 配置 —— 只在「上游不是 https」那条路上用得到。
+///
+/// 🔴 它不是一个宽松的配置,是一个**谁都不信**的配置:根集合是空的,
+/// 任何一次 https 握手都过不去。用它只是为了让连接器的类型凑齐,
+/// 而这条壳上唯一会走 TLS 的路(https 上游)在上面那个分支里已经被拦下了。
+///
+/// 显式传 provider 而不是靠进程级默认值:`Server::new` 在 `cargo test` 里也会被调用,
+/// 而测试进程里没人装过默认 provider —— 靠默认值会在测试里 panic。
+fn no_roots_config() -> Result<rustls::ClientConfig, String> {
+    rustls::ClientConfig::builder_with_provider(std::sync::Arc::new(
+        rustls::crypto::ring::default_provider(),
+    ))
+    .with_safe_default_protocol_versions()
+    .map_err(|e| format!("TLS 配置构造失败:{e}"))
+    .map(|b| {
+        b.with_root_certificates(rustls::RootCertStore::empty())
+            .with_no_client_auth()
+    })
+}
+
+/// 这个路径长得像一条路由,还是像一个文件名。
+///
+/// 判据只有一条:**最后一段里有没有 `.`**。
+/// `coverage` / `records/42` 没有 → 路由;`assets/index-abc.js` 有 → 文件名。
+///
+/// 🔴 它不去读 `web/src/routes/routes.ts` 那张表。读了会更准,但那意味着壳里出现
+/// 那张表的**第二份副本**,而「一处定义,各端现读,不抄副本」正是那份契约的第一句话。
+/// 副本会过期,而过期的那天,壳会对一条真实存在的路由回 404 —— 比宽一点糟得多。
+fn looks_like_route(rel: &str) -> bool {
+    !rel.rsplit('/').next().unwrap_or("").contains('.')
 }
 
 fn plain(status: StatusCode, message: &str) -> Response<Body> {
@@ -709,9 +791,26 @@ mod tests {
     }
 
     #[test]
-    fn no_spa_fallback_for_unknown_paths() {
-        // 找不到就是找不到 —— 不回 index.html。
-        assert!(DIST.get_file("this/does/not/exist").is_none());
+    fn spa_fallback_only_for_route_shaped_paths() {
+        // 🔴 这条断言两边都要红过一次,否则它只测了自己愿意测的那一半。
+        //
+        // 路由那一侧:引路由之后 `/coverage` 必须能被直接打开(深链、刷新)。
+        assert!(looks_like_route("coverage"));
+        assert!(looks_like_route("records/42"));
+        assert!(looks_like_route("settings/privacy"));
+        assert!(looks_like_route("")); // "/" 已经在上面被换成 index.html,这里只是兜底
+
+        // 文件那一侧:丢失的 js/css 仍然必须是 404。
+        // 少了这一半,换版之后 index.html 指着一个不存在的哈希名时,
+        // 浏览器会拿到一份 HTML 再报 `Unexpected token '<'` —— 正是要挡的那个故障。
+        assert!(!looks_like_route("assets/index-abc.js"));
+        assert!(!looks_like_route("assets/index-abc.css"));
+        assert!(!looks_like_route("favicon.svg"));
+        assert!(!looks_like_route("this/does/not/exist.png"));
+
+        // 而 dist 里确实没有这些东西 —— fallback 是补上去的,不是本来就有。
+        assert!(DIST.get_file("coverage").is_none());
+        assert!(DIST.get_file("assets/index-abc.js").is_none());
     }
 
     /* ====================================================================== */

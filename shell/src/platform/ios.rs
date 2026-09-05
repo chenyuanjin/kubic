@@ -38,6 +38,12 @@ impl Platform for Ios {
         false
     }
 
+    fn install_menu(&self, _app: &tauri::AppHandle) -> tauri::Result<()> {
+        // iOS 上没有菜单栏。这不是「还没做」——「文件 / 编辑 / 窗口」那一栏
+        // 在这个系统上没有可以挂的地方。做不出来的东西,界面上不留承诺。
+        Ok(())
+    }
+
     fn describe_port_holder(&self, _port: u16) -> Option<String> {
         // iOS 上没有 lsof,也没有「另一个进程占着这个端口」这种局面 ——
         // 每个 app 在自己的沙箱里。查不出来就说查不出来,不编一个。

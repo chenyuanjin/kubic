@@ -18,6 +18,16 @@ description = "考点盲区桌面壳 —— 内嵌 web/dist,回环静态直出 +
 # 这三条由 build.sh 步骤 ① 的依赖黑名单在【构建期】拦,不靠 code review。
 # 黑名单同时扫 Cargo.toml 与 Cargo.lock —— 只扫前者的话,一个传递依赖就能绕过去。
 
+# 🔴 iOS / Android 的入口是宿主反过来调进一个【动态库导出的符号】,而 [[bin]] 编不出动态库。
+# 这就是 `文档规范与目录` §2.6 E4 记的「没有 [lib] target,所以 iOS / Android 不 build」。
+# 三种 crate-type 各有其用,一个都不多:
+#   staticlib —— iOS 把 Rust 静态链进 Xcode 工程
+#   cdylib    —— Android 要一个 .so 放进 apk 的 jniLibs
+#   rlib      —— main.rs 与 `cargo test` 要能 use 它
+[lib]
+name = "kaodian_shell_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
 [build-dependencies]
 tauri-build = { version = "2", features = ["config-json5"] }
 

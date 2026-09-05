@@ -72,6 +72,17 @@ pub trait Platform: Send + Sync {
     /// 只在【拒绝启动】那条路径上被调用一次,不在任何循环里。
     fn describe_port_holder(&self, port: u16) -> Option<String>;
 
+    /// 装菜单栏。
+    ///
+    /// 🔴 它在这个 trait 里,不在 `lib.rs` 里,理由与其余五个方法不同:
+    /// **`tauri::menu` 这个模块在 iOS / Android 上根本不存在**。
+    /// 把菜单留在装配代码里,就必须在装配代码里开一个 `cfg` —— 而 §4.3 说的正是
+    /// 「平台差异只允许出现在 `platform/` 与 Tailwind 断点两处」。
+    /// <p>
+    /// 移动端的实现是空的,而**空实现不是降级**:那两个系统上没有菜单栏这个东西,
+    /// 不是「有但我们没做」。
+    fn install_menu(&self, app: &tauri::AppHandle) -> tauri::Result<()>;
+
     /// 把一条致命错误说到用户眼前,然后调用方退出。
     ///
     /// 🔴 它不是通知,也不是产品的任何一部分:它只在壳【没能启动】时出现一次。

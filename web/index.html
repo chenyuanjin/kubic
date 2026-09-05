@@ -3,7 +3,12 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- 🔴 `viewport-fit=cover` 不是可选项:没有它,CSS 里的 `env(safe-area-inset-*)`
+         在三端上全部返回 0,于是 `index.css` 那两行安全区内边距等于没写。
+         实测(Android 模拟器,2026-09-05):底栏那条「已连接 /api」被手势条压掉半行,
+         而那一行写的正是「你现在看的数是真的还是离线示例」。
+         🔴 不加 `user-scalable=no`:`U6.4` 要求放大到 200% 仍可用。 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="color-scheme" content="dark" />
     <title>考点盲区 — 山东省考 · 资料分析</title>
   </head>

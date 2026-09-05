@@ -70,6 +70,122 @@
   --shadow-*: initial;
   --drop-shadow-*: initial;
   --text-shadow-*: initial;
+
+  /* ——————————————————————————————————————————————————————————————
+     断点 —— `design/v10/m6.html` 的 U6.1 那一行,三档。
+     Tailwind 默认的 md=768 / lg=1024 里没有 720,而 720 是 iPad 竖屏的分界,
+     所以补一档有名字的 `pad`。1024 与默认 lg 同值,仍然单起一个 `wide` ——
+     读代码的人要能一眼看出这个断点是 U6.1 定的,不是随手挑的。
+     ————————————————————————————————————————————————————————————— */
+  --breakpoint-pad: 720px;
+  --breakpoint-wide: 1024px;
+}
+
+/* ============================================================================
+   U6.1 的几何 —— 三个数只在这里出现一次
+   ----------------------------------------------------------------------------
+   `design/v10/m6.html` ≥1024 那一行的原文:
+     左栏 480 / 右栏 720 / 内容区 1200,左边线 32px(--rule,是列内内边距,含在
+     480 的栏盒宽里)。1024–1199 退法:左栏收窄 = 视口宽 − 720px,下限 304px;
+     右栏 720 不缩。640 只管 <1024 的单列档。
+
+   🔴 为什么这一段是 CSS 而不是一个 TS 里的 `padGeometry(vw)`:
+   排布是视口的属性,`clamp()` + 媒体查询已经把它整个表达完了。再写一份 TS
+   就有了第二个真相 —— 而两份几何一旦不一致,谁也说不出哪一份是对的。
+   这几个数在本仓库里的第二处副本是 `design/h5/h5.css`,那是设计稿侧的;
+   产品侧只有这里一处。
+   ========================================================================== */
+@layer components {
+  /* 窗口即屏。100dvh 不是 100vh:100vh 在 iOS Safari 上把地址栏算进去,
+     屏底动作区会被压到折叠线以下(`design/h5/h5.css` 第 21 行同一条)。 */
+  .kb-screen {
+    --rule: 24px;
+    display: flex;
+    flex-direction: column;
+    height: 100dvh;
+    background: var(--color-bg);
+    overflow: hidden;
+    /* 🔴 安全区在【最外层】收一次,不在每个组件里各收各的。
+       实测(Android 模拟器 / iPhone 模拟器,2026-09-05):只给屏底动作区加
+       `env(safe-area-inset-bottom)` 是不够的 —— 台账头会钻进系统状态栏,
+       而底栏那一条「已连接 /api」会被手势条压掉半行,
+       那一行写的正是「你现在看的数是真的还是离线示例」。
+       收在这里,里面所有屏一次都不用管这件事,也就不会有人漏掉一处。 */
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  /* 屏的主体。滚动发生在这里,不发生在 body 上 ——
+     body 那一层是 overflow:hidden 的(见 @layer base)。 */
+  .kb-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  /* 720–1023(iPad 竖屏 / 窄桌面):只放宽文字与行高,不引入侧栏。 */
+  @media (min-width: 720px) {
+    .kb-screen {
+      --rule: 32px;
+    }
+    /* 单列档只放宽文字:内容最大宽 640px 居中。
+       ⚠️ flex 列里 margin:auto 会关掉 stretch,所以 width:100% 那一行不能省 ——
+       少了它,栅格会缩成内容宽(`design/h5/h5.css` 第 49 行记的就是这个坑)。 */
+    .kb-cap {
+      width: 100%;
+      max-width: 640px;
+      margin-inline: auto;
+    }
+  }
+
+  /* ≥1024(iPad 横屏 / 桌面壳 / 宽 Web):双列 + 内容区封顶 1200。 */
+  @media (min-width: 1024px) {
+    .kb-cap {
+      max-width: 1200px;
+    }
+    /* 左栏 = clamp(304, 视口宽 − 720, 480)。右栏不缩,恒为 720 ——
+       左栏收窄多少、内容区跟着收窄多少,两头相抵。 */
+    .kb-col-l {
+      flex: 0 0 clamp(304px, calc(100vw - 720px), 480px);
+      border-right: 1px solid var(--color-hair);
+    }
+    .kb-col-r {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+  }
+
+  /* <1024:双列落回单列,详情列不并排 —— 它是独立的 route id。 */
+  @media (max-width: 1023px) {
+    .kb-cols {
+      flex-direction: column;
+    }
+    .kb-col-l {
+      flex: 0 0 auto;
+    }
+  }
+
+  /* 屏底动作区。
+     🔴 sticky 不是 fixed:iOS Safari 地址栏收起时 fixed 元素会跳一下,
+     而屏底动作区是全产品动作的固定住址 —— 住址会跳,就不是住址了
+     (`design/h5/H5交互说明.md` S-HOME 那一格)。 */
+  .kb-dock {
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+    background: var(--color-bg2);
+    border-top: 1px solid var(--color-hair);
+    /* 🔴 这里【不】再加一次 `env(safe-area-inset-bottom)` —— `.kb-screen` 已经收过了。
+       两处各加一次会在屏底多出一整条空白,而那条空白看起来像是没画完。 */
+  }
+
+  /* 占位块(.ph):重算态与首屏未到位时用它,压平的灰块,不转圈。
+     🔴 重算态里一个旧数字都不出现,也不加删除线、不调透明度 —— 见 M3 那份稿。 */
+  .kb-ph {
+    background: var(--color-track);
+    border-radius: 2px;
+  }
 }
 
 @layer base {

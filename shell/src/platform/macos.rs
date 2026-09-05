@@ -3,6 +3,8 @@
 use std::path::PathBuf;
 use std::process::Command;
 
+use tauri::menu::{AboutMetadata, Menu, PredefinedMenuItem, Submenu};
+
 use super::Platform;
 
 /// 数据根目录。
@@ -52,6 +54,70 @@ impl Platform for MacOs {
         // 这是这次试水最实在的技术收益:进程在后台也能按时处理到期原图。
         // 🔴 返回 true 只表示【系统允许】,不表示壳已经在做 —— 定时器本身是 KUBI-68。
         true
+    }
+
+    /// 菜单栏三项:考点盲区 · 编辑 · 窗口(KUBI-64 判定)。
+    ///
+    /// <h2>为什么「编辑」必须留</h2>
+    ///
+    /// ⌘C / ⌘V 在 WebView 里靠的是菜单项上挂着的系统快捷键。把这一栏删干净,
+    /// 复制粘贴会连同它一起消失 —— 那是**浏览器里有、壳里没有**的差异,
+    /// 而「壳不引入第二套界面」这条约束管的正是这种差异。
+    ///
+    /// <h2>为什么其余的删掉</h2>
+    ///
+    /// Tauri 的默认菜单里有「文件 / 视图 / 帮助」,每一项都指向壳里不存在的东西:
+    /// 没有文件要新建,没有视图要切,没有帮助文档。留着它们等于在界面上开三个空口袋。
+    ///
+    /// <h2>🔴 2026-09-05:它从 `main.rs` 搬到了这里</h2>
+    ///
+    /// 不是整理代码。`tauri::menu` 这个模块在 iOS / Android 上**不存在**,
+    /// 留在装配代码里就必须在装配代码里开一个 `cfg` —— 而平台差异只允许出现在这个目录下
+    /// (`壳技术方案:Tauri 2 包现有 Web 工程` §4.3)。菜单栏是平台差异,不是装配的一部分。
+    fn install_menu(&self, app: &tauri::AppHandle) -> tauri::Result<()> {
+        let app_menu = Submenu::with_items(
+            app,
+            crate::strings::MENU_APP,
+            true,
+            &[
+                &PredefinedMenuItem::about(app, None, Some(AboutMetadata::default()))?,
+                &PredefinedMenuItem::separator(app)?,
+                // 用系统预置的「退出」而不是自己挂一个 id:预置项自带 ⌘Q 与系统本地化,
+                // 自己实现要多一个事件处理器,而那是一处能写出 bug 的地方,换来的是同一个行为。
+                &PredefinedMenuItem::quit(app, Some(crate::strings::MENU_QUIT))?,
+            ],
+        )?;
+
+        let edit_menu = Submenu::with_items(
+            app,
+            crate::strings::MENU_EDIT,
+            true,
+            &[
+                &PredefinedMenuItem::undo(app, None)?,
+                &PredefinedMenuItem::redo(app, None)?,
+                &PredefinedMenuItem::separator(app)?,
+                &PredefinedMenuItem::cut(app, None)?,
+                &PredefinedMenuItem::copy(app, None)?,
+                &PredefinedMenuItem::paste(app, None)?,
+                &PredefinedMenuItem::select_all(app, None)?,
+            ],
+        )?;
+
+        let window_menu = Submenu::with_items(
+            app,
+            crate::strings::MENU_WINDOW,
+            true,
+            &[
+                &PredefinedMenuItem::minimize(app, None)?,
+                &PredefinedMenuItem::close_window(app, None)?,
+            ],
+        )?;
+
+        app.set_menu(Menu::with_items(
+            app,
+            &[&app_menu, &edit_menu, &window_menu],
+        )?)?;
+        Ok(())
     }
 
     fn describe_port_holder(&self, port: u16) -> Option<String> {

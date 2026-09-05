@@ -43,7 +43,12 @@ export function BlindSpotSide({
   }, [records])
 
   return (
-    <aside className="flex shrink-0 flex-col border-t border-hair xl:w-[300px] xl:border-t-0 xl:border-l">
+    /* 🔴 2026-09-05(`KUBI-113`):`xl:w-[300px] xl:border-l` 去掉了。
+       那两个类是上一版「主列 + 右侧栏」那套布局的一部分,而排布现在归屏管
+       (`screens/CoverageScreen.tsx` 的 `Cols`),断点也从 xl(1280)换成了
+       U6.1 定的 1024。留着它们的后果实测过:在 480px 的左栏里,这块会和考点表
+       挤成两个子列,两边都只剩一半宽 —— 那不是「密度」,那是没画完。 */
+    <aside className="flex shrink-0 flex-col border-t border-hair">
       {/* xl 起只有榜单和来源列表滚动,底下那两句能力边界钉住不许被滚出屏幕;
           窄屏整段跟着主屏一起滚 —— 那时候它本来就在一屏之外,钉住反而会吃掉半个屏。 */}
       <div className="xl:min-h-0 xl:flex-1 xl:overflow-y-auto">

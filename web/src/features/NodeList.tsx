@@ -57,9 +57,12 @@ export function NodeList({
   }, [groups])
 
   return (
-    // xl 起自己滚(左右两栏各滚各的);窄屏交给外层那一整条纵向滚动,
-    // 否则会出现「页面里套一个只有 200px 高的小滚动区」这种手机上最难用的东西。
-    <div ref={scroller} className="min-w-0 shrink-0 xl:min-h-0 xl:flex-1 xl:shrink xl:overflow-y-auto">
+    /* 🔴 2026-09-05(`KUBI-113`):滚动与分栏都归屏管(`screens/CoverageScreen.tsx` 的
+       `Cols` / `ColL`),这里只是左栏里的一块内容,所以 `xl:min-h-0 xl:flex-1
+       xl:shrink xl:overflow-y-auto` 四个类一起去掉 —— 随 `BlindSpotSide` 同一条理由,
+       见那个文件里同一天的那段注释。留着它们会在 480px 的左栏里再套一个小滚动区,
+       而「页面里套一个只有 200px 高的小滚动区」正是手机上最难用的那种东西。 */
+    <div ref={scroller} className="min-w-0 shrink-0">
       {groups.map((group) => (
         <div key={group.code}>
           <GroupHeader

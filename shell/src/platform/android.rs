@@ -32,6 +32,12 @@ impl Platform for Android {
         false
     }
 
+    fn install_menu(&self, _app: &tauri::AppHandle) -> tauri::Result<()> {
+        // Android 上没有菜单栏。这不是「还没做」——「文件 / 编辑 / 窗口」那一栏
+        // 在这个系统上没有可以挂的地方。做不出来的东西,界面上不留承诺。
+        Ok(())
+    }
+
     fn describe_port_holder(&self, _port: u16) -> Option<String> {
         None
     }

@@ -10,8 +10,9 @@
    2 状态条/指示条 —— 删。那两样是设备的，不是产品的（U6.1 §6.1 外框图里没有它们）
    3 返回          —— 屏内不画返回箭头：P-NAV = 浏览器返回键（U6.1 §6.1 ※2）。
                      台账头里剩下的 ⌄ 是树选择器，那是内容的层级，不是导航栈
-   4 双列档        —— 视口 ≥1024 进双列（U6.3）。左栏是内容（骨架树 / 榜），
-                     随科目与筛选整个换掉，它不列举任何别的屏 —— 不是左侧菜单
+   4 双列档        —— 视口 ≥1024 进双列（U6.3），几何与类名都走底座 .cols/.col-l/
+                     .col-r。左栏是内容（骨架树 / 榜），随科目与筛选整个换掉，
+                     它不列举任何别的屏 —— 不是左侧菜单
    5 Web 专版说明  —— S-RAW×Web 是全矩阵唯一的「降级」格（U6.2 §2.3）：
                      常驻说明 + 一条可关闭提示，且必须点名「浏览器可能清理」
    ──────────────────────────────────────────────────────────── */
@@ -33,24 +34,30 @@
    写成一条注释比写一条 CSS 更准确：H5 上根本没有那个元素。 */
 
 /* ── 4 · 双列档（视口 ≥1024）──────────────────────
-   左栏 300（下限 260）· 右栏最小 480 · 内容区 1120 · 页边距 40（KUBI-80 M6）。
+   几何走底座那一套，H5 不再有第二套：左栏 480（1024–1199 收窄至视口宽 − 720，
+   下限 304）· 右栏是节点内容 · 内容区 1200 · 左边线 32（M6 ≥1024 那一行）。
+   .cols / .col-l / .col-r 由底座提供（m3/07·08 那两张 iPad 横屏 S-BLIND 就是它），
+   这里只写它在【真实视口】里才多出来的一件事 —— 1024–1199 的左栏收窄。内容区
+   封顶 1200 走已有的 .h5--wide（双列屏挂上它，台账头与双列就落在同一条左边线上；
+   只封顶 .cols 会让台账头比内容宽出去一截）。底座那两条活在 1366 定宽画框里，
+   画框不会变窄，所以底座没有、也不需要它们。
    左栏装的是骨架树/榜这类【内容】，换一个科目整栏换掉。 */
 @media (min-width:1024px){
-  .h5{--rule:40px}
-  /* 单列屏在宽屏下不把一行文字拉到 1280 宽：内容列封顶 1120（M6 的内容区宽），
+  .h5{--rule:32px}
+  /* 单列屏在宽屏下不把一行文字拉到 1280 宽：内容列封顶 1200（M6 的内容区宽），
      居中。⚠️ flex 列里 margin:0 auto 会关掉 stretch，所以必须显式 width:100% ——
      少这一行，栅格会缩成内容宽（首版就是这么错的，缩略图挤成 100px）。 */
-  .h5--wide > *{width:100%;max-width:1120px;margin-left:auto;margin-right:auto}
-  .two{display:grid;grid-template-columns:minmax(260px,300px) minmax(480px,1fr);
-       max-width:1120px;margin:0 auto;width:100%;flex:1 1 auto;min-height:0}
-  .two__l{border-right:var(--hair-w) solid var(--hair);min-width:0;
-          display:flex;flex-direction:column}
-  .two__r{min-width:0;display:flex;flex-direction:column}
-  /* 双列档下屏底动作区归属右栏 —— 结构上左栏就没有 dock 节点,不需要规则 */
+  .h5--wide > *{width:100%;max-width:1200px;margin-left:auto;margin-right:auto}
+  /* 1024–1199 退法：左栏 = 视口宽 − 720，下限 304、上限 480（480/304 都落 8px 格）。
+     720 = 左边线 32 + 栏间 32 + 右缘 16 + 右栏内容 640。 */
+  .h5 .col-l{flex-basis:clamp(304px,calc(100vw - 720px),480px)}
 }
 @media (max-width:1023px){
-  .two{display:flex;flex-direction:column;flex:1 1 auto;min-height:0}
-  .two__r--detail{display:none}   /* 单列档：详情是独立 route id，不并排 */
+  /* 窄档退法：双列落回单列。底座的 .cols 只活在定宽画框里、没有窄档，
+     所以这一档必须写在差分层 —— 它是视口差分，不是「给底座类补个前缀」。 */
+  .h5 .cols{flex-direction:column}
+  .h5 .col-l{flex:0 0 auto;border-right:0}
+  .h5 .col-r--detail{display:none}   /* 单列档：详情是独立 route id，不并排 */
 }
 
 /* 树行文本样式:H5 形态差分(原散在 blind.html)。底座只上抬了 .tree 容器。 */

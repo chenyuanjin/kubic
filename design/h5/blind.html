@@ -5,14 +5,16 @@
 <link rel="stylesheet" href="v10.css">
 <link rel="stylesheet" href="h5.css">
 <style>
-  /* 双列档是 H5 相对底座的唯一【结构性】差分：底座那两张是 390 宽的单列。
+  /* 双列走底座 .cols / .col-l / .col-r —— 与 m3/07·08 那两张 iPad 横屏 S-BLIND
+     同一套几何（左栏 480 / 内容区 1200）。H5 这边多出来的只有视口相关的两条，
+     住在 h5.css：内容区封顶居中、1024–1199 左栏收窄、以及窄档落回单列。
      这里要证明的只有一件事 —— 左栏是【内容】，不是左侧菜单：
        · 它装的是骨架树，换一个科目整栏换掉；
        · 它一条也不列举别的屏（没有「首页 / 记录 / 设置」这种条目）；
        · 它没有选中态高亮条，只有一条发丝线分栏。
      把它涂成任何颜色都还是骨架树；把菜单涂成任何颜色也还是菜单。
      竖式/台账行走底座紧凑档（.calc--flush / .line--tight）；树行文本样式在 h5.css。 */
-</style></head><body><div class="h5">
+</style></head><body><div class="h5 h5--wide">
 
 <div class="head">
   <!-- 全产品唯一一处面包屑住在树选择器内部：那是内容的层级，不是导航栈。
@@ -21,9 +23,9 @@
   <span>按章</span>
 </div>
 
-<div class="two">
+<div class="cols">
   <!-- 左栏 = 骨架树（内容）。换科目 → 整栏换掉。 -->
-  <div class="two__l">
+  <div class="col-l">
     <p class="eyebrow pad" style="margin:16px 0 4px">行政法 · 骨架自然序</p>
     <nav class="tree" aria-label="行政法骨架树" style="padding:8px 0 24px">
       <button>第一章 行政法基础</button>
@@ -41,7 +43,7 @@
   </div>
 
   <!-- 右栏 = 与单列档【同一份内容、同一个信息顺序】。宽度变了，优先级没变。 -->
-  <div class="two__r">
+  <div class="col-r">
     <div class="calc calc--flush" aria-label="行政法一共 120 个考点，你碰过 43 个，没碰过 77 个">
       <p class="calc__row">
         <span class="calc__label calc__label--2">一共</span>

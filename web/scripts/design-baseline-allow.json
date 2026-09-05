@@ -1,0 +1,14 @@
+{
+  "_": [
+    "底座复用纪律扫描（web/scripts/design-baseline-scan.mjs）的豁免表。",
+    "四个字段一个不能省：file / rule / match / reason。rule ∈ override | duplicate | font-size。",
+    "match：override 与 duplicate 填类名（不带点），font-size 填字面量（如 22px）。",
+    "按 file + rule + match 生效；匹配不到任何一处的条目也算红（改完还留着的豁免是挡箭牌）。",
+    "先看一眼真正的出口，多数情况都不该走这里：",
+    "  override / duplicate → 把这个类上抬进 design/v10/v10.css，各模块删掉自己那份；",
+    "  font-size            → 往 design/v10/tokens.css 加一档有名字的 --t-*，改成 var(--t-*)。",
+    "这张表是给「这一处确实不是产品界面」准备的（评审稿标注、logo 字样），不是给赶工准备的。",
+    "交付时是空的，一条豁免都没有 —— 谁要加第一条，理由就得写在这里被人读到。"
+  ],
+  "allow": []
+}

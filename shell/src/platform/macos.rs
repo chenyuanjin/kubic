@@ -5,7 +5,7 @@ use std::process::Command;
 
 use tauri::menu::{AboutMetadata, Menu, PredefinedMenuItem, Submenu};
 
-use super::Platform;
+use super::{Platform, WindowSize};
 
 /// 数据根目录。
 ///
@@ -48,6 +48,17 @@ impl Platform for MacOs {
 
     fn archive_dir(&self) -> PathBuf {
         self.data_root.join("originals")
+    }
+
+    fn window_size(&self) -> Option<WindowSize> {
+        // KUBI-64 定的桌面初始尺寸。数字留在 macOS 这一侧 —— 它是一个【桌面】决定,
+        // 而不是一个所有端都要有一份的常量。
+        Some(WindowSize {
+            width: 1280.0,
+            height: 840.0,
+            min_width: 880.0,
+            min_height: 600.0,
+        })
     }
 
     fn background_timer_supported(&self) -> bool {

@@ -9,6 +9,17 @@
 
 use std::path::PathBuf;
 
+/// 桌面窗口的初始尺寸。
+///
+/// 🔴 它是 [`Platform::window_size`] 的返回值,而那个方法在移动端返回 `None` ——
+/// 手机上视图铺满屏幕,尺寸由系统给,应用这一侧【没有这个决定】。
+pub struct WindowSize {
+    pub width: f64,
+    pub height: f64,
+    pub min_width: f64,
+    pub min_height: f64,
+}
+
 #[cfg(target_os = "macos")]
 mod macos;
 
@@ -71,6 +82,16 @@ pub trait Platform: Send + Sync {
     ///
     /// 只在【拒绝启动】那条路径上被调用一次,不在任何循环里。
     fn describe_port_holder(&self, port: u16) -> Option<String>;
+
+    /// 桌面窗口的初始尺寸;移动端返回 `None`。
+    ///
+    /// 🔴 它在这个 trait 里的理由与 [`Platform::install_menu`] 是同一条:
+    /// 手机上**没有「窗口尺寸」这回事**,而按桌面尺寸建窗会让 webview
+    /// 拿到一块比屏幕大的画布 —— iPhone 实测 `innerWidth=1280` 而 `screen.width=402`,
+    /// 于是 `≥1024` 那一档的双栏规则在一部手机上生效,首屏整块被推出可视区(KUBI-115)。
+    /// <p>
+    /// `None` 不是「还没定」,是这一侧没有这个决定。
+    fn window_size(&self) -> Option<WindowSize>;
 
     /// 装菜单栏。
     ///

@@ -6,7 +6,7 @@
 
 use std::path::PathBuf;
 
-use super::Platform;
+use super::{Platform, WindowSize};
 
 pub struct Ios {
     /// 由 Tauri 给出的 app 沙箱容器目录。
@@ -29,6 +29,11 @@ impl Platform for Ios {
 
     fn archive_dir(&self) -> PathBuf {
         self.data_root.join("originals")
+    }
+
+    fn window_size(&self) -> Option<WindowSize> {
+        // 手机上视图铺满屏幕,尺寸由系统给。`None` 不是「还没定」,是这里没有这个决定。
+        None
     }
 
     fn background_timer_supported(&self) -> bool {

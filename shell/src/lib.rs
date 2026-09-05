@@ -123,17 +123,21 @@ pub fn run() {
             // ⑤ 开窗。端口已经绑住了,所以这个地址此刻一定是我们自己。
             //    🔴 origin 里带着端口,而浏览器侧的本地存储按 origin 隔离 —— 见 §3.7。
             //
-            //    移动端只有一个 webview,`inner_size` / `min_inner_size` 在那儿是空操作:
-            //    窗口大小由系统给。这几行因此不需要分端写 —— 它们在三端都成立,
-            //    只是在两端上不起作用。
+            //    🔴 尺寸问平台要,不写死。移动端返回 None —— 手机上没有「窗口尺寸」这回事,
+            //    按桌面尺寸建窗会让 webview 拿到一块比屏幕大的画布(KUBI-115)。
+            //    上一版把这两行当成「移动端的空操作」,而 iPhone 17 Pro 模拟器实测
+            //    `innerWidth=1280` / `screen.width=402`:它们在 iOS 上照样生效。
             let url = format!("http://127.0.0.1:{}/", cfg.port)
                 .parse()
                 .expect("回环地址是常量形状");
-            WebviewWindowBuilder::new(app, "main", WebviewUrl::External(url))
-                .title(strings::WINDOW_TITLE)
-                .inner_size(1280.0, 840.0)
-                .min_inner_size(880.0, 600.0)
-                .build()?;
+            let mut window = WebviewWindowBuilder::new(app, "main", WebviewUrl::External(url))
+                .title(strings::WINDOW_TITLE);
+            if let Some(size) = platform.window_size() {
+                window = window
+                    .inner_size(size.width, size.height)
+                    .min_inner_size(size.min_width, size.min_height);
+            }
+            window.build()?;
 
             Ok(())
         })

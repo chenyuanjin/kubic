@@ -410,7 +410,7 @@ step "⑦ 打包"
 # 那正是要的效果:构建路径只有一条,而它从 ① 开始。
 cargo tauri build --target "$TARGET"
 
-APP="$SHELL_DIR/target/$TARGET/release/bundle/macos/考点盲区.app"
+APP="$SHELL_DIR/target/$TARGET/release/bundle/macos/Kaodian.app"
 [ -d "$APP" ] || die "没出 .app —— 打包这一步没有产出可安装的应用"
 printf '\n\033[32m打包完成\033[0m\n  %s\n' "$APP"
 printf '\n  拖进「应用程序」即可,双击能开。\n'

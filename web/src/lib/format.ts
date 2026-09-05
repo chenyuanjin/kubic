@@ -1,5 +1,3 @@
-import type { NodeView } from '../api/types'
-
 const DAY_MS = 86_400_000
 
 /**
@@ -51,42 +49,45 @@ export function relativeDayTime(iso: string, now: number = Date.now()): string {
  * KUBI-107 按 `B0` §11.4 整条删掉:`design/README.md:45` 的平铺禁令赢,
  * 用户自己填的两个整数相除得到的那个比值也算禁的那一个词。
  * <p>
- * 删的是<b>比值</b>,不是那两个数 —— {@link drillText} 的「12/10」原样留着,
- * 因为「练了几道 / 对了几道」是用户自己敲进来的事实,不是产品的判断。
- * NodeView.accuracy 这个字段没有跟着删:它是服务端 NodeDetailDto 的契约字段,
- * 前端类型逐字段对着它写(见 api/types.ts 开头那句),删了就不再是同一份契约。
+ * 🔴 2026-09-06(`KUBI-111`)再删一层:当时留下的 drillText(「12/10」)与
+ * blindReason 的「练 N 对 M」<b>也是同一个判断</b>,少一次除法而已。判据不是它含不含
+ * 禁用词(它一个都不含,65 词硬名单从头到尾是绿的),而是<b>把「做了多少」和「对了多少」
+ * 并排放上屏,读出来的就是答得对不对</b>。退役稿 `design/archive/ui-a-kubi72/app.html:239`
+ * 那一行是「练 8 对 4」再跟一个百分比 —— 摘掉的是后半截,活下来的是同一个判断。
+ * <p>
+ * 两个数<b>照旧收</b>(`CaptureSheet` 的「练」「对」两格没动),删掉的只有把它们并排
+ * 显示回去的那几处。`NodeView.practiced / correct / accuracy` 三个字段也没跟着删:
+ * 它们是服务端 NodeDetailDto 的契约字段,前端类型逐字段对着它写(见 api/types.ts
+ * 开头那句),删了就不再是同一份契约。
  */
 
-/** 「12/10」这一列:练了几道 / 对了几道。两个数都是用户自己敲进来的。 */
-export function drillText(node: NodeView): string {
-  // null = 不知道(记录不全),不是「一道没练」—— 两者绝不能显示成同一个样子
-  if (node.practiced === null) return node.touchCount > 0 ? `${node.touchCount} 条记录` : '—'
-  if (node.practiced > 0) return `${node.practiced}/${node.correct ?? 0}`
-  if (node.touchCount > 0) return `听课${node.touchCount}次,未练`
-  return '—'
+/**
+ * 碰没碰过 —— 呈现层认得的<b>唯一</b>一档状态。
+ *
+ * 判据是 `touchCount`,不是服务端那五档 `state`:「有没有记录」是一个计数事实,
+ * 不需要经过「稳 / 弱 / 生疏 / 仅接触 / 空白」那把阶梯。五档为什么从呈现层整个撤掉,
+ * 见 `lib/nodeState.ts` 头上那段。
+ */
+export function isTouched(node: { touchCount: number }): boolean {
+  return node.touchCount > 0
 }
 
 /**
- * 「先补这几个」里那行理由。
+ * 一个考点的「我的事实」—— 现役稿 `design/m3/01-blind.html:51` 那个下行。
  *
- * 全部由已有字段拼出来,没有新的判断。它要回答的是「凭什么排这么前」,
- * 而不是「你哪里不会」—— 后者产品答不了。
+ * 稿把一行切成上下两行是<b>硬性</b>的:上行是骨架事实(真题的,近五年出现几次),
+ * 下行是我的事实(你的)。这个函数只负责下行,而下行的取值稿上就三种,
+ * 逐字都在这里 —— 全是「有没有 / 几次 / 多久前」,一个「对」字都没有。
  */
-export function blindReason(node: NodeView): string {
-  if (node.practiced !== null && node.practiced > 0) {
-    return `练 ${node.practiced} 对 ${node.correct ?? 0}`
-  }
-  if (node.state === 'EMPTY') {
-    return `近五年 ${node.recent5yCount} 次 · 无任何记录`
-  }
-  // 练没练不确定时,只说得出「多久前」—— 就只说这一句
-  const touched = node.practiced === null ? `${node.touchCount} 条记录` : '听过没练'
-  return `近五年 ${node.recent5yCount} 次 · ${touched} · ${relativeDay(node.latestAt)}`
-}
-
-/** 百分比字符串,给计量条宽度用。保留一位小数,免得五段加起来不是 100%。 */
-export function percentWidth(part: number, total: number): string {
-  return total === 0 ? '0%' : `${((part / total) * 100).toFixed(1)}%`
+export function myFact(
+  // 结构化入参而不是整个 NodeView:这一层只读两个字段,而写成 NodeView 就得在测试里
+  // 造一个 16 字段的对象才能验三句话 —— 那会让「纯判断层能在 node 里被单独测」变贵。
+  node: { touchCount: number; latestAt: string | null },
+  now: number = Date.now(),
+): string {
+  if (node.touchCount === 0) return '你没碰过'
+  if (node.latestAt === null) return `你碰过 ${node.touchCount} 次`
+  return `你碰过 ${node.touchCount} 次,最近一次 ${relativeDay(node.latestAt, now)}`
 }
 
 /** 两位序号:01 02 … 18。等宽字体下这一列才对得齐。 */

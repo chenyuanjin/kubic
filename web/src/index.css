@@ -16,7 +16,7 @@
      6. 零 emoji。图标一律 CSS 绘制或 mono 字形(⌘ ↵ ⌥ ⇧)。
      7. 字体强制配对:正文 Helvetica Neue / 苹方,数字与快捷键 SF Mono + tabular-nums。
      8. 酸性绿 --color-acid 是唯一强调色,只给「当前主操作」和序号。
-        红 --color-red 只给弱 / 空白 / 危险 / 降级。
+        红 --color-red 只给整块空白 / 危险 / 降级。
      9. 快捷键徽标常驻,不是 hover 才出现。
     10. 密度是优点。行高 29–34px,一屏看全 18 个考点。
 
@@ -44,14 +44,11 @@
   --color-acid: #c9f24d;
   --color-red: #ff6b5a;
 
-  /* —— 五态色。全部可由「有没有 / 几次 / 多久前」推出,与 NodeState 一一对应 —— */
-  --color-s-stable: #e6e7ea; /* 稳    练过且近期 */
-  --color-s-weak: #ff6b5a; /* 弱    练过,但用户自填的对/练偏低 */
-  --color-s-rusty: #61666e; /* 生疏  练过但 >30 天 */
-  --color-s-touch: #9ba0a8; /* 仅接触 听过看过,没练 */
-  --color-s-empty: #3a3e44; /* 空白  无任何记录 */
-
-  --color-track: #1b1d21; /* 计量条底槽 */
+  /* 🔴 2026-09-06(`KUBI-111`):五态色五个 token 与计量条底槽一起删掉。
+     其中 --color-s-weak 的定义逐字是「练过,但用户自填的对/练偏低」—— 答得对不对这件事
+     被做成了一块状态色,而这个产品的边界是不判对不对(design/README.md:60-69 降级
+     ui-a 那一代的头一条理由就是它)。呈现层现在只认「碰没碰过」,两档靠
+     实心/空心虚线区分,用的是已有的 --color-t2 / --color-t3,不需要专属色。 */
 
   --font-sans: 'Helvetica Neue', 'PingFang SC', 'Hiragino Sans GB', system-ui, sans-serif;
   --font-mono: 'SF Mono', Menlo, Consolas, 'Roboto Mono', monospace;

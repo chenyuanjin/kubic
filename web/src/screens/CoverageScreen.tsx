@@ -6,7 +6,7 @@ import { CoverageHeader } from '../features/CoverageHeader'
 import { NodeList } from '../features/NodeList'
 import { routeTo } from '../routes/routes'
 import { ColL, ColR, Cols, ScreenBody, ScreenHead } from '../ui/layout'
-import { Button, Kbd, Note, Tag } from '../ui/primitives'
+import { Button, Kbd, Note } from '../ui/primitives'
 import { EmptyState, FailureBlock, Placeholder } from '../ui/states'
 import { relativeDay } from '../lib/format'
 
@@ -31,9 +31,9 @@ import { relativeDay } from '../lib/format'
  * <h2>四态</h2>
  *
  * <ul>
- * <li><b>主态</b> —— 摘要三个数 + 盲区榜 + 按章看全部</li>
- * <li><b>空态</b> —— 有骨架零记录(`02-blind-empty`)。🔴 覆盖率 0% 照样显示,
- *     它是一个真实的事实;假装还没算好才是骗人</li>
+ * <li><b>主态</b> —— 摘要竖式(一共 − 你碰过 = 没碰过)+ 盲区榜 + 按章看全部</li>
+ * <li><b>空态</b> —— 有骨架零记录(`02-blind-empty`)。🔴 竖式照常显示
+ *     (`120 − 0 = 120`),它是一个真实的事实;假装还没算好才是骗人</li>
  * <li><b>失败态</b> —— `SUBJECT_NOT_LOADED` 停在本屏、`SYLLABUS_DATA_BROKEN` 不给重试</li>
  * <li><b>受限态</b> —— 🔴 这一屏<b>没有</b>受限态。`design/m3/交互说明.md` 原话:
  *     「这两屏额度永不锁(`I-4`),不出受限态 —— 四态口径下受限态为『不适用』」。
@@ -43,7 +43,7 @@ import { relativeDay } from '../lib/format'
 export function CoverageScreen() {
   const { nodeCode } = useParams<{ nodeCode?: string }>()
   const navigate = useNavigate()
-  const { data, isPending, refetch } = useDashboard()
+  const { data, isPending } = useDashboard()
 
   const pick = (code: string) => void navigate(routeTo('coverage.node', { nodeCode: code }))
 
@@ -140,7 +140,7 @@ export function CoverageScreen() {
                 <span className="text-[12px] text-t3">点开哪个,它的详情就在这里。</span>
               </div>
             ) : (
-              <NodeDetail node={selected} onBack={() => void navigate(routeTo('coverage'))} onRetry={() => void refetch()} />
+              <NodeDetail node={selected} onBack={() => void navigate(routeTo('coverage'))} />
             )}
           </div>
         </ColR>
@@ -153,15 +153,23 @@ export function CoverageScreen() {
  * 考点详情 —— `U3.4`。
  *
  * 🔴 <b>这里没有讲这个考点是什么的一个字。</b>它显示的全部是「有没有 / 几次 / 多久前」:
- * 状态、碰过几次、上一次多久前、近五年真题里出现几次。
+ * 碰过几次、上一次多久前、近五年真题里出现几次。
  * `api/types.ts` 的 `NodeDetailDto` 里也确实没有任何一个能装下内容的字段(`R-01`)。
+ *
+ * <h2>2026-09-06(`KUBI-111`)摘掉三样</h2>
+ *
+ * ① 标题旁那个五档中文名标签(`stateLabel`:空白/仅接触/生疏/弱/稳);
+ * ② 「练了」「对了」两格 —— 两个数并排读出来就是答得对不对;
+ * ③ 随之而来的那个「做题数」失败块(算不准就不显示)—— 那两个数已经不显示了,
+ *    再挂一个「做题数取不到」的失败块是在给一个不存在的东西报错。
+ * 稿(`design/m3/08-ipad-blind-b.html`)的右栏是两条事实行:「真题里」/「你这里」,
+ * 下面这个 dl 就是它在本工程密集排版下的落法。
  */
-function NodeDetail({ node, onBack, onRetry }: { node: NodeView; onBack: () => void; onRetry: () => void }) {
+function NodeDetail({ node, onBack }: { node: NodeView; onBack: () => void }) {
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="flex items-center gap-3 border-b border-hair px-[var(--rule)] py-3">
         <span className="text-[14px] text-tx">{node.name}</span>
-        <Tag>{node.stateLabel}</Tag>
         <button
           type="button"
           onClick={onBack}
@@ -176,21 +184,14 @@ function NodeDetail({ node, onBack, onRetry }: { node: NodeView; onBack: () => v
         <Fact k="碰过" v={`${node.touchCount} 次`} />
         <Fact k="上一次" v={node.latestAt === null ? '还没碰过' : relativeDay(node.latestAt)} />
         <Fact k="近五年出现" v={`${node.recent5yCount} 次`} />
-        <Fact k="练了" v={node.practiced === null ? '—' : `${node.practiced} 道`} />
-        <Fact k="对了" v={node.correct === null ? '—' : `${node.correct} 道`} />
       </dl>
 
       <div className="px-[var(--rule)]">
         <Note>
           上面这几个数全部来自你自己记下的东西 —— 近五年出现几次是真题统计的事实,
-          不是难易,也不是这个考点有多要紧。这一屏不给第七个数。
+          不是难易,也不是这个考点有多要紧。这一屏不给第五个数。
         </Note>
       </div>
-
-      {node.practiced === null ? (
-        // 记录被截断时 derive.ts 会把这三个字段整体置空。宁缺毋滥:算不准就不显示。
-        <FailureBlock code="SERVER_ERROR" scope="做题数" onRetry={onRetry} />
-      ) : null}
 
       <div className="mt-auto flex flex-wrap gap-2 border-t border-hair px-[var(--rule)] py-3">
         <Button variant="primary">记一笔到这个考点</Button>

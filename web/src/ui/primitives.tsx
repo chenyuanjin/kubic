@@ -1,7 +1,5 @@
 import { useState } from 'react'
 import type { ReactNode } from 'react'
-import type { NodeState } from '../api/types'
-import { STATE_DOT } from '../lib/nodeState'
 
 /**
  * 风格 A 的排版基元。
@@ -32,18 +30,28 @@ export function Kbd({ children, tone = 'plain' }: { children: ReactNode; tone?: 
 }
 
 /* ========================================================================== */
-/* 状态点 —— 实心是碰过的,空心虚线是还没碰过的                                 */
+/* 碰没碰过的标记 —— 实心是碰过的,空心虚线是还没碰过的                          */
 /* ========================================================================== */
 
-export function StateDot({ state, large = false }: { state: NodeState; large?: boolean }) {
+/**
+ * 🔴 2026-09-06(`KUBI-111`):从五档状态点塌成<b>两档</b>。
+ *
+ * 原来的 `state: NodeState` 会去 `STATE_DOT` 取五种颜色,其中「弱」那一档的定义是
+ * 「练过,但用户自填的对/练偏低」—— 那说的是答得对不对,而这个产品不判对不对。
+ * 现役稿 `design/m3/04-tree.html:6` 给的是「实心/空心标记只是辅助」的<b>两态单色</b>写法。
+ * <p>
+ * 保留 `inline-block`:`<span>` 默认 display:inline,而<b>宽高对 inline 盒子无效</b>。
+ * 早先这里没写,靠的是「它永远是某个 flex 容器的直接子元素」—— flex 会把子元素块级化。
+ * 那个前提在被包进一层普通 span(为了挂 order-* 做窄屏折行)之后立刻不成立:
+ * 标记全部塌成 0×0,整屏 18 行一个都看不见。
+ */
+export function StateDot({ touched, large = false }: { touched: boolean; large?: boolean }) {
   return (
     <span
       aria-hidden
-      // 🔴 `inline-block` 不是装饰:`<span>` 默认 display:inline,而<b>宽高对 inline 盒子无效</b>。
-      // 早先这里没写,靠的是「它永远是某个 flex 容器的直接子元素」—— flex 会把子元素块级化。
-      // 那个前提在被包进一层普通 span(为了挂 order-* 做窄屏折行)之后立刻不成立:
-      // 五态点全部塌成 0×0,整屏 18 行一个点都看不见,而点就是五态本身。
-      className={`box-border inline-block shrink-0 rounded-full ${large ? 'size-[9px]' : 'size-[7px]'} ${STATE_DOT[state]}`}
+      className={`box-border inline-block shrink-0 rounded-full ${large ? 'size-[9px]' : 'size-[7px]'} ${
+        touched ? 'bg-t2' : 'border border-dashed border-t3'
+      }`}
     />
   )
 }
@@ -277,19 +285,12 @@ export function MicroButton({
 }
 
 /* ========================================================================== */
-/* 覆盖计量条 —— 五段就是五态,不用图表                                         */
-/* ========================================================================== */
-
-export function Meter({ segments, tall = false }: { segments: { key: string; width: string; className: string }[]; tall?: boolean }) {
-  return (
-    <div className={`flex overflow-hidden bg-track ${tall ? 'h-[5px]' : 'h-[3px]'}`}>
-      {segments.map((s) => (
-        <i key={s.key} style={{ width: s.width }} className={`block h-full ${s.className}`} />
-      ))}
-    </div>
-  )
-}
-
+/* 🔴 覆盖计量条 Meter 删于 2026-09-06(`KUBI-111`)                             */
+/*                                                                            */
+/* 它的五段就是那五档状态,和 STATE_BAR / --color-s-* 一起删。现役稿             */
+/* `design/m3/04-tree.html:5` 明写「没有百分比、没有进度条(进度条会把覆盖度     */
+/* 读成学习进度)」—— 覆盖度那一屏现在是竖式减法,见 features/CoverageHeader。   */
+/* 底槽色 --color-track 只喂过它,跟着一起删。                                   */
 /* ========================================================================== */
 /* 大字 —— 等宽 44px,后缀小一号                                                */
 /* ========================================================================== */

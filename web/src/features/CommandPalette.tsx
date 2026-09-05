@@ -3,7 +3,7 @@ import { useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import { orderedByBlindRank } from '../api/derive'
 import type { Dashboard, NodeView } from '../api/types'
-import { relativeDay, relativeDayTime } from '../lib/format'
+import { isTouched, myFact, relativeDayTime } from '../lib/format'
 import { Kbd, StateDot, Tag } from '../ui/primitives'
 
 /**
@@ -94,7 +94,7 @@ export function CommandPalette({
                   keywords={[node.groupName, node.groupCode]}
                   onSelect={() => onJump(node.code)}
                 >
-                  <StateDot state={node.state} />
+                  <StateDot touched={isTouched(node)} />
                   <span className="min-w-0 flex-1 truncate">{node.name}</span>
                   <span className="shrink-0 text-[11.5px] text-t3">{nodeMeta(node)}</span>
                   <Kbd>↵</Kbd>
@@ -163,11 +163,10 @@ export function CommandPalette({
                     {relativeDayTime(r.occurredAt)}
                   </span>
                   <span className="min-w-0 flex-1 truncate text-t2">{r.sourceName}</span>
-                  {/* 方式的中文名与做题数都由服务端给:kindLabel、扁平的 practiced/correct */}
-                  <Tag>
-                    {r.kindLabel}
-                    {r.practiced !== null && r.practiced > 0 ? ` ${r.practiced}/${r.correct ?? 0}` : ''}
-                  </Tag>
+                  {/* 🔴 2026-09-06(`KUBI-111`):标签后面那个「12/10」删掉。
+                      分子分母是「练了几道 / 对了几道」—— 那是在说答得对不对,不是「有没有」。
+                      方式的中文名仍由服务端给(kindLabel)。 */}
+                  <Tag>{r.kindLabel}</Tag>
                 </Item>
               ))}
             </Command.Group>
@@ -227,21 +226,14 @@ function Item({
   )
 }
 
-/** 面板里那一小行状态摘要 —— 仍然只说有没有、几次、多久前。中文名用服务端给的 stateLabel。 */
+/**
+ * 面板里那一小行状态摘要 —— 只说有没有、几次、多久前。
+ *
+ * 🔴 2026-09-06(`KUBI-111`)整个函数重写。原来它按五档 `node.state` 分五支,
+ * 每支都以服务端的五档中文名 `stateLabel`(空白/仅接触/生疏/弱/稳)开头,
+ * 其中「稳 / 弱」那一支还直接拼出「练 N 对 M」—— 五档状态与那个比值同时在场。
+ * 现在两句都由骨架事实 + 我的事实拼成,与盲区榜那一行(`myFact`)同一套词。
+ */
 function nodeMeta(node: NodeView): string {
-  const label = node.stateLabel
-  switch (node.state) {
-    case 'EMPTY':
-      return `${label} · 近五年 ${node.recent5yCount} 次`
-    case 'TOUCHED_ONLY':
-      return `${label} · 听课 ${node.touchCount} 次,未练`
-    case 'WEAK':
-    case 'STABLE':
-      // 做题数算不出来时(记录不全)不编一个,退回只说「多久前」
-      return node.practiced === null
-        ? `${label} · ${relativeDay(node.latestAt)}`
-        : `${label} · 练 ${node.practiced} 对 ${node.correct ?? 0}`
-    case 'RUSTY':
-      return `${label} · ${relativeDay(node.latestAt)}`
-  }
+  return `近五年 ${node.recent5yCount} 次 · ${myFact(node)}`
 }

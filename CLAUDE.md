@@ -45,6 +45,9 @@ are the point, and why there is no `kaodian-common` ([`后端系统设计与组�
                                    # 🔴 the tail is not optional: multi-module -Dtest=X fails on modules lacking
                                    #    the class, reporting "No tests matching pattern" instead of a real result
 cd web && npm run lint / npm run build / npm run test:boundary   # oxlint · tsc+vite · boundary scan (R-05)
+cd web && npm run test:baseline    # design/ 底座复用纪律 (KUBI-79 产品裁定三条): 模块覆写底座类 · 跨模块
+                                   # 重名 · font-size 写死字面量。🔴 今天红 (84/26/99),UI设计 归位后转绿
+                                   # node scripts/design-baseline-scan.mjs --selftest 只验解析器,与稿无关
 ./shell/build.sh                   # macOS shell. Also the only allowed entry (`R-111`, same guard)
 ```
 

@@ -1,0 +1,77 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>U1.2 记一条（说）· 录音中 + 转写没成的那一条 · Kubic v10</title>
+<link rel="stylesheet" href="tokens.css"><link rel="stylesheet" href="v10.css"><style>
+  body{zoom:2}
+  /* U1.2 语音：松手那一刻落本地，先于任何请求。
+     上面那张卡片是刚才那一条：转写没成 —— 记录在，内容为空是正常初值，
+     三条并列的下一步，不排优劣、不评价录音质量。
+     计时只报时长，不逐秒播报；到上限自动切断是正常路径。
+     这一屏内容区 0 块蓝面。 */
+  .seg{display:flex;border-bottom:var(--hair-w) solid var(--hair)}
+  .seg button{flex:1;height:48px;display:flex;align-items:center;justify-content:center;
+              font-size:var(--t-sub);color:var(--ink-2)}
+  .seg button+button{border-left:var(--hair-w) solid var(--hair)}
+  .seg button[aria-current="true"]{color:var(--ink);font-weight:600;
+              box-shadow:inset 0 -1.5px 0 var(--ink)}
+  .wave{display:flex;align-items:center;justify-content:center;gap:3px;height:32px;margin-top:20px}
+  .wave i{width:3px;background:var(--ink);border-radius:.5px}
+  .links{display:flex;gap:14px;flex-wrap:wrap}
+</style></head><body><div class="phone">
+
+<div class="sb"><span>21:47</span><span class="sb__r">
+  <span class="sb__s"><i></i><i></i><i></i><i></i></span><span class="sb__b"></span>
+</span></div>
+
+<div class="flow">
+  <div class="head"><span>记一条 · 说</span><span>21:47</span></div>
+
+  <div class="seg">
+    <button type="button">写</button>
+    <button type="button" aria-current="true">说</button>
+    <button type="button">拍</button>
+    <button type="button">做题</button>
+  </div>
+
+  <!-- 刚才那一条：转写没成，停在待打标。记录已在，内容为空是正常初值 -->
+  <div class="band" style="margin-top:16px">
+    <div class="line">
+      <span class="idx">01</span>
+      <span class="line__main">
+        <span class="body">语音记录<span class="line__meta">21:42 · 粉笔</span></span>
+        <span class="sub">没转出文字，这一条已经记下</span>
+        <span class="links" style="margin-top:6px">
+          <button type="button" class="link">重录</button>
+          <button type="button" class="link">补一句文字</button>
+          <button type="button" class="link">自己挑考点</button>
+        </span>
+      </span>
+    </div>
+  </div>
+
+  <div style="flex:1 1 auto"></div>
+
+  <!-- 录音中：按住中 85%，波形 + 时长。松手即落本地 -->
+  <div class="pad">
+    <button class="btn-pri" style="background:rgba(23,23,26,.85)" aria-label="按住说话，录音中">按住说话</button>
+    <div class="wave" aria-hidden="true">
+      <i style="height:8px"></i><i style="height:16px"></i><i style="height:24px"></i>
+      <i style="height:12px"></i><i style="height:28px"></i><i style="height:18px"></i>
+      <i style="height:10px"></i><i style="height:22px"></i><i style="height:14px"></i>
+      <i style="height:26px"></i><i style="height:8px"></i><i style="height:20px"></i>
+      <i style="height:12px"></i><i style="height:16px"></i><i style="height:6px"></i>
+    </div>
+    <p class="sub" style="text-align:center;margin-top:8px">0:07</p>
+  </div>
+
+  <div style="height:16px"></div>
+
+  <div class="field">
+    <span class="eyebrow" style="flex:0 0 auto">来源</span>
+    <input value="粉笔" readonly aria-label="来源名称">
+  </div>
+</div>
+
+<div class="dock">
+  <button class="btn-pri">记下</button>
+</div>
+<div class="hi"></div>
+</div></body></html>

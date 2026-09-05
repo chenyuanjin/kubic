@@ -1,0 +1,70 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>U1.1 受限态 · 额度用完，记录照样成功 · Kubic v10</title>
+<link rel="stylesheet" href="tokens.css"><link rel="stylesheet" href="v10.css"><style>
+  body{zoom:2}
+  /* 受限态 · 额度耗尽（I-4）：记下了，稍后归类 —— 不是记不了。
+     反馈是成功 Toast「已记下」；卡片是普通台账行，徽标「稍后再认」，
+     没有红色、没有报错形状、没有重试当主操作；主按钮「记下」照常可用 ——
+     额度只碰附加能力，永不进入提交路径的判断。
+     档位入口只能是文本按钮。这一屏内容区 0 块蓝面。 */
+  .seg{display:flex;border-bottom:var(--hair-w) solid var(--hair)}
+  .seg button{flex:1;height:48px;display:flex;align-items:center;justify-content:center;
+              font-size:var(--t-sub);color:var(--ink-2)}
+  .seg button+button{border-left:var(--hair-w) solid var(--hair)}
+  .seg button[aria-current="true"]{color:var(--ink);font-weight:600;
+              box-shadow:inset 0 -1.5px 0 var(--ink)}
+  .write{margin:16px var(--rule) 0;min-height:96px;padding:12px 0 14px;
+         border-bottom:var(--hair-w) solid var(--hair)}
+  .write span{font-size:var(--t-body);line-height:var(--lh-body);color:var(--ink-2);opacity:.75}
+  .links{display:flex;gap:14px;flex-wrap:wrap}
+</style></head><body><div class="phone">
+
+<div class="sb"><span>21:50</span><span class="sb__r">
+  <span class="sb__s"><i></i><i></i><i></i><i></i></span><span class="sb__b"></span>
+</span></div>
+
+<div class="flow">
+  <div class="head"><span>记一条 · 写</span><span>21:50</span></div>
+
+  <div class="seg">
+    <button type="button" aria-current="true">写</button>
+    <button type="button">说</button>
+    <button type="button">拍</button>
+    <button type="button">做题</button>
+  </div>
+
+  <!-- 刚记下的那一条：额度用完，不打标、进未分类。记录本身照常成功 -->
+  <div class="band" style="margin-top:16px">
+    <div class="line">
+      <span class="idx">01</span>
+      <span class="line__main">
+        <span class="body">看了行政处罚的听证<span class="line__meta">21:50 · 粉笔</span></span>
+        <span class="sub">稍后再认 · 这次没自动归类，先进未分类</span>
+        <span class="links" style="margin-top:6px">
+          <button type="button" class="link">自己挑考点</button>
+          <button type="button" class="link">看看档位</button>
+        </span>
+      </span>
+    </div>
+  </div>
+
+  <!-- 输入框已清空，随时能记下一条 -->
+  <div class="write"><span>刚才碰了什么?一句话就行</span></div>
+
+  <div style="flex:1 1 auto"></div>
+
+  <!-- 成功反馈：落本地那一刻就发出，与额度无关 -->
+  <div class="pad" style="padding-bottom:16px">
+    <span class="toast" role="status">已记下</span>
+  </div>
+
+  <div class="field">
+    <span class="eyebrow" style="flex:0 0 auto">来源</span>
+    <input value="粉笔" readonly aria-label="来源名称">
+  </div>
+</div>
+
+<div class="dock">
+  <button class="btn-pri">记下</button>
+</div>
+<div class="hi"></div>
+</div></body></html>

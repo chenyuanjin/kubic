@@ -1,0 +1,81 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>U7.1+U7.3 额度与购买 · Kubic M7 v10</title>
+<link rel="stylesheet" href="tokens.css"><link rel="stylesheet" href="v10.css"><style>
+  body{zoom:2}
+  /* 五区单列到底：区一余额 · 区二档位 · 区三支付方式(已选档位才展开) · 区四订单 · 区五说明(永不折叠)。
+     没有横向 Tab、没有分步向导、没有底部悬浮购买条；dock 主按钮留给免费路径。 */
+  .n{font-family:var(--font-display);font-weight:400;font-size:22px;
+     font-variant-numeric:tabular-nums lining-nums}
+  .tier{padding:10px var(--rule) 8px;border-top:var(--rule-ink) solid var(--ink)}
+  .back{margin:-14px 0;padding:14px 10px 14px 0;font-size:var(--t-micro);color:var(--ink-2)}
+  .secrow{display:flex;justify-content:space-between;align-items:center;min-height:40px;
+          padding:0 var(--rule)}
+  .foot p{padding:1px 0}
+</style></head><body><div class="phone">
+
+<div class="sb"><span>21:47</span><span class="sb__r">
+  <span class="sb__s"><i></i><i></i><i></i><i></i></span><span class="sb__b"></span>
+</span></div>
+
+<div class="flow">
+  <div class="head">
+    <button class="back" aria-label="返回">‹ 返回</button>
+    <span>额度与购买</span>
+  </div>
+
+  <!-- 区一 · 当前余额（免费档：到期行整行不渲染） -->
+  <p class="eyebrow pad" style="margin-top:10px">当前余额 · 免费档</p>
+  <p class="body pad" style="margin-top:2px">记录识别 · 本月还剩 <b class="n">6</b> 次</p>
+  <p class="body pad">问 AI · 本月还剩 <b class="n">2</b> 次</p>
+  <div class="secrow"><span class="sub">每月 1 号重置</span><button class="link">刷新</button></div>
+
+  <!-- 区二 · 档位（服务端返回，按数组渲染；已选：上缘墨线 + 文字标记） -->
+  <p class="eyebrow pad" style="margin-top:6px;margin-bottom:6px">档位</p>
+  <div class="band tier">
+    <div style="display:flex;justify-content:space-between;align-items:baseline">
+      <span class="display" style="font-size:22px;line-height:30px">记多点</span>
+      <span class="eyebrow">已选</span>
+    </div>
+    <p style="margin-top:2px"><span class="n" style="font-size:26px;line-height:32px">¥ 12.00</span>
+      <span class="sub" style="margin-left:8px">每月</span></p>
+    <p class="sub" style="margin-top:2px">记录识别 200 次 · 问 AI 60 次 · 合每天 0.40 元</p>
+    <p class="eyebrow" style="margin-top:4px">这个价格是这台设备上的价格</p>
+  </div>
+
+  <!-- 区三 · 支付方式（已选档位才渲染；iOS 首发通道；restore=次级文本按钮） -->
+  <p class="eyebrow pad" style="margin-top:8px">支付方式</p>
+  <div class="secrow" style="min-height:44px">
+    <span class="body">◉ Apple 内购</span>
+    <button class="link">恢复购买</button>
+  </div>
+  <div class="split" style="margin-top:2px"><button style="height:46px">去确认这一笔</button></div>
+
+  <!-- 区四 · 订单 -->
+  <div class="secrow" style="margin-top:6px">
+    <span class="eyebrow">订单</span>
+    <button class="link">全部订单</button>
+  </div>
+  <button class="line" style="padding-top:4px;padding-bottom:6px">
+    <span class="idx">01</span>
+    <span class="line__main">
+      <span class="body">记多点<span class="line__meta">¥ 12.00</span></span>
+      <span class="sub">已到账 · 3 天前</span>
+    </span>
+  </button>
+
+  <!-- 区五 · 说明（永不折叠；没有自动扣费开关、没有默认勾选、没有退订入口） -->
+  <div class="secrow" style="margin-top:4px">
+    <span class="eyebrow">说明</span>
+    <button class="link">联系方式</button>
+  </div>
+  <div class="foot">
+    <p>不自动扣费,到期就停</p>
+    <p>导出永远免费、不限次数</p>
+    <p>盲区和骨架树不收费</p>
+  </div>
+</div>
+
+<div class="dock">
+  <button class="btn-pri">回去看盲区</button>
+</div>
+<div class="hi"></div>
+</div></body></html>

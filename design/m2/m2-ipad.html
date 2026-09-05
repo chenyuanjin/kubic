@@ -1,0 +1,149 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>S-TAG 待处理 · iPad 横屏 ≥1024 · Kubic v10 · M2</title>
+<link rel="stylesheet" href="tokens.css"><link rel="stylesheet" href="v10.css"><style>
+  .pad-frame{width:1366px;height:1024px;background:var(--ground);display:flex;flex-direction:column;overflow:hidden}
+  .pad-frame .sb{height:40px}
+  .cols{flex:1 1 auto;min-height:0;display:flex}
+  /* 左栏是内容：未分类流，随筛选整栏换掉。不是菜单。 */
+  .col-l{flex:0 0 460px;display:flex;flex-direction:column;min-height:0;
+         border-right:var(--hair-w) solid var(--hair)}
+  .col-r{flex:1 1 auto;min-width:0;display:flex;flex-direction:column}
+  .back{display:inline-flex;align-items:center;min-height:44px;margin:-14px 0;padding:0 4px;
+        font-size:var(--t-micro);color:var(--ink-2);letter-spacing:.3px}
+  .l-list{flex:1 1 auto;min-height:0;overflow:hidden}
+  .l-list .line{padding-top:14px;padding-bottom:14px}
+  .l-sel{background:var(--raised);box-shadow:inset 3px 0 0 var(--ink)}
+  .card{padding:20px var(--rule) 18px}
+  .photo{display:flex;align-items:center;gap:10px;margin-top:12px}
+  .photo i{display:block;width:44px;height:44px;background:var(--fill-skeleton);
+           border:var(--hair-w) solid var(--hair);border-radius:var(--radius)}
+  .state{padding:24px var(--rule) 4px}
+  .state .display{font-size:26px;line-height:34px}
+  .state .sub{margin-top:6px}
+  .r-dock{flex:0 0 auto;background:var(--raised);border-top:var(--hair-w) solid var(--hair-soft);
+          padding:14px var(--rule) 20px;display:flex;justify-content:center}
+</style></head><body><div class="pad-frame">
+
+<div class="sb"><span>21:47</span><span class="sb__r">
+  <span class="sb__s"><i></i><i></i><i></i><i></i></span><span class="sb__b"></span>
+</span></div>
+
+<div class="head">
+  <button class="back">‹ 返回</button>
+  <span>7 条还没对上</span>
+</div>
+
+<div class="cols">
+  <!-- 左栏 · 未分类流（内容，随筛选整栏换掉） -->
+  <div class="col-l">
+    <div class="control">
+      <span>还没对上的 · 7 条</span>
+      <button class="link" style="min-height:32px">看全部记录</button>
+    </div>
+    <div class="l-list">
+      <button class="line l-sel">
+        <span class="idx">01</span>
+        <span class="line__main">
+          <span class="eyebrow">14:20 · 粉笔</span>
+          <span class="body">行政处罚的听证程序，记了一段笔记</span>
+          <span class="sub" style="color:var(--ink)">看一下?</span>
+        </span>
+      </button>
+      <button class="line">
+        <span class="idx">02</span>
+        <span class="line__main">
+          <span class="eyebrow">昨天 21:40 · 没写来源</span>
+          <span class="body"><i>图片记录</i></span>
+          <span class="sub">没对上</span>
+        </span>
+      </button>
+      <button class="line">
+        <span class="idx">03</span>
+        <span class="line__main">
+          <span class="eyebrow">09:05 · B 站网课</span>
+          <span class="body"><i>语音 0:14</i></span>
+          <span class="sub">稍后再认</span>
+        </span>
+      </button>
+      <button class="line">
+        <span class="idx">04</span>
+        <span class="line__main">
+          <span class="eyebrow">昨天 18:03 · 中公讲义</span>
+          <span class="body">定义判断里「行政许可」那一段</span>
+          <span class="sub">稍后再认</span>
+        </span>
+      </button>
+      <button class="line">
+        <span class="idx">05</span>
+        <span class="line__main">
+          <span class="eyebrow">前天 20:11 · 粉笔</span>
+          <span class="body">资料分析的两道增长率</span>
+          <span class="sub">没对上</span>
+        </span>
+      </button>
+      <button class="line">
+        <span class="idx">06</span>
+        <span class="line__main">
+          <span class="eyebrow">前天 09:30 · 华图模考</span>
+          <span class="body">类比推理里的那组词，想再翻一遍</span>
+          <span class="sub">丢掉了</span>
+        </span>
+      </button>
+      <button class="line">
+        <span class="idx">07</span>
+        <span class="line__main">
+          <span class="eyebrow">周一 22:15 · 没写来源</span>
+          <span class="body"><i>图片记录</i></span>
+          <span class="sub">考点已归档</span>
+        </span>
+      </button>
+    </div>
+  </div>
+
+  <!-- 右栏 · 当前记录的处理区（与 iPhone 信息顺序一致，只改排布） -->
+  <div class="col-r">
+    <div class="band card">
+      <p class="eyebrow">14:20 · 粉笔</p>
+      <p class="body">行政处罚的听证程序，记了一段笔记<button class="link" style="min-height:28px;margin-left:6px">展开</button></p>
+      <div class="photo"><i aria-hidden="true"></i><span class="sub">原图 1 张 · 只在这台设备上</span></div>
+    </div>
+
+    <div class="state">
+      <p class="display">看一下?</p>
+      <p class="sub">候选只从你的考点表里来，对不上就不挂。</p>
+    </div>
+
+    <button class="line">
+      <span class="idx">01</span>
+      <span class="line__main">
+        <span class="body">听证程序</span>
+        <span class="sub">法律常识 → 行政法</span>
+      </span>
+    </button>
+    <button class="line">
+      <span class="idx">02</span>
+      <span class="line__main">
+        <span class="body">行政处罚的种类</span>
+        <span class="sub">法律常识 → 行政法</span>
+      </span>
+    </button>
+    <button class="line">
+      <span class="idx">03</span>
+      <span class="line__main">
+        <span class="body">行政强制措施</span>
+        <span class="sub">法律常识 → 行政法</span>
+      </span>
+    </button>
+    <p style="padding:2px var(--rule) 6px"><button class="link">还有 2 个</button></p>
+
+    <div class="split" style="margin-top:8px">
+      <button>都不是</button>
+      <button>自己挑一个</button>
+    </div>
+
+    <div style="flex:1 1 auto"></div>
+    <div class="r-dock">
+      <button class="link link--body">跳过这条</button>
+    </div>
+  </div>
+</div>
+</div></body></html>

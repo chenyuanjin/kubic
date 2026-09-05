@@ -1,0 +1,217 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>核心组件 · 状态集 · Kubic v10</title>
+<link rel="stylesheet" href="tokens.css"><link rel="stylesheet" href="v10.css"><style>
+  body{zoom:2;background:var(--ground)}
+  .sheet{width:600px;background:var(--ground);padding:36px 32px 48px}
+  .ttl{font-family:var(--font-display);font-size:26px;line-height:34px;letter-spacing:.6px}
+  .lb{font-size:11px;line-height:15px;color:var(--ink-2);letter-spacing:.4px}
+  .note{font-size:11.5px;line-height:18px;color:var(--ink-2)}
+  .sec{border-top:var(--hair-w) solid var(--hair);padding-top:18px;margin-top:30px}
+  .row{display:flex;gap:16px;align-items:flex-start}
+  .cell{flex:1;min-width:0}
+  .cap{font-size:10px;color:var(--ink-2);margin-top:6px;letter-spacing:.3px}
+  .demo{margin-top:14px}
+  .demo .btn-pri,.demo .btn-danger{height:48px;font-size:15px}
+  .demo .line{padding:14px 0;border-top:var(--hair-w) solid var(--hair-soft)}
+  .demo .field{border-bottom:var(--hair-w) solid var(--hair);height:48px;padding:0}
+  .state-message{width:min(100%,560px);padding:14px 0;border-top:var(--hair-w) solid var(--hair-soft)}
+  .state-message strong{display:block;font-family:var(--font-display);font-size:22px;line-height:28px;font-weight:400}
+  .state-message span{display:block;margin-top:4px;color:var(--ink-2);font-size:var(--t-sub);line-height:21px}
+  .state-message--error{border-top-color:var(--danger)}
+  .record-card-demo{width:min(100%,560px)}
+  /* v10 新增组件：强调面板（唯一带色的面） */
+  .panel-demo{margin:0 -32px;padding:14px 32px 16px}
+</style></head><body><div class="sheet">
+
+<p class="lb">KUBIC · 核心组件与状态集 · V10 蓝图台账</p>
+<h1 class="ttl" style="margin-top:6px">四类按钮 · 输入 · 台账行 · 蓝面 · 空态 · 失败三档 · Toast · 占位</h1>
+<p class="note" style="margin-top:8px">骨架三块（状态细条 → 单栏内容流 → 屏底动作区），所以<b>没有「底部导航」组件</b> ——
+屏底动作区承担唯一动作，导航靠内容行自己开门。按钮四类形状彼此不同，认形不认色。
+唯一带色的组件是蓝面：内容区一屏最多 1 块。</p>
+
+<!-- 蓝面（v10 唯一新增组件） -->
+<div class="sec">
+  <p class="lb">强调面板 · 长春花蓝当「面」用：恒定含义「这一块是你还没碰过的那部分」</p>
+  <div class="demo">
+    <div class="panel panel-demo">
+      <p class="body">今天有 <b style="font-family:var(--font-display);font-size:22px;font-weight:400">3</b> 次没记</p>
+    </div>
+    <p class="cap">全宽出血 · 无外框无圆角 · 上缘 1.5px 墨线（运算线：颜色是被算出来的）· 墨字其上 7.4:1 · 一屏最多 1 块，首启与记录入口 0 块</p>
+  </div>
+</div>
+
+<!-- 按钮 -->
+<div class="sec">
+  <p class="lb">按钮 · 主 = 满宽实心块（住屏底）</p>
+  <div class="row demo">
+    <div class="cell"><button type="button" class="btn-pri">记一条</button><p class="cap">默认</p></div>
+    <div class="cell"><button type="button" class="btn-pri" style="opacity:.85">记一条</button><p class="cap">按下 · 120ms</p></div>
+    <div class="cell"><button type="button" class="btn-pri" aria-disabled="true" tabindex="0" aria-label="记一条，暂时不可用" aria-describedby="primary-disabled-note">记一条</button><p id="primary-disabled-note" class="cap">禁用 · 35% · 原因就地说明</p></div>
+  </div>
+  <p class="lb" style="margin-top:20px">危险 = 实心红，只给不可逆动作；永不与主按钮同屏底</p>
+  <div class="row demo">
+    <div class="cell"><button type="button" class="btn-danger">删除这条记录</button><p class="cap">默认</p></div>
+    <div class="cell"><button type="button" class="btn-danger" aria-disabled="true" tabindex="0" aria-label="删除这条记录，暂时不可用" aria-describedby="danger-disabled-note">删除这条记录</button><p id="danger-disabled-note" class="cap">禁用 · 原因就地说明</p></div>
+  </div>
+  <p class="lb" style="margin-top:20px">次 = 细线等分栏（无外框、无底色）／ 文本 = 下划线偏移 5px</p>
+  <div class="demo">
+    <div class="split"><button type="button" style="height:44px;font-size:15px">按章看全部</button><button type="button" style="height:44px;font-size:15px">我已经会了(4)</button></div>
+    <div style="margin-top:14px"><button type="button" class="link">本来该记，但懒了</button>　
+      <button type="button" class="link" aria-disabled="true" tabindex="0" aria-label="本来该记，但懒了，暂时不可用" aria-describedby="text-disabled-note" style="opacity:.35">本来该记，但懒了</button></div>
+    <p id="text-disabled-note" class="cap">文本按钮：默认 / 禁用 35%（按下同主按钮 85%）</p>
+  </div>
+</div>
+
+<!-- 输入 -->
+<div class="sec">
+  <p class="lb">输入 · 一条底线，不是一个框</p>
+  <div class="demo">
+    <div class="field"><label class="eyebrow" for="source-empty" style="flex:0 0 40px">来源</label><input id="source-empty" aria-label="来源名称" placeholder="记下是从哪来的"></div>
+    <p class="cap">默认 · 占位字 75%</p>
+    <div class="field field--focus" style="margin-top:12px"><label class="eyebrow" for="source-typing" style="flex:0 0 40px">来源</label><input id="source-typing" aria-label="来源名称，输入中" value="粉笔"></div>
+    <p class="cap">输入中 / 聚焦 · 底线加厚成墨线 1.5px</p>
+    <div class="field field--error" style="margin-top:12px"><label class="eyebrow" for="source-invalid" style="flex:0 0 40px">来源</label><input id="source-invalid" aria-label="来源名称，超过长度上限" aria-invalid="true" aria-describedby="source-error" value="！！！"></div>
+    <p id="source-error" class="field__msg" style="padding-left:0">这个来源名太长了，40 个字以内</p>
+    <p class="cap">错误 · 底线转危险色 + 一行原因，不弹窗</p>
+  </div>
+</div>
+
+<!-- 台账行 -->
+<div class="sec">
+  <p class="lb">台账行 · 列表项的唯一形态：宋体序号 + 两行事实，无表头无外框无斑马纹无行尾操作</p>
+  <div class="demo">
+    <div class="line" style="padding-left:0;padding-right:0">
+      <span class="idx">01</span>
+      <span class="line__main">
+        <span class="body">行政处罚<span class="line__meta">近 5 年 18 次</span></span>
+        <span class="sub" style="color:var(--ink)">你没碰过</span>
+      </span>
+    </div>
+    <p class="cap">常态 · 上行骨架事实（真题的），下行我的事实（你的），两行分开是硬性的</p>
+    <div class="line" style="padding-left:0;padding-right:0">
+      <span class="idx">02</span>
+      <span class="line__main">
+        <span class="body">听证程序<span class="line__meta">近 5 年 12 次</span></span>
+        <span class="sub"><span class="ph" style="width:88px"></span></span>
+      </span>
+    </div>
+    <p class="cap">重算中 · 我的事实变占位块，骨架事实照常显示；不转圈</p>
+  </div>
+</div>
+
+<!-- 空态 / 失败三档 -->
+<div class="sec">
+  <p class="lb">空态 · 一句事实 + 一个出口，不画插画不放表情</p>
+  <div class="demo" style="padding:18px 0;border-bottom:var(--hair-w) solid var(--hair-soft)">
+    <p class="body">你还没标过『已经会了』</p>
+    <p style="margin-top:10px"><button type="button" class="link">按章看全部</button></p>
+  </div>
+  <p class="lb" style="margin-top:20px">失败三档 · 按代价分层，不按情绪分层</p>
+  <div class="demo">
+    <div><span class="toast">没同步上，先记在本机</span><p class="cap">轻 · Toast：记录动作永不失败，失败的只是同步</p></div>
+    <div style="margin-top:16px;border-top:var(--hair-w) solid var(--hair-soft);padding-top:12px">
+      <p class="body body--2">这一条没认出来　<button type="button" class="link">重试</button>　<button type="button" class="link">先存着</button></p>
+      <p class="cap">中 · 行内：失败留在发生的那一行，给两条路</p>
+    </div>
+    <div style="margin-top:16px;border-top:var(--hair-w) solid var(--hair-soft);padding-top:12px">
+      <p class="display" style="font-size:22px;line-height:30px">这份盲区没算出来</p>
+      <p class="sub" style="margin-top:6px">刚才网络断了。上一份还能看，落款了重算前的时间。</p>
+      <p style="margin-top:10px"><button type="button" class="link">重新算</button></p>
+      <p class="cap">重 · 整屏：说清代价（旧数据还在）+ 单一出口</p>
+    </div>
+  </div>
+</div>
+
+<!-- Toast / 占位 -->
+<div class="sec">
+  <p class="lb">加载 · 纸上压平的灰块，不转圈、不跳动画</p>
+  <div class="demo">
+    <p class="body"><span class="ph" style="width:140px"></span></p>
+    <p class="body" style="margin-top:8px"><span class="ph" style="width:96px"></span></p>
+    <p class="cap">占位块高 1em、8px 网格对齐；600ms 内出不来才显示，避免闪</p>
+  </div>
+</div>
+
+<!-- 补充状态 -->
+<div class="sec">
+  <p class="lb">补充状态 · 加载按钮 · 只读输入 · 触达行 · 原图记录</p>
+  <p class="note" style="margin-top:8px">状态先说发生了什么，再给当下可执行的出口；内容区的蓝面一屏最多 1 块，状态组件全部无色。</p>
+
+  <div class="demo">
+    <div class="row">
+      <div class="cell">
+        <button type="button" class="btn-pri" aria-busy="true" aria-disabled="true" tabindex="0" aria-label="正在记下，处理中" aria-describedby="primary-loading-note">正在记下</button>
+        <p id="primary-loading-note" class="cap">加载 · 保留按钮宽度，吞掉重复触发</p>
+      </div>
+      <div class="cell">
+        <button type="button" class="btn-pri" aria-disabled="true" tabindex="0" aria-label="正在重新算，暂时不可用" aria-describedby="recalc-disabled-note">正在重新算</button>
+        <p id="recalc-disabled-note" class="cap">禁用 · 焦点可见，原因就地说明</p>
+      </div>
+    </div>
+
+    <div class="field" style="margin-top:16px;border-bottom:var(--hair-w) solid var(--hair)">
+      <label class="eyebrow" for="source-readonly" style="flex:0 0 40px">来源</label>
+      <input id="source-readonly" value="粉笔" readonly aria-label="来源名称，只读">
+    </div>
+    <p class="cap">只读 · 只保留来源名，不开放改写</p>
+
+    <button class="line" type="button" aria-label="听证程序，近 5 年出现 12 次，你碰过 2 次，最近一次 6 天前" style="padding-left:0;padding-right:0;margin-top:10px">
+      <span class="idx">03</span>
+      <span class="line__main">
+        <span class="body">听证程序<span class="line__meta">近 5 年 12 次</span></span>
+        <span class="sub" style="color:var(--ink)">你碰过 2 次，最近一次 6 天前</span>
+      </span>
+    </button>
+    <p class="cap">已触达 · 整行一个热区，我的事实独立成行</p>
+
+    <article class="record-card-demo line" aria-label="图片记录，14:20，来源粉笔，还没同步" style="margin-top:12px;padding-left:0;padding-right:0">
+      <span class="idx">04</span>
+      <span class="line__main">
+        <span class="body">图片记录</span>
+        <span class="sub">14:20 · 粉笔 · 还没同步</span>
+      </span>
+    </article>
+    <p class="cap">原图记录卡 · 时间、来源、同步状态三行</p>
+  </div>
+</div>
+
+<div class="sec">
+  <p class="lb">补充空态与反馈 · 没建好 / 没记过 / 缓存失败</p>
+  <div class="demo">
+    <div class="state-message">
+      <strong>这个科目的考点表还没建好</strong>
+      <span>这里没有可以减的东西 · <button class="link" type="button">去记一条</button></span>
+    </div>
+    <p class="cap">空态 · 一句事实 + 一个出口</p>
+
+    <div class="state-message" style="margin-top:12px">
+      <strong>你还没记过东西</strong>
+      <span>现在整张表都是没碰过 · <button class="link" type="button">记一条</button></span>
+    </div>
+    <p class="cap">空态 · 不写空泛占位</p>
+
+    <div class="state-message state-message--error" style="margin-top:12px">
+      <strong>这次没刷新上</strong>
+      <span>保留上次内容 · <button class="link" type="button">再试一次</button></span>
+    </div>
+    <p class="cap">缓存失败 · 错误停在发生处</p>
+  </div>
+</div>
+
+<div class="sec">
+  <p class="lb">动作入口与骨架加载</p>
+  <div class="demo">
+    <div class="split">
+      <button type="button" style="height:48px">说</button>
+      <button type="button" style="height:48px">拍</button>
+      <button type="button" style="height:48px">写</button>
+    </div>
+    <p class="cap">快捷动作入口示例，不是持久菜单</p>
+    <p style="margin-top:14px"><span class="toast" role="status">已记下</span></p>
+    <p class="cap">成功 Toast · 短暂、就地、不打断输入</p>
+    <p class="body" style="margin-top:16px"><span class="ph" style="width:140px"></span></p>
+    <p class="body" style="margin-top:8px"><span class="ph" style="width:90px"></span></p>
+    <p class="cap">骨架加载 · 保留行高，不转圈</p>
+  </div>
+</div>
+
+</div></body></html>

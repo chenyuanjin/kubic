@@ -1,0 +1,55 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>U3.8 我要考的那一场 · 档案屏 · Kubic v10</title>
+<link rel="stylesheet" href="tokens.css"><link rel="stylesheet" href="v10.css"><style>
+  body{zoom:2}
+  /* 第一次点「问一下」之后、S-ASK 开屏之前的一屏新屏。不是弹窗、不是蒙层、没有返回。
+     两个字段互不依赖、都可以空；两格都空点「好了」等同跳过，不弹「你还没填」。
+     只显示日期本身 —— 界面不算天数，屏上没有任何「还有几天」。
+     没有进度点、没有跳过倒数、没有任何资料完成度。 */
+  .opt{display:flex;align-items:center;gap:12px;width:100%;min-height:48px;
+       padding:0 var(--rule);font-size:var(--t-body);color:var(--ink)}
+  .opt+.opt{border-top:var(--hair-w) solid var(--hair-soft)}
+  .opt .rd{flex:0 0 auto;font-size:13px;color:var(--ink-2)}
+  .opt[aria-checked="true"] .rd{color:var(--ink)}
+</style></head><body><div class="phone">
+
+<div class="sb"><span>21:47</span><span class="sb__r">
+  <span class="sb__s"><i></i><i></i><i></i><i></i></span><span class="sb__b"></span>
+</span></div>
+
+<div class="flow">
+  <!-- ① 标题与说明：原文照 问一下 §2.5，只说为什么问，不承诺清单会更准 -->
+  <div style="padding:28px var(--rule) 18px">
+    <p class="display" style="font-size:26px;line-height:34px">你要考的是哪一场？</p>
+    <p class="sub" style="margin-top:8px">填了它，问一下的时候会知道你考的是哪一场。不填也能用。</p>
+  </div>
+
+  <!-- ② 考试：闭集选择器，全集（国考 + 省级行政区），选哪场存哪场，不选也合法 -->
+  <div class="control" style="border-bottom:0"><span>考试</span><span style="color:var(--ink-2)">选一场，或者不选</span></div>
+  <div class="band" role="radiogroup" aria-label="考试，闭集选择，国考与各省级行政区">
+    <button class="opt" role="radio" aria-checked="true" aria-label="国考，已选中"><span class="rd">◉</span>国考</button>
+    <button class="opt" role="radio" aria-checked="false" aria-label="北京"><span class="rd">○</span>北京</button>
+    <button class="opt" role="radio" aria-checked="false" aria-label="江苏"><span class="rd">○</span>江苏</button>
+    <button class="opt" role="radio" aria-checked="false" aria-label="浙江"><span class="rd">○</span>浙江</button>
+    <button class="opt" role="radio" aria-checked="false" aria-label="广东"><span class="rd">○</span>广东</button>
+    <button class="opt" role="radio" aria-checked="false" aria-label="山东"><span class="rd">○</span>山东</button>
+    <button class="opt" style="min-height:40px" aria-label="继续往下翻，共 32 项"><span class="rd" aria-hidden="true">⌄</span><span class="sub">往下还有 26 项</span></button>
+  </div>
+
+  <!-- ③ 考试日期：只到日，不预填、不给默认值；这一格不显示还有几天 -->
+  <div class="control" style="border-bottom:0;margin-top:12px"><span>考试日期</span><span style="color:var(--ink-2)">只到日</span></div>
+  <div class="field" style="border-bottom:var(--hair-w) solid var(--hair)">
+    <input aria-label="考试日期，只到日，可以不填" placeholder="选一天">
+  </div>
+
+  <div style="flex:1 1 auto"></div>
+</div>
+
+<!-- 屏底：以后再说（永不禁用）· 好了（唯一主按钮，两格都空点它等同跳过） -->
+<div class="dock">
+  <div style="display:flex;gap:20px;align-items:center">
+    <button class="link link--body" style="flex:0 0 auto" aria-label="以后再说，跳过之后不再自动出现，想改去设置里">以后再说</button>
+    <button class="btn-pri" style="flex:1 1 auto;width:auto" aria-label="好了，两格都空点它等同跳过">好了</button>
+  </div>
+</div>
+<div class="hi"></div>
+</div></body></html>

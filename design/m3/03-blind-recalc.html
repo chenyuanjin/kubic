@@ -1,0 +1,91 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>U3.2 盲区总览 · 重算态 · Kubic v10</title>
+<link rel="stylesheet" href="tokens.css"><link rel="stylesheet" href="v10.css"><style>
+  body{zoom:2}
+  /* RECALCULATING：一个旧数字都不许出现。数字位 = 占位块（不转圈、不删除线、不调透明度）。
+     归档计数与未分类行照常（不参与这次重算）；榜的骨架统计照常、行仍可点；
+     排序与筛选禁用并就地给理由。断言注脚重算中隐藏。 */
+  .calc{padding-top:0}
+  .calc__row{padding:4px 0}
+  .foot p{padding:3px 0}
+  .line{padding-top:12px;padding-bottom:12px}
+</style></head><body><div class="phone">
+
+<div class="sb"><span>21:47</span><span class="sb__r">
+  <span class="sb__s"><i></i><i></i><i></i><i></i></span><span class="sb__b"></span>
+</span></div>
+
+<div class="flow">
+  <!-- 区 0 · 状态条（三选一，此刻是重算细条） -->
+  <div class="band" role="status" aria-label="覆盖度正在重新算，数字暂时不显示" style="padding:7px var(--rule)">
+    <span class="eyebrow">正在重新算 · 数字暂时不显示</span>
+  </div>
+
+  <div class="head"><span>‹ 盲区 · 行政法 ⌄</span></div>
+
+  <!-- 区 2 · 摘要：数字位全部换占位块，屏幕上找不到旧值 -->
+  <div class="calc" aria-label="覆盖度正在重新算，三个数暂时不显示">
+    <p class="calc__row">
+      <span class="calc__label calc__label--2">一共</span>
+      <span class="calc__num"><span class="ph" style="width:58px"></span></span>
+    </p>
+    <p class="calc__row">
+      <span class="calc__label calc__label--2">你碰过</span>
+      <span class="calc__op">−</span>
+      <span class="calc__num"><span class="ph" style="width:44px"></span></span>
+    </p>
+  </div>
+  <div class="panel calc__sum" aria-label="没碰过的数正在重新算">
+    <span class="calc__label">没碰过</span>
+    <span class="calc__num hero"><span class="ph" style="width:88px;height:.8em"></span></span>
+  </div>
+
+  <!-- 注脚：断言注脚重算中隐藏；归档计数与未分类行照常显示 -->
+  <div class="foot" style="padding-top:10px">
+    <p>另有 0 个考点已归档</p>
+    <p>另有 2 条记录没能对上任何考点</p>
+    <p style="opacity:.8">出现次数统计截至 2025 年</p>
+  </div>
+
+  <!-- 口径行：排序与筛选禁用，就地给理由 -->
+  <div class="control"><span>排序和筛选先停一下：这几个数正在重新算</span></div>
+
+  <!-- 区 3 · 榜：骨架统计照常，「我的事实」占位，整行仍可点 -->
+  <button class="line" aria-label="行政处罚，近 5 年出现 18 次，你的触达正在重新算，点开看考点详情">
+    <span class="idx">01</span>
+    <span class="line__main">
+      <span class="body">行政处罚<span class="line__meta">近 5 年 18 次</span></span>
+      <span class="sub"><span class="ph" style="width:88px"></span></span>
+    </span>
+  </button>
+  <button class="line" aria-label="听证程序，近 5 年出现 12 次，你的触达正在重新算，点开看考点详情">
+    <span class="idx">02</span>
+    <span class="line__main">
+      <span class="body">听证程序<span class="line__meta">近 5 年 12 次</span></span>
+      <span class="sub"><span class="ph" style="width:88px"></span></span>
+    </span>
+  </button>
+  <button class="line" aria-label="行政许可，近 5 年出现 10 次，你的触达正在重新算，点开看考点详情">
+    <span class="idx">03</span>
+    <span class="line__main">
+      <span class="body">行政许可<span class="line__meta">近 5 年 10 次</span></span>
+      <span class="sub"><span class="ph" style="width:64px"></span></span>
+    </span>
+  </button>
+  <button class="line" aria-label="行政复议，近 5 年出现 9 次，你的触达正在重新算，点开看考点详情">
+    <span class="idx">04</span>
+    <span class="line__main">
+      <span class="body">行政复议<span class="line__meta">近 5 年 9 次</span></span>
+      <span class="sub"><span class="ph" style="width:88px"></span></span>
+    </span>
+  </button>
+
+  <div style="flex:1 1 auto"></div>
+
+  <!-- 区 4 · 出口：按章看全部照常；「我已经会了」重算中禁用 -->
+  <div class="split">
+    <button aria-label="按章看全部考点">按章看全部</button>
+    <button aria-disabled="true" tabindex="0" style="opacity:.35" aria-label="我已经会了，正在重新算，暂时不可用">我已经会了(4)</button>
+  </div>
+</div>
+<div class="hi"></div>
+</div></body></html>

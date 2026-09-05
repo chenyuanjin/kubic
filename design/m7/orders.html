@@ -1,0 +1,72 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>U7.6 订单历史 · Kubic M7 v10</title>
+<link rel="stylesheet" href="tokens.css"><link rel="stylesheet" href="v10.css"><style>
+  body{zoom:2}
+  /* 购买屏的子页：台账行四类信息(商品名·金额·状态·时间)，创建时间倒序，
+     到底自动加载。「正在到账」与「钱收到了,权益还在处理」是两句不同的话，不合并。 */
+  .back{margin:-14px 0;padding:14px 10px 14px 0;font-size:var(--t-micro);color:var(--ink-2)}
+  .line{padding-top:12px;padding-bottom:12px}
+</style></head><body><div class="phone">
+
+<div class="sb"><span>21:47</span><span class="sb__r">
+  <span class="sb__s"><i></i><i></i><i></i><i></i></span><span class="sb__b"></span>
+</span></div>
+
+<div class="flow">
+  <div class="head">
+    <button class="back" aria-label="返回">‹ 返回</button>
+    <span>全部订单</span>
+  </div>
+
+  <p class="eyebrow pad" style="margin-top:16px;margin-bottom:4px">按下单时间倒序</p>
+
+  <button class="line">
+    <span class="idx">01</span>
+    <span class="line__main">
+      <span class="body">记多点<span class="line__meta">¥ 12.00</span></span>
+      <span class="sub">支付成功,正在到账 · 刚刚</span>
+    </span>
+  </button>
+  <button class="line">
+    <span class="idx">02</span>
+    <span class="line__main">
+      <span class="body">记多点<span class="line__meta">¥ 12.00</span></span>
+      <span class="sub" style="color:var(--ink)">钱收到了,权益还在处理 · 1 小时前</span>
+    </span>
+  </button>
+  <button class="line">
+    <span class="idx">03</span>
+    <span class="line__main">
+      <span class="body">记多点<span class="line__meta">¥ 12.00</span></span>
+      <span class="sub">还没付,可以接着付 · 昨天 21:03</span>
+    </span>
+  </button>
+  <button class="line">
+    <span class="idx">04</span>
+    <span class="line__main">
+      <span class="body">记多点<span class="line__meta">¥ 12.00</span></span>
+      <span class="sub">已到账 · 3 天前</span>
+    </span>
+  </button>
+  <button class="line">
+    <span class="idx">05</span>
+    <span class="line__main">
+      <span class="body">记多点<span class="line__meta">¥ 12.00</span></span>
+      <span class="sub">这笔订单超时关了,没有扣款 · 上周</span>
+    </span>
+  </button>
+  <button class="line">
+    <span class="idx">06</span>
+    <span class="line__main">
+      <span class="body">记多点<span class="line__meta">¥ 12.00</span></span>
+      <span class="sub">这笔已经退了 · 8月12日</span>
+    </span>
+  </button>
+
+  <div class="foot" style="margin-top:8px"><p>没有更多</p></div>
+</div>
+
+<div class="dock">
+  <button class="btn-pri">回去看盲区</button>
+</div>
+<div class="hi"></div>
+</div></body></html>

@@ -1,0 +1,49 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>U5.1 登录门 · 受限态（锁定）· Kubic v10</title>
+<link rel="stylesheet" href="tokens.css"><link rel="stylesheet" href="v10.css"><style>
+  body{zoom:2}
+  /* 受限态 C-LIMIT：连错达上限，输入区整区替换。
+     给准确时点，不说含糊的「稍后」；文案不写成故障，也没有紧迫感。
+     换通道的两条路仍在，关闭永不禁用 —— 没有任何一个态把用户堵死。整屏 0 块蓝面。 */
+  .btn-ghost{display:flex;width:100%;height:52px;align-items:center;justify-content:center;
+    border:1.5px solid var(--ink);border-radius:var(--radius);font-size:var(--t-btn);color:var(--ink)}
+  .btn-ghost+.btn-ghost{margin-top:10px}
+  .or{display:flex;align-items:center;gap:12px;margin:0 0 16px}
+  .or::before,.or::after{content:"";flex:1;border-top:var(--hair-w) solid var(--hair)}
+  .or span{font-size:var(--t-micro);color:var(--ink-2)}
+</style></head><body><div class="phone">
+
+<div class="sb"><span>21:47</span><span class="sb__r">
+  <span class="sb__s"><i></i><i></i><i></i><i></i></span><span class="sb__b"></span>
+</span></div>
+
+<div class="flow">
+  <div class="head">
+    <button class="link" style="min-height:auto;padding:0;font-size:var(--t-sub)">× 关闭</button>
+    <span>未登录</span>
+  </div>
+
+  <div class="pad" style="padding-top:44px;padding-bottom:36px">
+    <h1 class="display">登录</h1>
+    <p class="body body--2" style="margin-top:14px">你要记的每一条，都得先落进一个账号里。</p>
+  </div>
+
+  <!-- 输入区整区替换为受限说明：手机号只读留在原位，验证码格不再渲染 -->
+  <div class="field" style="border-bottom:var(--hair-w) solid var(--hair)">
+    <label class="eyebrow" style="flex:0 0 40px">手机</label>
+    <input value="138 0013 8000" readonly aria-label="手机号，只读">
+  </div>
+
+  <div class="pad" style="padding-top:28px">
+    <p class="display" style="font-size:22px;line-height:30px">验证码连着输错太多次</p>
+    <p class="sub" style="margin-top:8px">为了这个号的安全，到 22:10 才能再试。<br>
+      什么都不用做，到点它自己就好了。</p>
+  </div>
+</div>
+
+<div class="dock">
+  <div class="or"><span>也可以换一条路进来</span></div>
+  <button class="btn-ghost">通过 Apple 登录</button>
+  <button class="btn-ghost">微信登录</button>
+</div>
+<div class="hi"></div>
+</div></body></html>

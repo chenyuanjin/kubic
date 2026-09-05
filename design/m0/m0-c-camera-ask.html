@@ -1,0 +1,60 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>M0 · U0.2 相机说明卡片 · 主态（系统弹窗之前）· iPhone</title>
+<link rel="stylesheet" href="tokens.css"><link rel="stylesheet" href="v10.css"><style>
+  body{zoom:2}
+  /* U0.2 主态：首次在拍照模式里点「📷 拍」之后 —— 系统弹窗之前,产品自己说话的唯一一屏。
+     说明卡片是页内卡片（band 抬起面）,不是浮层;出现这一刻 0 个系统请求已发出。
+     承诺句逐字同源（= 边界第三句）;附加句时长由判据层给,此处为样张示例值。
+     三个按钮全部次按钮、纵向排（C-BTN:并排 ≤2,三个改纵向）,末位是不需要权限的那条路。
+     主按钮仍是屏底「记下」,内容为空故禁用 —— 不因卡片在场而额外禁用。
+     内容区 0 块蓝面：权限讲的是原图,不是盲区。
+     自造组件 2/3：模式段控 seg、纵向按钮栈 vstack。 */
+  .seg{display:flex;border-top:var(--hair-w) solid var(--hair);border-bottom:var(--hair-w) solid var(--hair)}
+  .seg button{flex:1;height:48px;display:flex;align-items:center;justify-content:center;
+              font-size:var(--t-btn);color:var(--ink-2)}
+  .seg button + button{border-left:var(--hair-w) solid var(--hair)}
+  .seg button[aria-current="true"]{color:var(--ink);box-shadow:inset 0 calc(-1 * var(--rule-ink)) 0 var(--ink)}
+  .vstack{border-top:var(--hair-w) solid var(--hair)}
+  .vstack button{display:flex;width:100%;min-height:52px;align-items:center;justify-content:center;
+                 font-size:var(--t-btn);color:var(--ink);border-bottom:var(--hair-w) solid var(--hair)}
+</style></head><body><div class="phone">
+
+<div class="sb"><span>21:47</span><span class="sb__r">
+  <span class="sb__s"><i></i><i></i><i></i><i></i></span><span class="sb__b"></span>
+</span></div>
+
+<div class="flow">
+  <div class="head"><span>记一条</span><span>21:47</span></div>
+
+  <div class="seg">
+    <button>写</button><button>说</button><button aria-current="true">拍</button><button>做题</button>
+  </div>
+
+  <div style="height:24px"></div>
+
+  <div class="band">
+    <div class="pad" style="padding-top:24px;padding-bottom:8px">
+      <h2 class="display" style="font-size:24px;line-height:32px">拍一张就行。</h2>
+      <p class="body" style="margin-top:12px">要用相机拍下讲义或者屏幕。</p>
+      <p class="body" style="margin-top:8px">你拍的原图只存在这台设备上,不上传、不同步、不备份到任何服务器。</p>
+      <p class="sub" style="margin-top:8px;padding-bottom:16px">7 天后转为本机留存,不再用于识别,随时可以手动删。</p>
+    </div>
+    <div class="vstack">
+      <button>打开相机</button>
+      <button>从相册选</button>
+      <button>先打字</button>
+    </div>
+  </div>
+
+  <div style="flex:1 1 auto"></div>
+
+  <div class="field">
+    <label class="eyebrow" for="src" style="flex:0 0 auto">来源</label>
+    <input id="src" placeholder="记下是从哪来的">
+  </div>
+</div>
+
+<div class="dock">
+  <button class="btn-pri" aria-disabled="true">记下</button>
+</div>
+<div class="hi"></div>
+</div></body></html>

@@ -1,0 +1,165 @@
+*{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased;
+  text-rendering:geometricPrecision}
+body{background:var(--canvas);font-family:var(--font-body);color:var(--ink)}
+button{font:inherit;color:inherit;background:none;border:0;text-align:left;cursor:pointer}
+button:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--ink);outline-offset:3px}
+
+/* ── 屏 ─────────────────────────────────────────── */
+.phone{position:relative;width:390px;height:844px;background:var(--ground);
+       display:flex;flex-direction:column;overflow:hidden}
+
+/* iOS 状态条（设备的，不是产品的） */
+.sb{flex:0 0 auto;height:52px;display:flex;align-items:flex-end;justify-content:space-between;
+    padding:0 var(--rule) 6px;color:var(--ink);font-size:15px;font-weight:600;
+    font-variant-numeric:tabular-nums;letter-spacing:.2px}
+.sb__r{display:flex;align-items:center;gap:6px}
+.sb__s{display:flex;align-items:flex-end;gap:1.5px;height:11px}
+.sb__s i{width:3px;background:var(--ink);border-radius:.5px}
+.sb__s i:nth-child(1){height:4px}.sb__s i:nth-child(2){height:6px}
+.sb__s i:nth-child(3){height:8.5px}.sb__s i:nth-child(4){height:11px}
+.sb__b{width:24px;height:11.5px;border:1.2px solid var(--ink);border-radius:3px;position:relative}
+.sb__b::before{content:"";position:absolute;inset:1.6px;width:14px;background:var(--ink);border-radius:1px}
+.sb__b::after{content:"";position:absolute;right:-3px;top:3.5px;width:1.6px;height:4.5px;
+              background:var(--ink);border-radius:0 1px 1px 0}
+
+/* ── 内容流 ─────────────────────────────────────── */
+.flow{flex:1 1 auto;display:flex;flex-direction:column;min-height:0}
+.pad{padding-left:var(--rule);padding-right:var(--rule)}
+
+/* ── 台账头：印刷品的卡头，不是导航栏 ── */
+.head{display:flex;justify-content:space-between;align-items:baseline;
+      padding:12px var(--rule);
+      border-top:var(--hair-w) solid var(--hair);
+      border-bottom:var(--hair-w) solid var(--hair)}
+.head span{font-size:var(--t-micro);line-height:var(--lh-micro);color:var(--ink-2);
+           font-variant-numeric:tabular-nums;letter-spacing:.3px}
+
+/* ── 字级 ── */
+.eyebrow{font-size:var(--t-micro);line-height:var(--lh-micro);color:var(--ink-2);
+         font-variant-numeric:tabular-nums}
+.display{font-family:var(--font-display);font-size:var(--t-display);
+         line-height:var(--lh-display);font-weight:400;color:var(--ink)}
+.hero{font-family:var(--font-display);font-size:var(--t-hero);
+      line-height:var(--lh-hero);font-weight:400;color:var(--ink);
+      font-variant-numeric:tabular-nums lining-nums}
+.body{font-size:var(--t-body);line-height:var(--lh-body);color:var(--ink)}
+.body--2{color:var(--ink-2)}
+.sub{font-size:var(--t-sub);line-height:var(--lh-sub);color:var(--ink-2)}
+
+/* ── 标志 ── */
+.logo{display:flex;align-items:center;gap:10px}
+.logo__type{font-family:var(--font-mono);font-weight:500;letter-spacing:.5px;
+            color:var(--ink);display:inline-flex;align-items:center}
+.cur{display:inline-block;background:var(--accent);margin-left:-.06em;
+     width:.55em;height:1.02em;vertical-align:-.16em}
+
+/* ── 强调面：全产品唯一的色，当「面」用。
+      全宽出血、无外框、无圆角 —— 是蓝图上的一片区域，不是一张卡片。
+      上缘一条墨线（运算线的同族）：颜色是从这条线「算出来」的。
+      恒定含义：这一块是你还没碰过的那部分。内容区一屏最多 1 块。 ── */
+.panel{background:var(--accent);
+       border-top:var(--rule-ink) solid var(--ink)}
+.panel .sub,.panel .eyebrow{color:var(--ink);opacity:.72}
+
+/* ── 文本按钮：下偏移细线，全产品唯一可点文本形态 ── */
+.link{display:inline-flex;min-height:44px;align-items:center;padding:0 4px;
+      font-size:var(--t-sub);line-height:var(--lh-sub);color:var(--ink);
+      text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:5px;
+      text-decoration-color:var(--underline)}
+.link--body{font-size:var(--t-body);line-height:var(--lh-body)}
+
+/* ── 抬起面：全宽通条，无外框无圆角、左右出血 ── */
+.band{background:var(--raised);
+      border-top:var(--hair-w) solid var(--hair-soft);
+      border-bottom:var(--hair-w) solid var(--hair-soft)}
+
+/* ── 台账行：宋体序号住在 18px 槽里，正文左缘统一 56px ── */
+.line{display:flex;gap:var(--gap-slot);width:100%;
+      padding:16px var(--rule);align-items:flex-start}
+.line + .line{border-top:var(--hair-w) solid var(--hair-soft)}
+.idx{flex:0 0 var(--slot);width:var(--slot);font-family:var(--font-display);
+     font-size:var(--t-idx);line-height:var(--lh-body);color:var(--ink-2);
+     font-variant-numeric:tabular-nums lining-nums}
+.slot{flex:0 0 var(--slot);width:var(--slot)}
+.line__main{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:2px}
+.line__meta{font-size:var(--t-sub);color:var(--ink-2);margin-left:10px;
+            font-variant-numeric:tabular-nums}
+
+/* ── 竖式减法：labels 压左边线，数字右对齐成一列。
+      结果行长在蓝面上 —— 运算线就是蓝面的上缘。 ── */
+.calc{padding:8px var(--rule) 0}
+.calc__row{display:flex;align-items:baseline;justify-content:space-between;padding:6px 0}
+.calc__label{font-size:var(--t-body);line-height:var(--lh-body);color:var(--ink)}
+.calc__label--2{color:var(--ink-2)}
+.calc__num{font-family:var(--font-display);font-size:var(--t-display);
+           line-height:var(--lh-display);font-variant-numeric:tabular-nums lining-nums}
+.calc__op{font-family:var(--font-display);font-size:22px;color:var(--ink-2);
+          margin-right:10px;flex:1 1 auto;text-align:right}
+.calc__sum{display:flex;align-items:baseline;justify-content:space-between;
+           width:100%;min-height:44px;padding:14px var(--rule) 18px;margin-top:10px}
+.calc__sum .calc__num{font-size:var(--t-hero);line-height:var(--lh-hero)}
+.calc-tap .calc__num{text-decoration:underline;text-decoration-thickness:1px;
+                     text-underline-offset:7px;text-decoration-color:var(--underline)}
+
+/* ── 注脚 ── */
+.foot{padding:0 var(--rule) 8px}
+.foot p{font-size:var(--t-sub);line-height:var(--lh-sub);color:var(--ink-2);
+        padding:4px 0;font-variant-numeric:tabular-nums}
+
+/* ── 口径行 ── */
+.control{display:flex;justify-content:space-between;align-items:center;
+         padding:10px var(--rule);border-top:var(--hair-w) solid var(--hair);
+         border-bottom:var(--hair-w) solid var(--hair)}
+.control span,.control button{font-size:var(--t-micro);line-height:var(--lh-micro);
+         color:var(--ink-2);font-variant-numeric:tabular-nums}
+
+/* ── 次动作：细线等分栏，没有外框 ── */
+.split{display:flex;border-top:var(--hair-w) solid var(--hair);
+       border-bottom:var(--hair-w) solid var(--hair)}
+.split button{flex:1;height:52px;display:flex;align-items:center;justify-content:center;
+              font-size:var(--t-btn);color:var(--ink)}
+.split button + button{border-left:var(--hair-w) solid var(--hair)}
+
+/* ── 屏底动作区 ── */
+.dock{flex:0 0 auto;background:var(--raised);
+      border-top:var(--hair-w) solid var(--hair-soft);
+      padding:16px var(--rule) calc(40px + env(safe-area-inset-bottom,0px))}
+.btn-pri{display:flex;width:100%;height:56px;align-items:center;justify-content:center;
+         background:var(--action);color:var(--on-action);font-size:var(--t-btn);
+         border-radius:var(--radius);transition:opacity var(--dur-1) var(--ease)}
+.btn-pri:active{opacity:.85}
+.btn-danger{display:flex;width:100%;height:56px;align-items:center;justify-content:center;
+            background:var(--danger);color:var(--on-danger);font-size:var(--t-btn);
+            border-radius:var(--radius)}
+.btn-pri[disabled],.btn-danger[disabled],.btn-pri[aria-disabled="true"],.btn-danger[aria-disabled="true"]{opacity:.35}
+.dock__row{display:flex;margin-bottom:16px;border-top:var(--hair-w) solid var(--hair);
+           border-bottom:var(--hair-w) solid var(--hair)}
+.dock__row button{flex:1;height:48px;display:flex;align-items:center;justify-content:center;
+                  font-size:var(--t-btn);color:var(--ink)}
+.dock__row button + button{border-left:var(--hair-w) solid var(--hair)}
+
+/* ── 输入 ── */
+.field{display:flex;align-items:center;gap:10px;padding:0 var(--rule);height:52px;
+       border-top:var(--hair-w) solid var(--hair)}
+.field input{flex:1;background:none;border:0;outline:none;color:var(--ink);
+             font-size:var(--t-body);font-family:var(--font-body)}
+.field input::placeholder{color:var(--ink-2);opacity:.75}
+.field--focus{box-shadow:inset 0 -1.5px 0 var(--ink)}
+.field--error{box-shadow:inset 0 -1.5px 0 var(--danger)}
+.field__msg{font-size:var(--t-micro);color:var(--danger);padding:4px var(--rule) 0}
+
+/* ── 占位（重算/加载）：不转圈，纸上一块压平的灰 ── */
+.ph{display:inline-block;height:1em;width:3em;background:var(--fill-skeleton);
+    border-radius:var(--radius);vertical-align:-.1em}
+
+/* ── Toast：纸上一条墨签 ── */
+.toast{display:inline-flex;align-items:center;height:44px;padding:0 18px;
+       background:var(--action);color:var(--on-action);font-size:var(--t-sub);
+       border-radius:var(--radius)}
+
+/* ── 设备 home indicator ── */
+.hi{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);
+    width:134px;height:5px;border-radius:3px;background:var(--hi)}
+
+/* ── 无障碍：减少动效 ── */
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}

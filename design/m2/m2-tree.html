@@ -1,0 +1,66 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>树选择器覆盖层 · 主态 · Kubic v10 · M2</title>
+<link rel="stylesheet" href="tokens.css"><link rel="stylesheet" href="v10.css"><style>
+  body{zoom:2}
+  .close{display:inline-flex;align-items:center;min-height:44px;margin:-14px 0;padding:0 4px;
+         font-size:var(--t-sub);color:var(--ink)}
+  .tree{flex:1 1 auto;min-height:0;overflow:hidden}
+  .t-row{display:flex;align-items:center;gap:10px;width:100%;min-height:48px;
+         padding:0 var(--rule);border-bottom:var(--hair-w) solid var(--hair-soft)}
+  .t-row .glyph{flex:0 0 var(--slot);width:var(--slot);font-family:var(--font-display);
+                font-size:12px;color:var(--ink-2)}
+  .t-row .body{flex:1 1 auto;min-width:0}
+  .t-row .line__meta{margin-left:8px}
+  .t-1 .body{font-family:var(--font-display);font-size:18px}
+  .t-2{padding-left:calc(var(--rule) + 18px)}
+  .t-3{padding-left:calc(var(--rule) + 36px)}
+  .t-3 .glyph{font-family:var(--font-body)}
+  .t-sel{background:var(--raised);box-shadow:inset 3px 0 0 var(--ink)}
+  .t-dim{opacity:.4}
+  .picked{display:flex;justify-content:space-between;align-items:baseline;
+          padding:0 0 12px}
+</style></head><body><div class="phone">
+
+<div class="sb"><span>21:47</span><span class="sb__r">
+  <span class="sb__s"><i></i><i></i><i></i><i></i></span><span class="sb__b"></span>
+</span></div>
+
+<div class="flow">
+  <div class="head">
+    <button class="close">✕</button>
+    <span>挑一个考点 · 只能从表里挑</span>
+  </div>
+
+  <!-- 搜索：全屏唯一文本输入，输出只有一个节点；回车只收起键盘 -->
+  <div class="field" style="border-bottom:var(--hair-w) solid var(--hair)">
+    <input placeholder="搜考点名" aria-label="搜索考点名，输入框">
+  </div>
+
+  <div class="tree">
+    <button class="t-row t-1"><span class="glyph">▾</span><span class="body">法律常识<span class="line__meta">3 个题型</span></span></button>
+
+    <button class="t-row t-2"><span class="glyph">▾</span><span class="body">行政法<span class="line__meta">12 个考点</span></span></button>
+
+    <button class="t-row t-3 t-sel"><span class="glyph">●</span><span class="body">听证程序</span></button>
+    <button class="t-row t-3 t-dim" aria-disabled="true"><span class="glyph">○</span><span class="body">行政复议的范围<span class="line__meta">已经挂过了</span></span></button>
+    <button class="t-row t-3"><span class="glyph">○</span><span class="body">行政强制措施</span></button>
+    <button class="t-row t-3"><span class="glyph">○</span><span class="body">行政处罚的种类</span></button>
+
+    <button class="t-row t-2"><span class="glyph">▸</span><span class="body">民法<span class="line__meta">9 个考点</span></span></button>
+
+    <button class="t-row t-1"><span class="glyph">▸</span><span class="body">判断推理<span class="line__meta">4 个题型</span></span></button>
+    <button class="t-row t-1"><span class="glyph">▸</span><span class="body">资料分析<span class="line__meta">3 个题型</span></span></button>
+
+    <button class="t-row" style="border-bottom:0;margin-top:8px"><span class="glyph">▸</span>
+      <span class="sub">归档的考点 4 个 · 可找回，不可挑</span></button>
+  </div>
+</div>
+
+<div class="dock">
+  <div class="picked">
+    <span class="sub">已选：<b style="color:var(--ink);font-weight:500">听证程序</b></span>
+    <span class="eyebrow">法律常识 → 行政法</span>
+  </div>
+  <button class="btn-pri">挂上去</button>
+</div>
+<div class="hi"></div>
+</div></body></html>

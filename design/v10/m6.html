@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Kubic v10 · M6 端与形态</title>
+  <link rel="stylesheet" href="tokens.css">
+  <link rel="stylesheet" href="v10.css">
+  <style>
+    .wide{min-height:100vh;background:var(--ground);padding:40px}
+    .wide-inner{max-width:1320px;margin:0 auto}
+    .wide-head{display:flex;align-items:flex-end;justify-content:space-between;gap:40px;padding-bottom:24px;border-bottom:var(--hair-w) solid var(--hair)}
+    .wide-kicker{margin:0;color:var(--ink-2);font-size:var(--t-micro);letter-spacing:.08em}
+    .wide-title{margin:8px 0 0;font-family:var(--font-display);font-size:42px;line-height:50px;font-weight:400}
+    .wide-intro{max-width:460px;margin:0;color:var(--ink-2);font-size:var(--t-body);line-height:26px}
+    .state-block{margin-top:28px;padding-top:18px;border-top:var(--hair-w) solid var(--hair)}
+    .state-block h2{margin:0 0 12px;font-family:var(--font-display);font-size:26px;line-height:34px;font-weight:400}
+    .matrix{width:100%;border-collapse:collapse;font-size:var(--t-sub)}
+    .matrix th,.matrix td{padding:11px 12px;text-align:left;vertical-align:top;border-bottom:var(--hair-w) solid var(--hair-soft)}
+    .matrix th{color:var(--ink-2);font-weight:500}.matrix td strong{color:var(--ink);font-weight:600}
+    .check-list{display:grid;grid-template-columns:repeat(2,1fr);gap:0 28px}
+    .check-item{padding:12px 0;border-bottom:var(--hair-w) solid var(--hair-soft);font-size:var(--t-sub);line-height:22px}
+    .check-item b{display:block;margin-bottom:3px;font-size:var(--t-body);font-weight:500}
+    @media (max-width:719px){.wide{padding:20px}.wide-head{display:block}.wide-intro{margin-top:14px}.check-list{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <main class="wide">
+    <div class="wide-inner">
+      <header class="wide-head">
+        <div>
+          <p class="wide-kicker">KUBIC / V10 · M6</p>
+          <h1 class="wide-title">同一条内容流，<br>换端不换口径。</h1>
+        </div>
+        <p class="wide-intro">断点只改变排布，不改变信息顺序。首发端按用户 2026-09-04 指令：iOS —— iPhone（App）与 iPad 两档都要出稿。小程序不承接原图，因此三处留存表达不渲染，也不留空壳。</p>
+      </header>
+
+      <section class="state-block" data-od-id="breakpoints">
+        <h2>U6.1 / U6.3 · 响应式断点（每个模块两档都交：iPhone 一张 + iPad 一张）</h2>
+        <table class="matrix">
+          <thead><tr><th scope="col">视口</th><th scope="col">排布</th><th scope="col">定位</th><th scope="col">保留什么</th></tr></thead>
+          <tbody>
+            <tr><td><strong>&lt; 720px</strong></td><td>单栏内容流</td><td><strong>iPhone App</strong> / H5</td><td>状态细条 → 内容流 → 屏底动作区；蓝面全宽出血</td></tr>
+            <tr><td><strong>720–1023px</strong></td><td>单栏兜底</td><td><strong>iPad 竖屏</strong> / 窄桌面</td><td>只放宽文字与行高，不引入侧栏；左边线从 24px 放到 32px，内容最大宽 640px 居中</td></tr>
+            <tr><td><strong>≥ 1024px</strong></td><td>双列内容</td><td><strong>iPad 横屏</strong> / 桌面壳 / 宽 Web</td><td>左栏是当前科目内容，右栏是节点内容；左栏不是持久菜单——随科目与筛选整栏换掉</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section class="state-block" data-od-id="capabilities">
+        <h2>U6.2 · 屏 × 端能力矩阵</h2>
+        <table class="matrix">
+          <thead><tr><th scope="col">能力</th><th scope="col">Web / H5</th><th scope="col">桌面壳</th><th scope="col">iOS App（iPhone / iPad）</th><th scope="col">小程序</th></tr></thead>
+          <tbody>
+            <tr><td>文字记录</td><td>有</td><td>有</td><td>有</td><td>有</td></tr>
+            <tr><td>录音记录</td><td>安全上下文</td><td>有</td><td>有</td><td>有</td></tr>
+            <tr><td>拍照与原图</td><td>有</td><td>有</td><td>有</td><td>不渲染</td></tr>
+            <tr><td>全局热键</td><td>无</td><td>直接唤起 S-REC</td><td>无（iPad 外接键盘同桌面壳热键）</td><td>无</td></tr>
+            <tr><td>S-BLIND</td><td>单列</td><td>宽屏双列</td><td>iPhone 单列 / iPad 横屏双列</td><td>不提供</td></tr>
+            <tr><td>原图三处</td><td>显示</td><td>显示</td><td>显示</td><td>无主语，不显示</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section class="state-block" data-od-id="a11y">
+        <h2>U6.4 · 无障碍下限</h2>
+        <div class="check-list">
+          <div class="check-item"><b>对比度</b>墨字对纸 17.2:1，对纯白抬起面 17.9:1，对长春花蓝面 7.4:1；冷灰说明文字对纸 5.7:1，功能红 6.6:1。</div>
+          <div class="check-item"><b>点击区</b>所有可点元素最小 44 × 44px；整行热区保持一个入口，不拆分独立操作。</div>
+          <div class="check-item"><b>字号缩放</b>200% 时横向布局纵向重排，数字与单位不拆开，摘要不丢项。</div>
+          <div class="check-item"><b>焦点顺序</b>首页主动作 → 三快捷 → 文本入口；盲区科目 → 摘要数字 → 列表 → 出口。</div>
+          <div class="check-item"><b>动态更新</b>重算时数字位变占位块，旧数字不出现；刷新不夺焦点。</div>
+          <div class="check-item"><b>动效</b>只做位置变化，120 / 200ms；prefers-reduced-motion 下归零。</div>
+        </div>
+      </section>
+    </div>
+  </main>
+</body>
+</html>

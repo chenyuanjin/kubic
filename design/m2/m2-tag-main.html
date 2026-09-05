@@ -1,0 +1,92 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>S-TAG 待处理 · 主态 TS-02 · Kubic v10 · M2</title>
+<link rel="stylesheet" href="tokens.css"><link rel="stylesheet" href="v10.css"><style>
+  body{zoom:2}
+  .back{display:inline-flex;align-items:center;min-height:44px;margin:-14px 0;padding:0 4px;
+        font-size:var(--t-micro);color:var(--ink-2);letter-spacing:.3px}
+  .card{padding:14px var(--rule) 12px}
+  .card .body{margin-top:4px}
+  .photo{display:flex;align-items:center;gap:10px;margin-top:10px}
+  .photo i{display:block;width:44px;height:44px;background:var(--fill-skeleton);
+           border:var(--hair-w) solid var(--hair);border-radius:var(--radius)}
+  .state{padding:14px var(--rule) 2px}
+  .state .display{font-size:26px;line-height:34px}
+  .state .sub{margin-top:4px}
+  .cand .line{padding-top:11px;padding-bottom:11px}
+  .cand .line .sub{margin-top:1px}
+  .more{padding:0 var(--rule) 2px}
+  .dock{padding-top:10px}
+</style></head><body><div class="phone">
+
+<div class="sb"><span>21:47</span><span class="sb__r">
+  <span class="sb__s"><i></i><i></i><i></i><i></i></span><span class="sb__b"></span>
+</span></div>
+
+<div class="flow">
+  <div class="head">
+    <button class="back">‹ 返回</button>
+    <span>7 条还没对上</span>
+  </div>
+
+  <!-- A 区 · 当前记录卡（只读，无任何输入框） -->
+  <div class="band card">
+    <p class="eyebrow">14:20 · 粉笔</p>
+    <p class="body">行政处罚的听证程序，记了一段笔记<button class="link" style="min-height:28px;margin-left:6px">展开</button></p>
+    <div class="photo"><i aria-hidden="true"></i><span class="sub">原图 1 张 · 只在这台设备上</span></div>
+  </div>
+
+  <!-- 状态位 · TS-02 -->
+  <div class="state">
+    <p class="display">看一下?</p>
+    <p class="sub">候选只从你的考点表里来，对不上就不挂。</p>
+  </div>
+
+  <!-- B 区 · 候选列表：整行热区，点一行即确认；行上只有考点名与路径，顺序照服务端 -->
+  <div class="cand">
+    <button class="line">
+      <span class="idx">01</span>
+      <span class="line__main">
+        <span class="body">听证程序</span>
+        <span class="sub">法律常识 → 行政法</span>
+      </span>
+    </button>
+    <button class="line">
+      <span class="idx">02</span>
+      <span class="line__main">
+        <span class="body">行政处罚的种类</span>
+        <span class="sub">法律常识 → 行政法</span>
+      </span>
+    </button>
+    <button class="line">
+      <span class="idx">03</span>
+      <span class="line__main">
+        <span class="body">行政强制措施</span>
+        <span class="sub">法律常识 → 行政法</span>
+      </span>
+    </button>
+  </div>
+  <p class="more"><button class="link">还有 2 个</button></p>
+
+  <!-- C 区「都不是」 + D 区「自己挑一个」（D 永不消失） -->
+  <div class="split" style="margin-top:4px">
+    <button style="height:48px">都不是</button>
+    <button style="height:48px">自己挑一个</button>
+  </div>
+
+  <!-- E 区 · 已挂考点（名字从考点表现取） -->
+  <div class="line" style="padding-top:10px;padding-bottom:2px;align-items:center">
+    <span class="slot"></span>
+    <span class="line__main" style="flex-direction:row;align-items:baseline">
+      <span class="body">行政复议的范围<span class="line__meta">已对上</span></span>
+    </span>
+    <button class="link">丢掉</button>
+  </div>
+
+  <!-- F 区 · 看看丢掉的 -->
+  <p style="padding:0 var(--rule) 4px;margin-left:calc(var(--slot) + var(--gap-slot))"><button class="link">看看丢掉的 (1)</button></p>
+</div>
+
+<div class="dock">
+  <button class="link link--body" style="width:100%;justify-content:center">跳过这条</button>
+</div>
+<div class="hi"></div>
+</div></body></html>

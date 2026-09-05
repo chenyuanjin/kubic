@@ -1,0 +1,66 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>M0 · U0.2/U0.3 相册受限 · 受限态（正常路径,不是拒绝）· iPhone</title>
+<link rel="stylesheet" href="tokens.css"><link rel="stylesheet" href="v10.css"><style>
+  body{zoom:2}
+  /* 受限态：iOS「仅选中照片」。这是「原图只留本机」的最优解,画成正常路径 ——
+     不用告警色、不用 C-ERR,不出现「权限不完整」「请授予完整访问」。
+     顶部一行说明 + 已授权缩略图 + 三个入口（纵向,末位先打字）;
+     已选中一张,所以「记下」可用 —— 受限档正常继续、正常落记录。
+     自造组件 3/3：seg、vstack、缩略图格 thumb。
+     内容区 0 块蓝面。 */
+  .seg{display:flex;border-top:var(--hair-w) solid var(--hair);border-bottom:var(--hair-w) solid var(--hair)}
+  .seg button{flex:1;height:48px;display:flex;align-items:center;justify-content:center;
+              font-size:var(--t-btn);color:var(--ink-2)}
+  .seg button + button{border-left:var(--hair-w) solid var(--hair)}
+  .seg button[aria-current="true"]{color:var(--ink);box-shadow:inset 0 calc(-1 * var(--rule-ink)) 0 var(--ink)}
+  .vstack{border-top:var(--hair-w) solid var(--hair)}
+  .vstack button{display:flex;width:100%;min-height:52px;align-items:center;justify-content:center;
+                 font-size:var(--t-btn);color:var(--ink);border-bottom:var(--hair-w) solid var(--hair)}
+  .thumbs{display:flex;gap:12px;padding:16px var(--rule) 20px}
+  .thumb{width:88px;height:88px;background:var(--raised);border:var(--hair-w) solid var(--hair);
+         border-radius:var(--radius);position:relative;display:flex;align-items:flex-end;padding:6px 8px}
+  .thumb span{font-size:var(--t-micro);color:var(--ink-2)}
+  .thumb--on{box-shadow:inset 0 0 0 1.5px var(--ink)}
+</style></head><body><div class="phone">
+
+<div class="sb"><span>21:47</span><span class="sb__r">
+  <span class="sb__s"><i></i><i></i><i></i><i></i></span><span class="sb__b"></span>
+</span></div>
+
+<div class="flow">
+  <div class="head"><span>记一条</span><span>21:47</span></div>
+
+  <div class="seg">
+    <button>写</button><button>说</button><button aria-current="true">拍</button><button>做题</button>
+  </div>
+
+  <div style="height:24px"></div>
+
+  <div class="pad">
+    <p class="body">你只给了这个应用几张照片的权限。要挑别的,去系统设置里改选,或者直接拍一张。</p>
+  </div>
+
+  <div class="thumbs">
+    <div class="thumb thumb--on"><span>已选</span></div>
+    <div class="thumb"><span></span></div>
+    <div class="thumb"><span></span></div>
+  </div>
+
+  <div class="vstack" style="border-bottom:var(--hair-w) solid var(--hair)">
+    <button>改选照片</button>
+    <button>用相机拍</button>
+    <button style="border-bottom:0">先打字</button>
+  </div>
+
+  <div style="flex:1 1 auto"></div>
+
+  <div class="field">
+    <label class="eyebrow" for="src" style="flex:0 0 auto">来源</label>
+    <input id="src" placeholder="记下是从哪来的">
+  </div>
+</div>
+
+<div class="dock">
+  <button class="btn-pri">记下</button>
+</div>
+<div class="hi"></div>
+</div></body></html>

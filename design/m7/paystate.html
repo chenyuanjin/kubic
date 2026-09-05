@@ -1,0 +1,37 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>U7.4 支付「慢了」态 · Kubic M7 v10</title>
+<link rel="stylesheet" href="tokens.css"><link rel="stylesheet" href="v10.css"><style>
+  body{zoom:2}
+  /* 轮询到上限仍未终结 → 「慢了」，不是失败。不倒计时、不显示秒数。
+     这一格永远没有「重新支付」：给的只有 再查一次(次) 和 先去看盲区(主)。 */
+  .back{margin:-14px 0;padding:14px 10px 14px 0;font-size:var(--t-micro);color:var(--ink-2)}
+</style></head><body><div class="phone">
+
+<div class="sb"><span>21:47</span><span class="sb__r">
+  <span class="sb__s"><i></i><i></i><i></i><i></i></span><span class="sb__b"></span>
+</span></div>
+
+<div class="flow">
+  <div class="head">
+    <button class="back" aria-label="返回">‹ 返回</button>
+    <span>这一笔订单</span>
+  </div>
+
+  <p class="eyebrow pad" style="margin-top:28px;margin-bottom:2px">支付已完成</p>
+  <h1 class="display pad" style="margin-top:6px">钱已经付了,<br>到账慢了一点</h1>
+  <p class="sub pad" style="margin-top:10px">订单在这里,过一会儿再看</p>
+
+  <button class="line" style="margin-top:20px">
+    <span class="idx">02</span>
+    <span class="line__main">
+      <span class="body">记多点<span class="line__meta">¥ 12.00</span></span>
+      <span class="sub">支付成功,正在到账 · 刚刚</span>
+    </span>
+  </button>
+</div>
+
+<div class="dock">
+  <div class="dock__row"><button>再查一次</button></div>
+  <button class="btn-pri">先去看盲区</button>
+</div>
+<div class="hi"></div>
+</div></body></html>

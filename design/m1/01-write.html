@@ -1,0 +1,53 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>U1.4 记一条（写）· 默认入口进来那一刻 · Kubic v10</title>
+<link rel="stylesheet" href="tokens.css"><link rel="stylesheet" href="v10.css"><style>
+  body{zoom:2}
+  /* U1.4 粘一段 = 默认入口，唯一不需要任何权限的入口。
+     进来那一刻：输入框已聚焦、键盘已起、占位符是真源 §4.3 原文。
+     空输入时「记下」禁用 —— 内容约束，不是识别等待；禁用旁说得出缺什么。
+     这一屏内容区 0 块蓝面：记录入口 0 块。 */
+  .seg{display:flex;border-bottom:var(--hair-w) solid var(--hair)}
+  .seg button{flex:1;height:48px;display:flex;align-items:center;justify-content:center;
+              font-size:var(--t-sub);color:var(--ink-2)}
+  .seg button+button{border-left:var(--hair-w) solid var(--hair)}
+  .seg button[aria-current="true"]{color:var(--ink);font-weight:600;
+              box-shadow:inset 0 -1.5px 0 var(--ink)}
+  .write{margin:16px var(--rule) 0;min-height:132px;padding:12px 0 14px;
+         box-shadow:inset 0 -1.5px 0 var(--ink)}
+  .caret{display:inline-block;width:2px;height:20px;background:var(--ink);
+         vertical-align:-3px;margin-right:2px}
+  .write span{font-size:var(--t-body);line-height:var(--lh-body);color:var(--ink-2);opacity:.75}
+</style></head><body><div class="phone">
+
+<div class="sb"><span>21:47</span><span class="sb__r">
+  <span class="sb__s"><i></i><i></i><i></i><i></i></span><span class="sb__b"></span>
+</span></div>
+
+<div class="flow">
+  <div class="head"><span>记一条 · 写</span><span>21:47</span></div>
+
+  <div class="seg">
+    <button type="button" aria-current="true">写</button>
+    <button type="button">说</button>
+    <button type="button">拍</button>
+    <button type="button">做题</button>
+  </div>
+
+  <!-- 内容输入：已聚焦（底线加厚成墨线），占位符 → 记一次学习 §4.3 原文 -->
+  <div class="write"><span class="caret"></span><span>刚才碰了什么?一句话就行</span></div>
+
+  <div style="flex:1 1 auto"></div>
+
+  <!-- 来源：选填，只收名称；留空是正常状态，不催填 -->
+  <div class="field">
+    <span class="eyebrow" style="flex:0 0 auto">来源</span>
+    <input placeholder="记下是从哪来的" aria-label="来源名称，选填">
+  </div>
+</div>
+
+<div class="dock">
+  <button class="btn-pri" aria-disabled="true" tabindex="0" style="opacity:1;background:rgba(23,23,26,.35)"
+          aria-label="记下，还没写内容">记下</button>
+  <p class="sub" style="text-align:center;margin-top:8px">写一句就能记下</p>
+</div>
+<div class="hi"></div>
+</div></body></html>

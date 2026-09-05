@@ -1,0 +1,78 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>U1.5 记一条（做题）· 树选择器 · Kubic v10</title>
+<link rel="stylesheet" href="tokens.css"><link rel="stylesheet" href="v10.css"><style>
+  body{zoom:2}
+  /* U1.5 记做题：唯一不依赖任何模型的完整路径，考点用户自己选。
+     只选不建 —— 没有「新建考点」、没有任何可填文本的格子。
+     不走标签轨：这一屏没有任何标签轨徽标。
+     未选考点时「记下」禁用是内容约束，不是在等某个响应。
+     这一屏内容区 0 块蓝面。 */
+  .seg{display:flex;border-bottom:var(--hair-w) solid var(--hair)}
+  .seg button{flex:1;height:48px;display:flex;align-items:center;justify-content:center;
+              font-size:var(--t-sub);color:var(--ink-2)}
+  .seg button+button{border-left:var(--hair-w) solid var(--hair)}
+  .seg button[aria-current="true"]{color:var(--ink);font-weight:600;
+              box-shadow:inset 0 -1.5px 0 var(--ink)}
+  .box{width:18px;height:18px;flex:0 0 auto;margin-top:4px;border-radius:var(--radius);
+       background:var(--ink);display:flex;align-items:center;justify-content:center}
+  .box--off{background:none;border:1.5px solid var(--hair)}
+  .tree .line{padding-top:12px;padding-bottom:12px}
+  .tree .line--leaf{padding-left:44px}
+</style></head><body><div class="phone">
+
+<div class="sb"><span>21:47</span><span class="sb__r">
+  <span class="sb__s"><i></i><i></i><i></i><i></i></span><span class="sb__b"></span>
+</span></div>
+
+<div class="flow">
+  <div class="head"><span>记一条 · 做题</span><span>21:47</span></div>
+
+  <div class="seg">
+    <button type="button">写</button>
+    <button type="button">说</button>
+    <button type="button">拍</button>
+    <button type="button" aria-current="true">做题</button>
+  </div>
+
+  <div class="head" style="border-top:0"><span>行政法</span><span>选一个考点</span></div>
+
+  <!-- 树选择器：只能从已有的树里选一个叶子，不能新建、不能填文本 -->
+  <div class="tree">
+    <button class="line" type="button" aria-expanded="true">
+      <span class="slot" style="font-size:var(--t-sub);color:var(--ink-2);line-height:26px">▾</span>
+      <span class="line__main"><span class="body">行政处罚</span></span>
+    </button>
+    <button class="line line--leaf" type="button">
+      <span class="box box--off"></span>
+      <span class="line__main"><span class="body body--2">简易程序</span></span>
+    </button>
+    <button class="line line--leaf" type="button" aria-pressed="true">
+      <span class="box"><svg width="11" height="9" viewBox="0 0 11 9" fill="none">
+        <path d="M1 4.6 4.1 7.7 10 1.4" stroke="var(--on-action)" stroke-width="1.8"
+              stroke-linecap="square"/></svg></span>
+      <span class="line__main"><span class="body">听证程序</span></span>
+    </button>
+    <button class="line line--leaf" type="button">
+      <span class="box box--off"></span>
+      <span class="line__main"><span class="body body--2">处罚的种类与设定</span></span>
+    </button>
+    <button class="line" type="button" aria-expanded="false">
+      <span class="slot" style="font-size:var(--t-sub);color:var(--ink-2);line-height:26px">▸</span>
+      <span class="line__main"><span class="body">行政复议</span></span>
+    </button>
+  </div>
+
+  <div style="flex:1 1 auto"></div>
+
+  <div class="control"><span>已选 · 听证程序</span><button type="button">改选</button></div>
+
+  <div class="field" style="border-top:0">
+    <span class="eyebrow" style="flex:0 0 auto">来源</span>
+    <input placeholder="记下是从哪来的" aria-label="来源名称，选填">
+  </div>
+</div>
+
+<div class="dock">
+  <button class="btn-pri">记下</button>
+</div>
+<div class="hi"></div>
+</div></body></html>

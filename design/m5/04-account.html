@@ -1,0 +1,77 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>S-ACC 账号屏 · 只绑了微信 · Kubic v10</title>
+<link rel="stylesheet" href="tokens.css"><link rel="stylesheet" href="v10.css"><style>
+  body{zoom:2}
+  /* WECHAT_ONLY：只绑了微信。不显示昵称与头像 —— 库里没有的东西界面上显示不出来。
+     退出与注销是两条路：⑤ 是台账行常规条目，⑥ 是屏底小字文本链接，
+     形态、位置、字级三重区隔，各自的 sub 写清那条路碰不碰原图。
+     导出是承诺不是条目：住进屏底动作区，永远在、永不禁用。整屏 0 块蓝面。 */
+  .line{padding:9px var(--rule)}
+</style></head><body><div class="phone">
+
+<div class="sb"><span>21:47</span><span class="sb__r">
+  <span class="sb__s"><i></i><i></i><i></i><i></i></span><span class="sb__b"></span>
+</span></div>
+
+<div class="flow">
+  <div class="head">
+    <button class="link" style="min-height:auto;padding:0;font-size:var(--t-sub)">‹ 返回</button>
+    <span>账号</span>
+  </div>
+
+  <!-- ① 身份区：只有绑定这个事实本身 -->
+  <div class="band" style="padding:14px var(--rule) 12px">
+    <h1 class="display" style="font-size:26px;line-height:34px">已绑定微信</h1>
+    <p class="sub" style="margin-top:4px">手机号还没绑</p>
+  </div>
+  <!-- 弱提示条：一行、可点、不弹窗、不拦路、不每次都提 -->
+  <div class="pad" style="padding-top:6px;padding-bottom:2px">
+    <button class="link">绑定手机号后，换设备也能看到这些记录</button>
+  </div>
+
+  <p class="eyebrow pad" style="margin-top:10px;margin-bottom:2px">绑定</p>
+  <button class="line">
+    <span class="idx">01</span>
+    <span class="line__main"><span class="body">绑定手机号</span></span>
+    <span class="sub">›</span>
+  </button>
+
+  <p class="eyebrow pad" style="margin-top:10px;margin-bottom:2px">设备 · 2 台</p>
+  <div class="line">
+    <span class="idx">02</span>
+    <span class="line__main">
+      <span class="body">iPhone</span>
+      <span class="sub">就是这台</span>
+    </span>
+  </div>
+  <div class="line">
+    <span class="idx">03</span>
+    <span class="line__main">
+      <span class="body">iPad</span>
+      <span class="sub">3 天前用过</span>
+    </span>
+    <button class="link" style="min-height:auto;padding:0">退出这台</button>
+  </div>
+
+  <p class="eyebrow pad" style="margin-top:10px;margin-bottom:2px">这台设备</p>
+  <button class="line">
+    <span class="idx">04</span>
+    <span class="line__main">
+      <span class="body">退出登录</span>
+      <span class="sub">只断开这台设备，原图一张不动</span>
+    </span>
+  </button>
+
+  <!-- ⑥ 注销：次要样式、最下面，不是红色大按钮 -->
+  <div class="pad" style="margin-top:12px;padding-bottom:10px">
+    <button class="link">注销账号</button>
+    <p class="sub" style="margin-top:2px">会删掉云端记录和这台设备上的原图，不可恢复。</p>
+  </div>
+</div>
+
+<!-- 导出住屏底：在任何登录态下都在，永不禁用 -->
+<div class="dock">
+  <button class="btn-pri">导出我的全部数据</button>
+  <p class="sub" style="margin-top:10px;text-align:center">不限次数 · 不加水印 · 什么时候都能用</p>
+</div>
+<div class="hi"></div>
+</div></body></html>

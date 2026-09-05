@@ -1,0 +1,54 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>U3.2 盲区总览 · 空态（有骨架零记录）· Kubic v10</title>
+<link rel="stylesheet" href="tokens.css"><link rel="stylesheet" href="v10.css"><style>
+  body{zoom:2}
+  /* EMPTY_NO_RECORD：骨架有、一条记录都没有。盲区是满的 —— 这不是出错。
+     竖式照常（total 与「碰过 0」都显示，恒等式为 0 也显示），
+     蓝面 = 整张表：120 个全没碰过。榜位换成一句事实 + 两个入口。 */
+  .calc{padding-top:0}
+  .calc__row{padding:4px 0}
+  .foot p{padding:3px 0}
+  button.calc__row{width:100%;min-height:44px}
+</style></head><body><div class="phone">
+
+<div class="sb"><span>21:47</span><span class="sb__r">
+  <span class="sb__s"><i></i><i></i><i></i><i></i></span><span class="sb__b"></span>
+</span></div>
+
+<div class="flow">
+  <div class="head"><span>‹ 盲区 · 行政法 ⌄</span></div>
+
+  <!-- 区 2 · 摘要：恒等式的项为 0 也照常显示 -->
+  <div class="calc" aria-label="行政法一共 120 个考点，你碰过 0 个，没碰过 120 个">
+    <p class="calc__row">
+      <span class="calc__label calc__label--2">一共</span>
+      <span class="calc__num">120</span>
+    </p>
+    <button class="calc__row calc-tap" aria-label="你碰过 0 个，点开筛选到碰过">
+      <span class="calc__label calc__label--2">你碰过</span>
+      <span class="calc__op">−</span>
+      <span class="calc__num">0</span>
+    </button>
+  </div>
+  <!-- 蓝面 = 你还没碰过的那部分。现在它是整张表 -->
+  <button class="panel calc__sum calc-tap" aria-label="没碰过 120 个，点开筛选到没碰过">
+    <span class="calc__label">没碰过</span>
+    <span class="calc__num hero">120</span>
+  </button>
+
+  <div class="foot" style="padding-top:10px">
+    <p>另有 0 个考点已归档</p>
+  </div>
+
+  <!-- 榜位换成空态：第一句话就说清是哪一种空 -->
+  <div style="padding:26px var(--rule) 8px">
+    <p class="display" style="font-size:22px;line-height:30px">你还没记过东西</p>
+    <p class="sub" style="margin-top:6px">所以现在整张表都是没碰过。记一条，减法就开始了。</p>
+  </div>
+
+  <div style="flex:1 1 auto"></div>
+
+  <!-- 两个入口：记一条（主）· 先看看有哪些考点（次，进骨架树） -->
+  <div class="split"><button aria-label="记一条">记一条</button><button aria-label="先看看有哪些考点，会打开按章排列的全部考点">先看看有哪些考点</button></div>
+</div>
+<div class="hi"></div>
+</div></body></html>

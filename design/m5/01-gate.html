@@ -1,0 +1,57 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>U5.1 登录门 · 常态 · Kubic v10</title>
+<link rel="stylesheet" href="tokens.css"><link rel="stylesheet" href="v10.css"><style>
+  body{zoom:2}
+  /* 门 = 原地渲染的浮层，不是路由。整屏 0 块蓝面。
+     自造组件（全组共 3 个）之一：描边通道按钮 .btn-ghost —— 两条第三方通道
+     同形态、同尺寸、同层级；主按钮的满宽实心块形态保持全屏唯一。 */
+  .btn-ghost{display:flex;width:100%;height:52px;align-items:center;justify-content:center;
+    border:1.5px solid var(--ink);border-radius:var(--radius);font-size:var(--t-btn);color:var(--ink)}
+  .btn-ghost+.btn-ghost{margin-top:10px}
+  .or{display:flex;align-items:center;gap:12px;margin:20px 0 16px}
+  .or::before,.or::after{content:"";flex:1;border-top:var(--hair-w) solid var(--hair)}
+  .or span{font-size:var(--t-micro);color:var(--ink-2)}
+  .agree{display:flex;gap:10px;align-items:flex-start;margin-top:14px}
+  .agree .box{flex:0 0 18px;width:18px;height:18px;margin-top:2px;
+    border:1.5px solid var(--ink-2);border-radius:var(--radius)}
+  .agree p{font-size:var(--t-sub);line-height:var(--lh-sub);color:var(--ink-2)}
+  .agree u{color:var(--ink);text-decoration-thickness:1px;text-underline-offset:4px;
+    text-decoration-color:var(--underline)}
+</style></head><body><div class="phone">
+
+<div class="sb"><span>21:47</span><span class="sb__r">
+  <span class="sb__s"><i></i><i></i><i></i><i></i></span><span class="sb__b"></span>
+</span></div>
+
+<div class="flow">
+  <!-- 关闭永不禁用：这一屏唯一的退出口。门底下是产品说明屏，地址不变 -->
+  <div class="head">
+    <button class="link" style="min-height:auto;padding:0;font-size:var(--t-sub)">× 关闭</button>
+    <span>未登录</span>
+  </div>
+
+  <div class="pad" style="padding-top:44px;padding-bottom:36px">
+    <h1 class="display">登录</h1>
+    <p class="body body--2" style="margin-top:14px">你要记的每一条，都得先落进一个账号里。</p>
+  </div>
+
+  <!-- 输入区：全屏只有两个可输入元素（手机号 / 验证码），验证码框未发码前不渲染 -->
+  <div class="field" style="border-bottom:var(--hair-w) solid var(--hair)">
+    <label class="eyebrow" for="tel" style="flex:0 0 40px">手机</label>
+    <input id="tel" inputmode="numeric" autocomplete="tel" placeholder="手机号" aria-label="手机号">
+  </div>
+  <!-- 页内提示位：常驻占位，出现时不撑动布局 -->
+  <p class="field__msg" style="visibility:hidden">占位</p>
+</div>
+
+<div class="dock">
+  <button class="btn-pri" aria-disabled="true" tabindex="0" aria-label="获取验证码，先填手机号">获取验证码</button>
+  <div class="agree">
+    <span class="box" role="checkbox" aria-checked="false" aria-label="已阅读并同意用户协议和隐私政策，未选中"></span>
+    <p>已阅读并同意 <u>《用户协议》</u><u>《隐私政策》</u></p>
+  </div>
+  <div class="or"><span>或者</span></div>
+  <button class="btn-ghost">通过 Apple 登录</button>
+  <button class="btn-ghost">微信登录</button>
+</div>
+<div class="hi"></div>
+</div></body></html>

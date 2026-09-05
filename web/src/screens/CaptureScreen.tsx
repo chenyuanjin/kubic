@@ -4,9 +4,10 @@ import { useDashboard } from '../api/queries'
 import { CaptureSheet } from '../features/CaptureSheet'
 import { routeTo } from '../routes/routes'
 import type { RouteId } from '../routes/routes'
-import { ScreenBody, ScreenHead } from '../ui/layout'
-import { Button, Note, Tag } from '../ui/primitives'
+import { ColL, ColR, Cols, ScreenBody, ScreenHead } from '../ui/layout'
+import { Button, GroupHeader, Note, Tag } from '../ui/primitives'
 import { EmptyState, FailureBlock, Placeholder, StandingNote } from '../ui/states'
+import { RecordRow } from './RecordsScreen'
 
 /** 采集的四种形式。`capture.photo` 在小程序上<b>没有这条路由</b>(§3.6.1),本端四条都有。 */
 const MODES = [
@@ -39,6 +40,27 @@ const MODES = [
  * 主态 = 三格入口;空态 = 骨架层还没建(没有考点就挂不上);
  * 失败态 = 拉树失败,只空这一屏、可切走;受限态 = `QUOTA_EXHAUSTED`,
  * 🔴 <b>它不是失败</b> —— 记录照样记得下,少的只是自动挂考点那一步。
+ *
+ * <h2>≥1024 双列 —— 稿 `design/m1/07-ipad.html`</h2>
+ *
+ * 稿上左栏是时间线、右栏是记一条。稿自己在第 3 行与第 21 行写明了左栏的性质:
+ * 「左栏是内容(今天的时间线,随筛选整栏换掉)」「左栏:内容,不是菜单 —— 时间线<b>回看</b>」。
+ *
+ * 🔴 <b>左栏是只读的,这是落地时钉死的三条约束之一</b>(后端与AI打标 2026-09-05 裁定):
+ * <ol>
+ * <li>左栏<b>没有任何写入入口</b> —— 不可编辑、不可删、不可改标签。稿上那三个动作
+ *     (「自己挑考点」「手动挂」「就这样留着」)<b>本轮不落</b>;行不给 `onOpen`,
+ *     于是 `Row` 渲染成 `div`,连焦点都拿不到。</li>
+ * <li><b>`/records` 仍是记录的唯一归属</b>,这一栏不引入第二套记录状态 ——
+ *     它读的就是 `useDashboard()` 那一份 `records`,栏底那条链接直接指回 `/records`。
+ *     `RecordsScreen` 注释里那条代价(「一条记录在哪一屏变成一个需要判断的问题」)
+ *     成立的前提是两屏都能对记录<b>做事</b>;一个只读的尾巴不制造这个问题。</li>
+ * <li>不引入新几何,复用 `Cols`/`ColL`/`ColR`。</li>
+ * </ol>
+ * <p>
+ * ⚪ 左栏<b>只在 ≥1024 出现</b>(`hidden wide:flex`):`07-ipad.html` 是横屏稿,
+ * 窄屏那张稿(`design/m1/07.html`)上没有这一栏。让它在 iPhone 上跟着堆下来,
+ * 等于给窄屏加了一段稿上没有的内容。
  */
 export function CaptureScreen() {
   const { data, isPending, refetch } = useDashboard()
@@ -92,7 +114,31 @@ export function CaptureScreen() {
       />
 
       <ScreenBody>
-        <div className="kb-cap">
+        <Cols>
+          {/* 左栏 = 时间线回看。只读,且只在 ≥1024 出现 —— 见上面那三条约束。 */}
+          <ColL>
+            <div className="hidden min-h-0 flex-1 flex-col overflow-y-auto wide:flex">
+              <GroupHeader title="时间线" right={`${data.records.length}`} />
+              {data.records.length === 0 ? (
+                <p className="px-[var(--rule)] py-4 text-[12px] leading-6 text-t3">
+                  还没有记录。右边记完一条,它就出现在这儿 —— 这一栏只回看,不在这里改。
+                </p>
+              ) : (
+                data.records.map((r) => <RecordRow key={r.id} item={r} />)
+              )}
+              <div className="px-[var(--rule)] py-3">
+                <button
+                  type="button"
+                  onClick={() => void navigate(routeTo('records'))}
+                  className="font-mono text-[11px] text-t3 underline hover:text-tx"
+                >
+                  看全部记录
+                </button>
+              </div>
+            </div>
+          </ColL>
+
+          <ColR>
           <StandingNote>
             记的是<b>你碰过什么</b>:考点 + 来源的名字 + 形式。
             粘进来的文字、录音、原图<b>都不进请求体</b> —— 库里没有能装下它们的字段。
@@ -121,7 +167,8 @@ export function CaptureScreen() {
             // 「记录动作永不失败」靠的是服务端先落地,而离线队列还没接。
             <FailureBlock code={null} scope="记一笔" onRetry={() => void refetch()} />
           ) : null}
-        </div>
+          </ColR>
+        </Cols>
       </ScreenBody>
 
       {/* 浮层的视觉形态不变,变的是它由谁开:现在是地址开的,关掉就回到 /capture。 */}

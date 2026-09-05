@@ -189,19 +189,23 @@ function FilterTab({ to, on, label }: { to: string; on: boolean; label: string }
 }
 
 /**
- * 一条记录。
+ * 一条记录。<b>两屏共用同一份</b> —— `/records` 与 `/capture` 的 ≥1024 左栏。
  *
  * 🔴 行上<b>没有内容</b>:显示的是考点名、来源的名字、形式、什么时候。
  * 粘进来的那段文字不在这一行上,因为它不在库里。
+ *
+ * 🔴 <b>不给 `onOpen` 就是只读的</b>:`Row` 那时渲染成 `div` 而不是 `button`,
+ * 连焦点都拿不到。`/capture` 左栏用的正是这一档 —— 它是回看,不是第二个记录管理面。
+ * 抄一份「只读版的行」出去的代价不是多几行,是同一条记录从此有两种长相。
  */
-function RecordRow({
+export function RecordRow({
   item,
-  selected,
+  selected = false,
   onOpen,
 }: {
   item: TimelineItemDto
-  selected: boolean
-  onOpen: () => void
+  selected?: boolean
+  onOpen?: () => void
 }) {
   return (
     <Row

@@ -1,0 +1,83 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>U3.6 断言注脚点开 · 筛「我标了已经会了」· Kubic v10</title>
+<link rel="stylesheet" href="tokens.css"><link rel="stylesheet" href="v10.css"><style>
+  body{zoom:2}
+  /* 断言注脚交互：点注脚 → 就地筛到「我标了已经会了」。
+     摘要三个数一个都不变（断言不是第三格，不减任何数）——
+     这一行注脚就是「概览不减断言」与「榜排除已断言」两条契约之差的就地解释。 */
+  .calc{padding-top:0}
+  .calc__row{padding:4px 0}
+  .foot p{padding:3px 0}
+  .line{padding-top:12px;padding-bottom:12px}
+  button.calc__row{width:100%;min-height:44px}
+</style></head><body><div class="phone">
+
+<div class="sb"><span>21:47</span><span class="sb__r">
+  <span class="sb__s"><i></i><i></i><i></i><i></i></span><span class="sb__b"></span>
+</span></div>
+
+<div class="flow">
+  <div class="head"><span>‹ 盲区 · 行政法 ⌄</span></div>
+
+  <!-- 区 2 · 摘要：与主态完全相同 —— 断言之后三个数不动 -->
+  <div class="calc" aria-label="行政法一共 120 个考点，你碰过 43 个，没碰过 77 个">
+    <p class="calc__row">
+      <span class="calc__label calc__label--2">一共</span>
+      <span class="calc__num">120</span>
+    </p>
+    <button class="calc__row calc-tap" aria-label="你碰过 43 个，点开筛选到碰过">
+      <span class="calc__label calc__label--2">你碰过</span>
+      <span class="calc__op">−</span>
+      <span class="calc__num">43</span>
+    </button>
+  </div>
+  <button class="panel calc__sum calc-tap" aria-label="没碰过 77 个，点开筛选到没碰过">
+    <span class="calc__label">没碰过</span>
+    <span class="calc__num hero">77</span>
+  </button>
+
+  <!-- 断言注脚：可点，点开就是下面这份筛选。它是两个数各说各话的就地解释 -->
+  <div class="foot" style="padding-top:10px">
+    <button class="link" style="min-height:44px;padding:0 4px;font-size:var(--t-sub)" aria-label="其中 4 个你标了已经会了，没有列在下面，点开就地筛选到这 4 个">其中 4 个你标了『已经会了』，没在下面列出来</button>
+    <p>另有 0 个考点已归档</p>
+    <p>另有 2 条记录没能对上任何考点</p>
+  </div>
+
+  <!-- 口径行：筛选已切到第四项 -->
+  <div class="control"><span>当前：我标了已经会了</span><button aria-label="排序，当前按近 5 年出现次数排，点开可以换">按近 5 年出现次数排 ⌄</button></div>
+
+  <!-- 榜位：断言集合。取消要去考点详情里再点一次那个开关（只看不写） -->
+  <button class="line" aria-label="行政强制，近 5 年出现 8 次，你标了已经会了，点开进考点详情">
+    <span class="idx">01</span>
+    <span class="line__main">
+      <span class="body">行政强制<span class="line__meta">近 5 年 8 次</span></span>
+      <span class="sub">你标了「已经会了」</span>
+    </span>
+  </button>
+  <button class="line" aria-label="政府信息公开，近 5 年出现 6 次，你标了已经会了，点开进考点详情">
+    <span class="idx">02</span>
+    <span class="line__main">
+      <span class="body">政府信息公开<span class="line__meta">近 5 年 6 次</span></span>
+      <span class="sub">你标了「已经会了」</span>
+    </span>
+  </button>
+  <button class="line" aria-label="行政赔偿，近 5 年出现 5 次，你标了已经会了，点开进考点详情">
+    <span class="idx">03</span>
+    <span class="line__main">
+      <span class="body">行政赔偿<span class="line__meta">近 5 年 5 次</span></span>
+      <span class="sub">你标了「已经会了」</span>
+    </span>
+  </button>
+  <button class="line" aria-label="行政给付，近 5 年出现 3 次，你标了已经会了，点开进考点详情">
+    <span class="idx">04</span>
+    <span class="line__main">
+      <span class="body">行政给付<span class="line__meta">近 5 年 3 次</span></span>
+      <span class="sub">你标了「已经会了」</span>
+    </span>
+  </button>
+
+  <div style="flex:1 1 auto"></div>
+
+  <div class="split"><button aria-label="按章看全部考点">按章看全部</button><button aria-label="回到全部，清掉这个筛选">回到全部</button></div>
+</div>
+<div class="hi"></div>
+</div></body></html>

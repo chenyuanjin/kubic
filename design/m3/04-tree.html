@@ -1,0 +1,94 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>U3.5 按章看全部 · 骨架树 · Kubic v10</title>
+<link rel="stylesheet" href="tokens.css"><link rel="stylesheet" href="v10.css"><style>
+  body{zoom:2}
+  /* 骨架树：三层，只有第 3 层计分母。非叶子右侧只有两个计数 ——
+     没有百分比、没有进度条（进度条会把覆盖度读成学习进度）。
+     三态靠文字，实心/空心标记只是辅助。树底归档区常驻，为 0 也在。 */
+  .t-row{display:flex;align-items:baseline;gap:8px;width:100%;min-height:44px;
+         padding:9px var(--rule);font-variant-numeric:tabular-nums}
+  .t-row .tw{font-family:var(--font-display);font-size:12px;color:var(--ink-2);flex:0 0 14px}
+  .t-row .nm{font-size:var(--t-body);line-height:var(--lh-body);color:var(--ink)}
+  .t-row .cnt{margin-left:auto;font-size:var(--t-sub);color:var(--ink-2)}
+  .t-l2{padding-left:44px}
+  .leaf{display:flex;gap:8px;width:100%;min-height:52px;align-items:flex-start;
+        padding:9px var(--rule) 9px 64px}
+  .leaf .lm{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:1px}
+  .leaf .mk{flex:0 0 auto;font-size:11px;line-height:var(--lh-sub);color:var(--ink);margin-top:2px}
+  .grp+.grp{border-top:var(--hair-w) solid var(--hair-soft)}
+</style></head><body><div class="phone">
+
+<div class="sb"><span>21:47</span><span class="sb__r">
+  <span class="sb__s"><i></i><i></i><i></i><i></i></span><span class="sb__b"></span>
+</span></div>
+
+<div class="flow" style="overflow:hidden">
+  <div class="head"><span>‹ 返回 · 行政法 · 全部考点</span><button class="link" style="min-height:0;padding:0;font-size:var(--t-micro)" aria-label="全部折叠，再点一次全部展开">全部折叠</button></div>
+
+  <!-- 树内搜索：只搜考点名与章节名；搜索词不进 URL；占位符不给示例 -->
+  <div class="field" style="border-bottom:var(--hair-w) solid var(--hair)">
+    <input aria-label="树内搜索，只搜考点名与章节名" placeholder="搜考点名或章节名">
+  </div>
+
+  <!-- 第 1 层 · 模块（默认展开，不计分母，右侧只有两个计数） -->
+  <div class="grp">
+    <button class="t-row" aria-label="第 1 层，共 2 个，第 1 个：行政法总则，28 个考点，你碰过 12 个，已展开，点一下折叠">
+      <span class="tw">▾</span><span class="nm">行政法总则</span><span class="cnt">12/28</span>
+    </button>
+    <button class="t-row t-l2" aria-label="第 2 层，单选题，16 个考点，你碰过 8 个，已展开，点一下折叠">
+      <span class="tw">▾</span><span class="nm" style="font-size:var(--t-sub)">单选题</span><span class="cnt">8/16</span>
+    </button>
+    <button class="leaf" aria-label="第 3 层考点：行政处罚，近 5 年出现 18 次，你没碰过，点开进考点详情">
+      <span class="lm">
+        <span class="body">行政处罚<span class="line__meta">近 5 年 18 次</span></span>
+        <span class="sub" style="color:var(--ink)">你没碰过</span>
+      </span><span class="mk" aria-hidden="true">○</span>
+    </button>
+    <button class="leaf" aria-label="第 3 层考点：行政许可，近 5 年出现 10 次，你碰过 3 次，最近一次 6 天前，点开进考点详情">
+      <span class="lm">
+        <span class="body">行政许可<span class="line__meta">近 5 年 10 次</span></span>
+        <span class="sub">你碰过 3 次，最近一次 6 天前</span>
+      </span><span class="mk" aria-hidden="true">●</span>
+    </button>
+    <button class="leaf" aria-label="第 3 层考点：听证程序，近 5 年出现 12 次，你没碰过，点开进考点详情">
+      <span class="lm">
+        <span class="body">听证程序<span class="line__meta">近 5 年 12 次</span></span>
+        <span class="sub" style="color:var(--ink)">你没碰过</span>
+      </span><span class="mk" aria-hidden="true">○</span>
+    </button>
+    <button class="t-row t-l2" aria-label="第 2 层，多选题，12 个考点，你碰过 4 个，已折叠，点一下展开">
+      <span class="tw">▸</span><span class="nm" style="font-size:var(--t-sub)">多选题</span><span class="cnt">4/12</span>
+    </button>
+  </div>
+
+  <div class="grp">
+    <button class="t-row" aria-label="第 1 层，共 2 个，第 2 个：行政诉讼与复议，31 个考点，你碰过 9 个，已展开，点一下折叠">
+      <span class="tw">▾</span><span class="nm">行政诉讼与复议</span><span class="cnt">9/31</span>
+    </button>
+    <button class="t-row t-l2" aria-label="第 2 层，判断题，14 个考点，你碰过 5 个，已展开，点一下折叠">
+      <span class="tw">▾</span><span class="nm" style="font-size:var(--t-sub)">判断题</span><span class="cnt">5/14</span>
+    </button>
+    <button class="leaf" aria-label="第 3 层考点：行政复议，近 5 年出现 9 次，你没碰过，点开进考点详情">
+      <span class="lm">
+        <span class="body">行政复议<span class="line__meta">近 5 年 9 次</span></span>
+        <span class="sub" style="color:var(--ink)">你没碰过</span>
+      </span><span class="mk" aria-hidden="true">○</span>
+    </button>
+    <button class="leaf" aria-label="第 3 层考点：受案范围，这个考点没有出现次数记录，你碰过 1 次，最近一次 20 天前，点开进考点详情">
+      <span class="lm">
+        <span class="body">受案范围<span class="line__meta">没有出现次数记录</span></span>
+        <span class="sub">你碰过 1 次，最近一次 20 天前</span>
+      </span><span class="mk" aria-hidden="true">●</span>
+    </button>
+  </div>
+
+  <div style="flex:1 1 auto"></div>
+
+  <!-- 树底 · 归档区：常驻、不做开关、为 0 也在，可展开可点进详情 -->
+  <div class="band">
+    <button class="t-row" style="min-height:52px" aria-label="已归档 0 个考点，点开查看，归档不是删除，找回后重新计入">
+      <span class="tw">▸</span><span class="nm">已归档（0）</span><span class="cnt">归档不是删除</span>
+    </button>
+  </div>
+</div>
+<div class="hi"></div>
+</div></body></html>

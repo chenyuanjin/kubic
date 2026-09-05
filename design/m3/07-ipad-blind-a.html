@@ -1,0 +1,137 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>U3.2/U3.4 iPad 横屏双列 · 行政法 · Kubic v10</title>
+<link rel="stylesheet" href="tokens.css"><link rel="stylesheet" href="v10.css"><style>
+  /* ≥1024 双列：左栏是这一科的内容（竖式摘要 + 蓝面 + 骨架树），不是菜单 ——
+     判据：换一个科目，左栏整栏内容换掉（见 08 那张：申论）。
+     左栏不列举别的屏、不放全局入口、不常驻。
+     蓝面仍全宽出血到左栏两缘，无外框无圆角，上缘 1.5px 墨线。一屏只有这 1 块。
+     右栏 = 选中考点的详情（S-NODE 住右栏）。 */
+  .ipad{position:relative;width:1366px;height:1024px;background:var(--ground);
+        display:flex;flex-direction:column;overflow:hidden;margin:0 auto}
+  .cols{flex:1 1 auto;display:flex;min-height:0}
+  .col-l{flex:0 0 480px;display:flex;flex-direction:column;min-height:0;overflow:hidden;
+         border-right:var(--hair-w) solid var(--hair)}
+  .col-r{flex:1 1 auto;display:flex;flex-direction:column;min-height:0;overflow:hidden}
+  .calc{padding-top:0}
+  .calc__row{padding:3px 0}
+  .foot p{padding:2px 0}
+  button.calc__row{width:100%;min-height:44px}
+  .t-row{display:flex;align-items:baseline;gap:8px;width:100%;min-height:44px;
+         padding:8px var(--rule);font-variant-numeric:tabular-nums}
+  .t-row .tw{font-family:var(--font-display);font-size:12px;color:var(--ink-2);flex:0 0 14px}
+  .t-row .nm{font-size:var(--t-body);color:var(--ink)}
+  .t-row .cnt{margin-left:auto;font-size:var(--t-sub);color:var(--ink-2)}
+  .t-l2{padding-left:44px}
+  .leaf{display:flex;gap:8px;width:100%;min-height:48px;align-items:flex-start;
+        padding:8px var(--rule) 8px 64px}
+  .leaf .lm{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:1px}
+  .leaf .mk{flex:0 0 auto;font-size:11px;color:var(--ink);margin-top:2px}
+  .leaf--on{box-shadow:inset 2px 0 0 var(--ink)}
+  .fact{display:flex;justify-content:space-between;align-items:baseline;
+        padding:14px var(--rule);border-bottom:var(--hair-w) solid var(--hair-soft)}
+</style></head><body><div class="ipad">
+
+<div class="sb"><span>21:47</span><span class="sb__r">
+  <span class="sb__s"><i></i><i></i><i></i><i></i></span><span class="sb__b"></span>
+</span></div>
+
+<div class="cols">
+  <!-- ── 左栏 · 这一科的差值：摘要 + 骨架树（内容，随科目整栏换掉）── -->
+  <div class="col-l">
+    <div class="head"><span>‹ 盲区 · 行政法 ⌄</span></div>
+
+    <div class="calc" aria-label="行政法一共 120 个考点，你碰过 43 个，没碰过 77 个" style="padding-top:6px">
+      <p class="calc__row">
+        <span class="calc__label calc__label--2">一共</span>
+        <span class="calc__num">120</span>
+      </p>
+      <button class="calc__row calc-tap" aria-label="你碰过 43 个，点开筛选到碰过">
+        <span class="calc__label calc__label--2">你碰过</span>
+        <span class="calc__op">−</span>
+        <span class="calc__num">43</span>
+      </button>
+    </div>
+    <button class="panel calc__sum calc-tap" aria-label="没碰过 77 个，点开筛选到没碰过">
+      <span class="calc__label">没碰过</span>
+      <span class="calc__num hero">77</span>
+    </button>
+
+    <div class="foot" style="padding-top:8px">
+      <p>其中 <b style="font-weight:600;color:var(--ink)">4</b> 个你标了『已经会了』，没在下面列出来</p>
+      <p>另有 0 个考点已归档 · 另有 2 条记录没能对上任何考点</p>
+    </div>
+
+    <div class="control"><span>当前：全部</span><button>按近 5 年出现次数排 ⌄</button></div>
+
+    <!-- 骨架树：正在看的那个叶子有文字 + 标记双重表示 -->
+    <button class="t-row" aria-label="第 1 层，行政法总则，28 个考点，你碰过 12 个，已展开">
+      <span class="tw">▾</span><span class="nm">行政法总则</span><span class="cnt">12/28</span>
+    </button>
+    <button class="t-row t-l2" aria-label="第 2 层，单选题，16 个考点，你碰过 8 个，已展开">
+      <span class="tw">▾</span><span class="nm" style="font-size:var(--t-sub)">单选题</span><span class="cnt">8/16</span>
+    </button>
+    <button class="leaf leaf--on" aria-label="行政处罚，近 5 年出现 18 次，你没碰过，正在右边看它的详情">
+      <span class="lm">
+        <span class="body">行政处罚<span class="line__meta">近 5 年 18 次</span></span>
+        <span class="sub" style="color:var(--ink)">你没碰过 · 正在看</span>
+      </span><span class="mk" aria-hidden="true">○</span>
+    </button>
+    <button class="leaf" aria-label="行政许可，近 5 年出现 10 次，你碰过 3 次，最近一次 6 天前，点开在右边看详情">
+      <span class="lm">
+        <span class="body">行政许可<span class="line__meta">近 5 年 10 次</span></span>
+        <span class="sub">你碰过 3 次，最近一次 6 天前</span>
+      </span><span class="mk" aria-hidden="true">●</span>
+    </button>
+    <button class="leaf" aria-label="听证程序，近 5 年出现 12 次，你没碰过，点开在右边看详情">
+      <span class="lm">
+        <span class="body">听证程序<span class="line__meta">近 5 年 12 次</span></span>
+        <span class="sub" style="color:var(--ink)">你没碰过</span>
+      </span><span class="mk" aria-hidden="true">○</span>
+    </button>
+    <button class="t-row t-l2" aria-label="第 2 层，多选题，12 个考点，你碰过 4 个，已折叠">
+      <span class="tw">▸</span><span class="nm" style="font-size:var(--t-sub)">多选题</span><span class="cnt">4/12</span>
+    </button>
+    <button class="t-row" aria-label="第 1 层，行政诉讼与复议，31 个考点，你碰过 9 个，已折叠">
+      <span class="tw">▸</span><span class="nm">行政诉讼与复议</span><span class="cnt">9/31</span>
+    </button>
+
+    <div style="flex:1 1 auto"></div>
+
+    <div class="band">
+      <button class="t-row" style="min-height:48px" aria-label="已归档 0 个考点，点开查看">
+        <span class="tw">▸</span><span class="nm">已归档（0）</span><span class="cnt">归档不是删除</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ── 右栏 · 选中考点的详情（S-NODE 住右栏）── -->
+  <div class="col-r">
+    <div class="head">
+      <span><button class="link" style="min-height:0;padding:0;font-size:var(--t-micro)" aria-label="回到行政法总则那一层">行政法总则</button> › <button class="link" style="min-height:0;padding:0;font-size:var(--t-micro)" aria-label="回到单选题那一层">单选题</button></span>
+    </div>
+
+    <div style="padding:26px var(--rule) 14px">
+      <p class="display">行政处罚</p>
+    </div>
+
+    <!-- 骨架事实（真题的）与我的事实（你的），两个平面分开是硬性的 -->
+    <div class="fact"><span class="sub">真题里</span><span class="body">近 5 年出现 18 次 · 最近一次在 2024</span></div>
+    <div class="fact"><span class="sub">你这里</span><span class="body" style="color:var(--ink)">你没碰过</span></div>
+
+    <div style="padding:18px var(--rule) 8px"><span class="eyebrow">相关记录</span></div>
+    <div style="padding:2px var(--rule) 12px">
+      <p class="body body--2">没有对上这个考点的记录</p>
+    </div>
+
+    <div style="flex:1 1 auto"></div>
+
+    <!-- 区 5 · 底部固定条：断言只在这里发起；重算中开关不禁用 -->
+    <div class="dock" style="padding-bottom:24px">
+      <div class="dock__row">
+        <button aria-label="我已经会了，开关，当前没开。标了之后它从下面的清单里消失，三个数一个都不变">⊙— 我已经会了</button>
+        <button aria-label="带着这个考点去问 AI，问题会交给外部模型">带去问 AI</button>
+      </div>
+      <button class="btn-pri" aria-label="去记一条，永不禁用">去记一条</button>
+    </div>
+  </div>
+</div>
+</div></body></html>

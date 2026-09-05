@@ -1,0 +1,87 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>U3.2 盲区总览 · Kubic v10</title>
+<link rel="stylesheet" href="tokens.css"><link rel="stylesheet" href="v10.css"><style>
+  body{zoom:2}
+  /* 这一屏没有屏底动作区（区 4 出口住在滚动流里，规格如此）。
+     主视觉仍是那道竖式减法 —— 但结果行长在全屏唯一一块蓝面上：
+     运算线 = 蓝面的上缘。颜色是被「算出来」的，它标的正是盲区那 77 个。 */
+  .calc{padding-top:0}
+  .calc__row{padding:4px 0}
+  .foot p{padding:3px 0}
+  .line{padding-top:12px;padding-bottom:12px}
+  button.calc__row{width:100%;min-height:44px}
+</style></head><body><div class="phone">
+
+<div class="sb"><span>21:47</span><span class="sb__r">
+  <span class="sb__s"><i></i><i></i><i></i><i></i></span><span class="sb__b"></span>
+</span></div>
+
+<div class="flow">
+  <!-- 区 1 · 台账头：返回 + 树选择器（全产品唯一一处面包屑住在它内部） -->
+  <div class="head"><span>‹ 盲区 · 行政法 ⌄</span></div>
+
+  <!-- 区 2 · 摘要：竖式减法。顺序与重心是规格定的（一共 → 碰过 → 没碰过，重心在 77） -->
+  <div class="calc" aria-label="行政法一共 120 个考点，你碰过 43 个，没碰过 77 个">
+    <p class="calc__row">
+      <span class="calc__label calc__label--2">一共</span>
+      <span class="calc__num">120</span>
+    </p>
+    <button class="calc__row calc-tap" aria-label="你碰过 43 个，点开筛选到碰过">
+      <span class="calc__label calc__label--2">你碰过</span>
+      <span class="calc__op">−</span>
+      <span class="calc__num">43</span>
+    </button>
+  </div>
+  <!-- 结果行 = 全屏唯一一块蓝面，上缘就是运算线 -->
+  <button class="panel calc__sum calc-tap" aria-label="没碰过 77 个，点开筛选到没碰过">
+    <span class="calc__label">没碰过</span>
+    <span class="calc__num hero">77</span>
+  </button>
+
+  <!-- 摘要注脚：断言解释 · 归档常驻（R-49，a=0 也显示）· 未分类 · 统计截止 -->
+  <div class="foot" style="padding-top:10px">
+    <p>其中 <b style="font-weight:600;color:var(--ink)">4</b> 个你标了『已经会了』，没在下面列出来</p>
+    <p>另有 0 个考点已归档</p>
+    <p>另有 2 条记录没能对上任何考点</p>
+    <p style="opacity:.8">出现次数统计截至 2025 年</p>
+  </div>
+
+  <!-- 口径行 -->
+  <div class="control"><span>当前：全部</span><button>按近 5 年出现次数排 ⌄</button></div>
+
+  <!-- 区 3 · 盲区榜：两行一格 —— 上行骨架事实（真题的），下行我的事实（你的）。分开是硬性的 -->
+  <button class="line">
+    <span class="idx">01</span>
+    <span class="line__main">
+      <span class="body">行政处罚<span class="line__meta">近 5 年 18 次</span></span>
+      <span class="sub" style="color:var(--ink)">你没碰过</span>
+    </span>
+  </button>
+  <button class="line">
+    <span class="idx">02</span>
+    <span class="line__main">
+      <span class="body">听证程序<span class="line__meta">近 5 年 12 次</span></span>
+      <span class="sub" style="color:var(--ink)">你没碰过</span>
+    </span>
+  </button>
+  <button class="line">
+    <span class="idx">03</span>
+    <span class="line__main">
+      <span class="body">行政许可<span class="line__meta">近 5 年 10 次</span></span>
+      <span class="sub">你碰过 3 次，最近一次 6 天前</span>
+    </span>
+  </button>
+  <button class="line">
+    <span class="idx">04</span>
+    <span class="line__main">
+      <span class="body">行政复议<span class="line__meta">近 5 年 9 次</span></span>
+      <span class="sub" style="color:var(--ink)">你没碰过</span>
+    </span>
+  </button>
+
+  <div style="flex:1 1 auto"></div>
+
+  <!-- 区 4 · 出口：住在滚动流里，不是屏底动作区 -->
+  <div class="split"><button>按章看全部</button><button>我已经会了(4)</button></div>
+</div>
+<div class="hi"></div>
+</div></body></html>

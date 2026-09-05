@@ -1,0 +1,68 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>U5.6 退出登录 · 确认浮层 · Kubic v10</title>
+<link rel="stylesheet" href="tokens.css"><link rel="stylesheet" href="v10.css"><style>
+  body{zoom:2}
+  /* C-DANGER 二档确认浮层：先说清「什么不会没」，不是「你确定吗」。
+     退路是主按钮（再想想），退出登录本身可逆所以只是次按钮、不用危险色。
+     自造组件之三：底部浮层容器 .sheet-m（上缘 1.5px 墨线，同蓝面的运算线族）。 */
+  .dim{position:absolute;inset:0;background:color-mix(in srgb, var(--ink) 35%, transparent)}
+  .sheet-m{position:absolute;left:0;right:0;bottom:0;background:var(--raised);
+    border-top:var(--rule-ink) solid var(--ink);
+    padding:20px var(--rule) calc(28px + env(safe-area-inset-bottom,0px))}
+  .sheet-m .row{display:flex;gap:var(--gap-slot);padding:14px 0;align-items:flex-start}
+  .sheet-m .row + .row{border-top:var(--hair-w) solid var(--hair-soft)}
+  .sheet-m .idx2{flex:0 0 var(--slot);font-family:var(--font-display);
+    font-size:var(--t-idx);line-height:var(--lh-body);color:var(--ink-2)}
+</style></head><body><div class="phone">
+
+<div class="sb"><span>21:47</span><span class="sb__r">
+  <span class="sb__s"><i></i><i></i><i></i><i></i></span><span class="sb__b"></span>
+</span></div>
+
+<!-- 底下是账号屏（被压暗），地址不变 -->
+<div class="flow">
+  <div class="head">
+    <button class="link" style="min-height:auto;padding:0;font-size:var(--t-sub)">‹ 返回</button>
+    <span>账号</span>
+  </div>
+  <div class="band" style="padding:20px var(--rule) 18px">
+    <h1 class="display" style="font-size:26px;line-height:34px">已绑定微信</h1>
+    <p class="sub" style="margin-top:6px">手机号还没绑</p>
+  </div>
+  <p class="eyebrow pad" style="margin-top:18px;margin-bottom:2px">设备 · 2 台</p>
+  <div class="line"><span class="idx">02</span>
+    <span class="line__main"><span class="body">iPhone</span><span class="sub">就是这台</span></span>
+  </div>
+</div>
+
+<div class="dim"></div>
+
+<div class="sheet-m">
+  <div style="display:flex;justify-content:space-between;align-items:baseline">
+    <p class="eyebrow">退出登录 · 先说清两件事</p>
+    <button class="link" style="min-height:auto;padding:0;font-size:var(--t-sub)">× 关闭</button>
+  </div>
+
+  <div style="margin-top:8px">
+    <div class="row">
+      <span class="idx2">01</span>
+      <span class="line__main">
+        <span class="body">这台设备上的原图，一张不动。</span>
+        <span class="sub">它们只存在这台设备上，退出不碰它们。</span>
+      </span>
+    </div>
+    <div class="row">
+      <span class="idx2">02</span>
+      <span class="line__main">
+        <span class="body">已同步的记录都在账号里。</span>
+        <span class="sub">重新登录就回来，一条不丢。</span>
+      </span>
+    </div>
+  </div>
+
+  <button class="btn-pri" style="margin-top:14px" autofocus>再想想</button>
+  <div class="split" style="margin-top:12px;border-bottom:0">
+    <button style="height:48px">退出登录</button>
+  </div>
+</div>
+<div class="hi" style="background:color-mix(in srgb, var(--ground) 70%, transparent)"></div>
+</div></body></html>

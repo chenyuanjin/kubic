@@ -1,0 +1,59 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>U4.7 签发只读令牌 · 清单在前 · Kubic v10</title>
+<link rel="stylesheet" href="tokens.css"><link rel="stylesheet" href="v10.css"><style>
+  body{zoom:2}
+  /* U4.7 签发：三份清单必须排在名称输入之前 ——
+     先知道它能读到什么、读不到什么、改不了什么，再决定要不要签。
+     「改不了」的依据是不注册不是禁用：客户端上根本没有写入这个东西。
+     原图那一条只以否定形式出现，且不许折叠。 */
+  .sect{padding:12px var(--rule) 4px;border-top:var(--hair-w) solid var(--hair)}
+  .li{display:flex;gap:var(--gap-slot);width:100%;padding:6px var(--rule);align-items:flex-start}
+  .li .idx{line-height:22px}
+  .li .body{font-size:15px;line-height:22px}
+  .li .sub{margin-left:10px}
+</style></head><body><div class="phone">
+
+<div class="sb"><span>21:49</span><span class="sb__r">
+  <span class="sb__s"><i></i><i></i><i></i><i></i></span><span class="sb__b"></span>
+</span></div>
+
+<div class="flow">
+  <div class="head"><span>‹ 签发只读令牌</span><span>账号级 · 不分科目</span></div>
+
+  <div class="sect" style="border-top:0;padding-top:14px">
+    <p class="eyebrow">它能读到的，只有这 5 样</p>
+  </div>
+  <div class="li"><span class="idx">1</span><p class="body">考点树与覆盖情况</p></div>
+  <div class="li"><span class="idx">2</span><p class="body">单个考点的详情<span class="sub">碰过几次 · 多久前</span></p></div>
+  <div class="li"><span class="idx">3</span><p class="body">盲区清单</p></div>
+  <div class="li"><span class="idx">4</span><p class="body">记录时间线<span class="sub">时间与来源名称</span></p></div>
+  <div class="li"><span class="idx">5</span><p class="body">我的导出文件</p></div>
+
+  <div class="sect">
+    <p class="eyebrow">它读不到的</p>
+  </div>
+  <div class="li"><span class="idx">×</span><p class="body">手机号与账号资料</p></div>
+  <div class="li"><span class="idx">×</span><p class="body">订单与剩余次数</p></div>
+  <div class="li"><span class="idx">×</span><p class="body">原图<span class="sub">原图只在你本机，服务端没有它</span></p></div>
+
+  <div class="sect">
+    <p class="eyebrow">它改不了任何东西</p>
+  </div>
+  <div class="pad"><p class="sub" style="padding:4px 0 2px">记一条、确认标签、标『已经会了』—— 这些能力在它那头根本不存在，不是被关掉了。</p></div>
+
+  <div class="sect">
+    <p class="eyebrow">给它起个名字 · 必填，认得出是哪台机器就行</p>
+  </div>
+  <div class="field field--focus" style="border-top:0">
+    <input value="MacBook 上的客户端" aria-label="令牌名称，输入中">
+  </div>
+  <div class="pad"><p class="sub" style="padding-top:6px">明文只显示一次，产品存的是指纹。有效期 30 天，随时可吊销。</p></div>
+
+  <div style="flex:1 1 auto"></div>
+</div>
+
+<div class="dock">
+  <div class="dock__row"><button>取消</button></div>
+  <button class="btn-pri">签发</button>
+</div>
+<div class="hi"></div>
+</div></body></html>

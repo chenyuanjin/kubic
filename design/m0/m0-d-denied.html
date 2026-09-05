@@ -1,0 +1,57 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>M0 · U0.3 相机永久拒绝 · 去设置引导（降级/失败态）· iPhone</title>
+<link rel="stylesheet" href="tokens.css"><link rel="stylesheet" href="v10.css"><style>
+  body{zoom:2}
+  /* U0.3 降级态：相机永久拒绝之后再点「拍」。采集区整区替换成去设置引导。
+     先给不需要权限的路,「去设置」永远排最后一个（M0-G2 裁定）——
+     会把用户带出应用的那条路永远排最后。三个按钮纵向排,全部次按钮。
+     没有「功能不可用」、没有整屏拦截、没有告警色:被拒不是错误态（C-INLINE 语气,不是 C-ERR）。
+     「拍」在段控里不灰、不隐藏、不加角标,每次点仍能重新看到这一格。
+     自造组件 2/3：seg、vstack（与 U0.2 同两个,不新增）。 */
+  .seg{display:flex;border-top:var(--hair-w) solid var(--hair);border-bottom:var(--hair-w) solid var(--hair)}
+  .seg button{flex:1;height:48px;display:flex;align-items:center;justify-content:center;
+              font-size:var(--t-btn);color:var(--ink-2)}
+  .seg button + button{border-left:var(--hair-w) solid var(--hair)}
+  .seg button[aria-current="true"]{color:var(--ink);box-shadow:inset 0 calc(-1 * var(--rule-ink)) 0 var(--ink)}
+  .vstack{border-top:var(--hair-w) solid var(--hair)}
+  .vstack button{display:flex;width:100%;min-height:52px;align-items:center;justify-content:center;
+                 font-size:var(--t-btn);color:var(--ink);border-bottom:var(--hair-w) solid var(--hair)}
+</style></head><body><div class="phone">
+
+<div class="sb"><span>21:47</span><span class="sb__r">
+  <span class="sb__s"><i></i><i></i><i></i><i></i></span><span class="sb__b"></span>
+</span></div>
+
+<div class="flow">
+  <div class="head"><span>记一条</span><span>21:47</span></div>
+
+  <div class="seg">
+    <button>写</button><button>说</button><button aria-current="true">拍</button><button>做题</button>
+  </div>
+
+  <div style="height:24px"></div>
+
+  <div class="band">
+    <div class="pad" style="padding-top:24px;padding-bottom:8px">
+      <h2 class="display" style="font-size:24px;line-height:32px">这台设备上关掉了相机。</h2>
+      <p class="body" style="margin-top:12px;padding-bottom:16px">可以从相册选一张,或者直接打字。</p>
+    </div>
+    <div class="vstack">
+      <button>从相册选</button>
+      <button>先打字</button>
+      <button>去设置</button>
+    </div>
+  </div>
+
+  <div style="flex:1 1 auto"></div>
+
+  <div class="field">
+    <label class="eyebrow" for="src" style="flex:0 0 auto">来源</label>
+    <input id="src" placeholder="记下是从哪来的">
+  </div>
+</div>
+
+<div class="dock">
+  <button class="btn-pri" aria-disabled="true">记下</button>
+</div>
+<div class="hi"></div>
+</div></body></html>

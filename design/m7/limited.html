@@ -1,0 +1,45 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>U7.2 额度受限态 · 拍照识别 · Kubic M7 v10</title>
+<link rel="stylesheet" href="tokens.css"><link rel="stylesheet" href="v10.css"><style>
+  body{zoom:2}
+  /* 受限态嵌块：挂在已存在的记录卡片下方，不替代它、不回滚它。
+     组件内唯一的按钮控件是免费兜底（住屏底 dock）；付费入口只是一条文本链。 */
+  .limit{padding:16px var(--rule) 8px;border-top:var(--hair-w) solid var(--hair-soft)}
+  .limit strong{display:block;font-family:var(--font-display);font-size:22px;line-height:28px;font-weight:400}
+  .limit .sub{display:block;margin-top:6px}
+  .back{margin:-14px 0;padding:14px 10px 14px 0;font-size:var(--t-micro);color:var(--ink-2)}
+</style></head><body><div class="phone">
+
+<div class="sb"><span>21:47</span><span class="sb__r">
+  <span class="sb__s"><i></i><i></i><i></i><i></i></span><span class="sb__b"></span>
+</span></div>
+
+<div class="flow">
+  <div class="head">
+    <button class="back" aria-label="返回">‹ 返回</button>
+    <span>记一条 · 图片</span>
+  </div>
+
+  <p class="eyebrow pad" style="margin-top:20px;margin-bottom:2px">已存下这一条</p>
+
+  <article class="line" aria-label="图片记录，21:46，来源粉笔，已存下，待补">
+    <span class="idx">06</span>
+    <span class="line__main">
+      <span class="eyebrow">21:46 · 粉笔</span>
+      <span class="body"><i>图片</i></span>
+      <span class="sub">已存下 · 待补</span>
+    </span>
+  </article>
+
+  <div class="limit">
+    <strong>这个月的 AI 次数用完了(还剩 0 次)</strong>
+    <span class="sub">记录已经存下,原图没有离开这台手机</span>
+    <span class="sub">从骨架树里自己挑一个挂上,挂了就计覆盖度;不挂先留在待补</span>
+    <div style="margin-top:8px"><button class="link">看看档位</button></div>
+  </div>
+</div>
+
+<div class="dock">
+  <button class="btn-pri">手动挂考点</button>
+</div>
+<div class="hi"></div>
+</div></body></html>

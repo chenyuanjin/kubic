@@ -1,0 +1,66 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>U4.6 S-EXP 失败态 · 流中断 · Kubic v10</title>
+<link rel="stylesheet" href="tokens.css"><link rel="stylesheet" href="v10.css"><style>
+  body{zoom:2}
+  /* 失败态 C-ERR · 区三上游超时（六档之一，每档一句不共用）：
+     失败停在发生的那一区；已收到的部分原样保留，明写「只收到一半」，不伪装成完整回答；
+     「这次没算次数」必须明写 —— 七种失败一律不扣。
+     区一区二不受影响：屏级主按钮（区一「导出」）一格没动，重试是次按钮。 */
+  .seg{display:flex;border-top:var(--hair-w) solid var(--hair);border-bottom:var(--hair-w) solid var(--hair)}
+  .seg button{flex:1;height:48px;display:flex;align-items:center;justify-content:center;font-size:15px;color:var(--ink-2)}
+  .seg button+button{border-left:var(--hair-w) solid var(--hair)}
+  .seg .on{color:var(--ink);box-shadow:inset 0 -1.5px 0 var(--ink)}
+  .zone{padding:18px var(--rule) 0}
+  .zone .display{font-size:22px;line-height:30px}
+  .ans{margin:12px var(--rule) 0;border-left:var(--rule-ink) solid var(--ink);
+       background:var(--fill-skeleton);padding:12px 14px 10px;overflow:hidden}
+  .ans p{font-size:13px;line-height:20px;color:var(--ink)}
+  .ans p+p{margin-top:6px}
+  .err{margin:12px var(--rule) 0;padding-top:12px;border-top:var(--rule-ink) solid var(--danger)}
+  .err strong{display:block;font-family:var(--font-display);font-size:22px;line-height:28px;font-weight:400}
+  .err span{display:block;margin-top:4px;color:var(--ink-2);font-size:var(--t-sub);line-height:21px}
+</style></head><body><div class="phone">
+
+<div class="sb"><span>21:50</span><span class="sb__r">
+  <span class="sb__s"><i></i><i></i><i></i><i></i></span><span class="sb__b"></span>
+</span></div>
+
+<div class="flow">
+  <div class="head"><span>‹ 导出与问 AI</span><span>行政法 · 120 个考点</span></div>
+  <div class="seg" role="radiogroup" aria-label="范围">
+    <button class="on" aria-checked="true">全部</button>
+    <button aria-checked="false">法律</button>
+    <button aria-checked="false">政治</button>
+  </div>
+
+  <!-- 区二尾部：免费路径一格没动，照常可用 -->
+  <div class="split"><button>复制这段文字</button></div>
+
+  <!-- 区三 · 失败停在本区 -->
+  <div class="zone">
+    <p class="eyebrow">出口 03 · 让产品替你发，回答带回来</p>
+    <h2 class="display" style="margin-top:2px">让 AI 直接回答</h2>
+    <p class="sub" style="margin-top:6px">发出去的就是上面那段文字，你改过就发你改过的那一版。这个月还剩 3 次。</p>
+  </div>
+
+  <div class="err">
+    <strong>只收到一半</strong>
+    <span>刚才连模型的线路断了。下面是已经收到的部分，原样留着 —— 这不是完整回答。<b style="color:var(--ink);font-weight:500">这次没算次数。</b></span>
+  </div>
+
+  <div class="ans" aria-label="回答区，只收到一半">
+    <p class="eyebrow" style="margin-bottom:8px">这次用的模型：DeepSeek-V3 · 网信算备 110108492701 号</p>
+    <p>按你给的数据，先补【我没碰过的】里出现次数最高的两个：行政处罚的种类（近 5 年 7 次）、行政强制</p>
+    <p class="eyebrow" style="margin-top:8px">这是你接的模型给的回答 · 到这里断了</p>
+  </div>
+  <div class="control" style="border-top:0">
+    <button>再试一次</button><button>复制已收到的</button>
+  </div>
+
+  <!-- 区四头部露出：不受区三失败影响 -->
+  <div class="zone" style="border-top:var(--hair-w) solid var(--hair);padding-bottom:14px">
+    <p class="eyebrow">出口 04 · 授权你的客户端进来读</p>
+    <h2 class="display" style="margin-top:2px">只读令牌</h2>
+  </div>
+</div>
+<div class="hi"></div>
+</div></body></html>

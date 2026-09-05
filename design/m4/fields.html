@@ -1,0 +1,74 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>U4.3 导出字段清单 · 整屏可勾 · Kubic v10</title>
+<link rel="stylesheet" href="tokens.css"><link rel="stylesheet" href="v10.css"><style>
+  body{zoom:2}
+  /* U4.3：字段清单是信任面不是设置项 —— iPhone 上它是整屏，从区一「文件里有什么」推入。
+     可见可勾：勾 = 这次导出装进去；默认全勾。
+     「不在文件里的」一段与勾选行同权重排版 —— 文件里没有什么，和有什么一样要说清。 */
+  .ck{display:flex;gap:var(--gap-slot);width:100%;padding:9px var(--rule);align-items:flex-start;text-align:left}
+  .ck+.ck{border-top:var(--hair-w) solid var(--hair-soft)}
+  .ck__box{flex:0 0 var(--slot);width:var(--slot);height:var(--slot);margin-top:3px;
+           border:1.5px solid var(--ink);border-radius:var(--radius);position:relative}
+  .ck--on .ck__box::after{content:"";position:absolute;inset:3px;background:var(--ink)}
+  .ck__main{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:2px}
+  .no{display:flex;gap:var(--gap-slot);width:100%;padding:9px var(--rule);align-items:flex-start}
+  .no+.no{border-top:var(--hair-w) solid var(--hair-soft)}
+  .no .idx{color:var(--ink-2)}
+  .sect{padding:12px var(--rule) 4px;border-top:var(--hair-w) solid var(--hair)}
+</style></head><body><div class="phone">
+
+<div class="sb"><span>21:47</span><span class="sb__r">
+  <span class="sb__s"><i></i><i></i><i></i><i></i></span><span class="sb__b"></span>
+</span></div>
+
+<div class="flow" style="overflow:hidden">
+  <div class="head"><span>‹ 文件里有什么</span><span>Markdown · 范围：全部</span></div>
+
+  <div class="sect" style="border-top:0;padding-top:12px">
+    <p class="eyebrow">勾上的会装进这次的文件 · 默认全勾</p>
+  </div>
+
+  <button class="ck ck--on"><span class="ck__box"></span>
+    <span class="ck__main"><span class="body">说明头</span>
+    <span class="sub">导出时刻 · 范围 · 骨架版本 · 五个计数</span></span>
+  </button>
+  <button class="ck ck--on"><span class="ck__box"></span>
+    <span class="ck__main"><span class="body">考点表 · 每个考点一行</span>
+    <span class="sub">考点名称 · 章节路径 · 近 5 年出现次数</span></span>
+  </button>
+  <button class="ck ck--on"><span class="ck__box"></span>
+    <span class="ck__main"><span class="body">你碰过的痕迹</span>
+    <span class="sub">碰过几次 · 最近一次多久前 · 来源名称</span></span>
+  </button>
+  <button class="ck ck--on"><span class="ck__box"></span>
+    <span class="ck__main"><span class="body">你自己的标记</span>
+    <span class="sub">标了『已经会了』的 · 已归档的，单独成段</span></span>
+  </button>
+  <button class="ck"><span class="ck__box"></span>
+    <span class="ck__main"><span class="body">记录时间线 · 每条记录一行</span>
+    <span class="sub">什么时候记的 · 记的方式 · 挂到的考点</span></span>
+  </button>
+
+  <div class="sect">
+    <p class="eyebrow">不在文件里的 —— 不是这次没勾，是库里就没有这一格</p>
+  </div>
+  <div class="no"><span class="idx">×</span>
+    <span class="line__main"><span class="body">你记的原话</span>
+    <span class="sub">正文不进任何导出 · 装得下题目的只有它</span></span>
+  </div>
+  <div class="no"><span class="idx">×</span>
+    <span class="line__main"><span class="body">原图</span>
+    <span class="sub">只在你本机 · 文件里连文件名和张数都没有</span></span>
+  </div>
+  <div class="no"><span class="idx">×</span>
+    <span class="line__main"><span class="body">账号内部标识</span>
+    <span class="sub">文件离开产品后，不该有人凭它找回你</span></span>
+  </div>
+
+  <div style="flex:1 1 auto"></div>
+</div>
+
+<div class="dock">
+  <button class="btn-pri">按这份清单导出</button>
+</div>
+<div class="hi"></div>
+</div></body></html>

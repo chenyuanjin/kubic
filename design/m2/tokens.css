@@ -1,0 +1,63 @@
+/* Kubic v10 · 蓝图台账 —— 推倒重设（用户 09-04「所有版本都不满意」）。
+   色的来源：用户 09-03 15:55 亲口认过的那张 logo 稿 —— 长春花蓝 #8CA5E6。
+   柠檬（v6~v8.1 的 agent 发明）作废。
+   这一版对「素 / 不够明亮」的结构性回答：色从「一支笔」变成「成片的面」——
+   强调色不再只划一道，而是整块面板；面板的恒定含义只有一句：
+   「这一块，是你还没碰过的那部分」。一屏最多 1 块（标志顶面与字标光标是品牌位，计数豁免）。
+   骨架不变：状态细条 → 单栏内容流 → 屏底动作区。 */
+:root{
+  --canvas:#E4E6EB;          /* 评审画布，不进产品面 */
+
+  /* ── 面 ── */
+  --ground:#FBFAF7;          /* 屏底纸：亮暖白 —— 比 v8.1 的象牙再亮一档 */
+  --raised:#FFFFFF;          /* 抬起面：纯白 */
+  --accent:#8CA5E6;          /* 长春花蓝 · 唯一强调色（用户认过的那张稿）。
+                                当「面」用：其上墨字 7.4:1（AAA）。
+                                恒定含义：你还没碰过的那部分。一屏最多 1 块。 */
+
+  /* ── 线 ── */
+  --hair-w:.5px;
+  --hair:rgba(23,23,26,.17);
+  --hair-soft:rgba(23,23,26,.08);
+  --rule-ink:1.5px;          /* 竖式「运算线」= 蓝面的上缘那条墨线 */
+
+  /* ── 字色：两级 ── */
+  --ink:#17171A;             /* 对纸 17.2:1 · 对蓝面 7.4:1 */
+  --ink-2:#5C6470;           /* 冷灰（随蓝走），对纸 5.7:1 */
+
+  /* ── 动作 ── */
+  --action:#17171A;
+  --on-action:#FFFFFF;
+  --danger:#A6301C;          /* 对纸 6.0:1，只在确认位 */
+  --on-danger:#FFFFFF;
+  --underline:rgba(23,23,26,.40);
+  --hi:rgba(23,23,26,.26);
+  --fill-skeleton:rgba(23,23,26,.07);
+  --fill-loading:rgba(23,23,26,.12);
+  --fill-disabled:rgba(23,23,26,.25);
+
+  /* ── 字阶：5 级 + 1 个主数级（沿用已验证的阶，未加级）── */
+  --t-hero:56px;    --lh-hero:64px;     /* 宋体 · 只给「那一个数」，一屏最多 1 处 */
+  --t-display:30px; --lh-display:40px;  /* 宋体 · 屏级陈述 */
+  --t-body:17px;    --lh-body:26px;
+  --t-sub:14px;     --lh-sub:22px;
+  --t-micro:12px;   --lh-micro:16px;
+  --t-btn:16px;
+  --t-idx:13px;
+
+  --font-display:"Songti SC","Noto Serif SC","Source Han Serif SC",serif;
+  --font-body:"PingFang SC","Hiragino Sans GB",system-ui,sans-serif;
+  --font-mono:"SF Mono","JetBrains Mono",Menlo,monospace;  /* 只画 kubic 字标 */
+
+  /* ── 骨架常数（拿尺子量的那三条，全部保留）── */
+  --rule:24px;      /* 唯一左边线 */
+  --slot:18px;      /* 记号/序号槽 */
+  --gap-slot:14px;  /* 带槽行正文左缘 = 24+18+14 = 56px */
+  --base:8px;       /* 纵向基线格 */
+  --radius:2px;     /* 圆角上限 */
+
+  /* ── 动效 ── */
+  --dur-1:120ms;
+  --dur-2:200ms;
+  --ease:cubic-bezier(.2,0,0,1);
+}

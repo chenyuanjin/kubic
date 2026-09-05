@@ -1,0 +1,84 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>U8.2 设置 · S-SET 主态 · Kubic v10</title>
+<link rel="stylesheet" href="tokens.css"><link rel="stylesheet" href="v10.css"><style>
+  body{zoom:2}
+  /* S-SET：四组台账，零开关、零输入框、零骨架屏。
+     不是后台设置页：没有分组卡片、没有右箭头、没有开关矩阵——
+     全部条目都是台账行（上行条目、下行事实），可点行整行热区。
+     危险条目（清空）= 普通行 + 次要色文字，红色只出现在浮层确认位。
+     内容区 0 块蓝面：设置讲的是数据，不是盲区。 */
+  .grp{padding:14px var(--rule) 4px}
+  .line{padding-top:11px;padding-bottom:11px}
+</style></head><body><div class="phone">
+
+<div class="sb"><span>21:47</span><span class="sb__r">
+  <span class="sb__s"><i></i><i></i><i></i><i></i></span><span class="sb__b"></span>
+</span></div>
+
+<div class="flow">
+  <div class="head"><span>设置</span><span>已登录 · 尾号 6621</span></div>
+
+  <p class="eyebrow grp">我的数据</p>
+  <button class="line" aria-label="原图管理,37 张,占 128 MB,按钮,双击进入">
+    <span class="slot"></span>
+    <span class="line__main">
+      <span class="body">原图管理</span>
+      <span class="sub">37 张,占 128 MB</span>
+    </span>
+  </button>
+  <button class="line" aria-label="导出我的全部数据,不限次数,没有水印,按钮">
+    <span class="slot"></span>
+    <span class="line__main">
+      <span class="body">导出我的全部数据</span>
+      <span class="sub">不限次数,没有水印</span>
+    </span>
+  </button>
+  <button class="line" aria-label="清空这台设备上的数据,不可撤销,按钮">
+    <span class="slot"></span>
+    <span class="line__main">
+      <span class="body body--2">清空这台设备上的数据</span>
+      <span class="sub">记录和图都会删掉,云端的不受影响</span>
+    </span>
+  </button>
+
+  <p class="eyebrow grp">账号</p>
+  <button class="line" aria-label="账号,尾号 6621,按钮">
+    <span class="slot"></span>
+    <span class="line__main">
+      <span class="body">账号<span class="line__meta">尾号 6621</span></span>
+    </span>
+  </button>
+  <button class="line" aria-label="我要考的,2026 国考行测,2026-11-29,按钮">
+    <span class="slot"></span>
+    <span class="line__main">
+      <span class="body">我要考的<span class="line__meta">2026 国考行测 · 2026-11-29</span></span>
+    </span>
+  </button>
+
+  <p class="eyebrow grp">AI</p>
+  <button class="line" aria-label="这个月的 AI 次数,还剩 41 次,按钮,双击查看额度">
+    <span class="slot"></span>
+    <span class="line__main">
+      <span class="body">本月还剩 41 次</span>
+    </span>
+  </button>
+
+  <p class="eyebrow grp">关于</p>
+  <button class="line" aria-label="这个产品不做什么,按钮">
+    <span class="slot"></span>
+    <span class="line__main"><span class="body">这个产品不做什么</span></span>
+  </button>
+  <button class="line" aria-label="用户协议,按钮">
+    <span class="slot"></span>
+    <span class="line__main"><span class="body">用户协议<span class="line__meta">隐私政策</span></span></span>
+  </button>
+  <div class="line">
+    <span class="slot"></span>
+    <span class="line__main"><span class="body body--2">版本 1.0.0<span class="line__meta">反馈:hi@kubic.app</span></span></span>
+  </div>
+
+  <div style="flex:1 1 auto"></div>
+  <div class="foot"><p>这个应用不会在后台提醒你任何事</p></div>
+</div>
+
+<div class="hi"></div>
+</div></body></html>

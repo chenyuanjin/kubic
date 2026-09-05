@@ -1,0 +1,74 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>标志 · Kubic v10</title>
+<link rel="stylesheet" href="tokens.css"><link rel="stylesheet" href="v10.css"><style>
+  /* 标志与色板一页。标志沿用用户 09-03 认过的方向：分离立方 + kubic 方块光标。
+     顶面 = 长春花蓝：可以拿起来的那一块笔记；字标光标停在还没打出来的那一格。
+     两处说的是同一句话：这一处是空的。 */
+  body{background:var(--ground)}
+  .sheet{width:1440px;min-height:900px;margin:0 auto;padding:72px 96px}
+  .kicker{font-size:13px;letter-spacing:.14em;color:var(--ink-2)}
+  h1{font-family:var(--font-display);font-size:44px;line-height:56px;font-weight:400;margin-top:10px}
+  .row{display:flex;gap:64px;margin-top:56px;align-items:stretch}
+  .cell{flex:1;border-top:1.5px solid var(--ink);padding-top:20px}
+  .cell h2{font-size:14px;font-weight:500;color:var(--ink-2);margin-bottom:28px}
+  .stage{height:280px;display:flex;align-items:center;justify-content:center;
+         background:var(--raised);border:.5px solid var(--hair)}
+  .stage--accent{background:var(--accent);border:0;border-top:1.5px solid var(--ink)}
+  .note{margin-top:16px;font-size:14px;line-height:22px;color:var(--ink-2)}
+  .pal{display:flex;margin-top:56px;border:.5px solid var(--hair)}
+  .pal div{flex:1;height:150px;padding:14px 16px;font-size:12px;
+           font-variant-numeric:tabular-nums;color:var(--ink-2);
+           display:flex;flex-direction:column;justify-content:flex-end;gap:2px}
+  .pal b{font-weight:500;color:var(--ink)}
+  .meaning{margin-top:56px;border-top:1.5px solid var(--ink);padding-top:20px;
+           display:flex;gap:64px}
+  .meaning p{flex:1;font-size:15px;line-height:24px;color:var(--ink)}
+  .meaning p b{font-weight:600}
+</style></head><body><div class="sheet">
+
+  <p class="kicker">KUBIC · 标志与唯一强调色 · v10</p>
+  <h1>一块可以拿起来的笔记，和一格还没打出来的字</h1>
+
+  <div class="row">
+    <div class="cell">
+      <h2>记号 · 分离立方（用户 09-03 认过的方向）</h2>
+      <div class="stage">
+        <svg width="128" height="144" viewBox="0 0 64 72" fill="none">
+          <path d="M8 27.9 32 41.8 32 65.8 8 51.9Z" fill="var(--ink)"/>
+          <path d="M56 27.9 32 41.8 32 65.8 56 51.9Z" fill="var(--ink-2)"/>
+          <path d="M32 2 56 15.9 32 29.8 8 15.9Z" fill="var(--accent)"/>
+        </svg>
+      </div>
+      <p class="note">顶面掀起，长春花蓝 —— 一块可以拿起来的笔记。盖与体之间那道透底的缝就是盲区：这个产品只答「有没有」，缺口是它唯一要说的事。≤16px 时缝合上，只留三面明暗差。</p>
+    </div>
+    <div class="cell">
+      <h2>字标 · kubic + 方块光标</h2>
+      <div class="stage">
+        <span class="logo__type" style="font-size:64px">kubic<i class="cur"></i></span>
+      </div>
+      <p class="note">光标停在还没打出来的那一格 —— 同一句话。等宽字只出现在字标，产品正文一个字都不用。应用图标不带光标。</p>
+    </div>
+    <div class="cell">
+      <h2>色当「面」用（v10 的新规则）</h2>
+      <div class="stage stage--accent">
+        <span style="font-family:var(--font-display);font-size:72px;color:var(--ink);font-variant-numeric:tabular-nums lining-nums">77</span>
+      </div>
+      <p class="note">墨字压在蓝面上 7.4:1（AAA）。蓝面的恒定含义：这一块是你还没碰过的那部分。内容区一屏最多 1 块，上缘永远是一条 1.5px 墨线 —— 颜色是被算出来的。</p>
+    </div>
+  </div>
+
+  <div class="pal">
+    <div style="background:#FBFAF7"><b>纸 #FBFAF7</b><span>屏底 · 亮暖白</span></div>
+    <div style="background:#FFFFFF"><b>抬起面 #FFFFFF</b><span>今天块 · 屏底动作区</span></div>
+    <div style="background:#8CA5E6"><b>长春花蓝 #8CA5E6</b><span>唯一强调 · 墨字其上 7.4:1</span></div>
+    <div style="background:#17171A;color:rgba(255,255,255,.7)"><b style="color:#fff">墨 #17171A</b><span>对纸 17.2:1</span></div>
+    <div style="background:#5C6470;color:rgba(255,255,255,.75)"><b style="color:#fff">冷灰 #5C6470</b><span>二级字 · 对纸 5.7:1</span></div>
+    <div style="background:#A6301C;color:rgba(255,255,255,.75)"><b style="color:#fff">危险红 #A6301C</b><span>只在确认位</span></div>
+  </div>
+
+  <div class="meaning">
+    <p><b>展示字 = 宋体</b>（Songti SC / Noto Serif SC）：屏级陈述与主数字。衬线数字读起来像年鉴与刻度，不像 KPI —— 这个产品做的是「读数」，不是「打分」。</p>
+    <p><b>正文字 = 苹方</b>（PingFang SC）：正文、按钮、列表、状态。全局 tabular-nums。两族不同源、不同骨；字重只用 400/500/600。</p>
+    <p><b>骨架三块</b>：状态细条 → 单栏内容流 → 屏底动作区。没有侧栏、没有导航面包屑、没有表格 —— 台账行是压在同一条 24px 左边线上的整行热区。</p>
+  </div>
+
+</div></body></html>

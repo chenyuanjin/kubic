@@ -7,7 +7,7 @@
 
 | | 内容 | 状态 |
 |---|---|---|
-| `h5/` | **H5(Web 主形态)差分稿**,`KUBI-79` 审核修订产出 | ✅ **在用** |
+| `v10/` `m0/`~`m8/` `h5/` | v10 底座 + 八份模块稿 + H5 追加形态差分稿,地址与复现命令见文末 | ✅ **在用** |
 | `archive/ui-a-kubi72/` | `KUBI-72` 时代的极客暗色,D1–D32 | ❌ **作废**,只作决策记录 |
 | `explorations/` | 更早的三方向对比 | ❌ 未采纳,决策记录 |
 
@@ -27,12 +27,12 @@
 cd design/h5 && python3 -m http.server 8000
 ```
 
-## 🔴 底座不在这个仓库里
+## 底座与九份稿已落盘(2026-09-05,KUBI-79)
 
-底座在 OpenDesign 工程 `kubi-80-v10-blueprint`,`KUBI-81~88` 八份模块稿也各在自己的工程里,
-**都没有推上 origin**:换台机器打不开,与仓库的一致性也没有任何装置在守。
-`KUBI-79` 已登记为阻断项。在它们落进 `design/` 之前,**不要基于「仓库里没有」推出任何结论** —— 东西可能存在,只是没推。
-`h5/` 的两个 css 是逐字节复制过来的(`cmp` 已验同),目前唯一进了 git 的 v10 底座。
+v10 底座(`v10/`)与 `KUBI-81~88` 八份模块稿(`m0/`~`m8/`)已从 OpenDesign 工程落进本目录。
+**OpenDesign 工程从此只是编辑视图,不是真相 —— 仓库里这份才是**(KUBI-80 决议第 6 版)。
+九个目录的 `tokens.css` `v10.css` 与 `h5/` 的逐字节一致(`cmp` 已验同);
+底座唯一权威是 `v10/`,模块目录里的是随稿副本 —— 改底座只改 `v10/`,并同步其余九处。
 
 ## 🔴 界面上三处不可弱化的东西
 
@@ -78,10 +78,37 @@ cd web && npm run test:boundary
 
 ```
 ~/Library/Application Support/Open Design/namespaces/release-stable/data/projects/
-  kubi-80-v10-blueprint/  → 当前底座(未进 git,见上)
+  kubi-80-v10-blueprint/  → design/v10/(已落盘,工程只是编辑视图)
+  kubi-8*-m*-v10/         → design/m0/~m8/(已落盘,同上)
   notetool-ui-a/          → design/archive/ui-a-kubi72/(作废)
   notetool-blindspot/     → design/explorations/
 ```
 
 ⚠️ OpenDesign 守护进程绑的是**动态端口**,每次启动都变,`od mcp install` 写死的端口是坏的。
 详见记忆 `opendesign-mcp-dynamic-port`。
+
+## 九份稿的地址与复现命令(2026-09-05 落盘,KUBI-79)
+
+一行起服务,再按表点开入口文件:
+
+```bash
+cd design && python3 -m http.server 8000   # 打开 http://localhost:8000/<目录>/<入口文件>
+```
+
+| 目录 | 议题 | 模块 | 入口文件(其余屏同目录平铺) |
+|---|---|---|---|
+| `v10/` | `KUBI-80` | 底座:基调 / 组件 / M6 端与形态 | `home.html` · 组件 `components.html` · 断点 `m6.html` |
+| `m0/` | `KUBI-81` | M0 首次使用与权限 | `m0-a-intro.html` |
+| `m1/` | `KUBI-82` | M1 记录 | `01-write.html` |
+| `m2/` | `KUBI-83` | M2 打标与未分类 | `m2-tag-main.html` |
+| `m3/` | `KUBI-84` | M3 盲区与覆盖度 | `01-blind.html` |
+| `m4/` | `KUBI-85` | M4 出口 | `exp.html` |
+| `m5/` | `KUBI-86` | M5 账号 | `01-gate.html` |
+| `m7/` | `KUBI-87` | M7 商业化与额度 | `buy.html` |
+| `m8/` | `KUBI-88` | M8 边界与设置 | `boundary.html` |
+| `h5/` | `KUBI-79` | H5 追加形态差分 | `index.html` |
+
+模块稿画的是 iPhone + iPad 两档(2026-09-04 15:10 用户指令,首发 iOS);H5 是追加的一档,不是基准。
+落盘时对稿的唯一改动:`m8/boundary.html` 与 `m8/boundary-ipad.html` 第四条否定式文案
+原文含硬名单词,已改为「也不发任何奖励哄你常来」——
+硬名单对否定式同样生效,豁免表无效,与 `capability-boundary-scan.mjs` 里判卷组「连否定式都用不上」同例。

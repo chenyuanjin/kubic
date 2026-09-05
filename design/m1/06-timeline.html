@@ -1,0 +1,89 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>U1.7 时间线 · 删除确认 + U1.6 同步细条 · Kubic v10</title>
+<link rel="stylesheet" href="tokens.css"><link rel="stylesheet" href="v10.css"><style>
+  body{zoom:2}
+  /* U1.7 时间线：按天分组的台账，只回答有没有 / 几次 / 多久前。
+     没有筛选、没有搜索、没有总结；分组头右侧不放条数。
+     U1.6 的落点是顶条细条（正在同步 n 条：只有条数，没有进度条）与待传标记。
+     删除确认浮层必须说清两件事：盲区数字会跟着变、原图不受影响。
+     危险按钮与主按钮永不同屏底 —— 这一屏没有主按钮。
+     这一屏内容区 0 块蓝面。 */
+  .group{padding:14px var(--rule) 2px}
+  .group span{font-size:var(--t-micro);line-height:var(--lh-micro);color:var(--ink-2);
+              letter-spacing:.3px;font-variant-numeric:tabular-nums}
+  .links{display:flex;gap:14px;flex-wrap:wrap}
+  .scrim{position:absolute;inset:0;background:rgba(23,23,26,.35)}
+  .sheet{position:absolute;left:0;right:0;bottom:0;background:var(--raised);
+         border-top:var(--hair-w) solid var(--hair);
+         padding:24px var(--rule) calc(24px + env(safe-area-inset-bottom,0px))}
+</style></head><body><div class="phone">
+
+<div class="sb"><span>21:47</span><span class="sb__r">
+  <span class="sb__s"><i></i><i></i><i></i><i></i></span><span class="sb__b"></span>
+</span></div>
+
+<div class="flow">
+  <div class="head"><span>时间线</span><span>21:47</span></div>
+
+  <!-- U1.6 顶条：只有条数，没有进度条、没有百分比；在线且队列为空时整条不渲染 -->
+  <div class="control"><span>正在同步 2 条</span><span>都已在这台设备上</span></div>
+
+  <div class="group"><span>今天</span></div>
+
+  <div class="line">
+    <span class="idx">01</span>
+    <span class="line__main">
+      <span class="body">图片记录<span class="line__meta">21:47 · 粉笔</span></span>
+      <span class="sub">正在认 · 还没同步 · 有图</span>
+    </span>
+  </div>
+  <div class="line">
+    <span class="idx">02</span>
+    <span class="line__main">
+      <span class="body">语音记录<span class="line__meta">14:20 · 粉笔</span></span>
+      <span class="sub" style="color:var(--ink)">已对上 · 听证程序</span>
+    </span>
+  </div>
+
+  <div class="group"><span>昨天</span></div>
+
+  <div class="line">
+    <span class="idx">03</span>
+    <span class="line__main">
+      <span class="body">文字记录<span class="line__meta">22:10</span></span>
+      <span class="sub">没对上</span>
+      <span class="links" style="margin-top:6px">
+        <button type="button" class="link">手动挂</button>
+        <button type="button" class="link">就这样留着</button>
+      </span>
+    </span>
+  </div>
+  <div class="line">
+    <span class="idx">04</span>
+    <span class="line__main">
+      <span class="body">做题记录<span class="line__meta">09:32 · 粉笔</span></span>
+      <span class="sub" style="color:var(--ink)">已对上 · 行政处罚的种类</span>
+    </span>
+  </div>
+
+  <div class="group"><span>更早</span></div>
+  <div class="line">
+    <span class="idx">05</span>
+    <span class="line__main">
+      <span class="body">文字记录<span class="line__meta">9月1日 20:15</span></span>
+      <span class="sub" style="color:var(--ink)">已对上 · 简易程序</span>
+    </span>
+  </div>
+
+  <div class="foot" style="margin-top:8px"><p>到底了</p></div>
+</div>
+
+<!-- 删除确认：不可逆动作走浮层。两件事说在按钮之前 -->
+<div class="scrim"></div>
+<div class="sheet">
+  <p class="display" style="font-size:22px;line-height:30px">删掉昨天 22:10 这一条?</p>
+  <p class="sub" style="margin-top:8px">盲区数字会跟着变。你的原图不受影响，仍只在这台设备上。</p>
+  <button class="btn-danger" style="margin-top:20px">删除这条记录</button>
+  <p style="text-align:center;margin-top:10px"><button type="button" class="link">先不删</button></p>
+</div>
+<div class="hi" style="background:rgba(255,255,255,.6)"></div>
+</div></body></html>

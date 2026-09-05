@@ -1,0 +1,128 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>M1 记一条 · iPad 横屏 ≥1024 · 双列内容 · Kubic v10</title>
+<link rel="stylesheet" href="tokens.css"><link rel="stylesheet" href="v10.css"><style>
+  /* iPad 横屏（≥1024）：双列内容。左栏是内容（今天的时间线，随筛选整栏换掉），
+     不是持久菜单；四入口收敛的记录入口仍住屏底动作区，不挪进左栏。
+     右栏采集区列宽 464px —— 这就是录音窄态：分屏 / 台前调度下宽度收窄，
+     波形与计时纵排、按钮满列宽，组件不换形。
+     信息顺序与 iPhone 档完全一致，只改排布。
+     左栏第一条是受限态第二档：额度用完，记录照样成功，稍后再认。
+     这一屏内容区 0 块蓝面。 */
+  .pad-frame{position:relative;width:1366px;height:1024px;background:var(--ground);
+             display:flex;flex-direction:column;overflow:hidden}
+  .cols{flex:1 1 auto;display:flex;min-height:0}
+  .col-l{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;
+         border-right:var(--hair-w) solid var(--hair)}
+  .col-r{flex:0 0 464px;display:flex;flex-direction:column}
+  .group{padding:14px var(--rule) 2px}
+  .group span{font-size:var(--t-micro);line-height:var(--lh-micro);color:var(--ink-2);
+              letter-spacing:.3px;font-variant-numeric:tabular-nums}
+  .links{display:flex;gap:14px;flex-wrap:wrap}
+  .seg{display:flex;border-bottom:var(--hair-w) solid var(--hair)}
+  .seg button{flex:1;height:48px;display:flex;align-items:center;justify-content:center;
+              font-size:var(--t-sub);color:var(--ink-2)}
+  .seg button+button{border-left:var(--hair-w) solid var(--hair)}
+  .seg button[aria-current="true"]{color:var(--ink);font-weight:600;
+              box-shadow:inset 0 -1.5px 0 var(--ink)}
+  .wave{display:flex;align-items:center;justify-content:center;gap:3px;height:32px;margin-top:20px}
+  .wave i{width:3px;background:var(--ink);border-radius:.5px}
+</style></head><body><div class="pad-frame">
+
+<div class="sb"><span>21:47　9月4日 周五</span><span class="sb__r">
+  <span class="sb__s"><i></i><i></i><i></i><i></i></span><span class="sb__b"></span>
+</span></div>
+
+<div class="cols">
+
+  <!-- 左栏：内容，不是菜单 —— 时间线回看，随筛选整栏换掉 -->
+  <div class="col-l">
+    <div class="head"><span>时间线 · 本机 + 已同步</span><span>21:47</span></div>
+    <div class="control"><span>正在同步 2 条</span><span>都已在这台设备上</span></div>
+
+    <div class="group"><span>今天</span></div>
+    <div class="line">
+      <span class="idx">01</span>
+      <span class="line__main">
+        <span class="body">看了行政处罚的听证<span class="line__meta">21:50 · 粉笔</span></span>
+        <span class="sub">稍后再认 · 这次没自动归类，先进未分类</span>
+        <span class="links" style="margin-top:6px">
+          <button type="button" class="link">自己挑考点</button>
+          <button type="button" class="link">看看档位</button>
+        </span>
+      </span>
+    </div>
+    <div class="line">
+      <span class="idx">02</span>
+      <span class="line__main">
+        <span class="body">图片记录<span class="line__meta">21:47 · 粉笔</span></span>
+        <span class="sub">正在认 · 还没同步 · 有图</span>
+      </span>
+    </div>
+    <div class="line">
+      <span class="idx">03</span>
+      <span class="line__main">
+        <span class="body">语音记录<span class="line__meta">14:20 · 粉笔</span></span>
+        <span class="sub" style="color:var(--ink)">已对上 · 听证程序</span>
+      </span>
+    </div>
+
+    <div class="group"><span>昨天</span></div>
+    <div class="line">
+      <span class="idx">04</span>
+      <span class="line__main">
+        <span class="body">文字记录<span class="line__meta">22:10</span></span>
+        <span class="sub">没对上</span>
+        <span class="links" style="margin-top:6px">
+          <button type="button" class="link">手动挂</button>
+          <button type="button" class="link">就这样留着</button>
+        </span>
+      </span>
+    </div>
+    <div class="line">
+      <span class="idx">05</span>
+      <span class="line__main">
+        <span class="body">做题记录<span class="line__meta">09:32 · 粉笔</span></span>
+        <span class="sub" style="color:var(--ink)">已对上 · 行政处罚的种类</span>
+      </span>
+    </div>
+
+    <div class="foot" style="margin-top:8px"><p>到底了</p></div>
+  </div>
+
+  <!-- 右栏：采集区（窄态 464px）。录音中：波形纵排在按钮下，组件不换形 -->
+  <div class="col-r">
+    <div class="head"><span>记一条 · 说</span><span>21:47</span></div>
+    <div class="seg">
+      <button type="button">写</button>
+      <button type="button" aria-current="true">说</button>
+      <button type="button">拍</button>
+      <button type="button">做题</button>
+    </div>
+
+    <div style="flex:1 1 auto"></div>
+
+    <div class="pad">
+      <button class="btn-pri" style="background:rgba(23,23,26,.85)" aria-label="按住说话，录音中">按住说话</button>
+      <div class="wave" aria-hidden="true">
+        <i style="height:8px"></i><i style="height:16px"></i><i style="height:24px"></i>
+        <i style="height:12px"></i><i style="height:28px"></i><i style="height:18px"></i>
+        <i style="height:10px"></i><i style="height:22px"></i><i style="height:14px"></i>
+        <i style="height:26px"></i><i style="height:8px"></i><i style="height:20px"></i>
+      </div>
+      <p class="sub" style="text-align:center;margin-top:8px">0:07</p>
+    </div>
+
+    <div style="height:16px"></div>
+
+    <div class="field">
+      <span class="eyebrow" style="flex:0 0 auto">来源</span>
+      <input value="粉笔" readonly aria-label="来源名称">
+    </div>
+  </div>
+</div>
+
+<!-- 屏底动作区：横屏双列时仍住屏底，不挪进左栏 -->
+<div class="dock" style="padding-left:926px;padding-right:24px">
+  <button class="btn-pri">记下</button>
+</div>
+<div class="hi"></div>
+</div></body></html>

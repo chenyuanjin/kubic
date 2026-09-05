@@ -1,0 +1,52 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>U8.2 清空这台设备上的数据 · 浮层二（打字确认）· Kubic v10</title>
+<link rel="stylesheet" href="tokens.css"><link rel="stylesheet" href="v10.css"><style>
+  body{zoom:2}
+  /* 危险确认（C-DANGER · C-SHEET）：红色只在这一个确认位出现，
+     主按钮 = 退路（取消），执行钮打出「清空」二字前禁用。
+     ⚠️ 打字确认这一档是 M8-G2 未裁定项（两份规格结论相反），本稿按《设置与原图》§4.2 现状画，不裁定。
+     遮罩用 --fill-disabled，不新增色值。 */
+  .veil{position:absolute;inset:0;background:var(--fill-disabled)}
+  .sheet{position:absolute;left:0;right:0;bottom:0;background:var(--raised);
+         border-top:var(--rule-ink) solid var(--ink);
+         padding:24px 0 calc(24px + env(safe-area-inset-bottom,0px))}
+  .sheet .field{border-bottom:var(--hair-w) solid var(--hair)}
+  .act{display:flex;gap:12px;padding:0 var(--rule);margin-top:24px}
+  .act .split{flex:1;border:0;border-top:var(--hair-w) solid var(--hair);
+              border-bottom:var(--hair-w) solid var(--hair)}
+  .act .btn-danger{flex:1;height:52px}
+</style></head><body><div class="phone">
+
+<div class="sb"><span>21:47</span><span class="sb__r">
+  <span class="sb__s"><i></i><i></i><i></i><i></i></span><span class="sb__b"></span>
+</span></div>
+
+<div class="flow">
+  <div class="head"><span>设置</span><span>已登录 · 尾号 6621</span></div>
+  <p class="eyebrow" style="padding:14px 24px 4px">我的数据</p>
+  <div class="line"><span class="slot"></span>
+    <span class="line__main"><span class="body">原图管理</span><span class="sub">37 张,占 128 MB</span></span></div>
+  <div class="line"><span class="slot"></span>
+    <span class="line__main"><span class="body">导出我的全部数据</span><span class="sub">不限次数,没有水印</span></span></div>
+</div>
+
+<div class="veil"></div>
+
+<div class="sheet">
+  <p class="display" style="font-size:22px;line-height:30px;padding:0 var(--rule)">清空这台设备上的数据</p>
+  <p class="body" style="padding:10px var(--rule) 0">这台设备上的记录和图会全部删掉,云端的不受影响。</p>
+  <p class="sub" style="padding:6px var(--rule) 18px">你仍然登录着,已同步的 214 条记录下次同步会回来;这台设备上的 37 张原图没有云端副本,删掉就找不回来。</p>
+
+  <div class="field field--focus">
+    <span class="eyebrow" style="flex:0 0 auto">确认</span>
+    <input value="清空" aria-label="打出清空两个字才能继续,输入内容不保存">
+  </div>
+  <p class="sub" style="padding:6px var(--rule) 0;font-size:var(--t-micro);line-height:var(--lh-micro)">只接受这两个字,输入不保存、不回显到别处</p>
+
+  <div class="act">
+    <div class="split"><button style="height:52px">取消</button></div>
+    <button class="btn-danger">清空</button>
+  </div>
+</div>
+
+<div class="hi"></div>
+</div></body></html>

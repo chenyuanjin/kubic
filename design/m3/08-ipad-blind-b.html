@@ -1,0 +1,101 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>U3.2 iPad 横屏双列 · 换科目：申论（零记录空态）· Kubic v10</title>
+<link rel="stylesheet" href="tokens.css"><link rel="stylesheet" href="v10.css"><style>
+  /* 与 07 同一布局，换了科目（行政法 → 申论）：左栏整栏内容换掉 ——
+     数字、树、归档区全是申论的，这就是「左栏是内容不是菜单」的判据。
+     同时这张画的是 iPad 档的零记录空态：申论一条记录都没有，盲区是满的。
+     右栏为空：「从左边挑一个考点」，不自动选中第一个。 */
+  .ipad{position:relative;width:1366px;height:1024px;background:var(--ground);
+        display:flex;flex-direction:column;overflow:hidden;margin:0 auto}
+  .cols{flex:1 1 auto;display:flex;min-height:0}
+  .col-l{flex:0 0 480px;display:flex;flex-direction:column;min-height:0;overflow:hidden;
+         border-right:var(--hair-w) solid var(--hair)}
+  .col-r{flex:1 1 auto;display:flex;flex-direction:column;min-height:0;overflow:hidden}
+  .calc{padding-top:0}
+  .calc__row{padding:3px 0}
+  .foot p{padding:2px 0}
+  button.calc__row{width:100%;min-height:44px}
+  .t-row{display:flex;align-items:baseline;gap:8px;width:100%;min-height:44px;
+         padding:8px var(--rule);font-variant-numeric:tabular-nums}
+  .t-row .tw{font-family:var(--font-display);font-size:12px;color:var(--ink-2);flex:0 0 14px}
+  .t-row .nm{font-size:var(--t-body);color:var(--ink)}
+  .t-row .cnt{margin-left:auto;font-size:var(--t-sub);color:var(--ink-2)}
+  .leaf{display:flex;gap:8px;width:100%;min-height:48px;align-items:flex-start;
+        padding:8px var(--rule) 8px 64px}
+  .leaf .lm{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:1px}
+  .leaf .mk{flex:0 0 auto;font-size:11px;color:var(--ink);margin-top:2px}
+</style></head><body><div class="ipad">
+
+<div class="sb"><span>21:47</span><span class="sb__r">
+  <span class="sb__s"><i></i><i></i><i></i><i></i></span><span class="sb__b"></span>
+</span></div>
+
+<div class="cols">
+  <!-- ── 左栏 · 换成申论：整栏是申论的差值，没有一行与 07 相同 ── -->
+  <div class="col-l">
+    <div class="head"><span>‹ 盲区 · 申论 ⌄</span></div>
+
+    <div class="calc" aria-label="申论一共 96 个考点，你碰过 0 个，没碰过 96 个" style="padding-top:6px">
+      <p class="calc__row">
+        <span class="calc__label calc__label--2">一共</span>
+        <span class="calc__num">96</span>
+      </p>
+      <button class="calc__row calc-tap" aria-label="你碰过 0 个，点开筛选到碰过">
+        <span class="calc__label calc__label--2">你碰过</span>
+        <span class="calc__op">−</span>
+        <span class="calc__num">0</span>
+      </button>
+    </div>
+    <button class="panel calc__sum calc-tap" aria-label="没碰过 96 个，点开筛选到没碰过">
+      <span class="calc__label">没碰过</span>
+      <span class="calc__num hero">96</span>
+    </button>
+
+    <div class="foot" style="padding-top:8px">
+      <p>另有 0 个考点已归档</p>
+    </div>
+
+    <!-- 零记录空态：第一句话就说清是哪一种空。盲区是满的，这不是出错 -->
+    <div style="padding:14px var(--rule) 6px">
+      <p class="display" style="font-size:20px;line-height:28px">你还没在申论下记过东西</p>
+      <p class="sub" style="margin-top:4px">所以现在整张表都是没碰过。</p>
+    </div>
+    <div class="split"><button style="height:48px" aria-label="记一条">记一条</button><button style="height:48px" aria-label="先看看有哪些考点">先看看有哪些考点</button></div>
+
+    <!-- 申论自己的骨架树：全部没碰过 -->
+    <button class="t-row" style="margin-top:4px" aria-label="第 1 层，归纳概括，22 个考点，你碰过 0 个，已折叠">
+      <span class="tw">▸</span><span class="nm">归纳概括</span><span class="cnt">0/22</span>
+    </button>
+    <button class="t-row" aria-label="第 1 层，提出对策，18 个考点，你碰过 0 个，已折叠">
+      <span class="tw">▸</span><span class="nm">提出对策</span><span class="cnt">0/18</span>
+    </button>
+    <button class="t-row" aria-label="第 1 层，综合分析，24 个考点，你碰过 0 个，已折叠">
+      <span class="tw">▸</span><span class="nm">综合分析</span><span class="cnt">0/24</span>
+    </button>
+    <button class="t-row" aria-label="第 1 层，贯彻执行，20 个考点，你碰过 0 个，已折叠">
+      <span class="tw">▸</span><span class="nm">贯彻执行</span><span class="cnt">0/20</span>
+    </button>
+    <button class="t-row" aria-label="第 1 层，申发论述，12 个考点，你碰过 0 个，已折叠">
+      <span class="tw">▸</span><span class="nm">申发论述</span><span class="cnt">0/12</span>
+    </button>
+
+    <div style="flex:1 1 auto"></div>
+
+    <div class="band">
+      <button class="t-row" style="min-height:48px" aria-label="已归档 0 个考点，点开查看">
+        <span class="tw">▸</span><span class="nm">已归档（0）</span><span class="cnt">归档不是删除</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ── 右栏 · 空：不自动选中第一个 ── -->
+  <div class="col-r">
+    <div class="head"><span>　</span></div>
+    <div style="flex:1 1 auto;display:flex;align-items:center;justify-content:center">
+      <div style="text-align:center">
+        <p class="display" style="font-size:22px;line-height:30px">从左边挑一个考点</p>
+        <p class="sub" style="margin-top:8px">点开哪个，它的详情就在这里</p>
+      </div>
+    </div>
+  </div>
+</div>
+</div></body></html>

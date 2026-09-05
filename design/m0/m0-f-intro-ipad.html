@@ -1,0 +1,66 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>M0 · U0.1 首启说明屏 · iPad 竖屏 720–1023 放宽版</title>
+<link rel="stylesheet" href="tokens.css"><link rel="stylesheet" href="v10.css"><style>
+  body{zoom:2}
+  /* iPad 竖屏放宽档（720–1023）。M0 首启屏没有双列的合理性 ——
+     左栏没有可换的内容,硬拆双列只能拆出装饰,so 按口径出放宽版:
+     左边线 24→32px,内容最大宽 640px 居中,信息顺序与 iPhone 完全一致,
+     仍然单栏一句一行 —— 三句不排成三张等宽卡片（那是被禁的 landing 模板）。
+     只用 token 变量:--rule 在本屏范围内放宽为 32px。 */
+  .tablet{position:relative;width:768px;height:1024px;background:var(--ground);
+          display:flex;flex-direction:column;overflow:hidden;--rule:32px}
+  .col{width:640px;margin:0 auto}
+  .no{display:flex;gap:var(--gap-slot);padding:24px var(--rule);align-items:flex-start}
+  .no + .no{border-top:var(--hair-w) solid var(--hair-soft)}
+  .no p{font-size:var(--t-body);line-height:var(--lh-body);color:var(--ink)}
+  .face{width:15px;height:18px;display:block;margin-top:4px}
+</style></head><body><div class="tablet">
+
+<div class="sb"><span>21:47</span><span class="sb__r">
+  <span class="sb__s"><i></i><i></i><i></i><i></i></span><span class="sb__b"></span>
+</span></div>
+
+<div class="flow">
+  <div class="col" style="flex:1 1 auto;display:flex;flex-direction:column">
+    <div class="pad" style="padding-top:64px">
+      <div class="logo">
+        <svg width="32" height="36" viewBox="0 0 64 72" fill="none" aria-hidden="true">
+          <path d="M8 27.9 32 41.8 32 65.8 8 51.9Z" fill="var(--ink)"/>
+          <path d="M56 27.9 32 41.8 32 65.8 56 51.9Z" fill="var(--ink-2)"/>
+          <path d="M32 2 56 15.9 32 29.8 8 15.9Z" fill="var(--accent)"/>
+        </svg>
+        <span class="logo__type" style="font-size:23px">kubic<i class="cur"></i></span>
+      </div>
+    </div>
+
+    <div class="pad" style="padding-top:56px;padding-bottom:48px">
+      <h1 class="display">这个产品不做什么</h1>
+      <p class="body body--2" style="margin-top:16px">下面这些事它都不做，不是还没做。</p>
+    </div>
+
+    <div class="head"><span>说明 · 三条</span></div>
+
+    <div>
+      <div class="no">
+        <span class="slot"><svg class="face" viewBox="0 0 18 22" fill="none"><path d="M9 1 17 5.6 9 10.2 1 5.6Z" stroke="var(--ink-2)" stroke-width="1.1" stroke-linejoin="round"/><path d="M1 8.4 9 13 9 21 1 16.4Z" stroke="var(--ink-2)" stroke-width="1.1" stroke-linejoin="round" opacity=".5"/><path d="M17 8.4 9 13 9 21 17 16.4Z" stroke="var(--ink-2)" stroke-width="1.1" stroke-linejoin="round" opacity=".5"/></svg></span>
+        <p>它不判断你答得对不对,也不给你讲题。它只记录你碰过什么、碰过几次、多久以前。</p>
+      </div>
+      <div class="no">
+        <span class="slot"><svg class="face" viewBox="0 0 18 22" fill="none"><path d="M9 1 17 5.6 9 10.2 1 5.6Z" stroke="var(--ink-2)" stroke-width="1.1" stroke-linejoin="round"/><path d="M1 8.4 9 13 9 21 1 16.4Z" stroke="var(--ink-2)" stroke-width="1.1" stroke-linejoin="round" opacity=".5"/><path d="M17 8.4 9 13 9 21 17 16.4Z" stroke="var(--ink-2)" stroke-width="1.1" stroke-linejoin="round" opacity=".5"/></svg></span>
+        <p>它不存你的题目内容。数据库里没有能装题干的地方。</p>
+      </div>
+      <div class="no">
+        <span class="slot"><svg class="face" viewBox="0 0 18 22" fill="none"><path d="M9 1 17 5.6 9 10.2 1 5.6Z" stroke="var(--ink-2)" stroke-width="1.1" stroke-linejoin="round"/><path d="M1 8.4 9 13 9 21 1 16.4Z" stroke="var(--ink-2)" stroke-width="1.1" stroke-linejoin="round" opacity=".5"/><path d="M17 8.4 9 13 9 21 17 16.4Z" stroke="var(--ink-2)" stroke-width="1.1" stroke-linejoin="round" opacity=".5"/></svg></span>
+        <p>你拍的原图只存在这台设备上,不上传、不同步、不备份到任何服务器。</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="dock">
+  <div class="col">
+    <div style="margin-bottom:16px"><button class="link">看完整的一页</button></div>
+    <button class="btn-pri">登录</button>
+  </div>
+</div>
+<div class="hi"></div>
+</div></body></html>

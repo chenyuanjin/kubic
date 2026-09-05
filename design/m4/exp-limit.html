@@ -1,0 +1,64 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>U4.6 S-EXP 受限态 · 额度为 0 · Kubic v10</title>
+<link rel="stylesheet" href="tokens.css"><link rel="stylesheet" href="v10.css"><style>
+  body{zoom:2}
+  /* 受限态 C-LIMIT · 缺额度：不是弹窗、不是遮罩、不折叠免费区。
+     区一区二一格不变地停在常态 —— 免费兜底永远在受限提示上方原样可用。
+     这一区位置最高的是「回到上面那段文字复制」（次按钮），付费入口只能是文本按钮。
+     区三失去的只是发送，模板文本一格没变。 */
+  .seg{display:flex;border-top:var(--hair-w) solid var(--hair);border-bottom:var(--hair-w) solid var(--hair)}
+  .seg button{flex:1;height:48px;display:flex;align-items:center;justify-content:center;font-size:15px;color:var(--ink-2)}
+  .seg button+button{border-left:var(--hair-w) solid var(--hair)}
+  .seg .on{color:var(--ink);box-shadow:inset 0 -1.5px 0 var(--ink)}
+  .zone{padding:18px var(--rule) 0}
+  .zone .display{font-size:22px;line-height:30px}
+  .preview{margin:10px var(--rule) 0;background:var(--raised);
+           border-top:var(--hair-w) solid var(--hair);border-bottom:var(--hair-w) solid var(--hair);
+           padding:12px 14px;overflow:hidden;max-height:120px}
+  .preview p{font-size:13px;line-height:20px;color:var(--ink)}
+  .preview p+p{margin-top:6px}
+</style></head><body><div class="phone">
+
+<div class="sb"><span>21:52</span><span class="sb__r">
+  <span class="sb__s"><i></i><i></i><i></i><i></i></span><span class="sb__b"></span>
+</span></div>
+
+<div class="flow">
+  <div class="head"><span>‹ 导出与问 AI</span><span>行政法 · 120 个考点</span></div>
+  <div class="seg" role="radiogroup" aria-label="范围">
+    <button class="on" aria-checked="true">全部</button>
+    <button aria-checked="false">法律</button>
+    <button aria-checked="false">政治</button>
+  </div>
+
+  <!-- 区二 · 常态原样：受限的三档里没有一档会让它变 -->
+  <div class="zone">
+    <p class="eyebrow">出口 02 · 你自己粘给 AI</p>
+    <h2 class="display" style="margin-top:2px">复制给 AI</h2>
+    <p class="sub" style="margin-top:6px">这段文字里只有：考点名称、你碰过几次、最近一次多久前、来源名称。<b style="color:var(--ink);font-weight:500">没有任何题目内容。</b></p>
+  </div>
+  <div class="preview" role="textbox" aria-label="问 AI 用的文字，可编辑，共 486 字">
+    <p>我在准备法律。下面是我碰过和没碰过的考点情况，数据来自我自己的记录，请你帮我判断先补哪些。</p>
+    <p>【说明】这段文字里只有考点名称、我碰过几次、最近一次多久前、来源名称。没有任何题目内容。</p>
+    <p>【我没碰过的】共 3 个，按近 5 年出现次数从多到少……</p>
+  </div>
+  <div class="split"><button>复制这段文字</button></div>
+
+  <!-- 区三 · 受限：剩 0 次。文字还在，发送让位给免费兜底 -->
+  <div class="zone" style="border-top:var(--hair-w) solid var(--hair)">
+    <p class="eyebrow">出口 03 · 这个月还剩 0 次</p>
+    <h2 class="display" style="margin-top:2px">让 AI 直接回答</h2>
+    <p class="sub" style="margin-top:6px">这个月的次数用完了。上面那段文字可以直接复制，粘到你自己的 AI 里 —— 内容一个字不少。</p>
+  </div>
+  <div class="split" style="margin-top:12px"><button>回到上面那段文字复制</button></div>
+  <div class="pad" style="padding-top:2px">
+    <button class="link">次数怎么加</button>
+  </div>
+
+  <!-- 区四头部露出：令牌与额度无关，照常 -->
+  <div class="zone" style="border-top:var(--hair-w) solid var(--hair);padding-bottom:14px">
+    <p class="eyebrow">出口 04 · 授权你的客户端进来读</p>
+    <h2 class="display" style="margin-top:2px">只读令牌</h2>
+  </div>
+</div>
+<div class="hi"></div>
+</div></body></html>

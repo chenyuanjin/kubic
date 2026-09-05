@@ -28,8 +28,10 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import {
   ALLOWED_QUERY_KEYS,
+  OVERLAY_PALETTE,
   ROOT_REDIRECT,
   ROUTE_PATH,
+  isOverlayOpen,
   namingViolations,
   queryKeysAllowed,
   routeTo,
@@ -91,4 +93,35 @@ test('参数段一律用 :name 形式,并且父路径确实是它的前缀', () 
       `${id} 的路径 ${path} 不在父 id ${parent}(${ROUTE_PATH[parent]})之下 —— id 的层级与地址的层级对不上`,
     )
   }
+})
+
+/**
+ * 覆盖层进历史 —— KUBI-118 在 Android 模拟器上实测到的两种坏法的判据层。
+ *
+ * 🔴 它们红过:
+ * <ul>
+ *   <li>把 `isOverlayOpen` 的实现改成 `state?.overlay !== undefined` → 「别的覆盖层不算」失败</li>
+ *   <li>去掉 `typeof state !== 'object' || state === null` 那道闸 → 在 `isOverlayOpen(null, …)`
+ *       那一条上抛 TypeError。而 `null` 正是最常走的一条:刚进一屏时 `history.state`
+ *       里没有我们写的东西</li>
+ *   <li>把 `overlay` 加进 `ALLOWED_QUERY_KEYS` → 「覆盖层不进地址」当场失败</li>
+ * </ul>
+ */
+test('⌘K 面板开没开,判据是历史条目,不是一个布尔', () => {
+  assert.equal(isOverlayOpen({ overlay: OVERLAY_PALETTE }, OVERLAY_PALETTE), true)
+  // 刚进一屏时 history.state 里没有我们写的东西 —— 这是最常走的一条,它必须是「没开」。
+  assert.equal(isOverlayOpen(null, OVERLAY_PALETTE), false)
+  assert.equal(isOverlayOpen(undefined, OVERLAY_PALETTE), false)
+  assert.equal(isOverlayOpen({}, OVERLAY_PALETTE), false)
+  // 别的覆盖层不算 —— 否则以后加第二个浮层时,返回键会关错一个。
+  assert.equal(isOverlayOpen({ overlay: 'other' }, OVERLAY_PALETTE), false)
+  // state 由用户的历史记录还原,可能是上一版应用写进去的任何形状,不许把它当对象读。
+  assert.equal(isOverlayOpen(OVERLAY_PALETTE, OVERLAY_PALETTE), false)
+  assert.equal(isOverlayOpen(42, OVERLAY_PALETTE), false)
+})
+
+test('🔴 覆盖层进历史,但不进地址 —— §4.6.3 那条收窄一个字都没改', () => {
+  // 面板占的是 location.state,不是 query。真有人哪天把它挪进地址,白名单这一关就红。
+  assert.equal((ALLOWED_QUERY_KEYS as readonly string[]).includes('overlay'), false)
+  assert.equal(queryKeysAllowed(`?overlay=${OVERLAY_PALETTE}`), false)
 })

@@ -6,7 +6,7 @@ import { useDashboard } from '../api/queries'
 import { keyboardInset } from '../lib/keyboardInset'
 import { CommandPalette } from '../features/CommandPalette'
 import { StatusBar } from '../features/StatusBar'
-import { routeTo } from '../routes/routes'
+import { OVERLAY_PALETTE, isOverlayOpen, routeTo } from '../routes/routes'
 import { Dock, DockItem, Screen } from '../ui/layout'
 import { IntroScreen } from './IntroScreen'
 
@@ -26,11 +26,13 @@ import { IntroScreen } from './IntroScreen'
  */
 export function AppShell() {
   const [token, setToken] = useState<string | null>(() => readToken())
-  const [paletteSearch, setPaletteSearch] = useState<string | null>(null)
   const { data } = useDashboard()
   const qc = useQueryClient()
   const navigate = useNavigate()
   const location = useLocation()
+
+  // 面板开不开由历史条目决定,不由本组件的 state 决定 —— 判据在 routes.ts,那一层跑得进 node。
+  const paletteOpen = isOverlayOpen(location.state, OVERLAY_PALETTE)
 
   const signOut = useCallback(() => {
     writeToken(null)
@@ -44,9 +46,10 @@ export function AppShell() {
    * 改动之前它们开的是 `useState` 浮层,于是按 ⌘N 打开采集、再按浏览器返回键会退出整个应用。
    * `多端选型与端矩阵` §4.6.2:「覆盖层也算页面……浮层的视觉形态不变,变的是由谁开。」
    *
-   * 🔴 <b>搜索词不进地址</b>(§4.6.3):命令面板仍然是 state,因为用户完全可能往里粘一整道题,
-   * 而地址会进历史、进日志、进截图。这是「所有页面都要有 URL」唯一的一处收窄,
-   * 收窄的是 query,不是页面。
+   * 🔴 <b>搜索词不进地址</b>(§4.6.3):⌘K 面板现在占一个历史条目,但占的是 `location.state`,
+   * 它进历史<b>不进 URL</b> —— 用户往里粘一整道题,那段字也不会进地址、日志、截图。
+   * 搜索词本身仍然只活在面板自己的 state 里。收窄的是 query,不是页面。
+   * 判据见 `routes.ts` 的 `isOverlayOpen`。
    */
   useEffect(() => {
     if (token === null) return
@@ -54,15 +57,17 @@ export function AppShell() {
       const mod = e.metaKey || e.ctrlKey
       const key = e.key.toLowerCase()
 
-      if (e.key === 'Escape' && paletteSearch !== null) {
-        setPaletteSearch(null)
+      if (e.key === 'Escape' && paletteOpen) {
+        void navigate(-1)
         return
       }
       if (!mod) return
 
       if (key === 'k') {
         e.preventDefault()
-        setPaletteSearch((s) => (s === null ? '' : null))
+        // 开:原地 push 一个历史条目,地址一个字符都不变。关:退回去,和按返回键同一条路。
+        if (paletteOpen) void navigate(-1)
+        else void navigate(location.pathname + location.search, { state: { overlay: OVERLAY_PALETTE } })
       } else if (key === 'b') {
         e.preventDefault()
         void navigate(routeTo('syllabus'))
@@ -79,7 +84,7 @@ export function AppShell() {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [token, paletteSearch, navigate])
+  }, [token, paletteOpen, navigate, location.pathname, location.search])
 
   /**
    * 软键盘吃掉多少高度 → 一个 CSS 变量。
@@ -135,14 +140,19 @@ export function AppShell() {
         <DockItem to="settings" label="设置" />
       </Dock>
 
-      {paletteSearch !== null && data ? (
+      {/* 🔴 面板里跳走一律 `replace` —— 它替掉的正是覆盖层自己那个历史条目。
+          不 replace 的话那个条目留在栈里,用户到了新一屏按返回键会先「回到一个开着面板的旧屏」,
+          一个不存在的往返(和 §4.6.2 不给 `/login` 建路由是同一条理由)。
+          跳走之后不再单独 onClose:那次 replace 已经把 overlay 从历史里拿掉,面板自己就卸载了 ——
+          再补一次 navigate(-1) 会把刚跳到的那一屏又退回去。 */}
+      {paletteOpen && data ? (
         <CommandPalette
           data={data}
-          initialSearch={paletteSearch}
-          onClose={() => setPaletteSearch(null)}
-          onJump={(code) => void navigate(routeTo('coverage.node', { nodeCode: code }))}
-          onCapture={() => void navigate(routeTo('capture'))}
-          onManageSyllabus={() => void navigate(routeTo('syllabus'))}
+          initialSearch=""
+          onClose={() => void navigate(-1)}
+          onJump={(code) => void navigate(routeTo('coverage.node', { nodeCode: code }), { replace: true })}
+          onCapture={() => void navigate(routeTo('capture'), { replace: true })}
+          onManageSyllabus={() => void navigate(routeTo('syllabus'), { replace: true })}
         />
       ) : null}
     </Screen>

@@ -92,10 +92,7 @@ export function CommandPalette({
                   key={node.code}
                   value={`${node.name} ${node.code}`}
                   keywords={[node.groupName, node.groupCode]}
-                  onSelect={() => {
-                    onJump(node.code)
-                    onClose()
-                  }}
+                  onSelect={() => onJump(node.code)}
                 >
                   <StateDot state={node.state} />
                   <span className="min-w-0 flex-1 truncate">{node.name}</span>
@@ -109,10 +106,7 @@ export function CommandPalette({
               <Item
                 value="记一笔 新建记录"
                 keywords={['jiyibi', 'record']}
-                onSelect={() => {
-                  onCapture()
-                  onClose()
-                }}
+                onSelect={onCapture}
               >
                 <span className="min-w-0 flex-1 truncate">记一笔</span>
                 <Kbd>⌘N</Kbd>
@@ -122,10 +116,7 @@ export function CommandPalette({
               <Item
                 value="管理考点树 考点管理 增删改 题型 kaodian syllabus"
                 keywords={['guanli', 'syllabus', 'tree']}
-                onSelect={() => {
-                  onManageSyllabus()
-                  onClose()
-                }}
+                onSelect={onManageSyllabus}
               >
                 <span className="min-w-0 flex-1 truncate">
                   管理考点树 <span className="text-t3">增删改题型与考点 · 改名不丢记录</span>
@@ -134,10 +125,7 @@ export function CommandPalette({
               </Item>
               <Item
                 value="粘一段 paste"
-                onSelect={() => {
-                  onCapture()
-                  onClose()
-                }}
+                onSelect={onCapture}
               >
                 <span className="min-w-0 flex-1 truncate">粘一段</span>
                 <Kbd>⌘V</Kbd>

@@ -10,11 +10,17 @@ import { Kbd, StateDot } from '../ui/primitives'
 export function StatusBar({ data, hint }: { data: Dashboard; hint?: string }) {
   const offline = data.source === 'mock'
   return (
-    <div className="flex h-[26px] shrink-0 items-center gap-[15px] border-t border-hair bg-bg2 px-3 font-mono text-[10.5px] text-t3">
+    // 🔴 min-h 不是 h:窄屏(实测 Android 412 CSS px)里右边那一组会折成两行,
+    // 高度写死时它上下都溢出自己这一行 —— 上顶进页面内容、下压进屏底动作区,三段字叠在一起。
+    // 让这一行自己变高,屏底动作区跟着往上,谁都不遮谁。
+    <div className="flex min-h-[26px] shrink-0 items-center gap-[15px] border-t border-hair bg-bg2 px-3 font-mono text-[10.5px] text-t3">
       {offline ? (
-        <span className="inline-flex items-center gap-[5px] text-red">
+        // 窄屏只截显示,不截信息:完整原因进 title,宽屏本来就放得下整句。
+        // 🔴 「离线示例数据」这五个字任何断点都不许省 —— 那一格的存在理由就是不许静默回退。
+        <span className="inline-flex min-w-0 items-center gap-[5px] text-red" title={data.offlineReason}>
           <StateDot state="WEAK" />
-          离线示例数据 · {data.offlineReason}
+          <span className="shrink-0">离线示例数据 · </span>
+          <span className="min-w-0 truncate">{data.offlineReason}</span>
         </span>
       ) : (
         <span className="inline-flex items-center gap-[5px]">

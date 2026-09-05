@@ -80,6 +80,34 @@ export const ALLOWED_QUERY_KEYS = ['tab', 'mode', 'sort', 'filter', 'subject'] a
 export type AllowedQueryKey = (typeof ALLOWED_QUERY_KEYS)[number]
 
 /**
+ * 覆盖层的历史条目 —— §4.6.2「覆盖层也算页面……浮层的视觉形态不变,变的是由谁开」。
+ *
+ * ⌘K 面板是那次改动<b>唯一漏掉的一个</b>:另外四个快捷键(⌘B/⌘N/⌘E/⌘J)当时都落到地址上了,
+ * 只有它因为 §4.6.3「搜索词不进地址」留成了 `useState`。代价在 Android 上实测到
+ * (KUBI-118,模拟器):面板开着、历史深度 1 时按系统返回键<b>整个应用退出</b>,
+ * 面板从没被关过;历史深度 2 时第一下关软键盘,第二下弹掉背后那一屏而面板还开着。
+ *
+ * 🔴 <b>收窄的是 query,不是页面。</b>`location.state` 进历史但<b>不进 URL</b>,
+ * 所以搜索词照样不进地址、不进日志、不进截图 —— §4.6.3 那条收窄一个字都不用改,
+ * `ALLOWED_QUERY_KEYS` 也不加键。
+ */
+export const OVERLAY_PALETTE = 'palette'
+
+/**
+ * 这个历史条目上开着哪个覆盖层。
+ *
+ * 判据是<b>历史条目</b>,不是组件里的一个布尔 —— 这样 Android 物理返回键、iOS 侧滑、
+ * 桌面浏览器返回键走的是同一个 `popstate`,三端返回语义自动一致,壳里一行都不用写。
+ * <p>
+ * `location.state` 的类型是 `unknown`(它由用户的历史记录还原,可能是任何东西,
+ * 包括上一版应用写进去的形状),所以收窄在这里做一次,界面层不再判。
+ */
+export function isOverlayOpen(state: unknown, overlay: string): boolean {
+  if (typeof state !== 'object' || state === null) return false
+  return (state as { overlay?: unknown }).overlay === overlay
+}
+
+/**
  * 🔴 这个文件里<b>没有</b>一张「禁用路径段」的词表,这是有意的。
  *
  * `多端选型与端矩阵` §十 第 8 条自检本来就是一条 grep,它扫的正是这个文件:

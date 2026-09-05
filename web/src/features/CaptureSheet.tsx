@@ -259,7 +259,7 @@ export function CaptureSheet({
             <div className="mt-2">
               <Note>
                 这段文字<b className="font-normal text-t2">不会被存下来</b>
-                ,它只把这一条的形式记成「粘的」。
+                ,它只参与判断这一条记成哪种形式。
                 <br />
                 落进记录的只有:考点 + 来源名 + 时间 + 形式。
               </Note>

@@ -1,0 +1,126 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>H5 独有的四态 · Kubic</title>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="v10.css">
+<link rel="stylesheet" href="h5.css">
+<style>
+  .h5{min-height:0;height:520px;width:390px;box-shadow:0 0 0 var(--hair-w) var(--hair)}
+  .cap{font-size:12px;line-height:1.7;color:#3B4250;max-width:390px;margin-top:10px}
+  .cap b{color:var(--ink);font-weight:600}
+  .item{width:390px}
+</style></head><body class="sheet">
+
+<h2>H5 独有的四态</h2>
+<p class="why">
+  空态、加载态、通用错误态在 H5 上与底座逐条相同，<b>不在这里重画</b> ——
+  重画一遍只会产生第二份说法。这里只画<b>换了端就不成立</b>的那四张：
+  它们在 iPhone/iPad 稿上不存在，所以八份模块稿里一张都没有。
+</p>
+
+<div class="row2">
+
+  <!-- ① 失败态 · 浏览器清了站点数据 -->
+  <div class="item">
+    <div class="h5">
+      <div class="head"><span>原图 · 只在这台设备上</span><span>0 张</span></div>
+      <div class="webnote">
+        <p>网页版的原图存在这个浏览器里。<b style="font-weight:600">浏览器可能在空间不足时清理它</b>；
+           你清除站点数据、换一个浏览器、或用无痕窗口打开，这里都会是空的。</p>
+      </div>
+      <div class="pad" style="padding-top:32px">
+        <p class="body">这里原来有 3 张原图，现在没有了。</p>
+        <p class="sub" style="margin-top:8px">
+          它们存在这个浏览器里，被清掉了 —— 可能是你清了站点数据，也可能是浏览器腾空间时删的。
+          原图删了，<b style="font-weight:600;color:var(--ink)">记录还在</b>：考点、来源、时间都没受影响。</p>
+      </div>
+      <div style="flex:1 1 auto"></div>
+      <div class="split"><button>去看记录</button></div>
+    </div>
+    <p class="cap"><b>① 失败态 · 原图被浏览器清掉了。</b>
+      不给重试按钮 —— 没有可重试的东西。它不用 <code>C-EMPTY</code>：
+      空态是「本该有，现在没有」里的<b>没产生过</b>，这一张是<b>产生过又没了</b>，
+      所以它必须说清楚谁删的、还剩什么。</p>
+  </div>
+
+  <!-- ② 失败态 · 非安全上下文：入口不渲染 -->
+  <div class="item">
+    <div class="h5">
+      <div class="head"><span>记一条</span><span>21:47</span></div>
+      <div class="pad" style="padding-top:28px">
+        <p class="body">写点什么，或者说一句。</p>
+      </div>
+      <div class="field" style="margin-top:12px">
+        <span class="eyebrow" style="flex:0 0 auto">来源</span>
+        <input placeholder="粉笔 / B 站网课 / 不写也行">
+      </div>
+      <div style="flex:1 1 auto"></div>
+      <div class="dock">
+        <!-- 只有两格：拍那一格【不渲染】，不是灰掉 -->
+        <div class="dock__row"><button>说</button><button>写</button></div>
+        <button class="btn-pri">记一条</button>
+      </div>
+    </div>
+    <p class="cap"><b>② 非安全上下文（<code>http://</code>）· 拍的入口不渲染。</b>
+      不是灰掉，也不是点了给一句提示 —— 那是「显示入口但点了提示去别处」的第四格，
+      <code>U6.1 §2.6</code> 不承认它。<b>「没有权限」和「这台设备/这个地址做不到」是两句话</b>，
+      这一张是后者，所以它连话都不说。</p>
+  </div>
+
+  <!-- ③ 受限态 · 支付通道待定 -->
+  <div class="item">
+    <div class="h5">
+      <div class="head"><span>额度</span><span>本月</span></div>
+      <div class="calc" style="padding-top:14px">
+        <p class="calc__row"><span class="calc__label calc__label--2">本月可记</span>
+          <span class="calc__num">200</span></p>
+        <button class="calc__row calc-tap"><span class="calc__label calc__label--2">已经记了</span>
+          <span class="calc__op">−</span><span class="calc__num">186</span></button>
+      </div>
+      <!-- 🔴 这一屏 0 块蓝面：蓝面的恒定含义是「你还没碰过的那部分」（tokens.css 卷首），
+           额度剩余不是盲区。竖式的运算线照画（1.5px 墨线），但颜色不给 ——
+           把蓝面借去当「剩余量」用，它的含义就从一句变成两句，一屏最多 1 块也就守不住了。 -->
+      <button class="calc__sum calc-tap" style="border-top:var(--rule-ink) solid var(--ink)">
+        <span class="calc__label">还能记</span><span class="calc__num hero">14</span></button>
+      <div class="foot" style="padding-top:10px">
+        <p>9 月 30 日重置。不自动扣费。</p>
+      </div>
+      <div style="flex:1 1 auto"></div>
+      <div class="dock">
+        <p class="sub" style="margin-bottom:12px">⚪ 网页版的付费通道还没定，这里先不放按钮。</p>
+        <button class="btn-pri" aria-disabled="true">购买（网页版未开通）</button>
+      </div>
+    </div>
+    <p class="cap"><b>③ 受限态 · <code>S-BILL × Web</code> 支付通道待定。</b>
+      <code>U6.2 §2.2</code> 这一格标的是 ⚠️ 待定，不是「完整」——
+      所以本稿<b>不画购买流程</b>，也不拿「敬请期待」把空白填上：
+      按钮画成不可按并把原因写在它上面，是登记，不是设计一条不存在的路。
+      额度本身照常显示 —— 看得见还剩多少，与买不买得成是两件事。</p>
+  </div>
+
+  <!-- ④ 门 · 登录不是位置 -->
+  <div class="item">
+    <div class="h5">
+      <div class="head"><span>kubic</span><span>·</span></div>
+      <div class="pad" style="padding-top:44px">
+        <h1 class="display">先登录，再看这一页。</h1>
+        <p class="sub" style="margin-top:10px">登录完还回到你刚才那个地址，不会把你甩回首页。</p>
+      </div>
+      <div class="field" style="margin-top:24px">
+        <span class="eyebrow" style="flex:0 0 auto">手机号</span>
+        <input placeholder="11 位手机号">
+      </div>
+      <div style="flex:1 1 auto"></div>
+      <div class="dock">
+        <div class="dock__row"><button>微信登录</button></div>
+        <button class="btn-pri">发验证码</button>
+      </div>
+    </div>
+    <p class="cap"><b>④ 门 · 未登录访问任何 route id。</b>
+      <b>地址不变</b>（<code>U6.1 §2.7</code>：门只有里外，没有历史）——
+      浏览器地址栏里仍然是你点进来的那条链接，登录完原地渲染出内容，
+      不 redirect 到 <code>/login</code> 再跳回来：那会在浏览器历史里留两条，按返回键就弹回门里。</p>
+  </div>
+
+</div>
+</body></html>

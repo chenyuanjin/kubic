@@ -1,0 +1,82 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>S-RAW 原图管理 · H5（全矩阵唯一「降级」格）</title>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="v10.css">
+<link rel="stylesheet" href="h5.css">
+<style>
+  /* S-RAW × Web 是能力矩阵里唯一标「降级」的格（U6.2 §2.2）。降的是【存储】，
+     不是那三处承诺 —— U6.1 §6.5 写死：桌面壳 / 移动 App / Web 三处齐全不因端而弱化。
+
+     所以这一屏上，留存三处与底座 rec.html 逐字相同、同号字、同一条左边线；
+     Web 独有的只是【多】一块常驻说明 + 一条可关闭提示，不是【少】一处承诺。
+
+     两块为什么不合并：常驻说明是告知，关不掉；提示是提示，可以关。
+     合并 = 把告知做成了可以关掉的东西。 */
+  .thumb{width:100%;aspect-ratio:4/3;background:var(--raised);
+         border:var(--hair-w) solid var(--hair);border-radius:var(--radius);
+         display:flex;align-items:flex-end;padding:10px 12px}
+  .thumb span{font-size:var(--t-micro);color:var(--ink-2)}
+  .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;padding:16px var(--rule)}
+  @media (min-width:1024px){.grid{grid-template-columns:repeat(4,1fr);width:100%}}
+  .keep .line{padding-top:14px;padding-bottom:14px}
+</style></head><body><div class="h5 h5--wide">
+
+<div class="head"><span>原图 · 只在这台设备上</span><span>3 张</span></div>
+
+<!-- ── Web 专版常驻说明：关不掉。必须点名「浏览器可能清理」 ──
+     只写「建议装桌面版」是推广不是告知（U6.2 §2.3 S-RAW×Web 那一行）。 -->
+<div class="webnote">
+  <p>网页版的原图存在这个浏览器里。<b style="font-weight:600">浏览器可能在空间不足时清理它</b>；
+     你清除站点数据、换一个浏览器、或用无痕窗口打开，这里都会是空的。
+     换台设备也看不到 —— 它从来没有离开过这台机器。</p>
+</div>
+
+<!-- ── 可关闭提示：这一条才是提示 ── -->
+<div class="tip">
+  <p>想让原图不被浏览器清理，可以装桌面版；不装也能用，只是原图留不住。</p>
+  <button aria-label="关闭这条提示">知道了</button>
+</div>
+
+<div class="grid">
+  <div class="thumb"><span>9月4日 21:47</span></div>
+  <div class="thumb"><span>9月4日 14:20</span></div>
+  <div class="thumb"><span>9月3日 21:40</span></div>
+</div>
+
+<!-- ── 留存三处：与底座 rec.html 逐字相同，不因为「这是网页版」小一号 ── -->
+<div class="keep">
+  <!-- ① 用户同意留存原图的那一刻（这里是它的复述位；同意点本身在 rec.html，收图之前） -->
+  <div class="line">
+    <span class="slot"><span style="width:18px;height:18px;display:flex;align-items:center;
+      justify-content:center;background:var(--ink);border-radius:var(--radius);margin-top:3px">
+      <svg width="11" height="9" viewBox="0 0 11 9" fill="none">
+        <path d="M1 4.6 4.1 7.7 10 1.4" stroke="var(--on-action)" stroke-width="1.8"
+              stroke-linecap="square"/></svg></span></span>
+    <span class="line__main">
+      <span class="body">你同意留下这些原图</span>
+      <span class="sub">你拍的原图只存在这台设备上,不上传、不同步、不备份到任何服务器。</span>
+    </span>
+  </div>
+  <!-- ② 原图的到期倒计时（E-RAW-13 展示句 + §6.4 附加句，逐字） -->
+  <div class="line">
+    <span class="slot"><svg width="13" height="16" viewBox="0 0 18 22" fill="none" style="margin-top:4px">
+      <path d="M9 1 17 5.6 9 10.2 1 5.6Z" stroke="var(--ink-2)" stroke-width="1.1" stroke-linejoin="round"/>
+      <path d="M1 8.4 9 13 9 21 1 16.4Z" stroke="var(--ink-2)" stroke-width="1.1" stroke-linejoin="round" opacity=".5"/>
+      <path d="M17 8.4 9 13 9 21 17 16.4Z" stroke="var(--ink-2)" stroke-width="1.1" stroke-linejoin="round" opacity=".5"/>
+    </svg></span>
+    <span class="line__main">
+      <span class="body">还有 2 天 6 小时转进留存区</span>
+      <span class="sub">2 天 6 小时后转为本机留存,不再用于识别,随时可以手动删。</span>
+    </span>
+  </div>
+  <!-- ③ 随时可按的立即删除入口：同号字，不小一号、不折叠、不藏进二级页 -->
+  <div class="line">
+    <span class="slot"></span>
+    <span class="line__main"><button class="link link--body">立即删除原图</button></span>
+  </div>
+</div>
+
+<div style="flex:1 1 auto"></div>
+<div class="dock"><button class="btn-danger">全部立即删除</button></div>
+</div></body></html>

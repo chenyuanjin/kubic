@@ -1,0 +1,45 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Kubic · H5（Web 主形态）差分稿</title>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="v10.css">
+<link rel="stylesheet" href="h5.css">
+<style>
+  .t{width:100%;border-collapse:collapse;max-width:900px;margin-top:8px}
+  .t td,.t th{border-bottom:var(--hair-w) solid var(--hair);padding:9px 12px 9px 0;
+              font-size:13px;line-height:1.7;text-align:left;vertical-align:top;color:#3B4250}
+  .t th{color:var(--ink);font-weight:600;font-size:12px}
+  .t a{color:var(--ink)}
+</style></head><body class="sheet">
+
+<h2>Kubic · H5（Web 主形态）差分稿</h2>
+<p class="why">
+  <code>U6.1 §6.1</code> 把 Web / H5 定为<b>主形态</b>：十四屏全在这里，其余三个端是它的再分发。
+  <code>KUBI-81~88</code> 那八份画的是 iPhone / iPad 两档，<b>主形态一屏都没有</b> ——
+  这份补的是那个差分基准，不是第九份模块稿。<br>
+  底座 <code>tokens.css</code> + <code>v10.css</code> 逐字节取自 <code>kubi-80-v10-blueprint</code>（<code>cmp</code> 已验同），
+  本目录只加一个 <code>h5.css</code>（80 行）。<b>没有第二个强调色，没有新 token。</b>
+</p>
+
+<table class="t">
+  <tr><th>屏</th><th>H5 差分</th></tr>
+  <tr><td><a href="home.html">home.html</a> · <code>S-HOME</code></td>
+      <td>无状态条 / 无屏内返回（<code>P-NAV</code> = 浏览器返回键）/ <code>.dock</code> 走 sticky + safe-area / <code>100dvh</code></td></tr>
+  <tr><td><a href="blind.html">blind.html</a> · <code>S-BLIND</code></td>
+      <td><b>双列档（≥1024）</b>，H5 唯一的结构性差分。左栏是骨架树这个<b>内容</b>，不是左侧菜单</td></tr>
+  <tr><td><a href="rec.html">rec.html</a> · <code>S-REC</code></td>
+      <td>同意点必须排在「拍一张」<b>上面</b> —— 网页上没有应用内相机，<code>input[capture]</code> 一按图就进来了</td></tr>
+  <tr><td><a href="raw.html">raw.html</a> · <code>S-RAW</code></td>
+      <td>全矩阵唯一的「降级」格。降的是<b>存储</b>不是承诺：留存三处逐字不变，另加常驻说明（点名「浏览器可能清理」）+ 一条可关闭提示</td></tr>
+  <tr><td><a href="states.html">states.html</a></td>
+      <td>H5 独有的四态：原图被浏览器清掉 / 非安全上下文入口不渲染 / <code>S-BILL</code> 支付通道待定 / 门（地址不变）</td></tr>
+  <tr><td><a href="H5交互说明.md">H5交互说明.md</a></td>
+      <td>逐屏 触发 → 反馈 → 失败落点，错误码对上 <code>接口契约-签名与错误码全集</code> §十</td></tr>
+</table>
+
+<p class="why" style="margin-top:28px">
+  <b>并排看的判据（不看颜色，数这四样）</b>：有没有左侧菜单 · 有没有面包屑 ·
+  列表是不是长成了表格 · 四类按钮是不是同一个形状。<br>
+  双列档的左栏是唯一像菜单的东西 —— 判据三条：它装骨架树、换科目整栏换掉、它一条也不列举别的屏。
+</p>
+</body></html>

@@ -1,0 +1,84 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>S-HOME 首页 · H5（Web 主形态）</title>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="v10.css">
+<link rel="stylesheet" href="h5.css">
+<style>
+  /* 与底座 home.html 的差分只有三处，都不是样式偏好：
+     ① 删掉 .sb 状态条与 .hi 指示条 —— 那是设备的，H5 上那块地方是浏览器地址栏
+     ② .dock 从固定块变 sticky —— iOS Safari 地址栏收放时 fixed 会跳
+     ③ 台账头里没有返回 —— P-NAV = 浏览器返回键（U6.1 §6.1 ※2）
+     版面、字阶、色、间距、行结构与底座逐条相同：H5 是基准，不是第五套视觉。 */
+  .today{padding:20px var(--rule) 22px}
+  .today .display .u{text-decoration:underline;text-decoration-thickness:1px;
+                     text-underline-offset:7px;text-decoration-color:var(--underline)}
+  .miss{padding:16px var(--rule) 18px}
+  .miss .body b{font-family:var(--font-display);font-size:22px;font-weight:400;
+                font-variant-numeric:tabular-nums lining-nums}
+  .miss .link{text-decoration-color:rgba(23,23,26,.55)}
+</style></head><body><div class="h5 frame">
+
+<div class="flow">
+  <!-- 台账头：品牌记号 + 日期。内容流第一行，不是导航栏 —— 它不列举任何别的屏。
+       ⚠️ H5 上这里【没有返回】：返回是浏览器返回键。 -->
+  <div class="head">
+    <span class="logo" style="gap:7px">
+      <svg width="14" height="16" viewBox="0 0 64 72" fill="none" aria-hidden="true">
+        <path d="M8 27.9 32 41.8 32 65.8 8 51.9Z" fill="var(--ink)"/>
+        <path d="M56 27.9 32 41.8 32 65.8 56 51.9Z" fill="var(--ink-2)"/>
+        <path d="M32 2 56 15.9 32 29.8 8 15.9Z" fill="var(--accent)"/>
+      </svg>
+      <span class="logo__type" style="font-size:12px;color:var(--ink-2)">kubic<i class="cur"></i></span>
+    </span>
+    <span>今天 · 9月4日</span>
+  </div>
+
+  <div class="band today">
+    <h1 class="display"><button class="u">今天记了 5 条</button></h1>
+  </div>
+
+  <!-- 全屏唯一一块蓝面：今天没做到的那部分 -->
+  <div class="panel miss">
+    <p class="body">今天有 <b>3</b> 次没记</p>
+    <div style="margin-top:6px"><button class="link">本来该记，但懒了</button></div>
+  </div>
+
+  <p class="eyebrow pad" style="margin-top:24px;margin-bottom:4px">最近 3 条 · 共 5 条</p>
+
+  <button class="line">
+    <span class="idx">01</span>
+    <span class="line__main">
+      <span class="eyebrow">14:20 · 粉笔</span>
+      <span class="body">行政处罚听证程序，做错两道</span>
+      <span class="sub">已对上 1 个考点 · 还没同步</span>
+    </span>
+  </button>
+  <button class="line">
+    <span class="idx">02</span>
+    <span class="line__main">
+      <span class="eyebrow">09:05 · B 站网课</span>
+      <span class="body"><i>语音 0:14</i></span>
+      <span class="sub">正在认</span>
+    </span>
+  </button>
+  <button class="line">
+    <span class="idx">03</span>
+    <span class="line__main">
+      <span class="eyebrow">昨天 21:40 · 没写来源</span>
+      <span class="body"><i>图片</i></span>
+      <span class="sub">没对上</span>
+    </span>
+  </button>
+
+  <div class="split" style="margin-top:16px"><button>看盲区</button></div>
+  <div style="flex:1 1 auto"></div>
+</div>
+
+<div class="dock">
+  <!-- 三快捷：H5 上「拍」走 <input type="file" accept="image/*" capture>，
+       非安全上下文（http://）下这一格【不渲染】，不是灰掉 —— 见 states.html 第 2 张。 -->
+  <div class="dock__row"><button>说</button><button>拍</button><button>写</button></div>
+  <button class="btn-pri">记一条</button>
+</div>
+</div></body></html>

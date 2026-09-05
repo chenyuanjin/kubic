@@ -3,7 +3,7 @@ import { useDashboard } from '../api/queries'
 import type { TimelineItemDto } from '../api/types'
 import { relativeDayTime } from '../lib/format'
 import { routeTo } from '../routes/routes'
-import { ScreenBody, ScreenHead } from '../ui/layout'
+import { ColL, ColR, Cols, ScreenBody, ScreenHead } from '../ui/layout'
 import { GroupHeader, Row, Tag } from '../ui/primitives'
 import { EmptyState, FailureBlock, Placeholder } from '../ui/states'
 
@@ -18,6 +18,20 @@ import { EmptyState, FailureBlock, Placeholder } from '../ui/states'
  * 反过来做(新开一条 `/inbox`)要付两笔账:路由表多一行要过人审,
  * 而且从那天起「一条记录在哪一屏」变成一个需要判断的问题 —— 它会同时出现在两屏上。
  *
+ * <h2>≥1024 双列 —— 稿 `design/m2/m2-ipad.html`(S-TAG)</h2>
+ *
+ * 这一屏与 `CoverageScreen` <b>同型</b>:左栏是列表,右栏是选中那一条的详情,
+ * 而详情是独立的 route id(`/records/:recordId`)。所以两条地址渲染的是同一个组件,
+ * 「有没有选中一条记录」决定窄屏上看见哪一栏 —— 不写第二套 DOM。
+ * <p>
+ * ⚪ <b>稿右栏的下半截本轮没有落地,这是一处登记不是遗漏。</b>
+ * 稿上右栏是「记录卡 + 候选考点三条 + 还有 2 个 + 都不是 / 自己挑一个 / 跳过这条」,
+ * 后半段是 `M2` 的<b>人工挑选</b>流程,而契约里没有它的落点:`SuggestTagResponse`
+ * 只回一个 `candidateCount`(数)和已经落下的 `tags`,<b>没有任何端点返回可供人挑的候选列表</b>
+ * (`api/types.ts` 的 `SuggestTagResponse`)。前端自己凑一份候选就正面撞 `R-07`
+ * 闭集打标 ——「只从候选集选 id,不生成标签文本」。所以右栏本轮只落稿上那张记录卡对应的部分,
+ * 候选面板留给契约补齐之后。
+ *
  * <h2>四态</h2>
  *
  * 主态 = 时间线;空态 = 一条记录都没有(和「筛完是空的」是两句不同的话);
@@ -26,6 +40,7 @@ import { EmptyState, FailureBlock, Placeholder } from '../ui/states'
  */
 export function RecordsScreen() {
   const [params] = useSearchParams()
+  const { recordId } = useParams<{ recordId?: string }>()
   const navigate = useNavigate()
   const { data, isPending, refetch } = useDashboard()
   const unclassifiedOnly = params.get('filter') === 'unclassified'
@@ -49,6 +64,24 @@ export function RecordsScreen() {
   // 至于是哪一种成因,要看那条记录自己的失败落点 —— 列表这一层不猜。
   const unclassified = data.records.filter((r) => r.nodeName === null)
   const shown = unclassifiedOnly ? unclassified : data.records
+  const selected = recordId !== undefined ? (data.records.find((r) => r.id === recordId) ?? null) : null
+
+  // 地址里有一个指不到任何记录的标识。与 `CoverageScreen` 的 NODE_NOT_FOUND 同档:
+  // terminal —— 再拉一次列表还是同一个结果,所以不给重试。
+  if (recordId !== undefined && selected === null) {
+    return (
+      <>
+        <ScreenHead title="记录" sub={recordId} />
+        <ScreenBody>
+          <FailureBlock
+            code="RECORD_NOT_FOUND"
+            scope="这条记录"
+            onFallback={() => void navigate(routeTo('records'))}
+          />
+        </ScreenBody>
+      </>
+    )
+  }
 
   return (
     <>
@@ -67,44 +100,75 @@ export function RecordsScreen() {
         }
       />
 
-      <ScreenBody>
-        <div className="kb-cap">
-          {data.source === 'mock' ? (
-            <FailureBlock code={null} scope="记录列表" onRetry={() => void refetch()} />
-          ) : null}
+      <Cols>
+        {/* 左栏 = 列表。选中一条之后,<1024 上它让位给详情;≥1024 上两栏并存。 */}
+        <ColL>
+          <div
+            className={`min-h-0 flex-1 flex-col overflow-y-auto ${
+              selected !== null ? 'hidden wide:flex' : 'flex'
+            }`}
+          >
+            {data.source === 'mock' ? (
+              <FailureBlock code={null} scope="记录列表" onRetry={() => void refetch()} />
+            ) : null}
 
-          {shown.length === 0 ? (
-            unclassifiedOnly ? (
-              <EmptyState
-                title="没有未分类的记录"
-                body="每一条都挂上考点了。挂不上的会留在这儿等你自己挑 —— 匹配不上就丢弃,不硬塞一个。"
-                action={{ label: '看全部记录', onClick: () => void navigate('/records') }}
-              />
-            ) : (
-              <EmptyState
-                title="还没有记录"
-                body="记第一笔之后,这里会按时间倒着排。写、说、拍三条路记下来的东西在这一屏长得一样。"
-                action={{ label: '去记一笔', onClick: () => void navigate(routeTo('capture')) }}
-              />
-            )
-          ) : (
-            <>
-              <GroupHeader
-                title={unclassifiedOnly ? '未分类' : '时间线'}
-                right={`${shown.length}`}
-                alarm={unclassifiedOnly && unclassified.length > 0}
-              />
-              {shown.map((r) => (
-                <RecordRow
-                  key={r.id}
-                  item={r}
-                  onOpen={() => void navigate(routeTo('records.detail', { recordId: r.id }))}
+            {shown.length === 0 ? (
+              unclassifiedOnly ? (
+                <EmptyState
+                  title="没有未分类的记录"
+                  body="每一条都挂上考点了。挂不上的会留在这儿等你自己挑 —— 匹配不上就丢弃,不硬塞一个。"
+                  action={{ label: '看全部记录', onClick: () => void navigate('/records') }}
                 />
-              ))}
-            </>
-          )}
-        </div>
-      </ScreenBody>
+              ) : (
+                <EmptyState
+                  title="还没有记录"
+                  body="记第一笔之后,这里会按时间倒着排。写、说、拍三条路记下来的东西在这一屏长得一样。"
+                  action={{ label: '去记一笔', onClick: () => void navigate(routeTo('capture')) }}
+                />
+              )
+            ) : (
+              <>
+                <GroupHeader
+                  title={unclassifiedOnly ? '未分类' : '时间线'}
+                  right={`${shown.length}`}
+                  alarm={unclassifiedOnly && unclassified.length > 0}
+                />
+                {shown.map((r) => (
+                  <RecordRow
+                    key={r.id}
+                    item={r}
+                    selected={r.id === recordId}
+                    onOpen={() => void navigate(routeTo('records.detail', { recordId: r.id }))}
+                  />
+                ))}
+              </>
+            )}
+          </div>
+        </ColL>
+
+        {/* 右栏 = 选中那一条记录。没选中时它在窄屏上整栏不渲染,在宽屏上是一句提示。
+            空态两行照 `CoverageScreen` 那一处:第二句不是补充说明,它是这一栏此刻的用法。 */}
+        <ColR>
+          <div
+            className={`min-h-0 flex-1 flex-col overflow-y-auto ${
+              selected === null ? 'hidden wide:flex' : 'flex'
+            }`}
+          >
+            {selected === null ? (
+              <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-1 px-[var(--rule)] text-center">
+                <span className="text-[13px] text-t2">从左边挑一条记录</span>
+                <span className="text-[12px] text-t3">点开哪条,它记下了什么就在这里。</span>
+              </div>
+            ) : (
+              <RecordDetail
+                item={selected}
+                onBack={() => void navigate(routeTo('records'))}
+                onPickNode={() => void navigate(routeTo('coverage'))}
+              />
+            )}
+          </div>
+        </ColR>
+      </Cols>
     </>
   )
 }
@@ -130,9 +194,21 @@ function FilterTab({ to, on, label }: { to: string; on: boolean; label: string }
  * 🔴 行上<b>没有内容</b>:显示的是考点名、来源的名字、形式、什么时候。
  * 粘进来的那段文字不在这一行上,因为它不在库里。
  */
-function RecordRow({ item, onOpen }: { item: TimelineItemDto; onOpen: () => void }) {
+function RecordRow({
+  item,
+  selected,
+  onOpen,
+}: {
+  item: TimelineItemDto
+  selected: boolean
+  onOpen: () => void
+}) {
   return (
-    <Row height="auto" className="min-h-[46px] py-2" onClick={onOpen}>
+    <Row
+      height="auto"
+      className={`min-h-[46px] py-2 ${selected ? 'bg-bg2' : ''}`}
+      onClick={onOpen}
+    >
       <span className="w-[9ch] shrink-0 font-mono text-[11px] text-t3 tabular-nums">
         {relativeDayTime(item.occurredAt)}
       </span>
@@ -148,71 +224,52 @@ function RecordRow({ item, onOpen }: { item: TimelineItemDto; onOpen: () => void
 }
 
 /**
- * 单条记录 —— `/records/:recordId`。
+ * 单条记录的详情 —— `U1.7`,地址 `/records/:recordId`。
  *
- * 它存在的理由只有一条:`U1.7` 的删除动作要有一个能被地址指到的落点。
- * 🔴 删除是<b>一条带前置条件的命令</b>,不是「让一个资源消失」——
- * 所以它是这一屏上的一个按钮,不是 `/delete-record/:id` 那种路由
+ * 它是独立 route id 而不是一个浮层,理由与 `coverage.node` 同:
+ * 删除是<b>一条带前置条件的命令</b>,要有一个能被地址指到的落点 ——
+ * 但那也只是这一屏上的一个按钮,不是 `/delete-record/:id`
  * (§4.6.2 三条命名规矩的第三条:路径段只表示位置,不表示动作)。
  */
-export function RecordDetailScreen() {
-  const { recordId } = useParams<{ recordId: string }>()
-  const navigate = useNavigate()
-  const { data, isPending } = useDashboard()
-
-  if (isPending || !data) {
-    return (
-      <>
-        <ScreenHead title={<Placeholder w="8ch" />} />
-        <ScreenBody>
-          <div className="px-[var(--rule)] py-6">
-            <Placeholder h={80} />
-          </div>
-        </ScreenBody>
-      </>
-    )
-  }
-
-  const item = data.records.find((r) => r.id === recordId) ?? null
-  if (item === null) {
-    return (
-      <>
-        <ScreenHead title="记录" sub={recordId} />
-        <ScreenBody>
-          <FailureBlock
-            code="RECORD_NOT_FOUND"
-            scope="这条记录"
-            onFallback={() => void navigate(routeTo('records'))}
-          />
-        </ScreenBody>
-      </>
-    )
-  }
-
+function RecordDetail({
+  item,
+  onBack,
+  onPickNode,
+}: {
+  item: TimelineItemDto
+  onBack: () => void
+  /** 🔴 挂不上考点时的下一步是<b>去树里自己挑一个</b>,不是回列表 —— 回列表等于什么都没发生。 */
+  onPickNode: () => void
+}) {
   return (
-    <>
-      <ScreenHead title={item.nodeName ?? '未挂考点'} sub={item.kindLabel} />
-      <ScreenBody>
-        <div className="kb-cap px-[var(--rule)] py-5">
-          <dl className="grid grid-cols-2 gap-x-6 gap-y-4">
-            <Fact k="什么时候" v={relativeDayTime(item.occurredAt)} />
-            <Fact k="来源" v={item.sourceName} />
-            <Fact k="题型" v={item.groupName ?? '—'} />
-            <Fact k="形式" v={item.kindLabel} />
-            <Fact k="练了" v={item.practiced === null ? '—' : `${item.practiced} 道`} />
-            <Fact k="对了" v={item.correct === null ? '—' : `${item.correct} 道`} />
-          </dl>
+    <div className="px-[var(--rule)] py-5">
+      {/* ≥1024 上左栏就在旁边,这一行是多余的;窄屏上它是唯一一条回列表的路 ——
+          P-NAV 说返回归浏览器返回键,所以这里给的是「回列表」这个位置,不是一个返回箭头。 */}
+      <button
+        type="button"
+        onClick={onBack}
+        className="mb-4 font-mono text-[11px] text-t3 underline hover:text-tx wide:hidden"
+      >
+        回列表
+      </button>
 
-          {item.nodeName === null ? (
-            <FailureBlock
-              code="NO_MATCH_AND_NO_USER_NODE"
-              scope="这条记录的考点"
-              onFallback={() => void navigate(routeTo('coverage'))}
-            />
-          ) : null}
-        </div>
-      </ScreenBody>
-    </>
+      <dl className="grid grid-cols-2 gap-x-6 gap-y-4">
+        <Fact k="什么时候" v={relativeDayTime(item.occurredAt)} />
+        <Fact k="来源" v={item.sourceName} />
+        <Fact k="题型" v={item.groupName ?? '—'} />
+        <Fact k="形式" v={item.kindLabel} />
+        <Fact k="练了" v={item.practiced === null ? '—' : `${item.practiced} 道`} />
+        <Fact k="对了" v={item.correct === null ? '—' : `${item.correct} 道`} />
+      </dl>
+
+      {item.nodeName === null ? (
+        <FailureBlock
+          code="NO_MATCH_AND_NO_USER_NODE"
+          scope="这条记录的考点"
+          onFallback={onPickNode}
+        />
+      ) : null}
+    </div>
   )
 }
 

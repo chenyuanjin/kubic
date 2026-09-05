@@ -4,16 +4,7 @@
   /* 空态 C-EMPTY：范围内 0 条记录且 0 个考点。
      区一「导出」仍可点 —— 一份只有说明头的文件也是「你的数据是你的」的一部分，空不是禁用理由。
      区二区三整区隐藏（不是显示空框、不留一个点不动的发送键）；区四不受影响。 */
-  .seg{display:flex;border-top:var(--hair-w) solid var(--hair);border-bottom:var(--hair-w) solid var(--hair)}
-  .seg button{flex:1;height:48px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;font-size:15px;color:var(--ink-2)}
-  .seg button+button{border-left:var(--hair-w) solid var(--hair)}
-  .seg .on{color:var(--ink);box-shadow:inset 0 -1.5px 0 var(--ink)}
-  .seg small{font-size:10px;line-height:12px;letter-spacing:.3px}
   .zone{padding:18px var(--rule) 0}
-  .zone .display{font-size:22px;line-height:30px}
-  .state{padding:14px var(--rule) 16px;border-top:var(--hair-w) solid var(--hair-soft)}
-  .state strong{display:block;font-family:var(--font-display);font-size:22px;line-height:28px;font-weight:400}
-  .state span{display:block;margin-top:4px;color:var(--ink-2);font-size:var(--t-sub);line-height:21px}
 </style></head><body><div class="phone">
 
 <div class="sb"><span>21:47</span><span class="sb__r">
@@ -23,16 +14,16 @@
 <div class="flow">
   <div class="head"><span>‹ 导出与问 AI</span><span>还没有记录</span></div>
   <div class="seg" role="radiogroup" aria-label="范围">
-    <button class="on" aria-checked="true">全部</button>
+    <button aria-current="true" aria-checked="true">全部</button>
   </div>
 
   <!-- 区一 · 导出：空着也可导 -->
   <div class="zone">
     <p class="eyebrow">出口 01 · 整份拿走</p>
-    <h2 class="display" style="margin-top:2px">导出文件</h2>
+    <h2 class="display display--title" style="margin-top:2px">导出文件</h2>
   </div>
   <div class="seg" style="margin-top:12px" role="radiogroup" aria-label="格式">
-    <button class="on" aria-checked="true">Markdown<small>给人读的清单</small></button>
+    <button aria-current="true" aria-checked="true">Markdown<small>给人读的清单</small></button>
     <button aria-checked="false">CSV<small>给表格软件</small></button>
     <button aria-checked="false">JSON<small>给自己写脚本</small></button>
   </div>
@@ -43,19 +34,19 @@
 
   <!-- 为什么空 + 一个立刻能做的动作。区二区三整区不渲染 -->
   <div class="state" style="margin-top:16px;border-top:var(--hair-w) solid var(--hair)">
-    <strong>你还没记过东西</strong>
-    <span>记了第一条，这里才有能复制、能发给 AI 的内容 · <button class="link" style="min-height:auto;padding:0 2px">去记一条</button></span>
+    <strong class="display display--title" style="display:block">你还没记过东西</strong>
+    <span class="say--2" style="display:block">记了第一条，这里才有能复制、能发给 AI 的内容 · <button class="link" style="min-height:auto;padding:0 2px">去记一条</button></span>
   </div>
 
   <!-- 区四 · 不受影响，常驻 -->
   <div class="zone" style="border-top:var(--hair-w) solid var(--hair)">
     <p class="eyebrow">出口 04 · 授权你的客户端进来读</p>
-    <h2 class="display" style="margin-top:2px">只读令牌</h2>
+    <h2 class="display display--title" style="margin-top:2px">只读令牌</h2>
     <p class="sub" style="margin-top:6px">这个令牌只能读，不能改任何东西。</p>
   </div>
   <div class="state" style="margin-top:8px">
-    <strong style="font-size:17px;line-height:24px">你还没签发过令牌</strong>
-    <span>签发前会逐条列出它能读到什么、读不到什么</span>
+    <strong class="display display--title" style="display:block">你还没签发过令牌</strong>
+    <span class="say--2" style="display:block">签发前会逐条列出它能读到什么、读不到什么</span>
   </div>
   <div class="split"><button>签发一个新的</button></div>
 

@@ -4,15 +4,6 @@
   /* U4.3：字段清单是信任面不是设置项 —— iPhone 上它是整屏，从区一「文件里有什么」推入。
      可见可勾：勾 = 这次导出装进去；默认全勾。
      「不在文件里的」一段与勾选行同权重排版 —— 文件里没有什么，和有什么一样要说清。 */
-  .ck{display:flex;gap:var(--gap-slot);width:100%;padding:9px var(--rule);align-items:flex-start;text-align:left}
-  .ck+.ck{border-top:var(--hair-w) solid var(--hair-soft)}
-  .ck__box{flex:0 0 var(--slot);width:var(--slot);height:var(--slot);margin-top:3px;
-           border:1.5px solid var(--ink);border-radius:var(--radius);position:relative}
-  .ck--on .ck__box::after{content:"";position:absolute;inset:3px;background:var(--ink)}
-  .ck__main{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:2px}
-  .no{display:flex;gap:var(--gap-slot);width:100%;padding:9px var(--rule);align-items:flex-start}
-  .no+.no{border-top:var(--hair-w) solid var(--hair-soft)}
-  .no .idx{color:var(--ink-2)}
   .sect{padding:12px var(--rule) 4px;border-top:var(--hair-w) solid var(--hair)}
 </style></head><body><div class="phone">
 
@@ -51,15 +42,15 @@
   <div class="sect">
     <p class="eyebrow">不在文件里的 —— 不是这次没勾，是库里就没有这一格</p>
   </div>
-  <div class="no"><span class="idx">×</span>
+  <div class="line line--tight"><span class="idx">×</span>
     <span class="line__main"><span class="body">你记的原话</span>
     <span class="sub">正文不进任何导出 · 装得下题目的只有它</span></span>
   </div>
-  <div class="no"><span class="idx">×</span>
+  <div class="line line--tight"><span class="idx">×</span>
     <span class="line__main"><span class="body">原图</span>
     <span class="sub">只在你本机 · 文件里连文件名和张数都没有</span></span>
   </div>
-  <div class="no"><span class="idx">×</span>
+  <div class="line line--tight"><span class="idx">×</span>
     <span class="line__main"><span class="body">账号内部标识</span>
     <span class="sub">文件离开产品后，不该有人凭它找回你</span></span>
   </div>

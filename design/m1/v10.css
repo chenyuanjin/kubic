@@ -10,7 +10,7 @@ button:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:2px so
 
 /* iOS 状态条（设备的，不是产品的） */
 .sb{flex:0 0 auto;height:52px;display:flex;align-items:flex-end;justify-content:space-between;
-    padding:0 var(--rule) 6px;color:var(--ink);font-size:15px;font-weight:600;
+    padding:0 var(--rule) 6px;color:var(--ink);font-size:var(--t-sub);font-weight:600;
     font-variant-numeric:tabular-nums;letter-spacing:.2px}
 .sb__r{display:flex;align-items:center;gap:6px}
 .sb__s{display:flex;align-items:flex-end;gap:1.5px;height:11px}
@@ -24,6 +24,7 @@ button:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:2px so
 
 /* ── 内容流 ─────────────────────────────────────── */
 .flow{flex:1 1 auto;display:flex;flex-direction:column;min-height:0}
+.flow>*{flex:0 0 auto}   /* 流内块不伸缩;要占满剩余高度的容器(.tree 等)在下方自己声明 flex */
 .pad{padding-left:var(--rule);padding-right:var(--rule)}
 
 /* ── 台账头：印刷品的卡头，不是导航栏 ── */
@@ -93,7 +94,7 @@ button:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:2px so
 .calc__label--2{color:var(--ink-2)}
 .calc__num{font-family:var(--font-display);font-size:var(--t-display);
            line-height:var(--lh-display);font-variant-numeric:tabular-nums lining-nums}
-.calc__op{font-family:var(--font-display);font-size:22px;color:var(--ink-2);
+.calc__op{font-family:var(--font-display);font-size:var(--t-title);color:var(--ink-2);
           margin-right:10px;flex:1 1 auto;text-align:right}
 .calc__sum{display:flex;align-items:baseline;justify-content:space-between;
            width:100%;min-height:44px;padding:14px var(--rule) 18px;margin-top:10px}
@@ -163,3 +164,151 @@ button:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:2px so
 
 /* ── 无障碍：减少动效 ── */
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+/* ═══ v10.1 · 底座归一扩展（KUBI-79 产品裁定 2026-09-05 三条）═════════════
+   这一段的每个类,要么曾被 ≥2 个模块各自写一遍(26 个跨模块重名),
+   要么是模块覆写底座逼出来的缺档(18 个底座类被就地覆写)。
+   从这一版起的规矩:模块 <style> 里不得出现底座类名(选择器任何位置都不行);
+   跨模块同名同用途,全产品只准这里有一个定义;字号一律 var(--t-*)。
+   机器面:npm --prefix web run test:baseline。 */
+
+/* ── 台账行 · 紧凑档:上下各一格(--base:8px;默认档 16px = 两格)。
+      此前 8 个文件覆写出 9/11/12/13/14/15/17 七种行高,全部归这两档。 ── */
+.line--tight{padding-top:8px;padding-bottom:8px}
+
+/* ── 字级变体:陈述小号档(状态屏标题/区标题/行内主数),配 .display 用。 ── */
+.display--title{font-size:var(--t-title);line-height:var(--lh-title)}
+
+/* ── 段控(模式切换):与 .split 不是同一件东西 ——
+      .split 是次动作等分栏(无选中态);段控有 aria-current 选中态、可带 small 小注。
+      高度 48 与 .dock__row 同族;选中线用 --rule-ink,与运算线同源。 ── */
+.seg{display:flex;border-top:var(--hair-w) solid var(--hair);border-bottom:var(--hair-w) solid var(--hair)}
+.seg button{flex:1;height:48px;display:flex;flex-direction:column;align-items:center;justify-content:center;
+            gap:1px;font-size:var(--t-btn);color:var(--ink-2)}
+.seg button+button{border-left:var(--hair-w) solid var(--hair)}
+.seg button[aria-current="true"]{color:var(--ink);box-shadow:inset 0 calc(-1*var(--rule-ink)) 0 var(--ink)}
+.seg small{font-size:var(--t-micro);line-height:var(--lh-micro);letter-spacing:.3px}
+
+/* ── 描边次按钮(第三方通道/成对确认的退路):高度与主按钮同 56。 ── */
+.btn-ghost{display:flex;width:100%;height:56px;align-items:center;justify-content:center;
+           border:1.5px solid var(--ink);border-radius:var(--radius);font-size:var(--t-btn);color:var(--ink)}
+.btn-ghost+.btn-ghost{margin-top:10px}
+
+/* ── 状态块(C-EMPTY / C-ERR 家族):标题走 .display .display--title。 ── */
+.state{padding:24px var(--rule) 0}
+.state .say{margin-top:10px;font-size:var(--t-body);line-height:var(--lh-body);color:var(--ink)}
+.state .say--2{margin-top:6px;font-size:var(--t-sub);line-height:var(--lh-sub);color:var(--ink-2)}
+.state .sub{margin-top:6px}
+.state--error{border-top:var(--rule-ink) solid var(--danger);padding-top:12px}
+
+/* ── 返回(文本,micro 级):导航壳的位子,不是按钮。 ── */
+.back{display:inline-flex;align-items:center;min-height:44px;margin:-14px 0;padding:0 4px;
+      font-size:var(--t-micro);color:var(--ink-2);letter-spacing:.3px}
+
+/* ── 遮罩:统一 --fill-disabled,不再各配一个透明度。 ── */
+.scrim{position:absolute;inset:0;background:var(--fill-disabled)}
+
+/* ── 底部浮层 C-SHEET(m5「自造组件之三」上抬):上缘墨线与蓝面运算线同族。 ── */
+.sheet-m{position:absolute;left:0;right:0;bottom:0;background:var(--raised);
+         border-top:var(--rule-ink) solid var(--ink);
+         padding:20px var(--rule) calc(28px + env(safe-area-inset-bottom,0px))}
+.sheet-m__row{display:flex;gap:var(--gap-slot);padding:16px 0;align-items:flex-start}
+.sheet-m__row+.sheet-m__row{border-top:var(--hair-w) solid var(--hair-soft)}
+
+/* ── 确认双钮行(危险确认):两钮等宽;红色只在确认位。 ── */
+.confirm{display:flex;gap:12px;padding:0 var(--rule);margin-top:24px}
+.confirm>*{flex:1}
+
+/* ── 勾选行(可见可勾)与勾选格 ── */
+.ck{display:flex;gap:var(--gap-slot);width:100%;padding:8px var(--rule);align-items:flex-start;text-align:left}
+.ck+.ck{border-top:var(--hair-w) solid var(--hair-soft)}
+.ck__box{flex:0 0 var(--slot);width:var(--slot);height:var(--slot);margin-top:3px;
+         border:1.5px solid var(--ink);border-radius:var(--radius);position:relative}
+.ck--on .ck__box::after{content:"";position:absolute;inset:3px;background:var(--ink)}
+.ck__main{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:2px}
+
+/* ── 同意勾选的实心格(留存三处/记做题):实心 = 已勾,空心 = 未勾。 ── */
+.box{width:18px;height:18px;flex:0 0 auto;margin-top:3px;border-radius:var(--radius);
+     background:var(--ink);display:flex;align-items:center;justify-content:center}
+.box--off{background:none;border:1.5px solid var(--hair)}
+
+/* ── 留存三处区块:行高走默认档 —— 谁都不比谁小一号,也不比别处矮半格。 ── */
+.keep{padding:8px 0 4px}
+
+/* ── 照片预览面 ── */
+.shot{margin:0 var(--rule);height:216px;background:var(--raised);
+      border:var(--hair-w) solid var(--hair);border-radius:var(--radius);
+      display:flex;align-items:flex-end;padding:12px 14px}
+.shot span{font-size:var(--t-micro);color:var(--ink-2)}
+
+/* ── 缩略图格:三个尺寸档 ── */
+.thumb{background:var(--raised);border:var(--hair-w) solid var(--hair);border-radius:var(--radius);
+       position:relative;display:flex;align-items:flex-end}
+.thumb span{font-size:var(--t-micro);line-height:var(--lh-micro);color:var(--ink-2);letter-spacing:.3px}
+.thumb--s{width:56px;height:56px;flex:0 0 auto;padding:3px 5px;background:var(--fill-skeleton)}
+.thumb--m{width:88px;height:88px;padding:6px 8px}
+.thumb--fill{width:100%;aspect-ratio:4/3;padding:10px 12px}
+.thumb--on{box-shadow:inset 0 0 0 1.5px var(--ink)}
+
+/* ── 骨架树容器(行样式:台账行/树行自带;H5 的纯文本树行在 h5.css 以 .h5 作用域根差分) ── */
+.tree{flex:1 1 auto;min-height:0;overflow:auto}
+
+/* ── 树行(计数行):tw 序号槽 · nm 名 · cnt 计数 ── */
+.t-row{display:flex;align-items:baseline;gap:8px;width:100%;min-height:44px;
+       padding:8px var(--rule);font-variant-numeric:tabular-nums}
+.t-row .tw{font-family:var(--font-display);font-size:var(--t-micro);color:var(--ink-2);flex:0 0 14px}
+.t-row .nm{font-size:var(--t-body);line-height:var(--lh-body);color:var(--ink)}
+.t-row .cnt{margin-left:auto;font-size:var(--t-sub);color:var(--ink-2)}
+
+/* ── 分组头 ── */
+.group{padding:14px var(--rule) 2px}
+.group span{font-size:var(--t-micro);line-height:var(--lh-micro);color:var(--ink-2);
+            letter-spacing:.3px;font-variant-numeric:tabular-nums}
+.group--split{display:flex;justify-content:space-between;align-items:baseline}
+
+/* ── 首页两层:记了的(.today 白通条)/ 没记的(蓝面) ── */
+.today{padding:20px var(--rule) 22px}
+.today .display .u{text-decoration:underline;text-decoration-thickness:1px;
+                   text-underline-offset:7px;text-decoration-color:var(--underline)}
+.miss{padding:16px var(--rule) 18px}
+.miss .body b{font-family:var(--font-display);font-size:var(--t-title);font-weight:400;
+              font-variant-numeric:tabular-nums lining-nums}
+
+/* ── 「不做」条目(宣言行) ── */
+.no{display:flex;gap:var(--gap-slot);padding:24px var(--rule);align-items:flex-start}
+.no+.no{border-top:var(--hair-w) solid var(--hair-soft)}
+.no p{font-size:var(--t-body);line-height:var(--lh-body);color:var(--ink)}
+.face{width:15px;height:18px;display:block;margin-top:4px}
+
+/* ── 竖式 · 贴顶密排档(盲区屏) ── */
+.calc--flush{padding-top:0}
+.calc--flush .calc__row{padding:4px 0}
+button.calc__row{width:100%;min-height:44px}
+
+/* ══ 端与形态(M6):数值只落在这里与 design/v10/m6.html,模块不再各答一遍。
+   iPad 竖屏(720–1023):.pad-screen,--rule 32px,内容列 .col ≤640px 居中。
+   iPad 横屏/桌面(≥1024):.pad-frame 双列 —— 左栏定宽 480px(60 格),不等分;
+   1024–1199 退法:左栏收窄 = 视口宽 − 720px,下限 304px(38 格);
+   右栏内容恒定 ≤640px(与 720–1023 档是同一个 640)。
+   720 = 左边线 32 + 栏间 32 + 右缘 16 + 右栏内容 640。评审画框固定 1366,取上限 480。 ══ */
+.pad-frame{position:relative;width:1366px;height:1024px;margin:0 auto;background:var(--ground);
+           display:flex;flex-direction:column;overflow:hidden}
+.pad-screen{position:relative;width:834px;height:1194px;margin:0 auto;background:var(--ground);
+            display:flex;flex-direction:column;overflow:hidden;--rule:32px}
+.cols{flex:1 1 auto;display:flex;min-height:0}
+.col-l{flex:0 0 480px;display:flex;flex-direction:column;min-height:0;overflow:hidden;
+       border-right:var(--hair-w) solid var(--hair)}
+.col-r{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;min-height:0;overflow:hidden}
+.col{flex:1 1 auto;width:100%;max-width:640px;margin:0 auto;display:flex;flex-direction:column;min-height:0}
+
+/* ── 评审稿标注(不进产品):画布/说理/图注/并排格。字号同样只走字阶。 ── */
+.sheet{background:var(--canvas);padding:40px 24px 80px}
+.sheet h2{font-family:var(--font-display);font-size:var(--t-title);font-weight:400;
+          margin:48px 0 6px;color:var(--ink)}
+.sheet h2:first-child{margin-top:0}
+.why{font-size:var(--t-idx);line-height:1.85;color:var(--ink-2);max-width:760px;margin-bottom:18px}
+.why b{font-weight:600;color:var(--ink)}
+.why code{font-family:var(--font-mono);font-size:var(--t-micro)}
+.cap{font-size:var(--t-micro);line-height:1.7;color:var(--ink-2);margin-top:10px;letter-spacing:.3px}
+.cap b{color:var(--ink);font-weight:600}
+.row{display:flex;gap:16px;align-items:flex-start}

@@ -3,22 +3,18 @@
   /* iPad 竖屏档(720–1023):只放宽,不换骨架——
      左边线 24 → 32px,内容最大宽 640px 居中,仍是单栏、仍一句一行、仍零可点元素。
      它是一页声明,放宽之后也不许排成宣传页:不分栏、不加插画、不加大字招贴。
-     信息顺序与 iPhone 档完全一致。评审画布灰底,产品面 768 × 1024 居中。 */
-  .pad-screen{--rule:32px;position:relative;width:768px;height:1024px;margin:0 auto;
-              background:var(--ground);display:flex;flex-direction:column;overflow:hidden}
-  .inner{width:640px;max-width:100%;margin:0 auto;display:flex;flex-direction:column;flex:1 1 auto;min-height:0}
-  .line{padding-top:17px;padding-bottom:17px}
+     信息顺序与 iPhone 档完全一致。评审画布灰底,产品面居中。 */
 </style></head><body><div class="pad-screen">
 
 <div class="sb"><span>21:47</span><span class="sb__r">
   <span class="sb__s"><i></i><i></i><i></i><i></i></span><span class="sb__b"></span>
 </span></div>
 
-<div class="inner">
+<div class="col">
   <div class="head"><span>设置 · 关于</span><span>离线可读</span></div>
 
   <div style="padding:56px var(--rule) 0">
-    <p class="display" style="font-size:36px;line-height:48px">这个产品不做什么</p>
+    <p class="display">这个产品不做什么</p>
     <p class="sub" style="margin-top:14px">下面这些事它都不做,不是还没做。</p>
   </div>
 

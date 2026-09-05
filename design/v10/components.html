@@ -1,26 +1,16 @@
 <!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>核心组件 · 状态集 · Kubic v10</title>
 <link rel="stylesheet" href="tokens.css"><link rel="stylesheet" href="v10.css"><style>
   body{zoom:2;background:var(--ground)}
-  .sheet{width:600px;background:var(--ground);padding:36px 32px 48px}
-  .ttl{font-family:var(--font-display);font-size:26px;line-height:34px;letter-spacing:.6px}
-  .lb{font-size:11px;line-height:15px;color:var(--ink-2);letter-spacing:.4px}
-  .note{font-size:11.5px;line-height:18px;color:var(--ink-2)}
+  .ttl{font-family:var(--font-display);font-size:var(--t-title);line-height:var(--lh-title);letter-spacing:.6px}
+  .lb{font-size:var(--t-micro);line-height:15px;color:var(--ink-2);letter-spacing:.4px}
+  .note{font-size:var(--t-micro);line-height:18px;color:var(--ink-2)}
   .sec{border-top:var(--hair-w) solid var(--hair);padding-top:18px;margin-top:30px}
-  .row{display:flex;gap:16px;align-items:flex-start}
   .cell{flex:1;min-width:0}
-  .cap{font-size:10px;color:var(--ink-2);margin-top:6px;letter-spacing:.3px}
   .demo{margin-top:14px}
-  .demo .btn-pri,.demo .btn-danger{height:48px;font-size:15px}
-  .demo .line{padding:14px 0;border-top:var(--hair-w) solid var(--hair-soft)}
-  .demo .field{border-bottom:var(--hair-w) solid var(--hair);height:48px;padding:0}
-  .state-message{width:min(100%,560px);padding:14px 0;border-top:var(--hair-w) solid var(--hair-soft)}
-  .state-message strong{display:block;font-family:var(--font-display);font-size:22px;line-height:28px;font-weight:400}
-  .state-message span{display:block;margin-top:4px;color:var(--ink-2);font-size:var(--t-sub);line-height:21px}
-  .state-message--error{border-top-color:var(--danger)}
   .record-card-demo{width:min(100%,560px)}
   /* v10 新增组件：强调面板（唯一带色的面） */
   .panel-demo{margin:0 -32px;padding:14px 32px 16px}
-</style></head><body><div class="sheet">
+</style></head><body><div class="sheet" style="width:600px;padding:36px 32px 48px">
 
 <p class="lb">KUBIC · 核心组件与状态集 · V10 蓝图台账</p>
 <h1 class="ttl" style="margin-top:6px">四类按钮 · 输入 · 台账行 · 蓝面 · 空态 · 失败三档 · Toast · 占位</h1>
@@ -33,7 +23,7 @@
   <p class="lb">强调面板 · 长春花蓝当「面」用：恒定含义「这一块是你还没碰过的那部分」</p>
   <div class="demo">
     <div class="panel panel-demo">
-      <p class="body">今天有 <b style="font-family:var(--font-display);font-size:22px;font-weight:400">3</b> 次没记</p>
+      <p class="body">今天有 <b style="font-family:var(--font-display);font-size:var(--t-title);font-weight:400">3</b> 次没记</p>
     </div>
     <p class="cap">全宽出血 · 无外框无圆角 · 上缘 1.5px 墨线（运算线：颜色是被算出来的）· 墨字其上 7.4:1 · 一屏最多 1 块，首启与记录入口 0 块</p>
   </div>
@@ -54,7 +44,7 @@
   </div>
   <p class="lb" style="margin-top:20px">次 = 细线等分栏（无外框、无底色）／ 文本 = 下划线偏移 5px</p>
   <div class="demo">
-    <div class="split"><button type="button" style="height:44px;font-size:15px">按章看全部</button><button type="button" style="height:44px;font-size:15px">我已经会了(4)</button></div>
+    <div class="split"><button type="button" style="height:44px;font-size:var(--t-btn)">按章看全部</button><button type="button" style="height:44px;font-size:var(--t-btn)">我已经会了(4)</button></div>
     <div style="margin-top:14px"><button type="button" class="link">本来该记，但懒了</button>　
       <button type="button" class="link" aria-disabled="true" tabindex="0" aria-label="本来该记，但懒了，暂时不可用" aria-describedby="text-disabled-note" style="opacity:.35">本来该记，但懒了</button></div>
     <p id="text-disabled-note" class="cap">文本按钮：默认 / 禁用 35%（按下同主按钮 85%）</p>
@@ -113,7 +103,7 @@
       <p class="cap">中 · 行内：失败留在发生的那一行，给两条路</p>
     </div>
     <div style="margin-top:16px;border-top:var(--hair-w) solid var(--hair-soft);padding-top:12px">
-      <p class="display" style="font-size:22px;line-height:30px">这份盲区没算出来</p>
+      <p class="display" style="font-size:var(--t-title);line-height:var(--lh-title)">这份盲区没算出来</p>
       <p class="sub" style="margin-top:6px">刚才网络断了。上一份还能看，落款了重算前的时间。</p>
       <p style="margin-top:10px"><button type="button" class="link">重新算</button></p>
       <p class="cap">重 · 整屏：说清代价（旧数据还在）+ 单一出口</p>
@@ -177,21 +167,21 @@
 <div class="sec">
   <p class="lb">补充空态与反馈 · 没建好 / 没记过 / 缓存失败</p>
   <div class="demo">
-    <div class="state-message">
-      <strong>这个科目的考点表还没建好</strong>
-      <span>这里没有可以减的东西 · <button class="link" type="button">去记一条</button></span>
+    <div class="state" style="width:min(100%,560px);padding:14px 0 0">
+      <strong class="display display--title" style="display:block">这个科目的考点表还没建好</strong>
+      <span class="say--2" style="display:block">这里没有可以减的东西 · <button class="link" type="button">去记一条</button></span>
     </div>
     <p class="cap">空态 · 一句事实 + 一个出口</p>
 
-    <div class="state-message" style="margin-top:12px">
-      <strong>你还没记过东西</strong>
-      <span>现在整张表都是没碰过 · <button class="link" type="button">记一条</button></span>
+    <div class="state" style="width:min(100%,560px);padding:14px 0 0;margin-top:12px">
+      <strong class="display display--title" style="display:block">你还没记过东西</strong>
+      <span class="say--2" style="display:block">现在整张表都是没碰过 · <button class="link" type="button">记一条</button></span>
     </div>
     <p class="cap">空态 · 不写空泛占位</p>
 
-    <div class="state-message state-message--error" style="margin-top:12px">
-      <strong>这次没刷新上</strong>
-      <span>保留上次内容 · <button class="link" type="button">再试一次</button></span>
+    <div class="state state--error" style="width:min(100%,560px);padding:14px 0 0;margin-top:12px">
+      <strong class="display display--title" style="display:block">这次没刷新上</strong>
+      <span class="say--2" style="display:block">保留上次内容 · <button class="link" type="button">再试一次</button></span>
     </div>
     <p class="cap">缓存失败 · 错误停在发生处</p>
   </div>

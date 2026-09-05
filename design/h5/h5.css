@@ -23,8 +23,8 @@
 .frame{max-width:430px;margin:0 auto;box-shadow:0 0 0 var(--hair-w) var(--hair)}
 
 /* 内容列上限：宽屏单列时不让一行文字拉到 1200px 宽 */
-.flow > .head,.flow > .band,.flow > .panel,.flow > .calc,.flow > .foot,
-.flow > .control,.flow > .split,.flow > .line,.flow > .pad,.flow > p{width:100%}
+.h5 .flow > .head,.h5 .flow > .band,.h5 .flow > .panel,.h5 .flow > .calc,.h5 .flow > .foot,
+.h5 .flow > .control,.h5 .flow > .split,.h5 .flow > .line,.h5 .flow > .pad,.h5 .flow > p{width:100%}
 
 /* ── 2 · 屏底动作区：sticky + 安全区 ──────────────
    H5 上 .dock 不能 fixed —— iOS Safari 地址栏收起时 fixed 元素会跳。
@@ -51,12 +51,18 @@
           display:flex;flex-direction:column}
   .two__r{min-width:0;display:flex;flex-direction:column}
   /* 双列档下屏底动作区归属右栏，左栏不带动作 */
-  .two__l .dock{display:none}
+  .h5 .two__l .dock{display:none}
 }
 @media (max-width:1023px){
   .two{display:flex;flex-direction:column;flex:1 1 auto;min-height:0}
   .two__r--detail{display:none}   /* 单列档：详情是独立 route id，不并排 */
 }
+
+/* 树行文本样式:H5 形态差分(原散在 blind.html)。底座只上抬了 .tree 容器。 */
+.h5 .tree button{display:block;width:100%;min-height:44px;padding:8px var(--rule);
+                 font-size:var(--t-sub);line-height:var(--lh-sub);color:var(--ink)}
+.h5 .tree .d1{padding-left:calc(var(--rule) + 16px);color:var(--ink-2)}
+.h5 .tree .d2{padding-left:calc(var(--rule) + 32px);color:var(--ink-2)}
 
 /* ── 5 · Web 专版说明 + 可关闭提示（S-RAW×Web）────
    常驻说明是陈述，不是提示，所以它没有关闭按钮；
@@ -73,12 +79,5 @@
             text-decoration-thickness:1px;text-underline-offset:4px;
             text-decoration-color:var(--underline)}
 
-/* ── 评审稿标注（不进产品）─────────────────────── */
-.sheet{background:var(--canvas);padding:40px 24px 80px}
-.sheet h2{font-family:var(--font-display);font-size:22px;font-weight:400;
-          margin:48px 0 6px;color:var(--ink)}
-.sheet h2:first-child{margin-top:0}
-.sheet .why{font-size:13px;line-height:1.85;color:#3B4250;max-width:760px;margin-bottom:18px}
-.sheet .why b{font-weight:600;color:var(--ink)}
-.sheet .why code{font-family:var(--font-mono);font-size:11.5px}
+/* ── 评审稿标注（不进产品）：.sheet/.why/.cap 家族由底座提供，这里只有并排格 ── */
 .row2{display:flex;flex-wrap:wrap;gap:28px;align-items:flex-start}

@@ -5,21 +5,12 @@
      不用告警色、不用 C-ERR,不出现「权限不完整」「请授予完整访问」。
      顶部一行说明 + 已授权缩略图 + 三个入口（纵向,末位先打字）;
      已选中一张,所以「记下」可用 —— 受限档正常继续、正常落记录。
-     自造组件 3/3：seg、vstack、缩略图格 thumb。
+     段控 seg 与缩略图格 thumb 已上抬底座;vstack 与 thumbs 容器为本模块自有。
      内容区 0 块蓝面。 */
-  .seg{display:flex;border-top:var(--hair-w) solid var(--hair);border-bottom:var(--hair-w) solid var(--hair)}
-  .seg button{flex:1;height:48px;display:flex;align-items:center;justify-content:center;
-              font-size:var(--t-btn);color:var(--ink-2)}
-  .seg button + button{border-left:var(--hair-w) solid var(--hair)}
-  .seg button[aria-current="true"]{color:var(--ink);box-shadow:inset 0 calc(-1 * var(--rule-ink)) 0 var(--ink)}
   .vstack{border-top:var(--hair-w) solid var(--hair)}
   .vstack button{display:flex;width:100%;min-height:52px;align-items:center;justify-content:center;
                  font-size:var(--t-btn);color:var(--ink);border-bottom:var(--hair-w) solid var(--hair)}
   .thumbs{display:flex;gap:12px;padding:16px var(--rule) 20px}
-  .thumb{width:88px;height:88px;background:var(--raised);border:var(--hair-w) solid var(--hair);
-         border-radius:var(--radius);position:relative;display:flex;align-items:flex-end;padding:6px 8px}
-  .thumb span{font-size:var(--t-micro);color:var(--ink-2)}
-  .thumb--on{box-shadow:inset 0 0 0 1.5px var(--ink)}
 </style></head><body><div class="phone">
 
 <div class="sb"><span>21:47</span><span class="sb__r">
@@ -40,9 +31,9 @@
   </div>
 
   <div class="thumbs">
-    <div class="thumb thumb--on"><span>已选</span></div>
-    <div class="thumb"><span></span></div>
-    <div class="thumb"><span></span></div>
+    <div class="thumb thumb--m thumb--on"><span>已选</span></div>
+    <div class="thumb thumb--m"><span></span></div>
+    <div class="thumb thumb--m"><span></span></div>
   </div>
 
   <div class="vstack" style="border-bottom:var(--hair-w) solid var(--hair)">

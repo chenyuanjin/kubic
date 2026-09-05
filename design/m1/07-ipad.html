@@ -2,27 +2,12 @@
 <link rel="stylesheet" href="tokens.css"><link rel="stylesheet" href="v10.css"><style>
   /* iPad 横屏（≥1024）：双列内容。左栏是内容（今天的时间线，随筛选整栏换掉），
      不是持久菜单；四入口收敛的记录入口仍住屏底动作区，不挪进左栏。
-     右栏采集区列宽 464px —— 这就是录音窄态：分屏 / 台前调度下宽度收窄，
+     右栏内容 ≤640px(M6) —— 这就是录音窄态：分屏 / 台前调度下宽度收窄，
      波形与计时纵排、按钮满列宽，组件不换形。
      信息顺序与 iPhone 档完全一致，只改排布。
      左栏第一条是受限态第二档：额度用完，记录照样成功，稍后再认。
      这一屏内容区 0 块蓝面。 */
-  .pad-frame{position:relative;width:1366px;height:1024px;background:var(--ground);
-             display:flex;flex-direction:column;overflow:hidden}
-  .cols{flex:1 1 auto;display:flex;min-height:0}
-  .col-l{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;
-         border-right:var(--hair-w) solid var(--hair)}
-  .col-r{flex:0 0 464px;display:flex;flex-direction:column}
-  .group{padding:14px var(--rule) 2px}
-  .group span{font-size:var(--t-micro);line-height:var(--lh-micro);color:var(--ink-2);
-              letter-spacing:.3px;font-variant-numeric:tabular-nums}
   .links{display:flex;gap:14px;flex-wrap:wrap}
-  .seg{display:flex;border-bottom:var(--hair-w) solid var(--hair)}
-  .seg button{flex:1;height:48px;display:flex;align-items:center;justify-content:center;
-              font-size:var(--t-sub);color:var(--ink-2)}
-  .seg button+button{border-left:var(--hair-w) solid var(--hair)}
-  .seg button[aria-current="true"]{color:var(--ink);font-weight:600;
-              box-shadow:inset 0 -1.5px 0 var(--ink)}
   .wave{display:flex;align-items:center;justify-content:center;gap:3px;height:32px;margin-top:20px}
   .wave i{width:3px;background:var(--ink);border-radius:.5px}
 </style></head><body><div class="pad-frame">
@@ -88,8 +73,8 @@
     <div class="foot" style="margin-top:8px"><p>到底了</p></div>
   </div>
 
-  <!-- 右栏：采集区（窄态 464px）。录音中：波形纵排在按钮下，组件不换形 -->
-  <div class="col-r">
+  <!-- 右栏：采集区（内容 ≤640px,M6）。录音中：波形纵排在按钮下，组件不换形 -->
+  <div class="col-r" style="max-width:640px">
     <div class="head"><span>记一条 · 说</span><span>21:47</span></div>
     <div class="seg">
       <button type="button">写</button>

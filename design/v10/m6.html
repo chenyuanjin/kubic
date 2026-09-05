@@ -11,10 +11,10 @@
     .wide-inner{max-width:1320px;margin:0 auto}
     .wide-head{display:flex;align-items:flex-end;justify-content:space-between;gap:40px;padding-bottom:24px;border-bottom:var(--hair-w) solid var(--hair)}
     .wide-kicker{margin:0;color:var(--ink-2);font-size:var(--t-micro);letter-spacing:.08em}
-    .wide-title{margin:8px 0 0;font-family:var(--font-display);font-size:42px;line-height:50px;font-weight:400}
+    .wide-title{margin:8px 0 0;font-family:var(--font-display);font-size:var(--t-hero);line-height:var(--lh-hero);font-weight:400}
     .wide-intro{max-width:460px;margin:0;color:var(--ink-2);font-size:var(--t-body);line-height:26px}
     .state-block{margin-top:28px;padding-top:18px;border-top:var(--hair-w) solid var(--hair)}
-    .state-block h2{margin:0 0 12px;font-family:var(--font-display);font-size:26px;line-height:34px;font-weight:400}
+    .state-block h2{margin:0 0 12px;font-family:var(--font-display);font-size:var(--t-title);line-height:var(--lh-title);font-weight:400}
     .matrix{width:100%;border-collapse:collapse;font-size:var(--t-sub)}
     .matrix th,.matrix td{padding:11px 12px;text-align:left;vertical-align:top;border-bottom:var(--hair-w) solid var(--hair-soft)}
     .matrix th{color:var(--ink-2);font-weight:500}.matrix td strong{color:var(--ink);font-weight:600}
@@ -42,7 +42,7 @@
           <tbody>
             <tr><td><strong>&lt; 720px</strong></td><td>单栏内容流</td><td><strong>iPhone App</strong> / H5</td><td>状态细条 → 内容流 → 屏底动作区；蓝面全宽出血</td></tr>
             <tr><td><strong>720–1023px</strong></td><td>单栏兜底</td><td><strong>iPad 竖屏</strong> / 窄桌面</td><td>只放宽文字与行高，不引入侧栏；左边线从 24px 放到 32px，内容最大宽 640px 居中</td></tr>
-            <tr><td><strong>≥ 1024px</strong></td><td>双列内容</td><td><strong>iPad 横屏</strong> / 桌面壳 / 宽 Web</td><td>左栏是当前科目内容，右栏是节点内容；左栏不是持久菜单——随科目与筛选整栏换掉</td></tr>
+            <tr><td><strong>≥ 1024px</strong></td><td>双列内容</td><td><strong>iPad 横屏</strong> / 桌面壳 / 宽 Web</td><td>左栏定宽 <strong>480px</strong>（60 格），装当前科目内容（骨架树/榜），不是持久菜单——随科目与筛选整栏换掉；右栏是节点内容，内容最大宽 <strong>640px</strong> 恒定（与 720–1023 档是同一个 640）。几何：左边线 32px · 栏间 32px · 右缘 16px（32+480+32+640+16 = 1200）。<strong>1024–1199 退法：左栏收窄 = 视口宽 − 720px，下限 304px</strong>（38 格；480/304 均落 --base:8px 格），右栏 640 不缩。台账行两档：默认上下 <strong>16px</strong>（两格）/ 紧凑 <strong>8px</strong>（一格，.line--tight），行高不再有第三种。Web 宽屏双列沿用已评审的 h5.css 差分层（左栏 300、下限 260、内容区 1120），不受本行数值约束</td></tr>
           </tbody>
         </table>
       </section>

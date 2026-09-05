@@ -1,18 +1,12 @@
 <!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>成因② 服务不可用 + 待补队列 · 失败态 TS-06 · Kubic v10 · M2</title>
 <link rel="stylesheet" href="tokens.css"><link rel="stylesheet" href="v10.css"><style>
   body{zoom:2}
-  .back{display:inline-flex;align-items:center;min-height:44px;margin:-14px 0;padding:0 4px;
-        font-size:var(--t-micro);color:var(--ink-2);letter-spacing:.3px}
   /* C-OFFLINE 细条：常驻顶部、把内容整体下推、不可点 */
   .strip{background:var(--raised);border-bottom:var(--hair-w) solid var(--hair);
          padding:8px var(--rule);display:flex;justify-content:space-between;align-items:baseline}
   .strip span{font-size:var(--t-micro);line-height:var(--lh-micro);color:var(--ink-2);
               font-variant-numeric:tabular-nums;letter-spacing:.3px}
   .card{padding:18px var(--rule) 16px}
-  .state{padding:26px var(--rule) 0}
-  .state .display{font-size:26px;line-height:34px}
-  .state .say{margin-top:10px;font-size:var(--t-body);line-height:var(--lh-body);color:var(--ink)}
-  .act{padding:24px var(--rule) 0}
 </style></head><body><div class="phone">
 
 <div class="sb"><span>21:47</span><span class="sb__r">
@@ -38,11 +32,11 @@
 
   <!-- 状态位 · TS-06 待补：不显示第几次、不显示下次时间 -->
   <div class="state">
-    <p class="display">稍后再认</p>
+    <p class="display display--title">稍后再认</p>
     <p class="say">还没认上，服务这会儿没通。它会自己再试，你不用管。</p>
   </div>
 
-  <div class="act">
+  <div style="padding:24px var(--rule) 0">
     <button class="btn-pri">自己挑一个</button>
     <p style="margin-top:10px;text-align:center"><button class="link">再试一次</button></p>
   </div>

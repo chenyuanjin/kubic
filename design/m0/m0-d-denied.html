@@ -6,12 +6,7 @@
      会把用户带出应用的那条路永远排最后。三个按钮纵向排,全部次按钮。
      没有「功能不可用」、没有整屏拦截、没有告警色:被拒不是错误态（C-INLINE 语气,不是 C-ERR）。
      「拍」在段控里不灰、不隐藏、不加角标,每次点仍能重新看到这一格。
-     自造组件 2/3：seg、vstack（与 U0.2 同两个,不新增）。 */
-  .seg{display:flex;border-top:var(--hair-w) solid var(--hair);border-bottom:var(--hair-w) solid var(--hair)}
-  .seg button{flex:1;height:48px;display:flex;align-items:center;justify-content:center;
-              font-size:var(--t-btn);color:var(--ink-2)}
-  .seg button + button{border-left:var(--hair-w) solid var(--hair)}
-  .seg button[aria-current="true"]{color:var(--ink);box-shadow:inset 0 calc(-1 * var(--rule-ink)) 0 var(--ink)}
+     段控 seg 已上抬底座;vstack 为本模块自有（与 U0.2 同一个,不新增）。 */
   .vstack{border-top:var(--hair-w) solid var(--hair)}
   .vstack button{display:flex;width:100%;min-height:52px;align-items:center;justify-content:center;
                  font-size:var(--t-btn);color:var(--ink);border-bottom:var(--hair-w) solid var(--hair)}
@@ -32,7 +27,7 @@
 
   <div class="band">
     <div class="pad" style="padding-top:24px;padding-bottom:8px">
-      <h2 class="display" style="font-size:24px;line-height:32px">这台设备上关掉了相机。</h2>
+      <h2 class="display display--title">这台设备上关掉了相机。</h2>
       <p class="body" style="margin-top:12px;padding-bottom:16px">可以从相册选一张,或者直接打字。</p>
     </div>
     <div class="vstack">

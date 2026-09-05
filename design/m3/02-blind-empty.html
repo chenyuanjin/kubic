@@ -3,11 +3,8 @@
   body{zoom:2}
   /* EMPTY_NO_RECORD：骨架有、一条记录都没有。盲区是满的 —— 这不是出错。
      竖式照常（total 与「碰过 0」都显示，恒等式为 0 也显示），
-     蓝面 = 整张表：120 个全没碰过。榜位换成一句事实 + 两个入口。 */
-  .calc{padding-top:0}
-  .calc__row{padding:4px 0}
-  .foot p{padding:3px 0}
-  button.calc__row{width:100%;min-height:44px}
+     蓝面 = 整张表：120 个全没碰过。榜位换成一句事实 + 两个入口。
+     竖式贴顶密排走底座 .calc--flush。 */
 </style></head><body><div class="phone">
 
 <div class="sb"><span>21:47</span><span class="sb__r">
@@ -18,7 +15,7 @@
   <div class="head"><span>‹ 盲区 · 行政法 ⌄</span></div>
 
   <!-- 区 2 · 摘要：恒等式的项为 0 也照常显示 -->
-  <div class="calc" aria-label="行政法一共 120 个考点，你碰过 0 个，没碰过 120 个">
+  <div class="calc calc--flush" aria-label="行政法一共 120 个考点，你碰过 0 个，没碰过 120 个">
     <p class="calc__row">
       <span class="calc__label calc__label--2">一共</span>
       <span class="calc__num">120</span>
@@ -41,7 +38,7 @@
 
   <!-- 榜位换成空态：第一句话就说清是哪一种空 -->
   <div style="padding:26px var(--rule) 8px">
-    <p class="display" style="font-size:22px;line-height:30px">你还没记过东西</p>
+    <p class="display display--title">你还没记过东西</p>
     <p class="sub" style="margin-top:6px">所以现在整张表都是没碰过。记一条，减法就开始了。</p>
   </div>
 

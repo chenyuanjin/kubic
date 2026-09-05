@@ -12,14 +12,10 @@
      Web 独有的只是【多】一块常驻说明 + 一条可关闭提示，不是【少】一处承诺。
 
      两块为什么不合并：常驻说明是告知，关不掉；提示是提示，可以关。
-     合并 = 把告知做成了可以关掉的东西。 */
-  .thumb{width:100%;aspect-ratio:4/3;background:var(--raised);
-         border:var(--hair-w) solid var(--hair);border-radius:var(--radius);
-         display:flex;align-items:flex-end;padding:10px 12px}
-  .thumb span{font-size:var(--t-micro);color:var(--ink-2)}
+     合并 = 把告知做成了可以关掉的东西。
+     缩略图走底座 .thumb .thumb--fill（4/3 满宽档）；留存行走底座默认档。 */
   .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;padding:16px var(--rule)}
   @media (min-width:1024px){.grid{grid-template-columns:repeat(4,1fr);width:100%}}
-  .keep .line{padding-top:14px;padding-bottom:14px}
 </style></head><body><div class="h5 h5--wide">
 
 <div class="head"><span>原图 · 只在这台设备上</span><span>3 张</span></div>
@@ -39,9 +35,9 @@
 </div>
 
 <div class="grid">
-  <div class="thumb"><span>9月4日 21:47</span></div>
-  <div class="thumb"><span>9月4日 14:20</span></div>
-  <div class="thumb"><span>9月3日 21:40</span></div>
+  <div class="thumb thumb--fill"><span>9月4日 21:47</span></div>
+  <div class="thumb thumb--fill"><span>9月4日 14:20</span></div>
+  <div class="thumb thumb--fill"><span>9月3日 21:40</span></div>
 </div>
 
 <!-- ── 留存三处：与底座 rec.html 逐字相同，不因为「这是网页版」小一号 ── -->

@@ -5,15 +5,8 @@
      左栏没有可换的内容,硬拆双列只能拆出装饰,so 按口径出放宽版:
      左边线 24→32px,内容最大宽 640px 居中,信息顺序与 iPhone 完全一致,
      仍然单栏一句一行 —— 三句不排成三张等宽卡片（那是被禁的 landing 模板）。
-     只用 token 变量:--rule 在本屏范围内放宽为 32px。 */
-  .tablet{position:relative;width:768px;height:1024px;background:var(--ground);
-          display:flex;flex-direction:column;overflow:hidden;--rule:32px}
-  .col{width:640px;margin:0 auto}
-  .no{display:flex;gap:var(--gap-slot);padding:24px var(--rule);align-items:flex-start}
-  .no + .no{border-top:var(--hair-w) solid var(--hair-soft)}
-  .no p{font-size:var(--t-body);line-height:var(--lh-body);color:var(--ink)}
-  .face{width:15px;height:18px;display:block;margin-top:4px}
-</style></head><body><div class="tablet">
+     画布/内容列/「不做」条目全走底座:.pad-screen（--rule 放宽为 32px）、.col、.no/.face。 */
+</style></head><body><div class="pad-screen">
 
 <div class="sb"><span>21:47</span><span class="sb__r">
   <span class="sb__s"><i></i><i></i><i></i><i></i></span><span class="sb__b"></span>
@@ -28,7 +21,7 @@
           <path d="M56 27.9 32 41.8 32 65.8 56 51.9Z" fill="var(--ink-2)"/>
           <path d="M32 2 56 15.9 32 29.8 8 15.9Z" fill="var(--accent)"/>
         </svg>
-        <span class="logo__type" style="font-size:23px">kubic<i class="cur"></i></span>
+        <span class="logo__type" style="font-size:var(--t-title)">kubic<i class="cur"></i></span>
       </div>
     </div>
 

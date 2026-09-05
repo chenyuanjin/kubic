@@ -56,6 +56,15 @@ import { fileURLToPath } from 'node:url'
 const HERE = dirname(fileURLToPath(import.meta.url))
 const WEB_ROOT = resolve(HERE, '..')
 const SRC_ROOT = join(WEB_ROOT, 'src')
+// 2026-09-05 KUBI-79:扫描范围从「只有 web/src」扩到「web/src + design/」。
+// 缺口是这样暴露的:这个脚本的判据写着 design/README.md:45,却从不扫 design/,
+// 于是 design/ui-a/ 里 9 处「正确率」、五档掌握度状态色、.meter 进度条
+// 在红绿灯全绿的情况下躺了四天。判据指向哪儿,就得扫到哪儿。
+const REPO_ROOT = resolve(WEB_ROOT, '..')
+const DESIGN_ROOT = join(REPO_ROOT, 'design')
+// archive/ 与 explorations/ 是决策记录:留着原文才知道当时为什么否掉它,
+// 把禁用词从作废稿里洗掉等于把证据洗掉。它们不会上屏,所以不扫。
+const SKIP_DIRS = new Set(['archive', 'explorations', 'node_modules'])
 const ALLOW_FILE = join(HERE, 'capability-boundary-allow.json')
 const ALLOW_FILE_LABEL = 'web/scripts/capability-boundary-allow.json'
 
@@ -197,7 +206,7 @@ function collect(dir, out = []) {
     const full = join(dir, name)
     const st = statSync(full)
     if (st.isDirectory()) {
-      collect(full, out)
+      if (!SKIP_DIRS.has(name)) collect(full, out)
       continue
     }
     const dot = name.lastIndexOf('.')
@@ -278,13 +287,16 @@ function fail(msg) {
 
 const allow = loadAllow()
 const used = new Set()
-const files = collect(SRC_ROOT)
+const files = [...collect(SRC_ROOT), ...collect(DESIGN_ROOT)]
 const hardHits = []
 const softHits = []
 let lines = 0
 
 for (const full of files) {
-  const rel = relative(WEB_ROOT, full).split('\\').join('/')
+  // design/ 下的文件按仓库根算相对路径,web/ 下的仍按 web/ 根 ——
+  // allow.json 里的键是 web/ 根相对的,换基准会让整张豁免表失配。
+  const base = full.startsWith(DESIGN_ROOT) ? REPO_ROOT : WEB_ROOT
+  const rel = relative(base, full).split('\\').join('/')
   const text = readFileSync(full, 'utf8').split('\n')
   lines += text.length
   text.forEach((line, i) => {
@@ -302,7 +314,7 @@ const stale = [...allow.values()].filter((it) => !used.has(`${it.file}\u0000${it
 if (hardHits.length === 0 && softHits.length === 0 && stale.length === 0) {
   process.stdout.write(
     '\n能力边界扫描通过 —— R-05「产品永不判断对不对」(docs/execution/INDEX.md:591 + design/README.md:45)\n' +
-      `  扫描 ${files.length} 个文件 / ${lines} 行(web/src)\n` +
+      `  扫描 ${files.length} 个文件 / ${lines} 行(web/src + design/)\n` +
       `  硬名单 ${HARD.length} 词,灰名单 ${SOFT.length} 词,豁免表 ${allow.size} 项(全部命中)\n\n`,
   )
   process.exit(0)

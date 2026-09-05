@@ -1,0 +1,80 @@
+/* Kubic · H5（Web 主形态）差分层 —— KUBI-79 审核修订
+   ────────────────────────────────────────────────────────────
+   这一层【只写与 v10 底座不同的地方】。tokens.css 与 v10.css 逐字节取自
+   kubi-80-v10-blueprint，一个值都不改、一个 token 都不新增：
+   H5 不是第五套视觉，它是 U6.1 里那句「其余三个端都是它的再分发」的那个基准。
+
+   差分只有五处，每一处都能指回 M6 的一行：
+   1 屏的外框     —— H5 没有设备外框。窗口就是屏，高度用 100dvh（iOS Safari 地址栏
+                     收放时 100vh 会算错，底部动作区会被地址栏吃掉半截）
+   2 状态条/指示条 —— 删。那两样是设备的，不是产品的（U6.1 §6.1 外框图里没有它们）
+   3 返回          —— 屏内不画返回箭头：P-NAV = 浏览器返回键（U6.1 §6.1 ※2）。
+                     台账头里剩下的 ⌄ 是树选择器，那是内容的层级，不是导航栈
+   4 双列档        —— 视口 ≥1024 进双列（U6.3）。左栏是内容（骨架树 / 榜），
+                     随科目与筛选整个换掉，它不列举任何别的屏 —— 不是左侧菜单
+   5 Web 专版说明  —— S-RAW×Web 是全矩阵唯一的「降级」格（U6.2 §2.3）：
+                     常驻说明 + 一条可关闭提示，且必须点名「浏览器可能清理」
+   ──────────────────────────────────────────────────────────── */
+
+/* ── 1 · 屏：窗口即屏 ────────────────────────────── */
+.h5{position:relative;width:100%;min-height:100dvh;background:var(--ground);
+    display:flex;flex-direction:column;overflow-x:hidden}
+/* 评审稿容器：只在评审页上给一条外缘，产品上没有 */
+.frame{max-width:430px;margin:0 auto;box-shadow:0 0 0 var(--hair-w) var(--hair)}
+
+/* 内容列上限：宽屏单列时不让一行文字拉到 1200px 宽 */
+.flow > .head,.flow > .band,.flow > .panel,.flow > .calc,.flow > .foot,
+.flow > .control,.flow > .split,.flow > .line,.flow > .pad,.flow > p{width:100%}
+
+/* ── 2 · 屏底动作区：sticky + 安全区 ──────────────
+   H5 上 .dock 不能 fixed —— iOS Safari 地址栏收起时 fixed 元素会跳。
+   sticky 贴在流末尾，键盘弹出时随视口走，不遮当前输入框。 */
+.h5 .dock{position:sticky;bottom:0;z-index:2;
+          padding-bottom:calc(20px + env(safe-area-inset-bottom,0px))}
+
+/* ── 3 · 台账头：没有返回箭头 ──────────────────────
+   .head 本身沿用底座；这里只是把「屏内返回」这个位子明确留空，
+   写成一条注释比写一条 CSS 更准确：H5 上根本没有那个元素。 */
+
+/* ── 4 · 双列档（视口 ≥1024）──────────────────────
+   左栏 300（下限 260）· 右栏最小 480 · 内容区 1120 · 页边距 40（KUBI-80 M6）。
+   左栏装的是骨架树/榜这类【内容】，换一个科目整栏换掉。 */
+@media (min-width:1024px){
+  .h5{--rule:40px}
+  .two{display:grid;grid-template-columns:minmax(260px,300px) minmax(480px,1fr);
+       max-width:1120px;margin:0 auto;width:100%;flex:1 1 auto;min-height:0}
+  .two__l{border-right:var(--hair-w) solid var(--hair);min-width:0;
+          display:flex;flex-direction:column}
+  .two__r{min-width:0;display:flex;flex-direction:column}
+  /* 双列档下屏底动作区归属右栏，左栏不带动作 */
+  .two__l .dock{display:none}
+}
+@media (max-width:1023px){
+  .two{display:flex;flex-direction:column;flex:1 1 auto;min-height:0}
+  .two__r--detail{display:none}   /* 单列档：详情是独立 route id，不并排 */
+}
+
+/* ── 5 · Web 专版说明 + 可关闭提示（S-RAW×Web）────
+   常驻说明是陈述，不是提示，所以它没有关闭按钮；
+   可关闭的那一条才是提示。两者不合并 —— 合并等于把告知做成了可以关掉的东西。 */
+.webnote{padding:12px var(--rule);border-top:var(--hair-w) solid var(--hair);
+         border-bottom:var(--hair-w) solid var(--hair);background:var(--raised)}
+.webnote p{font-size:var(--t-sub);line-height:var(--lh-sub);color:var(--ink)}
+.tip{display:flex;gap:12px;align-items:flex-start;padding:12px var(--rule);
+     border-bottom:var(--hair-w) solid var(--hair-soft)}
+.tip p{flex:1 1 auto;font-size:var(--t-sub);line-height:var(--lh-sub);color:var(--ink-2)}
+.tip button{flex:0 0 auto;min-width:44px;min-height:44px;margin:-11px -8px -11px 0;
+            display:flex;align-items:center;justify-content:center;
+            font-size:var(--t-sub);color:var(--ink-2);text-decoration:underline;
+            text-decoration-thickness:1px;text-underline-offset:4px;
+            text-decoration-color:var(--underline)}
+
+/* ── 评审稿标注（不进产品）─────────────────────── */
+.sheet{background:var(--canvas);padding:40px 24px 80px}
+.sheet h2{font-family:var(--font-display);font-size:22px;font-weight:400;
+          margin:48px 0 6px;color:var(--ink)}
+.sheet h2:first-child{margin-top:0}
+.sheet .why{font-size:13px;line-height:1.85;color:#3B4250;max-width:760px;margin-bottom:18px}
+.sheet .why b{font-weight:600;color:var(--ink)}
+.sheet .why code{font-family:var(--font-mono);font-size:11.5px}
+.row2{display:flex;flex-wrap:wrap;gap:28px;align-items:flex-start}

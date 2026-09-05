@@ -1,0 +1,113 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>S-BLIND 盲区总览 · H5 双列档（视口 ≥1024）</title>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="v10.css">
+<link rel="stylesheet" href="h5.css">
+<style>
+  /* 双列档是 H5 相对底座的唯一【结构性】差分：底座那两张是 390 宽的单列。
+     这里要证明的只有一件事 —— 左栏是【内容】，不是左侧菜单：
+       · 它装的是骨架树，换一个科目整栏换掉；
+       · 它一条也不列举别的屏（没有「首页 / 记录 / 设置」这种条目）；
+       · 它没有选中态高亮条，只有一条发丝线分栏。
+     把它涂成任何颜色都还是骨架树；把菜单涂成任何颜色也还是菜单。 */
+  .calc{padding-top:0}
+  .calc__row{padding:4px 0}
+  .foot p{padding:3px 0}
+  .line{padding-top:12px;padding-bottom:12px}
+  button.calc__row{width:100%;min-height:44px}
+  .tree{padding:8px 0 24px;overflow:auto}
+  .tree button{display:block;width:100%;min-height:44px;padding:8px var(--rule);
+               font-size:var(--t-sub);line-height:var(--lh-sub);color:var(--ink)}
+  .tree .d1{padding-left:calc(var(--rule) + 16px);color:var(--ink-2)}
+  .tree .d2{padding-left:calc(var(--rule) + 32px);color:var(--ink-2)}
+</style></head><body><div class="h5">
+
+<div class="head">
+  <!-- 全产品唯一一处面包屑住在树选择器内部：那是内容的层级，不是导航栈。
+       H5 上屏级返回不在这里 —— 它是浏览器返回键。 -->
+  <span>盲区 · 行政法 ⌄</span>
+  <span>按章</span>
+</div>
+
+<div class="two">
+  <!-- 左栏 = 骨架树（内容）。换科目 → 整栏换掉。 -->
+  <div class="two__l">
+    <p class="eyebrow pad" style="margin:16px 0 4px">行政法 · 骨架自然序</p>
+    <nav class="tree" aria-label="行政法骨架树">
+      <button>第一章 行政法基础</button>
+      <button class="d1">行政主体</button>
+      <button class="d1">行政行为</button>
+      <button class="d2">行政处罚</button>
+      <button class="d2">行政许可</button>
+      <button>第二章 行政程序</button>
+      <button class="d1">听证程序</button>
+      <button class="d1">告知与送达</button>
+      <button>第三章 行政救济</button>
+      <button class="d1">行政复议</button>
+      <button class="d1">行政诉讼</button>
+    </nav>
+  </div>
+
+  <!-- 右栏 = 与单列档【同一份内容、同一个信息顺序】。宽度变了，优先级没变。 -->
+  <div class="two__r">
+    <div class="calc" aria-label="行政法一共 120 个考点，你碰过 43 个，没碰过 77 个">
+      <p class="calc__row">
+        <span class="calc__label calc__label--2">一共</span>
+        <span class="calc__num">120</span>
+      </p>
+      <button class="calc__row calc-tap" aria-label="你碰过 43 个，点开筛选到碰过">
+        <span class="calc__label calc__label--2">你碰过</span>
+        <span class="calc__op">−</span>
+        <span class="calc__num">43</span>
+      </button>
+    </div>
+    <button class="panel calc__sum calc-tap" aria-label="没碰过 77 个，点开筛选到没碰过">
+      <span class="calc__label">没碰过</span>
+      <span class="calc__num hero">77</span>
+    </button>
+
+    <div class="foot" style="padding-top:10px">
+      <p>其中 <b style="font-weight:600;color:var(--ink)">4</b> 个你标了『已经会了』，没在下面列出来</p>
+      <p>另有 0 个考点已归档</p>
+      <p>另有 2 条记录没能对上任何考点</p>
+      <p style="opacity:.8">出现次数统计截至 2025 年</p>
+    </div>
+
+    <div class="control"><span>当前：全部</span><button>按近 5 年出现次数排 ⌄</button></div>
+
+    <button class="line">
+      <span class="idx">01</span>
+      <span class="line__main">
+        <span class="body">行政处罚<span class="line__meta">近 5 年 18 次</span></span>
+        <span class="sub" style="color:var(--ink)">你没碰过</span>
+      </span>
+    </button>
+    <button class="line">
+      <span class="idx">02</span>
+      <span class="line__main">
+        <span class="body">听证程序<span class="line__meta">近 5 年 12 次</span></span>
+        <span class="sub" style="color:var(--ink)">你没碰过</span>
+      </span>
+    </button>
+    <button class="line">
+      <span class="idx">03</span>
+      <span class="line__main">
+        <span class="body">行政许可<span class="line__meta">近 5 年 10 次</span></span>
+        <span class="sub">你碰过 3 次，最近一次 6 天前</span>
+      </span>
+    </button>
+    <button class="line">
+      <span class="idx">04</span>
+      <span class="line__main">
+        <span class="body">行政复议<span class="line__meta">近 5 年 9 次</span></span>
+        <span class="sub" style="color:var(--ink)">你没碰过</span>
+      </span>
+    </button>
+
+    <div style="flex:1 1 auto"></div>
+    <!-- 区 4 出口住在滚动流里，这一屏没有屏底动作区（规格如此，双列档同样不补一个） -->
+    <div class="split"><button>按章看全部</button><button>我已经会了(4)</button></div>
+  </div>
+</div>
+</div></body></html>

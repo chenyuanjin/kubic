@@ -1,0 +1,76 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>S-REC 记一次（图片）· H5</title>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="v10.css">
+<link rel="stylesheet" href="h5.css">
+<style>
+  /* H5 相对底座 rec.html 的差分只有一处，但它是红线级的：
+     ── 同意点必须挡在【收图之前】，不是设置里的一个开关 ──
+     网页上没有应用内相机，「拍」= <input type="file" accept="image/*" capture>，
+     一按就调起系统相机、图片立刻进页面。所以同意那一行必须在按钮【上面】，
+     且未勾选时「拍一张」不可按 —— 顺序反了，这条红线在网页上就等于没有。
+
+     其余两处（到期陈述 / 立即删除）在收图后的这一屏上出现，与底座逐字相同。 */
+  .shot{margin:0 var(--rule);height:216px;background:var(--raised);
+        border:var(--hair-w) solid var(--hair);border-radius:var(--radius);
+        display:flex;align-items:flex-end;padding:12px 14px}
+  .shot span{font-size:var(--t-micro);color:var(--ink-2)}
+  .keep{padding:8px 0 4px}
+  .keep .line{padding-top:14px;padding-bottom:14px}
+  .box{width:18px;height:18px;flex:0 0 auto;margin-top:3px;border-radius:var(--radius);
+       background:var(--ink);display:flex;align-items:center;justify-content:center}
+</style></head><body><div class="h5 frame">
+
+<div class="head"><span>记一条 · 图片</span><span>21:47</span></div>
+
+<div style="height:16px"></div>
+<div class="shot"><span>原图 · 只在这台设备上</span></div>
+
+<div class="keep">
+  <!-- ① 同意留存那一刻 —— 在网页上它必须排在「拍一张」之前，见文件头注释 -->
+  <div class="line">
+    <span class="slot"><span class="box"><svg width="11" height="9" viewBox="0 0 11 9" fill="none">
+      <path d="M1 4.6 4.1 7.7 10 1.4" stroke="var(--on-action)" stroke-width="1.8"
+            stroke-linecap="square"/></svg></span></span>
+    <span class="line__main">
+      <span class="body">留下这张原图</span>
+      <span class="sub">你拍的原图只存在这台设备上,不上传、不同步、不备份到任何服务器。</span>
+    </span>
+  </div>
+  <!-- ② 到期陈述（逐字） -->
+  <div class="line">
+    <span class="slot"><svg width="13" height="16" viewBox="0 0 18 22" fill="none" style="margin-top:4px">
+      <path d="M9 1 17 5.6 9 10.2 1 5.6Z" stroke="var(--ink-2)" stroke-width="1.1" stroke-linejoin="round"/>
+      <path d="M1 8.4 9 13 9 21 1 16.4Z" stroke="var(--ink-2)" stroke-width="1.1" stroke-linejoin="round" opacity=".5"/>
+      <path d="M17 8.4 9 13 9 21 17 16.4Z" stroke="var(--ink-2)" stroke-width="1.1" stroke-linejoin="round" opacity=".5"/>
+    </svg></span>
+    <span class="line__main">
+      <span class="body">还有 2 天 6 小时转进留存区</span>
+      <span class="sub">2 天 6 小时后转为本机留存,不再用于识别,随时可以手动删。</span>
+    </span>
+  </div>
+  <!-- ③ 立即删除 -->
+  <div class="line">
+    <span class="slot"></span>
+    <span class="line__main"><button class="link link--body">立即删除原图</button></span>
+  </div>
+</div>
+
+<!-- 网页版专版一句：与 S-RAW 那块常驻说明同源，不同长度。放在这里是因为
+     用户在这一刻才第一次产生原图 —— 告知要发生在事情发生的地方。 -->
+<div class="foot" style="padding-top:6px">
+  <p>网页版的原图存在这个浏览器里，浏览器可能在空间不足时清理它。</p>
+</div>
+
+<div style="flex:1 1 auto"></div>
+
+<div class="field">
+  <span class="eyebrow" style="flex:0 0 auto">来源</span>
+  <input value="粉笔" readonly>
+</div>
+
+<div class="dock">
+  <button class="btn-pri">记下</button>
+</div>
+</div></body></html>

@@ -34,6 +34,98 @@
 **ad-hoc 签名,自用**,首次打开走一次「右键 → 打开」。分发给别人才需要
 Developer ID + 公证,而本轮没有分发(`docs/technical/壳技术方案-Tauri2包现有Web工程.md` §4.4)。
 
+## Android
+
+```bash
+./shell/scripts/android-build.sh          # 出 debug apk(默认 aarch64)
+ANDROID_TARGET=x86_64 ./shell/scripts/android-build.sh   # x86_64 模拟器
+```
+
+**这是 Android 唯一允许的出包方式**,理由与 macOS 那条一模一样:直接
+`cargo tauri android build` 会绕过 `build.sh --check`,而绕过隔离校验的构建路径
+和没有隔离校验是一回事(`R-111`)。这个脚本自己不做校验 ——
+它把 `build.sh --check` 原样跑一遍,只补上 Android 独有的前置与断言。
+
+### 前置
+
+一条都不自动装。缺哪一件脚本会点名说,不会让它到 Gradle 那一步才炸。
+
+| 需要 | 装法 | 实测通过的版本(2026-09-05) |
+|---|---|---|
+| Android SDK | `brew install --cask android-commandlinetools`,再 `sdkmanager --install 'platforms;android-34' 'build-tools;34.0.0'` | `platforms;android-34`、`build-tools;34.0.0` |
+| NDK | `sdkmanager --install 'ndk;26.3.11579264'` | `26.3.11579264` |
+| JDK 21 | `brew install --cask temurin@21` | Oracle `21.0.7` (arm64) |
+| Rust 目标 | `rustup target add aarch64-linux-android` | `rustc 1.93.1` |
+| `cargo-tauri` | `cargo install tauri-cli --version "^2.0" --locked` | `tauri-cli 2.11.4` / `tauri 2.11.5` / `wry 0.55.1` |
+| Node | 走 `web/` 已有的那套 | `v22.22.1` |
+
+`ANDROID_HOME` 要自己 export;`NDK_HOME` 与 `JAVA_HOME` 不设的话脚本会自己找,
+**找到多个就停下来问,不替你挑**(NDK 带一串补丁号,写死在文档里的那一串换台机器就不对)。
+
+### 装与跑
+
+```bash
+adb install -r shell/gen/android/app/build/outputs/apk/universal/debug/app-universal-debug.apk
+adb reverse tcp:8080 tcp:8080     # 上游在宿主机上,不加这条 /api 一律 502
+```
+
+🔴 `gen/` 是 gitignore 的,每台机器由 `cargo tauri android init` 现生成。
+由此得到一条纪律:**任何改动都不许落在 `gen/` 里** —— 下一次 init 会把它抹掉,
+而抹掉的那一刻不会有任何东西变红。
+
+### 返回键
+
+系统返回键 → webview 历史回退 → 栈空才退出。**壳侧一行代码都没写** ——
+这是 wry `WryActivity` 的默认行为,而 webview 的历史就是路由的历史
+(`web/src/main.tsx` 用 `createBrowserRouter`),两者恰好对上。
+一行不写的东西没有任何一处会在它消失时变红,所以那条契约由
+`scripts/android-build.sh` 步骤 ④ 对**生成出来的 Kotlin** 做文本断言。
+
+实测(模拟器 Android 14 / API 34):
+
+| 从哪儿按 | 结果 |
+|---|---|
+| `/export`(历史深 5) | 逐级回退 `/capture` → `/records?filter=unclassified` → `/records` → `/coverage` |
+| `/coverage`(历史底) | 退出应用 ✅ 这正是要的 |
+| 登录门 | 地址一直是 `/`,历史深度 1,一按即退出 —— 门没有历史,符合设计 |
+
+⚠️ **覆盖层不在这条链上,这一条没修。** ⌘K 面板是 `useState` 不是历史条目,实测:
+
+- 面板开着、历史深度 1 → **一按返回键整个应用退出**,面板从没被关过
+- 面板开着、历史深度 2 → 第一下关软键盘,第二下**弹掉了背后那一屏而面板还开着**
+
+修法在 `web/`,不在壳里 —— 本轮 `web/` 的所有者是 `KUBI-117`,补丁说明已发到 `KUBI-111`。
+
+### 安全区与手势条
+
+实测(1080×2400 @420dpi,`dpr=2.625`,视口 412×915 CSS px):
+
+| 量 | 值 | 说明 |
+|---|---|---|
+| `env(safe-area-inset-top)` | `49px` | ↔ 系统报的 128 物理像素,**对得上** |
+| `env(safe-area-inset-bottom)` | **`0px`** | 而系统报的 `navigationBars` 是 63 物理像素(24 CSS px)—— **它在说谎** |
+| 底部状态条 | CSS `836.3–862.3` | 最低一行内容落在 `874.9`,手势条从 `890.3` 起 —— **净空 15.4 CSS px,没被压** ✅ |
+| 屏底动作区 | CSS `862.3–915.0` | 底部 24 CSS px 落在手势条区里,但**点击照样进得来**(实测在 `y=2360` / `2380` 物理像素上点仍然跳转),`U6.4` 的 44px 触控下限没有被吃掉 |
+
+所以 `77fecc3` 那次「把底栏挪到屏底动作区上面」是**真的生效了**,不是看着像生效。
+`inset-bottom` 为 0 这条差异写在 `src/platform/android.rs` 里 ——
+它是这个系统的性质,不是那份样式的选择。
+
+### 停在哪一档
+
+**A 档**:装得上、起得来、主链路六屏逐屏点得完(登录门 M5 / 首启 M0 / 记录 M1 /
+未分类 M2 / 盲区 M3 / 出口 M4),截图见 `KUBI-118`。
+六屏中的后四屏走的是**离线示例数据** —— 底部状态条红着写「离线示例数据」,那就是证据。
+
+**B 档(连真后端拿真数)没做**:本机没有 MySQL / Redis,登录要真后端才过得去,
+那是 `KUBI-114` / `KUBI-112` 的事。所以「登录门」这一屏验的是它**渲染并能输入**
+(手机号那一格调起数字键盘、「未接入 行为验证」那条说明在位),**不是**登录跑通了。
+
+🔴 **门后那五屏是怎么点到的,必须说清楚**:debug 包开着 webview 远程调试,
+所以是从 `chrome://inspect` 往 `localStorage` 里塞了一个**假令牌**绕过门,
+再往下点的。这证明的是「门后那五屏在 Android 上渲染并跳得动」,
+**不证明**登录链路通。真令牌要等 `KUBI-114`。
+
 ## 它是怎么工作的
 
 ```mermaid
